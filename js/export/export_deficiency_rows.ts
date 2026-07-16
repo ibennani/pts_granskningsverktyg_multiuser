@@ -5,7 +5,8 @@
 import * as Helpers from '../utils/helpers.js';
 import {
     extractDeficiencyNumber,
-    get_wcag_pour_export_values_for_requirement,
+    get_primary_taxonomy_export_columns,
+    get_primary_taxonomy_export_values_for_requirement,
     strip_markdown_for_excel
 } from './export_format_helpers.js';
 import { get_export_requirement_result } from './export_bootstrap.js';
@@ -16,6 +17,12 @@ import {
     format_media_filenames_for_export,
     type ExportMediaFilenameContext
 } from './export_media_naming.js';
+import {
+    get_appendix2_deficiency_column_width,
+    resolve_appendix2_excel_labels,
+    type Appendix2DeficiencyColumnKey,
+    type Appendix2RulefileSlice,
+} from '../logic/appendix2_excel_template.js';
 
 export type DeficiencyColumnDef = { header: string; key: string; width: number };
 
@@ -29,10 +36,7 @@ export type DeficiencyRow = {
     observation: string;
     screenshotReference: string;
     comment?: string;
-    wcagPerceivable: string;
-    wcagOperable: string;
-    wcagUnderstandable: string;
-    wcagRobust: string;
+    [key: string]: string | { text: string; hyperlink?: string } | null | undefined;
 };
 
 export type PreparedDeficiencyExport = {
@@ -43,30 +47,50 @@ export type PreparedDeficiencyExport = {
 
 export function build_deficiency_column_defs(
     t: (key: string) => string,
-    include_comment_column: boolean
+    include_comment_column: boolean,
+    current_audit?: Record<string, unknown> | null
 ): DeficiencyColumnDef[] {
-    const wcag_column_defs = [
-        { header: t('excel_col_wcag_perceivable'), key: 'wcagPerceivable', width: 14 },
-        { header: t('excel_col_wcag_operable'), key: 'wcagOperable', width: 14 },
-        { header: t('excel_col_wcag_understandable'), key: 'wcagUnderstandable', width: 14 },
-        { header: t('excel_col_wcag_robust'), key: 'wcagRobust', width: 12 }
-    ];
+    const rule_file_content = (current_audit?.ruleFileContent ?? null) as Appendix2RulefileSlice | null | undefined;
+    const { deficiency_column_labels } = resolve_appendix2_excel_labels(rule_file_content ?? null);
+    const header_for = (key: Appendix2DeficiencyColumnKey, i18n_key: string): string => {
+        const override = deficiency_column_labels[key];
+        if (override && override.trim()) return override;
+        return t(i18n_key);
+    };
+
     const column_defs_before_comment = [
-        { header: t('excel_col_deficiency_id'), key: 'id', width: 12 },
-        { header: t('excel_col_req_title'), key: 'reqTitle', width: 45 },
-        { header: t('excel_col_reference'), key: 'reference', width: 40 },
-        { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
-        { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
-        { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 48 },
-        { header: t('excel_col_observation'), key: 'observation', width: 70 },
-        { header: t('excel_col_screenshot_reference'), key: 'screenshotReference', width: 50 }
+        { header: header_for('id', 'excel_col_deficiency_id'), key: 'id', width: get_appendix2_deficiency_column_width('id') },
+        { header: header_for('reqTitle', 'excel_col_req_title'), key: 'reqTitle', width: get_appendix2_deficiency_column_width('reqTitle') },
+        { header: header_for('reference', 'excel_col_reference'), key: 'reference', width: get_appendix2_deficiency_column_width('reference') },
+        { header: header_for('sampleName', 'excel_col_sample_name'), key: 'sampleName', width: get_appendix2_deficiency_column_width('sampleName') },
+        { header: header_for('sampleUrl', 'excel_col_sample_url'), key: 'sampleUrl', width: get_appendix2_deficiency_column_width('sampleUrl') },
+        { header: header_for('deficiencyType', 'excel_col_deficiency_type'), key: 'deficiencyType', width: get_appendix2_deficiency_column_width('deficiencyType') },
+        { header: header_for('observation', 'excel_col_observation'), key: 'observation', width: get_appendix2_deficiency_column_width('observation') },
+        { header: header_for('screenshotReference', 'excel_col_screenshot_reference'), key: 'screenshotReference', width: get_appendix2_deficiency_column_width('screenshotReference') }
     ];
+
+    const taxonomy_column_defs = get_primary_taxonomy_export_columns(current_audit ?? null, t).map((col) => {
+        const concept_id = col.key.replace(/^taxonomy_/, '');
+        const wcag_key = WCAG_CONCEPT_TO_APPENDIX2_KEY[concept_id];
+        if (!wcag_key) return col;
+        const override = deficiency_column_labels[wcag_key];
+        if (!override?.trim()) return col;
+        return { ...col, header: override };
+    });
+
     return [
         ...column_defs_before_comment,
-        ...(include_comment_column ? [{ header: t('excel_col_comment'), key: 'comment', width: 70 }] : []),
-        ...wcag_column_defs
+        ...(include_comment_column ? [{ header: header_for('comment', 'excel_col_comment'), key: 'comment', width: get_appendix2_deficiency_column_width('comment') }] : []),
+        ...taxonomy_column_defs
     ];
 }
+
+const WCAG_CONCEPT_TO_APPENDIX2_KEY: Record<string, Appendix2DeficiencyColumnKey> = {
+    perceivable: 'wcagPerceivable',
+    operable: 'wcagOperable',
+    understandable: 'wcagUnderstandable',
+    robust: 'wcagRobust',
+};
 
 export function deficiency_row_to_flat_values(row: DeficiencyRow, column_keys: string[]): string[] {
     return column_keys.map((key) => {
@@ -76,7 +100,7 @@ export function deficiency_row_to_flat_values(row: DeficiencyRow, column_keys: s
         if (key === 'sampleUrl') {
             return row.sampleUrl?.text ?? '';
         }
-        const value = row[key as keyof DeficiencyRow];
+        const value = row[key];
         return value == null ? '' : String(value);
     });
 }
@@ -86,11 +110,12 @@ export async function prepare_deficiencies_for_export(
     t: (key: string) => string,
     media_context?: ExportMediaFilenameContext | null
 ): Promise<PreparedDeficiencyExport> {
+    const audit_record = current_audit as Record<string, unknown>;
     const deficiencies_data = build_deficiencies_data(current_audit, t, media_context ?? null);
     const include_comment_column = deficiencies_data.some(
         (d) => d.comment && String(d.comment).trim().length > 0
     );
-    const column_defs = build_deficiency_column_defs(t, include_comment_column);
+    const column_defs = build_deficiency_column_defs(t, include_comment_column, audit_record);
     if (!include_comment_column) {
         deficiencies_data.forEach((row) => {
             delete row.comment;
@@ -166,10 +191,14 @@ function build_single_deficiency_row(
           }
         : null;
 
-    const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit as never, t);
+    const taxonomy_vals = get_primary_taxonomy_export_values_for_requirement(
+        req_definition,
+        current_audit as never,
+        t
+    );
     const comment_text = strip_markdown_for_excel((result.commentToAuditor || '').trim());
 
-    return {
+    const row: DeficiencyRow = {
         id: extractDeficiencyNumber(pc_obj.deficiencyId),
         reqTitle: strip_markdown_for_excel(String(req_definition.title || '')),
         reference: reference_obj,
@@ -183,11 +212,13 @@ function build_single_deficiency_row(
             { deficiency_id: pc_obj.deficiencyId }
         ),
         comment: comment_text,
-        wcagPerceivable: to_wcag_yes_only_value(pour_vals.wcagPerceivable, yes_label),
-        wcagOperable: to_wcag_yes_only_value(pour_vals.wcagOperable, yes_label),
-        wcagUnderstandable: to_wcag_yes_only_value(pour_vals.wcagUnderstandable, yes_label),
-        wcagRobust: to_wcag_yes_only_value(pour_vals.wcagRobust, yes_label)
     };
+
+    for (const [column_key, cell_value] of Object.entries(taxonomy_vals)) {
+        row[column_key] = to_wcag_yes_only_value(cell_value, yes_label);
+    }
+
+    return row;
 }
 
 export function build_deficiencies_data(

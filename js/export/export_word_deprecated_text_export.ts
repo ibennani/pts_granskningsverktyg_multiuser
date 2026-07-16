@@ -15,6 +15,10 @@ import {
     group_deficiencies_by_requirement,
     natural_sort
 } from './export_word_deficiency_queries.js';
+import {
+    get_concept_labels_for_requirement,
+    get_primary_grouping_taxonomy_id,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 type ExportT = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -134,24 +138,12 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
                     }
                 }
 
-                // Principer
+                // Principer (primär grupperingstaxonomi)
                 {
-                    const classifications = Array.isArray(req.classifications) ? req.classifications : [];
-                    const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(
-                        (taxonomy_entry: any) => taxonomy_entry.id === 'wcag22-pour'
-                    );
-                    const norm = (v: any) => String(v ?? '').trim().toLowerCase();
-                    const principle_texts = taxonomy
-                        ? classifications
-                            .filter((c: any) => norm(c.taxonomyId) === 'wcag22-pour')
-                            .map((c: any) => {
-                                const concept = taxonomy.concepts?.find?.((x: any) => norm(x?.id) === norm(c.conceptId));
-                                return (typeof concept?.label === 'string' && concept.label.trim())
-                                    ? concept.label
-                                    : c.conceptId;
-                            })
-                            .filter(Boolean)
-                        : [];
+                    const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+                    const metadata = rule_content?.metadata;
+                    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+                    const principle_texts = get_concept_labels_for_requirement(req, metadata, taxonomy_id, t);
 
                     if (principle_texts.length > 0) {
                         metadata_items.push(new Paragraph({

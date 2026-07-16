@@ -28,7 +28,20 @@ describe('export_deficiency_rows', () => {
     };
 
     test('build_deficiency_column_defs placerar screenshotReference efter observation', () => {
-        const defs = build_deficiency_column_defs(t, false);
+        const audit = {
+            ruleFileContent: {
+                metadata: {
+                    taxonomies: [{
+                        id: 'wcag22-pour',
+                        concepts: [
+                            { id: 'perceivable', label: 'Möjlig att uppfatta' },
+                            { id: 'operable', label: 'Möjlig att hantera' }
+                        ]
+                    }]
+                }
+            }
+        };
+        const defs = build_deficiency_column_defs(t, false, audit);
         const keys = defs.map((def) => def.key);
         const obs_index = keys.indexOf('observation');
         const shot_index = keys.indexOf('screenshotReference');
@@ -36,10 +49,48 @@ describe('export_deficiency_rows', () => {
         expect(shot_index).toBe(obs_index + 1);
     });
 
+    test('build_deficiency_column_defs skapar dynamiska taxonomikolumner', () => {
+        const audit = {
+            ruleFileContent: {
+                metadata: {
+                    taxonomies: [{
+                        id: 'wcag22-pour',
+                        concepts: [
+                            { id: 'perceivable', label: 'Möjlig att uppfatta' },
+                            { id: 'operable', label: 'Möjlig att hantera' }
+                        ]
+                    }]
+                }
+            }
+        };
+        const defs = build_deficiency_column_defs(t, false, audit);
+        expect(defs.some((def) => def.key === 'taxonomy_perceivable')).toBe(true);
+        expect(defs.some((def) => def.key === 'taxonomy_operable')).toBe(true);
+        expect(defs.find((def) => def.key === 'taxonomy_perceivable')?.header).toBe('Möjlig att uppfatta');
+    });
+
     test('build_deficiency_column_defs sätter deficiencyType-bredd till 48', () => {
         const defs = build_deficiency_column_defs(t, false);
         const def_type_col = defs.find((def) => def.key === 'deficiencyType');
         expect(def_type_col?.width).toBe(48);
+    });
+
+    test('build_deficiency_column_defs använder regelfil-override för rubriker', () => {
+        const audit = {
+            ruleFileContent: {
+                metadata: { language: 'sv-SE' },
+                appendix2: {
+                    labelsByLocale: {
+                        'sv-SE': {
+                            generalInfo: [],
+                            deficiencyColumns: [{ key: 'id', label: 'Eget ID' }],
+                        },
+                    },
+                },
+            },
+        };
+        const defs = build_deficiency_column_defs(t, false, audit);
+        expect(defs.find((def) => def.key === 'id')?.header).toBe('Eget ID');
     });
 
     test('deficiency_row_to_flat_values inkluderar deficiencyType för CSV-export', () => {

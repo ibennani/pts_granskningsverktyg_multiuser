@@ -153,6 +153,7 @@ export async function build_appendix1_summary_pdf_blob(
     assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
     const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
         htmlContent: html_content,
+        pdfDocumentKind: 'appendix1',
     });
 
     const filename = build_appendix1_summary_pdf_filename(

@@ -4,7 +4,11 @@
 
 import { Paragraph, TextRun } from 'docx';
 import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from '../audit_logic.js';
-import { resolve_taxonomies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import {
+    get_concept_ids_for_requirement,
+    get_primary_grouping_taxonomy_id,
+    resolve_taxonomy_concepts,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 export function create_paragraphs_with_line_breaks(text: unknown, options: Record<string, unknown> = {}): Paragraph[] {
     if (!text) {
@@ -132,8 +136,62 @@ export function norm_taxonomy_string(v: unknown): string {
 
 type TExport = (key: string, opts?: Record<string, unknown>) => string;
 
+export type TaxonomyExportColumnDef = { header: string; key: string; width: number };
+
+/** Prefix för dynamiska taxonomikolumner i bristexport (Excel/CSV). */
+export const TAXONOMY_EXPORT_COLUMN_KEY_PREFIX = 'taxonomy_';
+
+function taxonomy_export_column_key(concept_id: string): string {
+    return `${TAXONOMY_EXPORT_COLUMN_KEY_PREFIX}${concept_id}`;
+}
+
 /**
- * Värden för WCAG POUR-kolumner i CSV/Excel-bristexport.
+ * Kolumndefinitioner för primär grupperingstaxonomi i CSV/Excel-bristexport.
+ */
+export function get_primary_taxonomy_export_columns(
+    current_audit: Record<string, unknown> | null | undefined,
+    t: TExport
+): TaxonomyExportColumnDef[] {
+    const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+    const concepts = resolve_taxonomy_concepts(rule_content?.metadata, taxonomy_id, t);
+    return concepts.map((concept) => ({
+        header: concept.label,
+        key: taxonomy_export_column_key(concept.id),
+        width: 14,
+    }));
+}
+
+/**
+ * Ja/nej-värden per begrepp i primär grupperingstaxonomi för bristexport.
+ */
+export function get_primary_taxonomy_export_values_for_requirement(
+    req_definition: Record<string, unknown> | null | undefined,
+    current_audit: Record<string, unknown> | null | undefined,
+    t: TExport
+): Record<string, string> {
+    const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+    const concepts = resolve_taxonomy_concepts(rule_content?.metadata, taxonomy_id, t);
+    const concept_ids = new Set(
+        get_concept_ids_for_requirement(req_definition ?? {}, taxonomy_id)
+    );
+    const yes = t('yes');
+    const no = t('no');
+    const values: Record<string, string> = {};
+    for (const concept of concepts) {
+        values[taxonomy_export_column_key(concept.id)] = concept_ids.has(
+            norm_taxonomy_string(concept.id)
+        )
+            ? yes
+            : no;
+    }
+    return values;
+}
+
+/**
+ * @deprecated Använd get_primary_taxonomy_export_values_for_requirement.
+ * Behålls för bakåtkompatibilitet i äldre exportmallar.
  */
 export function get_wcag_pour_export_values_for_requirement(
     req_definition: Record<string, unknown> | null | undefined,
@@ -145,34 +203,29 @@ export function get_wcag_pour_export_values_for_requirement(
     wcagUnderstandable: string;
     wcagRobust: string;
 } {
+    const dynamic_values = get_primary_taxonomy_export_values_for_requirement(
+        req_definition,
+        current_audit,
+        t
+    );
     const empty = {
         wcagPerceivable: '',
         wcagOperable: '',
         wcagUnderstandable: '',
-        wcagRobust: ''
+        wcagRobust: '',
     };
-    const meta = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
-    const meta_inner = meta?.metadata;
-    const taxonomies = resolve_taxonomies(meta_inner);
-    if (!Array.isArray(taxonomies)) {
-        return empty;
-    }
-    const taxonomy = taxonomies.find((tx: unknown) => norm_taxonomy_string((tx as { id?: unknown })?.id) === 'wcag22-pour');
-    if (!taxonomy) {
-        return empty;
-    }
-    const classifications = Array.isArray(req_definition?.classifications) ? req_definition.classifications : [];
-    const pour_ids = new Set(
-        (classifications as Array<Record<string, unknown>>)
-            .filter((c) => norm_taxonomy_string(c?.taxonomyId) === 'wcag22-pour' && c?.conceptId)
-            .map((c) => norm_taxonomy_string(String(c.conceptId)))
-    );
-    const yes = t('yes');
-    const no = t('no');
-    return {
-        wcagPerceivable: pour_ids.has('perceivable') ? yes : no,
-        wcagOperable: pour_ids.has('operable') ? yes : no,
-        wcagUnderstandable: pour_ids.has('understandable') ? yes : no,
-        wcagRobust: pour_ids.has('robust') ? yes : no
+    const legacy_key_map: Record<string, keyof typeof empty> = {
+        perceivable: 'wcagPerceivable',
+        operable: 'wcagOperable',
+        understandable: 'wcagUnderstandable',
+        robust: 'wcagRobust',
     };
+    const result = { ...empty };
+    for (const [concept_id, legacy_key] of Object.entries(legacy_key_map)) {
+        const dynamic_key = taxonomy_export_column_key(concept_id);
+        if (dynamic_key in dynamic_values) {
+            result[legacy_key] = dynamic_values[dynamic_key];
+        }
+    }
+    return result;
 }

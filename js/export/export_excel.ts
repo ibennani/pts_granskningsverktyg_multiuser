@@ -23,6 +23,7 @@ import {
     strip_xlsx_document_metadata
 } from './excel_export_helpers.js';
 import { build_export_media_filename_context } from './export_media_naming.js';
+import { resolve_appendix2_excel_labels } from '../logic/appendix2_excel_template.js';
 
 type ExcelAudit = {
     auditMetadata: {
@@ -31,6 +32,7 @@ type ExcelAudit = {
         actorLink?: string;
         auditorName?: string;
     };
+    ruleFileContent?: unknown;
 };
 
 export async function build_excel_export_blob(
@@ -50,18 +52,20 @@ export async function build_excel_export_blob(
     const lang_code = get_current_language_code_from_registry();
     const audit = current_audit as ExcelAudit;
 
-    const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
+    const { general_info_labels, sheet_names } = resolve_appendix2_excel_labels(audit.ruleFileContent as never);
+
+    const generalSheet = workbook.addWorksheet(sheet_names.general_info);
 
     const display_times = get_effective_display_times_for_audit(current_audit);
     const last_updated_ts = get_audit_last_updated_iso_for_export(current_audit);
     const general_info_data = [
-        [t('case_number'), strip_markdown_for_excel(String(audit.auditMetadata.caseNumber || ''))],
-        [t('actor_name'), strip_markdown_for_excel(String(audit.auditMetadata.actorName || ''))],
-        [t('excel_general_service_link'), strip_markdown_for_excel(String(audit.auditMetadata.actorLink || ''))],
-        [t('auditor_name'), strip_markdown_for_excel(String(audit.auditMetadata.auditorName || ''))],
-        [t('start_time'), display_times.startTime ? Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
+        [general_info_labels.case_number, strip_markdown_for_excel(String(audit.auditMetadata.caseNumber || ''))],
+        [general_info_labels.actor_name, strip_markdown_for_excel(String(audit.auditMetadata.actorName || ''))],
+        [general_info_labels.actor_link, strip_markdown_for_excel(String(audit.auditMetadata.actorLink || ''))],
+        [general_info_labels.auditor_name, strip_markdown_for_excel(String(audit.auditMetadata.auditorName || ''))],
+        [general_info_labels.start_time, display_times.startTime ? Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
         [
-            t('audit_last_updated'),
+            general_info_labels.audit_last_updated,
             last_updated_ts ? Helpers.format_iso_to_local_date(last_updated_ts, lang_code) : '',
         ],
     ];
@@ -71,7 +75,7 @@ export async function build_excel_export_blob(
     generalSheet.getColumn(2).width = 70;
     apply_excel_cell_alignment_top_left_wrap(generalSheet);
 
-    const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
+    const deficienciesSheet = workbook.addWorksheet(sheet_names.deficiencies);
     const export_date = new Date();
     const media_context = await build_export_media_filename_context(current_audit, export_date);
     const { deficiencies_data, column_defs } = await prepare_deficiencies_for_export(

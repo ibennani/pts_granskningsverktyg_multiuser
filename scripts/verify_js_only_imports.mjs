@@ -45,7 +45,9 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/logic/page_title_manager.js',
     'js/components/BackupOverviewComponent.js',
     'js/utils/app_base_path.js',
-    'js/logic/test_server_indicator.js'
+    'js/logic/test_server_indicator.js',
+    'js/logic/appendix1_sections.js',
+    'js/logic/appendix1_summary_text.js'
 ];
 
 const importReStatic = /(?:from|import)\s+['"](\.\.?\/[^'"]+\.js)['"]/g;

@@ -9,6 +9,9 @@ import {
     resolve_content_types,
     resolve_taxonomies
 } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import {
+    get_concept_labels_for_requirement,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 export class ViewRulefileRequirementComponent {
     constructor() {
@@ -272,24 +275,34 @@ export class ViewRulefileRequirementComponent {
             this.plate_element_ref.appendChild(classification_section);
         }
         
-        // WCAG Principles section
+        // Taxonomier och begrepp
         const taxonomies = resolve_taxonomies(current_state.ruleFileContent.metadata);
-        const pour_taxonomy = taxonomies.find(tax => tax.id === 'wcag22-pour');
-        if (pour_taxonomy && requirement.classifications?.length > 0) {
-            const concepts = requirement.classifications
-                .filter(c => c.taxonomyId === 'wcag22-pour')
-                .map(c => pour_taxonomy.concepts.find(p => p.id === c.conceptId)?.label)
-                .filter(Boolean);
+        if (Array.isArray(taxonomies) && taxonomies.length > 0) {
+            for (const taxonomy of taxonomies) {
+                const taxonomy_id = String(taxonomy?.id || '').trim();
+                if (!taxonomy_id) continue;
+                const concept_labels = get_concept_labels_for_requirement(
+                    requirement,
+                    current_state.ruleFileContent.metadata,
+                    taxonomy_id,
+                    (key) => t(key)
+                );
+                if (concept_labels.length === 0) continue;
 
-            if (concepts.length > 0) {
-                const pour_section = this.Helpers.create_element('div', { class_name: 'audit-section' });
-                pour_section.appendChild(this.Helpers.create_element('h2', { text_content: t('wcag_principles_title') }));
-                const pour_ul = this.Helpers.create_element('ul', { class_name: 'requirement-metadata-list' });
-                concepts.forEach(conceptName => {
-                    pour_ul.appendChild(this.Helpers.create_element('li', { text_content: conceptName }));
+                const taxonomy_label =
+                    typeof taxonomy.label === 'string' && taxonomy.label.trim()
+                        ? taxonomy.label.trim()
+                        : taxonomy_id;
+                const taxonomy_section = this.Helpers.create_element('div', { class_name: 'audit-section' });
+                taxonomy_section.appendChild(
+                    this.Helpers.create_element('h2', { text_content: taxonomy_label })
+                );
+                const taxonomy_ul = this.Helpers.create_element('ul', { class_name: 'requirement-metadata-list' });
+                concept_labels.forEach((concept_name) => {
+                    taxonomy_ul.appendChild(this.Helpers.create_element('li', { text_content: concept_name }));
                 });
-                pour_section.appendChild(pour_ul);
-                this.plate_element_ref.appendChild(pour_section);
+                taxonomy_section.appendChild(taxonomy_ul);
+                this.plate_element_ref.appendChild(taxonomy_section);
             }
         }
         

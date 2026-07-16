@@ -11,6 +11,9 @@ import {
     prepare_screenshots_appendix_media,
     type PreparedScreenshotsAppendixItem,
 } from './export_screenshots_appendix_media.js';
+import { resolve_appendix3_screenshots_template } from '../logic/appendix3_screenshots_template.js';
+import { render_markdown_to_html } from './export_html_build_primitives.js';
+import { html_to_word_paragraphs } from './export_html_to_word_paragraphs.js';
 import type { ExportWordMainFlowT } from './export_word_main_flow_children.js';
 
 function append_screenshot_image_block(
@@ -46,15 +49,26 @@ function append_screenshot_image_block(
 export function append_word_screenshots_appendix_paragraphs(
     children: unknown[],
     items: PreparedScreenshotsAppendixItem[],
-    t: ExportWordMainFlowT
+    t: ExportWordMainFlowT,
+    current_audit?: Record<string, unknown> | null
 ): void {
     const c = children as Array<InstanceType<typeof Paragraph>>;
+    const resolved = resolve_appendix3_screenshots_template(current_audit as never);
+    const title_text = resolved.title.trim() || t('export_screenshots_appendix_title');
     c.push(
         new Paragraph({
-            children: [new TextRun({ text: t('export_screenshots_appendix_title') })],
+            children: [new TextRun({ text: title_text })],
             heading: 'Heading1',
         })
     );
+
+    if (resolved.introText.trim()) {
+        c.push(
+            ...html_to_word_paragraphs(render_markdown_to_html(resolved.introText), {
+                include_h1: false,
+            })
+        );
+    }
 
     if (items.length === 0) {
         c.push(
@@ -91,7 +105,7 @@ export async function export_to_word_screenshots_appendix(
         }
 
         const children: unknown[] = [];
-        append_word_screenshots_appendix_paragraphs(children, items, t);
+        append_word_screenshots_appendix_paragraphs(children, items, t, current_audit);
         await finalize_word_export_download({
             children,
             current_audit,

@@ -9,6 +9,11 @@ import {
     create_list
 } from './rulefile_sections_display_helpers.js';
 import { resolve_taxonomies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import {
+    count_unclassified_requirements,
+    get_primary_grouping_taxonomy_id,
+    resolve_taxonomy_by_id,
+} from '../../logic/requirement_classifications.js';
 
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
@@ -110,62 +115,30 @@ export function render_rulefile_publisher_source_section(ctx, metadata) {
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} metadata
+ * @param {object} [ruleFileContent]
  */
-export function render_rulefile_classifications_section(ctx, metadata) {
+export function render_rulefile_classifications_section(ctx, metadata, ruleFileContent = null) {
     const t = ctx.Translation.t;
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
 
     const taxonomies = resolve_taxonomies(metadata);
+    const primary_taxonomy_id = get_primary_grouping_taxonomy_id(ruleFileContent);
+    const primary_taxonomy = resolve_taxonomy_by_id(metadata, primary_taxonomy_id);
+    const unclassified_count = count_unclassified_requirements(
+        ruleFileContent?.requirements,
+        primary_taxonomy_id
+    );
 
-    const keywords_subsection = Helpers.create_element('div', { class_name: 'metadata-subsection' });
-    keywords_subsection.appendChild(Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_keywords') }));
-    keywords_subsection.appendChild(create_list(Helpers, t, metadata.keywords, 'rulefile_metadata_empty_value', 'metadata-list'));
-    section.appendChild(keywords_subsection);
-
-    const samples_subsection = Helpers.create_element('div', { class_name: 'metadata-subsection' });
-    samples_subsection.appendChild(Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_samples') }));
-    const samples = metadata.samples || {};
-    if (Array.isArray(samples.sampleCategories) && samples.sampleCategories.length > 0) {
-        const categoriesWrapper = Helpers.create_element('div', { class_name: 'metadata-card-grid' });
-        samples.sampleCategories.forEach(category => {
-            const card = Helpers.create_element('article', { class_name: 'metadata-card' });
-            card.appendChild(Helpers.create_element('h2', {
-                text_content: category.text || category.id || t('rulefile_metadata_untitled_item')
-            }));
-            if (typeof category.hasUrl === 'boolean') {
-                const tag_text = category.hasUrl ? t('rulefile_metadata_has_url_yes') : t('rulefile_metadata_has_url_no');
-                card.appendChild(Helpers.create_element('p', {
-                    class_name: 'metadata-tag',
-                    text_content: tag_text
-                }));
-            }
-            if (Array.isArray(category.categories) && category.categories.length > 0) {
-                const list = Helpers.create_element('ul', { class_name: 'metadata-sub-list' });
-                category.categories.forEach(subCategory => {
-                    list.appendChild(Helpers.create_element('li', {
-                        text_content: subCategory.text || subCategory.id || t('rulefile_metadata_untitled_item')
-                    }));
-                });
-                card.appendChild(list);
-            }
-            categoriesWrapper.appendChild(card);
-        });
-        samples_subsection.appendChild(categoriesWrapper);
-    }
-    if (Array.isArray(samples.sampleTypes) && samples.sampleTypes.length > 0) {
-        const types_card = Helpers.create_element('article', { class_name: 'metadata-card' });
-        types_card.appendChild(Helpers.create_element('h3', { text_content: t('rulefile_metadata_sample_types') }));
-        types_card.appendChild(create_list(Helpers, t, samples.sampleTypes, 'rulefile_metadata_empty_value', 'metadata-list'));
-        samples_subsection.appendChild(types_card);
-    }
-    if (samples_subsection.children.length === 1) {
-        samples_subsection.appendChild(Helpers.create_element('p', {
-            class_name: 'metadata-empty',
-            text_content: t('rulefile_metadata_empty_value')
-        }));
-    }
-    section.appendChild(samples_subsection);
+    const summary_subsection = Helpers.create_element('div', { class_name: 'metadata-subsection' });
+    summary_subsection.appendChild(Helpers.create_element('h2', {
+        text_content: t('rulefile_classifications_summary_heading'),
+    }));
+    summary_subsection.appendChild(create_definition_list(Helpers, [
+        [t('rulefile_classifications_primary_grouping_label'), primary_taxonomy?.label || primary_taxonomy_id || t('rulefile_metadata_empty_value')],
+        [t('rulefile_classifications_unclassified_count_label'), String(unclassified_count)],
+    ]));
+    section.appendChild(summary_subsection);
 
     const taxonomies_subsection = Helpers.create_element('div', { class_name: 'metadata-subsection' });
     taxonomies_subsection.appendChild(Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_taxonomies') }));

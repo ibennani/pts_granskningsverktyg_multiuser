@@ -4,10 +4,14 @@
 import puppeteer, { type Browser, type Page } from 'puppeteer';
 import { merge_pdf_export_html_chunks } from '../../shared/pdf/merge_pdf_export_html_chunks.js';
 import { PUPPETEER_LAUNCH_ARGS } from './page_screenshot_stealth.js';
+import { inject_appendix1_cover_image } from './appendix1_cover_image.js';
+
+export type PdfDocumentKind = 'default' | 'appendix1';
 
 export interface GeneratePdfInput {
     htmlContent: string;
     outputPath?: string;
+    documentKind?: PdfDocumentKind;
 }
 
 /** A4 med 20 mm vertikala och 15 mm horisontella marginaler ( tum ). */
@@ -18,6 +22,13 @@ const PDF_MARGIN_INCHES = {
     right: 15 / 25.4,
 };
 
+const APPENDIX1_PDF_MARGIN_INCHES = {
+    top: 25 / 25.4,
+    bottom: 25 / 25.4,
+    left: 25 / 25.4,
+    right: 25 / 25.4,
+};
+
 const PDF_BASE_TIMEOUT_MS = 120_000;
 const PDF_MAX_TIMEOUT_MS = 600_000;
 
@@ -26,8 +37,9 @@ function resolve_pdf_timeout_ms(html_length: number): number {
     return Math.min(PDF_MAX_TIMEOUT_MS, scaled);
 }
 
-async function render_pdf_buffer(page: Page): Promise<Buffer> {
+async function render_pdf_buffer(page: Page, document_kind: PdfDocumentKind = 'default'): Promise<Buffer> {
     await page.emulateMediaType('print');
+    const margins = document_kind === 'appendix1' ? APPENDIX1_PDF_MARGIN_INCHES : PDF_MARGIN_INCHES;
     const client = await page.createCDPSession();
     const result = await client.send('Page.printToPDF', {
         transferMode: 'ReturnAsBase64',
@@ -36,10 +48,10 @@ async function render_pdf_buffer(page: Page): Promise<Buffer> {
         printBackground: true,
         paperWidth: 8.27,
         paperHeight: 11.69,
-        marginTop: PDF_MARGIN_INCHES.top,
-        marginBottom: PDF_MARGIN_INCHES.bottom,
-        marginLeft: PDF_MARGIN_INCHES.left,
-        marginRight: PDF_MARGIN_INCHES.right,
+        marginTop: margins.top,
+        marginBottom: margins.bottom,
+        marginLeft: margins.left,
+        marginRight: margins.right,
     });
     return Buffer.from(result.data, 'base64');
 }
@@ -74,7 +86,11 @@ async function launch_pdf_browser(): Promise<Browser> {
     });
 }
 
-async function render_single_html_to_pdf(page: Page, html_content: string): Promise<Buffer> {
+async function render_single_html_to_pdf(
+    page: Page,
+    html_content: string,
+    document_kind: PdfDocumentKind = 'default'
+): Promise<Buffer> {
     const timeout_ms = resolve_pdf_timeout_ms(html_content.length);
     page.setDefaultNavigationTimeout(timeout_ms);
     page.setDefaultTimeout(timeout_ms);
@@ -84,20 +100,26 @@ async function render_single_html_to_pdf(page: Page, html_content: string): Prom
         timeout: timeout_ms,
     } as unknown as Parameters<typeof page.setContent>[1]);
     await wait_for_page_images(page);
-    return render_pdf_buffer(page);
+    return render_pdf_buffer(page, document_kind);
+}
+
+function prepare_html_for_pdf(html_content: string, document_kind: PdfDocumentKind): string {
+    if (document_kind !== 'appendix1') return html_content;
+    return inject_appendix1_cover_image(html_content);
 }
 
 /**
  * Renderar HTML till en taggad (tillgänglig) PDF med dokumentbokmärken från h1–h3.
  */
 export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<Buffer> {
-    const { htmlContent, outputPath } = input;
+    const { htmlContent, outputPath, documentKind = 'default' } = input;
+    const prepared_html = prepare_html_for_pdf(htmlContent, documentKind);
     let browser: Browser | undefined;
 
     try {
         browser = await launch_pdf_browser();
         const page = await browser.newPage();
-        const pdf_buffer = await render_single_html_to_pdf(page, htmlContent);
+        const pdf_buffer = await render_single_html_to_pdf(page, prepared_html, documentKind);
 
         if (outputPath) {
             const fs = await import('node:fs/promises');

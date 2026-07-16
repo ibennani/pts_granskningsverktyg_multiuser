@@ -141,12 +141,55 @@ export async function render_rulefile_info_blocks_edit_form(ctx, container, _met
 /**
  * @param {{ deps: object, view: object }} ctx
  * @param {HTMLElement} container
+ * @param {object} _metadata
+ */
+export async function render_rulefile_classifications_edit_form(ctx, container, _metadata) {
+    const { deps, view } = ctx;
+
+    if (view.classifications_edit_component && container.children.length > 0) {
+        return;
+    }
+
+    if (view.classifications_edit_component && typeof view.classifications_edit_component.destroy === 'function') {
+        view.classifications_edit_component.skip_autosave_on_destroy = true;
+        view.classifications_edit_component.destroy();
+        view.classifications_edit_component = null;
+    }
+
+    const { EditRulefileClassificationsComponent } = await import('./EditRulefileClassificationsComponent.js');
+    const comp = new EditRulefileClassificationsComponent();
+    await comp.init({ root: container, deps });
+    comp.render();
+    view.classifications_edit_component = comp;
+}
+
+/**
+ * @param {{ deps: object, view: object }} ctx
+ * @param {HTMLElement} container
  * @param {object} ruleFileContent
  */
-export async function render_rulefile_report_template_edit_form(ctx, container, ruleFileContent) {
+export async function render_rulefile_report_template_edit_form(ctx, container, ruleFileContent, appendix = '1') {
     const { deps, view } = ctx;
 
     if (view.report_template_edit_component && container.children.length > 0) {
+        return;
+    }
+
+    if (appendix === '2') {
+        const { EditReportTemplateAppendix2Component } = await import('./EditReportTemplateAppendix2Component.js');
+        const comp = new EditReportTemplateAppendix2Component();
+        await comp.init({ root: container, deps });
+        comp.render();
+        view.report_template_edit_component = comp;
+        return;
+    }
+
+    if (appendix === '3') {
+        const { EditReportTemplateAppendix3Component } = await import('./EditReportTemplateAppendix3Component.js');
+        const comp = new EditReportTemplateAppendix3Component();
+        await comp.init({ root: container, deps });
+        comp.render();
+        view.report_template_edit_component = comp;
         return;
     }
 

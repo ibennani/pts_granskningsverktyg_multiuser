@@ -14,6 +14,10 @@ import {
     HTML_EXPORT_MEDIA_DIR
 } from './export_html_media.js';
 import { resolve_effective_sample_attached_filenames } from '../logic/sample_attached_media_normalize.js';
+import {
+    get_concept_labels_for_requirement,
+    get_primary_grouping_taxonomy_id,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 export function escape_html_internal(str: unknown): string {
     if (typeof Helpers !== 'undefined' && typeof Helpers.escape_html === 'function') {
@@ -69,21 +73,10 @@ export function create_html_metadata(
     }
 
     {
-        const classifications = Array.isArray(requirement.classifications) ? requirement.classifications : [];
-        const meta = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
-        const metadata = meta?.metadata as Record<string, unknown> | undefined;
-        const taxonomies = metadata?.taxonomies as Array<{ id?: string; concepts?: Array<{ id?: string; label?: string }> }> | undefined;
-        const taxonomy = taxonomies?.find((x) => x.id === 'wcag22-pour');
-        const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
-        const principle_texts = taxonomy
-            ? (classifications as Array<{ taxonomyId?: string; conceptId?: string }>)
-                .filter((c) => norm(c.taxonomyId) === 'wcag22-pour')
-                .map((c) => {
-                    const concept = taxonomy.concepts?.find?.((x) => norm(x?.id) === norm(c.conceptId));
-                    return typeof concept?.label === 'string' && concept.label.trim() ? concept.label : c.conceptId;
-                })
-                .filter(Boolean)
-            : [];
+        const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+        const metadata = rule_content?.metadata;
+        const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+        const principle_texts = get_concept_labels_for_requirement(requirement, metadata, taxonomy_id, t);
 
         if (principle_texts.length > 0) {
             html += `<p class="metadata-compact"><strong>Principer: </strong>${escape_html_internal(principle_texts.join(', '))}</p>`;

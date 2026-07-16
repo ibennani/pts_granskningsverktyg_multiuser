@@ -19,33 +19,29 @@ import {
 } from './export_html_build_primitives.js';
 import { build_report_pdf_print_css } from './export_report_typography.js';
 import * as Helpers from '../utils/helpers.js';
+import {
+    get_concept_labels_for_requirement,
+    get_primary_grouping_taxonomy_id,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 export type ExportReportHtmlT = (key: string, opts?: Record<string, unknown>) => string;
 
-function build_principle_texts(requirement: Record<string, unknown>, current_audit: Record<string, unknown>): string[] {
-    const classifications = Array.isArray(requirement.classifications) ? requirement.classifications : [];
-    const meta = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
-    const metadata = meta?.metadata as Record<string, unknown> | undefined;
-    const taxonomies = metadata?.taxonomies as Array<{
-        id?: string;
-        concepts?: Array<{ id?: string; label?: string }>;
-    }> | undefined;
-    const taxonomy = taxonomies?.find((x) => x.id === 'wcag22-pour');
-    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
-    if (!taxonomy) return [];
-    return (classifications as Array<{ taxonomyId?: string; conceptId?: string }>)
-        .filter((c) => norm(c.taxonomyId) === 'wcag22-pour')
-        .map((c) => {
-            const concept = taxonomy.concepts?.find?.((x) => norm(x?.id) === norm(c.conceptId));
-            return typeof concept?.label === 'string' && concept.label.trim() ? concept.label : c.conceptId;
-        })
-        .filter(Boolean) as string[];
+function build_principle_texts(
+    requirement: Record<string, unknown>,
+    current_audit: Record<string, unknown>,
+    t: ExportReportHtmlT
+): string[] {
+    const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+    const metadata = rule_content?.metadata;
+    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+    return get_concept_labels_for_requirement(requirement, metadata, taxonomy_id, t);
 }
 
 function build_metadata_html(
     requirement: Record<string, unknown>,
     current_audit: Record<string, unknown>,
-    deficiency_ids: string[]
+    deficiency_ids: string[],
+    t: ExportReportHtmlT
 ): string {
     let html = '';
     const std_ref = requirement.standardReference as { text?: string; url?: string } | undefined;
@@ -61,7 +57,7 @@ function build_metadata_html(
             html += `<p><strong>Referens: </strong>${ref_text}</p>`;
         }
     }
-    const principles = build_principle_texts(requirement, current_audit);
+    const principles = build_principle_texts(requirement, current_audit, t);
     if (principles.length > 0) {
         html += `<p><strong>Principer: </strong>${escape_html_internal(principles.join(', '))}</p>`;
     }
@@ -154,7 +150,7 @@ export function build_report_body_sorted_by_requirements(
         const sorted_def_ids = Array.from(all_deficiency_ids).sort(
             (a, b) => parseInt(String(a), 10) - parseInt(String(b), 10)
         );
-        html += build_metadata_html(req, current_audit, sorted_def_ids);
+        html += build_metadata_html(req, current_audit, sorted_def_ids, t);
 
         const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
         for (const sample of samples_with_deficiencies) {
@@ -223,7 +219,7 @@ export function build_report_body_sorted_by_samples(
                         .filter(Boolean)
                 ),
             ].sort((a, b) => parseInt(String(a), 10) - parseInt(String(b), 10));
-            html += build_metadata_html(req, current_audit, deficiency_ids);
+            html += build_metadata_html(req, current_audit, deficiency_ids, t);
 
             for (const deficiency of deficiencies) {
                 html += build_observation_html(deficiency);

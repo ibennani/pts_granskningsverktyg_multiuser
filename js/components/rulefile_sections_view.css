@@ -1,4 +1,4 @@
-﻿/* css/components/rulefile_sections_view.css */
+/* css/components/rulefile_sections_view.css */
 
 .rulefile-sections-main-plate {
     width: 100%;
@@ -53,7 +53,7 @@
 }
 
 .rulefile-sections-content-plate {
-    /* Content plate f├Âr h├Âgerinneh├Ñllet */
+    /* Content plate för högerinnehållet */
     width: 100%;
 }
 
@@ -106,7 +106,7 @@
     line-height: 1.6;
 }
 
-/* Kompakt styling f├Âr Allm├ñn information-redigeringsformul├ñret */
+/* Kompakt styling för Allmän information-redigeringsformuläret */
 .rulefile-section-edit-form-container .rulefile-metadata-edit-form {
     gap: 0.75rem;
 }
@@ -143,7 +143,7 @@
     gap: 0.75rem;
 }
 
-/* Definition lists - f├Ârb├ñttrad l├ñsbarhet */
+/* Definition lists - förbättrad läsbarhet */
 .rulefile-section-content .metadata-definition-list {
     margin: 0;
     padding: 0;
@@ -215,7 +215,7 @@
 }
 
 
-/* Visningsl├ñge: kompakt numrerad lista (ol/li) */
+/* Visningsläge: kompakt numrerad lista (ol/li) */
 .info-blocks-order-list {
     list-style-type: decimal;
     padding-left: 1.5rem;
@@ -320,7 +320,7 @@
     color: var(--text-color);
 }
 
-/* F├Ârb├ñttringar f├Âr metadata cards */
+/* Förbättringar för metadata cards */
 .rulefile-section-content .metadata-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -355,7 +355,7 @@
     padding: 1rem 0;
 }
 
-/* Styling f├Âr sidtyper */
+/* Styling för sidtyper */
 .page-types-list-heading {
     margin: 0 0 0.25rem 0;
 }
@@ -433,7 +433,7 @@
     line-height: 1.6;
 }
 
-/* F├Ârb├ñttringar f├Âr l├ñnkar i inneh├Ñllet */
+/* Förbättringar för länkar i innehållet */
 .rulefile-section-content a {
     color: var(--link-color);
     text-decoration: underline;
@@ -444,7 +444,7 @@
     color: var(--link-hover-color);
 }
 
-/* F├Ârb├ñttringar f├Âr report sections */
+/* Förbättringar för report sections */
 .rulefile-section-content .report-sections-list {
     display: flex;
     flex-direction: column;
@@ -476,7 +476,7 @@
     padding: 0.75rem 0;
 }
 
-/* Responsive design ÔÇô menyn ovanf├Âr inneh├Ñllet vid sk├ñrmar under 1200 px */
+/* Responsive design – menyn ovanför innehållet vid skärmar under 1200 px */
 @media (max-width: 1199px) {
     .rulefile-sections-layout {
         flex-direction: column;
@@ -491,6 +491,50 @@
         flex: none;
     }
 
+}
+
+.classifications-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.classifications-tab-button.is-active {
+    background-color: var(--primary-color);
+    color: var(--button-primary-text-color, #fff);
+}
+
+.requirement-mapping-table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.requirement-mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.requirement-mapping-table th,
+.requirement-mapping-table td {
+    border: 1px solid var(--border-color, #ccc);
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.requirement-mapping-cell {
+    text-align: center;
+    cursor: pointer;
+}
+
+.requirement-mapping-cell:focus-visible {
+    outline: 2px solid var(--focus-color, #005fcc);
+    outline-offset: 2px;
+}
+
+.requirement-mapping-checkbox {
+    width: 1.1rem;
+    height: 1.1rem;
 }
 
 /* Bilaga 2 Excel-redigerare: flikväljare på samma rad som etiketten */
@@ -509,4 +553,23 @@
 .rulefile-appendix2-section .rulefile-appendix2-sheet-select {
     width: fit-content;
     max-width: 100%;
+}
+
+/* Bilaga 2 visningsläge: täta punktlistor utan luft under rubrik */
+.rulefile-section-content h2:has(+ .rulefile-appendix2-value-list) {
+    margin-bottom: 0;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list {
+    margin: 0 0 0.75rem 1.5rem;
+    line-height: 1.35;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list li {
+    margin-bottom: 0.1rem;
+    padding-left: 0;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list li:last-child {
+    margin-bottom: 0;
 }

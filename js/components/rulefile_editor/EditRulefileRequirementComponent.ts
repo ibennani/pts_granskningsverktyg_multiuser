@@ -25,6 +25,11 @@ import {
     resolve_content_types,
     resolve_taxonomies
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import {
+    apply_requirement_classifications,
+    get_concept_ids_for_requirement,
+    resolve_taxonomy_concepts,
+} from '../../logic/requirement_classifications.js';
 
 declare global {
     interface Window {
@@ -308,14 +313,28 @@ export class EditRulefileRequirementComponent {
 
         this.local_requirement_data.contentType = Array.from(this.form_element_ref.querySelectorAll('input[name="contentType"]:checked')).map(cb => cb.value);
 
-        const existing_classifications = Array.isArray(this.local_requirement_data.classifications) ? this.local_requirement_data.classifications : [];
-        const preserved_classifications = existing_classifications.filter(c => c?.taxonomyId && c.taxonomyId !== 'wcag22-pour');
-        const selected_pour_concept_ids = Array.from(this.form_element_ref.querySelectorAll('input[name="classification"]:checked')).map(cb => cb.value);
-        const unique_pour_concepts = Array.from(new Set(selected_pour_concept_ids)).map(conceptId => ({
-            taxonomyId: 'wcag22-pour',
-            conceptId
-        }));
-        this.local_requirement_data.classifications = [...preserved_classifications, ...unique_pour_concepts];
+        const existing_classifications = Array.isArray(this.local_requirement_data.classifications)
+            ? this.local_requirement_data.classifications
+            : [];
+        const taxonomies = resolve_taxonomies(current_state.ruleFileContent.metadata);
+        let merged_classifications = existing_classifications.filter(
+            (entry) => !taxonomies.some((tax) => tax.id === entry?.taxonomyId)
+        );
+        taxonomies.forEach((taxonomy) => {
+            const taxonomy_id = String(taxonomy?.id ?? '').trim();
+            if (!taxonomy_id) return;
+            const selected_concept_ids = Array.from(
+                this.form_element_ref.querySelectorAll(
+                    `input[name="classification-${CSS.escape(taxonomy_id)}"]:checked`
+                )
+            ).map((input) => input.value);
+            merged_classifications = apply_requirement_classifications(
+                { classifications: merged_classifications },
+                taxonomy_id,
+                selected_concept_ids
+            ).classifications;
+        });
+        this.local_requirement_data.classifications = merged_classifications;
 
         const checks_data = [];
         this.form_element_ref.querySelectorAll('.check-item-edit').forEach(check_el => {
@@ -744,33 +763,53 @@ export class EditRulefileRequirementComponent {
 
         const current_state = this.getState();
         const taxonomies = resolve_taxonomies(current_state.ruleFileContent.metadata);
-        const pour_taxonomy = taxonomies.find(tax => tax.id === 'wcag22-pour');
-        
-        if (pour_taxonomy && pour_taxonomy.concepts) {
-            const pour_section = this.Helpers.create_element('div', { class_name: 'audit-section' });
-            const fieldset = this.Helpers.create_element('div', { class_name: 'classification-group' });
-            const legend_text = t('wcag_principles_title');
-            pour_section.appendChild(this.Helpers.create_element('h2', { text_content: legend_text }));
 
-            const selected_concepts = new Set((classifications || []).map(c => c.conceptId));
-            
-            pour_taxonomy.concepts.forEach(concept => {
+        taxonomies.forEach((taxonomy) => {
+            const taxonomy_id = String(taxonomy?.id ?? '').trim();
+            if (!taxonomy_id) return;
+            const concepts = resolve_taxonomy_concepts(
+                current_state.ruleFileContent.metadata,
+                taxonomy_id,
+                t
+            );
+            if (concepts.length === 0) return;
+
+            const taxonomy_section = this.Helpers.create_element('div', { class_name: 'audit-section' });
+            const fieldset = this.Helpers.create_element('div', { class_name: 'classification-group' });
+            const legend_text = taxonomy.label || taxonomy_id;
+            taxonomy_section.appendChild(this.Helpers.create_element('h2', { text_content: legend_text }));
+
+            const selected_concepts = new Set(
+                get_concept_ids_for_requirement({ classifications }, taxonomy_id)
+            );
+
+            concepts.forEach((concept) => {
+                const concept_id = String(concept.id ?? '').trim();
+                if (!concept_id) return;
                 const wrapper = this.Helpers.create_element('div', { class_name: 'form-check' });
+                const checkbox_id = `classification-${taxonomy_id}-${concept_id}`.replace(/[^a-zA-Z0-9_-]/g, '_');
                 const checkbox = this.Helpers.create_element('input', {
-                    id: `classification-${concept.id}`,
+                    id: checkbox_id,
                     class_name: 'form-check-input',
-                    attributes: { type: 'checkbox', name: 'classification', value: concept.id }
+                    attributes: {
+                        type: 'checkbox',
+                        name: `classification-${taxonomy_id}`,
+                        value: concept_id,
+                    },
                 });
-                if (selected_concepts.has(concept.id)) {
+                if (selected_concepts.has(concept_id.toLowerCase())) {
                     checkbox.checked = true;
                 }
-                const label = this.Helpers.create_element('label', { attributes: { for: `classification-${concept.id}` }, text_content: concept.label });
+                const label = this.Helpers.create_element('label', {
+                    attributes: { for: checkbox_id },
+                    text_content: concept.label || concept_id,
+                });
                 wrapper.append(checkbox, label);
                 fieldset.appendChild(wrapper);
             });
-            pour_section.appendChild(fieldset);
-            fragment.appendChild(pour_section);
-        }
+            taxonomy_section.appendChild(fieldset);
+            fragment.appendChild(taxonomy_section);
+        });
         
         return fragment;
     }

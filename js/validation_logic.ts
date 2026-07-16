@@ -90,6 +90,186 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         if (appendix1.summaryText !== undefined && typeof appendix1.summaryText !== 'string') {
             return { isValid: false, message: t('rule_file_err_appendix1_summary_text_string') };
         }
+        if (appendix1.coverImage !== undefined && typeof appendix1.coverImage !== 'string') {
+            return { isValid: false, message: t('rule_file_err_appendix1_cover_image_string') };
+        }
+        if (
+            appendix1.groupingTaxonomyId !== undefined
+            && typeof appendix1.groupingTaxonomyId !== 'string'
+        ) {
+            return { isValid: false, message: t('rule_file_err_appendix1_grouping_taxonomy_id_string') };
+        }
+        if (appendix1.sections !== undefined) {
+            const sections_raw = appendix1.sections;
+            if (sections_raw === null || typeof sections_raw !== 'object') {
+                return { isValid: false, message: t('rule_file_err_appendix1_sections_invalid') };
+            }
+            const section_entries: Array<[string, unknown]> = Array.isArray(sections_raw)
+                ? sections_raw.map((section, index) => [String(index), section])
+                : Object.entries(sections_raw as Record<string, unknown>);
+
+            for (const [section_key, section] of section_entries) {
+                if (typeof section !== 'object' || section === null) {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_appendix1_section_not_object', { sectionKey: section_key }),
+                    };
+                }
+                const section_obj = section as Record<string, unknown>;
+                const section_id =
+                    typeof section_obj.id === 'string' && section_obj.id.trim()
+                        ? section_obj.id.trim()
+                        : section_key;
+
+                if (Array.isArray(sections_raw)) {
+                    if (!section_obj.id || typeof section_obj.id !== 'string' || !section_obj.id.trim()) {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_appendix1_section_id_string', { sectionKey: section_key }),
+                        };
+                    }
+                    if (
+                        section_obj.kind !== undefined
+                        && section_obj.kind !== 'content'
+                        && section_obj.kind !== 'deficiency_group'
+                    ) {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_appendix1_section_kind_invalid', { sectionKey: section_id }),
+                        };
+                    }
+                    if (
+                        section_obj.headingLevel !== undefined
+                        && section_obj.headingLevel !== 1
+                        && section_obj.headingLevel !== 2
+                    ) {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_appendix1_section_heading_level_invalid', {
+                                sectionKey: section_id,
+                            }),
+                        };
+                    }
+                    if (section_obj.conceptId !== undefined && typeof section_obj.conceptId !== 'string') {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_appendix1_section_concept_id_string', {
+                                sectionKey: section_id,
+                            }),
+                        };
+                    }
+                }
+
+                if (section_obj.title !== undefined && typeof section_obj.title !== 'string') {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_appendix1_section_title_string', { sectionKey: section_id }),
+                    };
+                }
+                if (section_obj.content !== undefined && typeof section_obj.content !== 'string') {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_appendix1_section_content_string', { sectionKey: section_id }),
+                    };
+                }
+                if (
+                    section_obj.format !== undefined
+                    && section_obj.format !== 'list'
+                    && section_obj.format !== 'paragraphs'
+                ) {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_appendix1_section_format_invalid', { sectionKey: section_id }),
+                    };
+                }
+            }
+        }
+    }
+
+    if (root.appendix2) {
+        if (typeof root.appendix2 !== 'object' || root.appendix2 === null) {
+            return { isValid: false, message: t('rule_file_err_appendix2_object') };
+        }
+        const appendix2 = root.appendix2 as Record<string, unknown>;
+        if (appendix2.labelsByLocale !== undefined) {
+            if (typeof appendix2.labelsByLocale !== 'object' || appendix2.labelsByLocale === null) {
+                return { isValid: false, message: t('rule_file_err_appendix2_labels_by_locale_object') };
+            }
+            for (const [locale, labels] of Object.entries(appendix2.labelsByLocale as Record<string, unknown>)) {
+                if (typeof labels !== 'object' || labels === null) {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_appendix2_locale_labels_object', { locale }),
+                    };
+                }
+                const labels_obj = labels as Record<string, unknown>;
+                if (labels_obj.sheetNames !== undefined) {
+                    if (typeof labels_obj.sheetNames !== 'object' || labels_obj.sheetNames === null) {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_appendix2_sheet_names_object', { locale }),
+                        };
+                    }
+                    const sheet_names = labels_obj.sheetNames as Record<string, unknown>;
+                    for (const sheet_key of ['general_info', 'deficiencies'] as const) {
+                        if (sheet_names[sheet_key] === undefined) continue;
+                        if (typeof sheet_names[sheet_key] !== 'string') {
+                            return {
+                                isValid: false,
+                                message: t('rule_file_err_appendix2_sheet_name_string', {
+                                    locale,
+                                    sheetKey: sheet_key,
+                                }),
+                            };
+                        }
+                    }
+                }
+                for (const list_key of ['generalInfo', 'deficiencyColumns'] as const) {
+                    const list = labels_obj[list_key];
+                    if (list === undefined) continue;
+                    if (!Array.isArray(list)) {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_appendix2_label_list_array', { locale, listKey: list_key }),
+                        };
+                    }
+                    for (const entry of list) {
+                        if (typeof entry !== 'object' || entry === null) {
+                            return {
+                                isValid: false,
+                                message: t('rule_file_err_appendix2_label_entry_object', { locale, listKey: list_key }),
+                            };
+                        }
+                        const entry_obj = entry as Record<string, unknown>;
+                        if (typeof entry_obj.key !== 'string') {
+                            return {
+                                isValid: false,
+                                message: t('rule_file_err_appendix2_label_key_string', { locale, listKey: list_key }),
+                            };
+                        }
+                        if (typeof entry_obj.label !== 'string') {
+                            return {
+                                isValid: false,
+                                message: t('rule_file_err_appendix2_label_value_string', { locale, listKey: list_key }),
+                            };
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (root.appendix3) {
+        if (typeof root.appendix3 !== 'object' || root.appendix3 === null) {
+            return { isValid: false, message: t('rule_file_err_appendix3_object') };
+        }
+        const appendix3 = root.appendix3 as Record<string, unknown>;
+        if (appendix3.title !== undefined && typeof appendix3.title !== 'string') {
+            return { isValid: false, message: t('rule_file_err_appendix3_title_string') };
+        }
+        if (appendix3.introText !== undefined && typeof appendix3.introText !== 'string') {
+            return { isValid: false, message: t('rule_file_err_appendix3_intro_text_string') };
+        }
     }
 
     if (root.reportTemplate) {

@@ -510,3 +510,22 @@
     width: fit-content;
     max-width: 100%;
 }
+
+/* Bilaga 2 visningsläge: täta punktlistor utan luft under rubrik */
+.rulefile-section-content h2:has(+ .rulefile-appendix2-value-list) {
+    margin-bottom: 0;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list {
+    margin: 0 0 0.75rem 1.5rem;
+    line-height: 1.35;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list li {
+    margin-bottom: 0.1rem;
+    padding-left: 0;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list li:last-child {
+    margin-bottom: 0;
+}

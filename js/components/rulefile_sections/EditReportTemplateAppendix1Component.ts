@@ -1,15 +1,10 @@
 /**
- * @fileoverview Redigerar Bilaga 1-standardtext (inledning) i regelfilens Rapportmall.
+ * @fileoverview Redigerar Bilaga 1-sektioner och grupperingstaxonomi i regelfilens Rapportmall.
  */
-import {
-    normalize_rulefile_appendix1,
-    read_rulefile_appendix1_sections,
-} from '../../logic/appendix1_sections.js';
+import { normalize_rulefile_appendix1 } from '../../logic/appendix1_sections.js';
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
-import {
-    render_appendix1_summary_editor_page,
-} from '../../utils/appendix1_summary_editor_render.js';
-import { type MarkdownPreviewEditorHost } from '../../utils/markdown_preview_editor_ui.js';
+import { create_rulefile_appendix_subpage_back_row } from './rulefile_appendix_templates_render.js';
+import { render_appendix1_sections_editor } from './rulefile_appendix1_sections_editor_ui.js';
 
 type Deps = {
     router: (view: string, params?: Record<string, string>) => void;
@@ -19,19 +14,20 @@ type Deps = {
     Translation: { t: (key: string) => string };
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
+        get_icon_svg?: (name: string) => string;
     };
     NotificationComponent: { show_global_message: (msg: string, type: string) => void };
+};
+
+type EditorHandles = {
+    get_sections: () => Array<Record<string, unknown>>;
+    get_grouping_taxonomy_id: () => string;
 };
 
 export class EditReportTemplateAppendix1Component {
     private root: HTMLElement | null = null;
     private deps: Deps | null = null;
-    private summary_host: MarkdownPreviewEditorHost = {
-        is_editing: false,
-        working_text: '',
-        textarea_ref: null,
-        preview_container_ref: null,
-    };
+    private editor_handles: EditorHandles | null = null;
 
     async init({ root, deps }: { root: HTMLElement; deps: Deps }): Promise<void> {
         this.root = root;
@@ -39,22 +35,21 @@ export class EditReportTemplateAppendix1Component {
     }
 
     private navigate_back_to_view(): void {
+        this.deps?.router('rulefile_sections', { section: 'report_template', appendix: '1' });
+    }
+
+    private navigate_back_to_hub(): void {
         this.deps?.router('rulefile_sections', { section: 'report_template' });
     }
 
-    private async save_introduction_content(content: string): Promise<void> {
-        if (!this.deps) return;
+    private async save_sections(): Promise<void> {
+        if (!this.deps || !this.editor_handles) return;
         const state = this.deps.getState();
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
         const normalized = normalize_rulefile_appendix1(rule_file);
-        const appendix = normalized.appendix1 as Record<string, unknown>;
-        const sections = { ...(appendix.sections as Record<string, unknown>) };
-        const existing = read_rulefile_appendix1_sections(normalized);
-        sections.introduction = {
-            ...existing.introduction,
-            content,
-        };
-        appendix.sections = sections;
+        const appendix = (normalized.appendix1 as Record<string, unknown>) || {};
+        appendix.sections = this.editor_handles.get_sections();
+        appendix.groupingTaxonomyId = this.editor_handles.get_grouping_taxonomy_id();
         normalized.appendix1 = appendix;
 
         await this.deps.dispatch({
@@ -68,7 +63,7 @@ export class EditReportTemplateAppendix1Component {
             // Fel visas av sync
         }
         this.deps.NotificationComponent.show_global_message(
-            this.deps.Translation.t('rulefile_appendix1_summary_saved'),
+            this.deps.Translation.t('rulefile_appendix1_section_saved'),
             'success'
         );
     }
@@ -78,37 +73,54 @@ export class EditReportTemplateAppendix1Component {
         this.root.innerHTML = '';
 
         const state = this.deps.getState();
-        const rule_file = state.ruleFileContent as Record<string, unknown> | undefined;
-        const introduction_text =
-            read_rulefile_appendix1_sections(rule_file).introduction?.content ?? '';
+        const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
+        const normalized = normalize_rulefile_appendix1(rule_file);
 
-        render_appendix1_summary_editor_page(
+        const heading = this.deps.Helpers.create_element('h2', {
+            attributes: { id: 'rulefile-appendix1-sections-heading' },
+            text_content: this.deps.Translation.t('rulefile_appendix1_sections_edit_heading'),
+        });
+        this.root.appendChild(heading);
+
+        const editor_host = this.deps.Helpers.create_element('div', {
+            class_name: 'appendix1-sections-editor-host',
+        });
+        this.editor_handles = render_appendix1_sections_editor(
             { Helpers: this.deps.Helpers, Translation: this.deps.Translation },
-            this.root,
-            {
-                heading_id: 'rulefile-appendix1-summary-heading',
-                heading_key: 'rulefile_appendix1_summary_heading',
-                intro_key: 'rulefile_appendix1_summary_intro',
-                label_key: 'rulefile_appendix1_summary_label',
-                textarea_id: 'rulefile-appendix1-summary-text',
-                initial_text: introduction_text,
-                summary_host: this.summary_host,
-                back_button_key: 'rulefile_info_blocks_back_to_view',
-                on_save: (text) => this.save_introduction_content(text),
-                on_discard: () => this.navigate_back_to_view(),
-                on_back: () => this.navigate_back_to_view(),
-            }
+            editor_host,
+            normalized
+        );
+        this.root.appendChild(editor_host);
+
+        const actions = this.deps.Helpers.create_element('div', { class_name: 'form-actions' });
+        const save_btn = this.deps.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary'],
+            attributes: { type: 'button' },
+            html_content: `<span>${this.deps.Translation.t('save_changes_button')}</span>${this.deps.Helpers.get_icon_svg?.('save') ?? ''}`,
+        });
+        save_btn.addEventListener('click', () => {
+            void this.save_sections();
+        });
+        const back_btn = this.deps.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            attributes: { type: 'button' },
+            text_content: this.deps.Translation.t('rulefile_info_blocks_back_to_view'),
+        });
+        back_btn.addEventListener('click', () => this.navigate_back_to_view());
+        actions.append(save_btn, back_btn);
+        this.root.appendChild(actions);
+
+        this.root.appendChild(
+            create_rulefile_appendix_subpage_back_row(
+                { Helpers: this.deps.Helpers, Translation: this.deps.Translation, router: this.deps.router },
+                () => this.navigate_back_to_hub()
+            )
         );
     }
 
     destroy(): void {
         this.root = null;
         this.deps = null;
-        this.summary_host = {
-            is_editing: false,
-            working_text: '',
-            textarea_ref: null,
-            preview_container_ref: null,
-        };
+        this.editor_handles = null;
     }
 }

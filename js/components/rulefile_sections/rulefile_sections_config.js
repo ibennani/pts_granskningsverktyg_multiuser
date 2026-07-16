@@ -25,7 +25,8 @@ export function get_section_config(section_id, t) {
             id: 'classifications',
             title: t('rulefile_section_classifications_title'),
             editRoute: 'rulefile_sections',
-            editSection: 'classifications'
+            editSection: 'classifications',
+            isEditable: true
         },
         page_types: {
             id: 'page_types',
@@ -43,7 +44,7 @@ export function get_section_config(section_id, t) {
         },
         report_template: {
             id: 'report_template',
-            title: t('rulefile_section_report_template_title'),
+            title: t('rulefile_section_appendix_templates_title'),
             editRoute: 'rulefile_sections',
             editSection: 'report_template',
             isEditable: true

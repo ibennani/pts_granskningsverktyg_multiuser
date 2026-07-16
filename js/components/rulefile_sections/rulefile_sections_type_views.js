@@ -9,7 +9,11 @@ import {
     resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { read_rulefile_appendix1_sections } from '../../logic/appendix1_sections.js';
+import { read_rulefile_appendix2_labels } from '../../logic/appendix2_excel_template.js';
+import { read_rulefile_appendix3_template } from '../../logic/appendix3_screenshots_template.js';
 import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
+import { render_rulefile_appendix_templates_hub } from './rulefile_appendix_templates_render.js';
+import { render_markdown_to_html } from '../../export/export_html_build_primitives.js';
 import '../../components/markdown_preview_editor.css';
 
 /**
@@ -214,10 +218,23 @@ export function render_rulefile_content_types_section(ctx, metadata) {
 }
 
 /**
+ * @param {{ Helpers: object, Translation: object, router: function }} ctx
+ */
+export function render_rulefile_appendix_templates_hub_section(ctx) {
+    const Helpers = ctx.Helpers;
+    const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+    render_rulefile_appendix_templates_hub(
+        { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
+        section
+    );
+    return section;
+}
+
+/**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} ruleFileContent
  */
-export function render_rulefile_report_template_section(ctx, ruleFileContent) {
+export function render_rulefile_appendix1_template_section(ctx, ruleFileContent) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
     const introduction_text =
@@ -245,6 +262,107 @@ export function render_rulefile_report_template_section(ctx, ruleFileContent) {
     );
 
     return section;
+}
+
+function append_value_bullet_list(Helpers, section, values) {
+    const list = Helpers.create_element('ul', {
+        class_name: ['metadata-list', 'rulefile-appendix2-value-list'],
+    });
+    values.forEach((text) => {
+        list.appendChild(Helpers.create_element('li', { text_content: text }));
+    });
+    section.appendChild(list);
+}
+
+/**
+ * @param {{ Helpers: object, Translation: object }} ctx
+ * @param {object} ruleFileContent
+ */
+export function render_rulefile_appendix2_template_section(ctx, ruleFileContent) {
+    const t = ctx.Translation.t;
+    const Helpers = ctx.Helpers;
+    const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+    const labels = read_rulefile_appendix2_labels(ruleFileContent);
+
+    section.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('rulefile_appendix2_view_intro'),
+        })
+    );
+    section.appendChild(
+        Helpers.create_element('h2', {
+            text_content: t('rulefile_appendix2_sheets_heading'),
+        })
+    );
+    append_value_bullet_list(Helpers, section, [
+        labels.sheetNames.general_info,
+        labels.sheetNames.deficiencies,
+    ]);
+    section.appendChild(
+        Helpers.create_element('h2', {
+            text_content: t('rulefile_appendix2_general_info_heading'),
+        })
+    );
+    append_value_bullet_list(
+        Helpers,
+        section,
+        labels.generalInfo.map((entry) => entry.label)
+    );
+    section.appendChild(
+        Helpers.create_element('h2', {
+            text_content: t('rulefile_appendix2_deficiencies_heading'),
+        })
+    );
+    append_value_bullet_list(
+        Helpers,
+        section,
+        labels.deficiencyColumns.map((entry) => entry.label)
+    );
+
+    return section;
+}
+
+/**
+ * @param {{ Helpers: object, Translation: object }} ctx
+ * @param {object} ruleFileContent
+ */
+export function render_rulefile_appendix3_template_section(ctx, ruleFileContent) {
+    const t = ctx.Translation.t;
+    const Helpers = ctx.Helpers;
+    const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+    const template = read_rulefile_appendix3_template(ruleFileContent);
+
+    section.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('rulefile_appendix3_view_intro'),
+        })
+    );
+
+    if (template.introText.trim()) {
+        const intro_wrapper = Helpers.create_element('div', {
+            class_name: 'markdown-preview-content',
+        });
+        if (typeof Helpers.safe_set_inner_html === 'function') {
+            Helpers.safe_set_inner_html(intro_wrapper, render_markdown_to_html(template.introText), {
+                allow_html: true,
+            });
+        } else {
+            intro_wrapper.textContent = template.introText;
+        }
+        section.appendChild(
+            Helpers.create_element('h2', { text_content: t('rulefile_appendix3_intro_label') })
+        );
+        section.appendChild(intro_wrapper);
+    }
+
+    return section;
+}
+
+/** @deprecated Använd render_rulefile_appendix1_template_section. */
+export function render_rulefile_report_template_section(ctx, ruleFileContent) {
+    return render_rulefile_appendix1_template_section(ctx, ruleFileContent);
 }
 
 /**

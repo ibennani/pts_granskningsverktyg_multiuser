@@ -1,174 +1,170 @@
 /**
  * @fileoverview Bilaga 1-sektioner: schema, defaults, resolve och platshållare.
  */
+import { DEFAULT_WCAG_TAXONOMY_ID, resolve_taxonomy_concepts } from '../../shared/classification/taxonomy_grouping.js';
 import default_sections_json from '../../shared/report_templates/appendix1_default_sv.json';
+import {
+    LEGACY_APPENDIX1_SECTION_KEY_ORDER,
+    LEGACY_SECTION_CONCEPT_ID,
+    migrate_appendix1_sections_object_to_array,
+    normalize_section_definition,
+    parse_appendix1_sections_raw,
+} from './appendix1_sections_migrate.js';
+import type {
+    Appendix1AuditSlice,
+    Appendix1PlaceholderContext,
+    Appendix1RulefileSlice,
+    Appendix1Section,
+    Appendix1SectionDefinition,
+    Appendix1SectionKey,
+    Appendix1SectionsMap,
+    Appendix1TocEntry,
+} from './appendix1_sections_types.js';
 
-export const APPENDIX1_SECTION_KEYS = [
-    'introduction',
-    'method',
-    'method_legal',
-    'method_scope',
-    'method_approach',
-    'results_intro',
-    'results_perceivable',
-    'results_operable',
-    'results_understandable',
-    'results_robust',
-] as const;
+export type {
+    Appendix1AuditSlice,
+    Appendix1PlaceholderContext,
+    Appendix1RulefileSlice,
+    Appendix1Section,
+    Appendix1SectionDefinition,
+    Appendix1SectionKey,
+    Appendix1SectionsMap,
+    Appendix1TocEntry,
+} from './appendix1_sections_types.js';
 
-export type Appendix1SectionKey = (typeof APPENDIX1_SECTION_KEYS)[number];
+export { normalize_section_definition } from './appendix1_sections_migrate.js';
+export {
+    LEGACY_SECTION_CONCEPT_ID,
+    migrate_appendix1_sections_object_to_array,
+} from './appendix1_sections_migrate.js';
 
-export type Appendix1SectionFormat = 'paragraphs' | 'list';
+/** Legacy nycklar i fast ordning (bakåtkompatibilitet). */
+export const APPENDIX1_SECTION_KEYS = LEGACY_APPENDIX1_SECTION_KEY_ORDER;
 
-export type Appendix1Section = {
-    title: string;
-    content: string;
-    format?: Appendix1SectionFormat;
-};
-
-export type Appendix1SectionsMap = Record<Appendix1SectionKey, Appendix1Section>;
-
-export type Appendix1RulefileSlice = {
-    appendix1?: {
-        summaryText?: unknown;
-        coverImage?: unknown;
-        sections?: Partial<Record<string, unknown>>;
-    };
-};
-
-export type Appendix1AuditSlice = {
-    ruleFileContent?: Appendix1RulefileSlice | null;
-    auditMetadata?: {
-        appendix1SummaryText?: unknown;
-        appendix1SectionOverrides?: unknown;
-        caseNumber?: unknown;
-        actorName?: unknown;
-        actorLink?: unknown;
-        auditorName?: unknown;
-        caseHandler?: unknown;
-        startTime?: unknown;
-        endTime?: unknown;
-        [key: string]: unknown;
-    };
-    startTime?: unknown;
-    endTime?: unknown;
-};
-
-export type Appendix1PlaceholderContext = {
-    caseNumber: string;
-    actorName: string;
-    actorLink: string;
-    actorLinkDomain: string;
-    auditorName: string;
-    caseHandler: string;
-    startDate: string;
-    endDate: string;
-    exportDate: string;
-};
-
-export type Appendix1TocEntry = {
-    section_id: string;
-    title: string;
-    heading_level: 1 | 2;
-};
-
-const DEFAULT_SECTIONS = default_sections_json as {
+const DEFAULT_TEMPLATE = default_sections_json as {
     coverImage: string;
-    sections: Appendix1SectionsMap;
+    groupingTaxonomyId: string;
+    sections: Appendix1SectionDefinition[];
 };
 
-const SECTION_HEADING_LEVEL: Record<Appendix1SectionKey, 1 | 2> = {
-    introduction: 1,
-    method: 1,
-    method_legal: 2,
-    method_scope: 2,
-    method_approach: 2,
-    results_intro: 1,
-    results_perceivable: 2,
-    results_operable: 2,
-    results_understandable: 2,
-    results_robust: 2,
-};
+/**
+ * @deprecated Använd conceptId på sektion (kind deficiency_group) i stället.
+ */
+export const APPENDIX1_SECTION_PRINCIPLE_ID: Partial<Record<Appendix1SectionKey, string>> =
+    LEGACY_SECTION_CONCEPT_ID;
 
-/** WCAG-princip-id per resultatsektion. */
-export const APPENDIX1_SECTION_PRINCIPLE_ID: Partial<Record<Appendix1SectionKey, string>> = {
-    results_perceivable: 'perceivable',
-    results_operable: 'operable',
-    results_understandable: 'understandable',
-    results_robust: 'robust',
-};
-
-export function get_appendix1_section_dom_id(section_key: string): string {
-    return `section-${String(section_key).replace(/_/g, '-')}`;
+function clone_sections_list(sections: Appendix1SectionDefinition[]): Appendix1SectionDefinition[] {
+    return JSON.parse(JSON.stringify(sections)) as Appendix1SectionDefinition[];
 }
 
-export function get_default_appendix1_sections(): Appendix1SectionsMap {
-    return JSON.parse(JSON.stringify(DEFAULT_SECTIONS.sections)) as Appendix1SectionsMap;
+export function get_default_appendix1_sections_list(): Appendix1SectionDefinition[] {
+    return clone_sections_list(DEFAULT_TEMPLATE.sections);
 }
 
-function normalize_section(raw: unknown): Appendix1Section | null {
-    if (!raw || typeof raw !== 'object') return null;
-    const entry = raw as Record<string, unknown>;
-    const title = typeof entry.title === 'string' ? entry.title : '';
-    const content = typeof entry.content === 'string' ? entry.content : '';
-    const format = entry.format === 'list' ? 'list' : 'paragraphs';
-    if (!title && !content) return null;
-    return { title, content, format };
+function definition_to_legacy_section(definition: Appendix1SectionDefinition): Appendix1Section {
+    return {
+        title: definition.title,
+        content: definition.content,
+        format: definition.format,
+    };
 }
 
-function read_sections_from_appendix1(appendix1: unknown): Partial<Appendix1SectionsMap> {
-    if (!appendix1 || typeof appendix1 !== 'object') return {};
-    const sections_raw = (appendix1 as Record<string, unknown>).sections;
-    if (!sections_raw || typeof sections_raw !== 'object') return {};
-    const result: Partial<Appendix1SectionsMap> = {};
+function sections_list_to_map(sections: Appendix1SectionDefinition[]): Appendix1SectionsMap {
+    const merged = merge_sections_by_id(get_default_appendix1_sections_list(), sections);
+    const result = {} as Appendix1SectionsMap;
     for (const key of APPENDIX1_SECTION_KEYS) {
-        const normalized = normalize_section((sections_raw as Record<string, unknown>)[key]);
-        if (normalized) {
-            result[key] = normalized;
+        const section = merged.find((entry) => entry.id === key);
+        if (section) {
+            result[key] = definition_to_legacy_section(section);
         }
     }
     return result;
 }
 
+function merge_sections_by_id(
+    base: Appendix1SectionDefinition[],
+    overrides: Appendix1SectionDefinition[]
+): Appendix1SectionDefinition[] {
+    const override_by_id = new Map(overrides.map((section) => [section.id, section]));
+    const seen = new Set<string>();
+    const merged = base.map((section) => {
+        seen.add(section.id);
+        const override = override_by_id.get(section.id);
+        return override ? { ...section, ...override, id: section.id } : section;
+    });
+    for (const section of overrides) {
+        if (!seen.has(section.id)) {
+            merged.push(section);
+        }
+    }
+    return merged;
+}
+
+/** @deprecated Använd get_default_appendix1_sections_list. */
+export function get_default_appendix1_sections(): Appendix1SectionsMap {
+    return sections_list_to_map(get_default_appendix1_sections_list());
+}
+
+export function get_appendix1_section_dom_id(section_id: string): string {
+    return `section-${String(section_id).replace(/_/g, '-')}`;
+}
+
+function read_sections_from_appendix1(appendix1: unknown): Appendix1SectionDefinition[] {
+    if (!appendix1 || typeof appendix1 !== 'object') return [];
+    return parse_appendix1_sections_raw((appendix1 as Record<string, unknown>).sections);
+}
+
+export function read_rulefile_appendix1_sections_list(
+    rule_file_content: Appendix1RulefileSlice | null | undefined
+): Appendix1SectionDefinition[] {
+    const defaults = get_default_appendix1_sections_list();
+    const from_file = read_sections_from_appendix1(rule_file_content?.appendix1);
+    if (from_file.length === 0) return defaults;
+    return merge_sections_by_id(defaults, from_file);
+}
+
+/** @deprecated Använd read_rulefile_appendix1_sections_list. */
 export function read_rulefile_appendix1_sections(
     rule_file_content: Appendix1RulefileSlice | null | undefined
 ): Appendix1SectionsMap {
-    const defaults = get_default_appendix1_sections();
-    const from_file = read_sections_from_appendix1(rule_file_content?.appendix1);
-    return { ...defaults, ...from_file };
+    return sections_list_to_map(read_rulefile_appendix1_sections_list(rule_file_content));
 }
 
 function read_audit_section_overrides(
     audit_metadata: { appendix1SectionOverrides?: unknown } | null | undefined
-): Partial<Appendix1SectionsMap> {
-    if (!audit_metadata?.appendix1SectionOverrides) return {};
+): Appendix1SectionDefinition[] {
+    if (!audit_metadata?.appendix1SectionOverrides) return [];
     return read_sections_from_appendix1({ sections: audit_metadata.appendix1SectionOverrides });
 }
 
-export function resolve_appendix1_sections(audit: Appendix1AuditSlice | null | undefined): Appendix1SectionsMap {
-    const base = read_rulefile_appendix1_sections(audit?.ruleFileContent ?? undefined);
-    if (!audit?.auditMetadata) return base;
-    const meta = audit.auditMetadata;
-    let merged = { ...base };
+export function resolve_appendix1_sections_list(
+    audit: Appendix1AuditSlice | null | undefined
+): Appendix1SectionDefinition[] {
+    let merged = read_rulefile_appendix1_sections_list(audit?.ruleFileContent ?? undefined);
+    if (!audit?.auditMetadata) return merged;
 
+    const meta = audit.auditMetadata;
     if (Object.prototype.hasOwnProperty.call(meta, 'appendix1SectionOverrides')) {
-        merged = { ...merged, ...read_audit_section_overrides(meta) };
+        merged = merge_sections_by_id(merged, read_audit_section_overrides(meta));
     }
 
     if (Object.prototype.hasOwnProperty.call(meta, 'appendix1SummaryText')) {
         const summary = read_audit_appendix1_summary_text(meta);
-        merged = {
-            ...merged,
-            introduction: {
-                ...merged.introduction,
-                title: merged.introduction?.title ?? get_default_appendix1_sections().introduction.title,
-                content: summary,
-                format: merged.introduction?.format ?? 'paragraphs',
-            },
-        };
+        merged = merged.map((section) =>
+            section.id === 'introduction'
+                ? { ...section, content: summary }
+                : section
+        );
     }
 
     return merged;
+}
+
+/** @deprecated Använd resolve_appendix1_sections_list. */
+export function resolve_appendix1_sections(
+    audit: Appendix1AuditSlice | null | undefined
+): Appendix1SectionsMap {
+    return sections_list_to_map(resolve_appendix1_sections_list(audit));
 }
 
 export function read_rulefile_appendix1_cover_image(
@@ -178,24 +174,30 @@ export function read_rulefile_appendix1_cover_image(
     return typeof raw === 'string' && raw.trim() ? raw.trim() : 'default';
 }
 
-function migrate_summary_text_to_sections(summary_text: string): Partial<Appendix1SectionsMap> {
+export function read_rulefile_appendix1_grouping_taxonomy_id(
+    rule_file_content: Appendix1RulefileSlice | null | undefined
+): string {
+    const raw = rule_file_content?.appendix1?.groupingTaxonomyId;
+    if (typeof raw === 'string' && raw.trim()) {
+        return raw.trim();
+    }
+    return DEFAULT_WCAG_TAXONOMY_ID;
+}
+
+function migrate_summary_text_to_sections(summary_text: string): Appendix1SectionDefinition[] {
     const trimmed = summary_text.trim();
-    if (!trimmed) return {};
-    return {
-        introduction: {
-            title: get_default_appendix1_sections().introduction.title,
-            content: trimmed,
-            format: 'paragraphs',
-        },
-    };
+    if (!trimmed) return [];
+    const defaults = get_default_appendix1_sections_list();
+    const introduction = defaults.find((section) => section.id === 'introduction');
+    if (!introduction) return [];
+    return [{ ...introduction, content: trimmed }];
 }
 
 export function normalize_rulefile_appendix1(
     rule_file_content: Record<string, unknown> | null | undefined
 ): Record<string, unknown> {
-    const base = rule_file_content && typeof rule_file_content === 'object'
-        ? { ...rule_file_content }
-        : {};
+    const base =
+        rule_file_content && typeof rule_file_content === 'object' ? { ...rule_file_content } : {};
     const appendix = base.appendix1;
     const appendix_obj =
         appendix && typeof appendix === 'object' && !Array.isArray(appendix)
@@ -204,28 +206,37 @@ export function normalize_rulefile_appendix1(
     const summary = appendix_obj.summaryText;
     appendix_obj.summaryText = typeof summary === 'string' ? summary : '';
 
-    const existing_sections = read_sections_from_appendix1(appendix_obj);
-    const has_sections = APPENDIX1_SECTION_KEYS.some((key) => existing_sections[key]);
+    const parsed_sections = parse_appendix1_sections_raw(appendix_obj.sections);
+    const has_sections = parsed_sections.length > 0;
     if (!has_sections && typeof summary === 'string' && summary.trim()) {
-        appendix_obj.sections = {
-            ...(typeof appendix_obj.sections === 'object' && appendix_obj.sections !== null
-                ? (appendix_obj.sections as Record<string, unknown>)
-                : {}),
-            ...migrate_summary_text_to_sections(summary),
-        };
-    } else if (!appendix_obj.sections || typeof appendix_obj.sections !== 'object') {
-        appendix_obj.sections = get_default_appendix1_sections();
+        appendix_obj.sections = merge_sections_by_id(
+            get_default_appendix1_sections_list(),
+            migrate_summary_text_to_sections(summary)
+        );
+    } else if (!has_sections) {
+        appendix_obj.sections = get_default_appendix1_sections_list();
+    } else if (Array.isArray(appendix_obj.sections)) {
+        appendix_obj.sections = merge_sections_by_id(
+            get_default_appendix1_sections_list(),
+            parsed_sections
+        );
+    } else if (appendix_obj.sections && typeof appendix_obj.sections === 'object') {
+        appendix_obj.sections = merge_sections_by_id(
+            get_default_appendix1_sections_list(),
+            migrate_appendix1_sections_object_to_array(appendix_obj.sections as Record<string, unknown>)
+        );
     } else {
-        const merged: Record<string, Appendix1Section> = { ...get_default_appendix1_sections() };
-        for (const key of APPENDIX1_SECTION_KEYS) {
-            const normalized = normalize_section((appendix_obj.sections as Record<string, unknown>)[key]);
-            if (normalized) merged[key] = normalized;
-        }
-        appendix_obj.sections = merged;
+        appendix_obj.sections = get_default_appendix1_sections_list();
     }
 
     if (typeof appendix_obj.coverImage !== 'string' || !appendix_obj.coverImage.trim()) {
         appendix_obj.coverImage = 'default';
+    }
+    if (
+        typeof appendix_obj.groupingTaxonomyId !== 'string'
+        || !appendix_obj.groupingTaxonomyId.trim()
+    ) {
+        appendix_obj.groupingTaxonomyId = DEFAULT_WCAG_TAXONOMY_ID;
     }
 
     base.appendix1 = appendix_obj;
@@ -273,7 +284,10 @@ export function build_appendix1_placeholder_context(
     };
 }
 
-export function apply_appendix1_placeholders(text: string, context: Appendix1PlaceholderContext): string {
+export function apply_appendix1_placeholders(
+    text: string,
+    context: Appendix1PlaceholderContext
+): string {
     return text
         .replaceAll('{{caseNumber}}', context.caseNumber)
         .replaceAll('{{actorName}}', context.actorName)
@@ -286,12 +300,14 @@ export function apply_appendix1_placeholders(text: string, context: Appendix1Pla
         .replaceAll('{{exportDate}}', context.exportDate);
 }
 
+/** @deprecated Använd section.headingLevel. */
 export function get_appendix1_section_heading_level(section_key: Appendix1SectionKey): 1 | 2 {
-    return SECTION_HEADING_LEVEL[section_key];
+    const section = get_default_appendix1_sections_list().find((entry) => entry.id === section_key);
+    return section?.headingLevel ?? 1;
 }
 
 export function build_appendix1_toc_entries(
-    sections: Appendix1SectionsMap,
+    sections: Appendix1SectionDefinition[],
     t: (key: string) => string
 ): Appendix1TocEntry[] {
     const entries: Appendix1TocEntry[] = [
@@ -301,13 +317,12 @@ export function build_appendix1_toc_entries(
             heading_level: 1,
         },
     ];
-    for (const key of APPENDIX1_SECTION_KEYS) {
-        const section = sections[key];
-        if (!section?.title) continue;
+    for (const section of sections) {
+        if (!section.title) continue;
         entries.push({
-            section_id: get_appendix1_section_dom_id(key),
+            section_id: get_appendix1_section_dom_id(section.id),
             title: section.title,
-            heading_level: get_appendix1_section_heading_level(key),
+            heading_level: section.headingLevel,
         });
     }
     return entries;
@@ -326,7 +341,9 @@ export function with_initialized_appendix1_summary_metadata<T extends Appendix1A
             next_meta.appendix1SummaryText = legacy;
         } else {
             next_meta.appendix1SummaryText =
-                read_rulefile_appendix1_sections(state.ruleFileContent).introduction?.content ?? '';
+                read_rulefile_appendix1_sections_list(state.ruleFileContent).find(
+                    (section) => section.id === 'introduction'
+                )?.content ?? '';
         }
         changed = true;
     }
@@ -342,13 +359,15 @@ export function with_initialized_appendix1_summary_metadata<T extends Appendix1A
     };
 }
 
-/** @deprecated Använd resolve_appendix1_sections och introduction-innehåll. */
+/** @deprecated Använd resolve_appendix1_sections_list och introduction-innehåll. */
 export function read_rulefile_appendix1_summary_text(
     rule_file_content: Appendix1RulefileSlice | null | undefined
 ): string {
-    const sections = read_rulefile_appendix1_sections(rule_file_content);
-    if (sections.introduction?.content?.trim()) {
-        return sections.introduction.content;
+    const introduction = read_rulefile_appendix1_sections_list(rule_file_content).find(
+        (section) => section.id === 'introduction'
+    );
+    if (introduction?.content?.trim()) {
+        return introduction.content;
     }
     const raw = rule_file_content?.appendix1?.summaryText;
     return typeof raw === 'string' ? raw : '';
@@ -362,7 +381,7 @@ export function read_audit_appendix1_summary_text(
     return typeof raw === 'string' ? raw : '';
 }
 
-/** @deprecated Använd resolve_appendix1_sections. */
+/** @deprecated Använd resolve_appendix1_sections_list. */
 export function resolve_appendix1_summary_text(audit: Appendix1AuditSlice | null | undefined): string {
     if (!audit) return '';
     const meta = audit.auditMetadata;
@@ -370,4 +389,41 @@ export function resolve_appendix1_summary_text(audit: Appendix1AuditSlice | null
         return read_audit_appendix1_summary_text(meta);
     }
     return read_rulefile_appendix1_summary_text(audit.ruleFileContent ?? undefined);
+}
+
+/** Ersätter deficiency_group-sektioner utifrån vald grupperingstaxonomi. */
+export function generate_deficiency_sections_from_taxonomy(
+    rule_file_content: Record<string, unknown> | null | undefined,
+    t: (key: string) => string
+): Appendix1SectionDefinition[] {
+    const taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(rule_file_content);
+    const concepts = resolve_taxonomy_concepts(rule_file_content?.metadata, taxonomy_id, t);
+    const existing = read_rulefile_appendix1_sections_list(rule_file_content);
+    const without_groups = existing.filter((section) => section.kind !== 'deficiency_group');
+    const existing_by_concept = new Map(
+        existing
+            .filter((section) => section.kind === 'deficiency_group' && section.conceptId)
+            .map((section) => [String(section.conceptId).trim().toLowerCase(), section])
+    );
+    const deficiency_sections = concepts.map((concept, index) => {
+        const concept_id = String(concept.id);
+        const prior = existing_by_concept.get(concept_id.toLowerCase());
+        return {
+            id: prior?.id ?? `results_${concept_id}`,
+            kind: 'deficiency_group' as const,
+            headingLevel: 2 as const,
+            conceptId: concept_id,
+            title: prior?.title ?? `3.${index + 1} ${concept.label}`,
+            content: prior?.content ?? '',
+        };
+    });
+    const intro_index = without_groups.findIndex((section) => section.id === 'results_intro');
+    if (intro_index >= 0) {
+        return [
+            ...without_groups.slice(0, intro_index + 1),
+            ...deficiency_sections,
+            ...without_groups.slice(intro_index + 1),
+        ];
+    }
+    return [...without_groups, ...deficiency_sections];
 }

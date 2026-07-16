@@ -19,6 +19,11 @@ import {
     get_expected_observation,
     get_actor_comment
 } from './export_word_deficiency_queries.js';
+import {
+    get_primary_grouping_taxonomy_id,
+    resolve_taxonomy_concepts,
+    sort_concept_ids_for_display,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 // Hjälpfunktioner för formatering
 export function create_heading_text(text: string, level = 2) {
@@ -38,10 +43,38 @@ export function create_body_text(text: string, size = 22) {
     });
 }
 
+/** Dynamisk principlista från primär grupperingstaxonomi och bristindex. */
+function build_principle_breakdown_paragraphs(
+    current_audit: Record<string, unknown>,
+    score_analysis: { principles?: Record<string, { labelKey?: string; label?: string; score?: number }> } | null,
+    t: (key: string, opts?: Record<string, unknown>) => string
+): Paragraph[] {
+    const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+    const concepts = resolve_taxonomy_concepts(rule_content?.metadata, taxonomy_id, t);
+    const principle_ids = sort_concept_ids_for_display(
+        Object.keys(score_analysis?.principles || {}),
+        rule_content?.metadata,
+        taxonomy_id
+    );
+    const label_by_id = new Map(concepts.map((concept) => [concept.id, concept.label]));
+
+    return principle_ids.map((principle_id) => {
+        const principle_data = score_analysis?.principles?.[principle_id];
+        const label = principle_data?.labelKey
+            ? t(principle_data.labelKey)
+            : (principle_data?.label || label_by_id.get(principle_id) || principle_id);
+        return new Paragraph({
+            children: create_body_text(label, 22)
+        });
+    });
+}
+
 export function _create_overview_page(current_audit: any, t: (key: string, opts?: Record<string, unknown>) => string) {
     const lang_code = get_current_language_code_from_registry();
     const score_analysis = ScoreCalculator.calculateQualityScore(current_audit) as {
         totalScore?: number;
+        principles?: Record<string, { labelKey?: string; label?: string; score?: number }>;
     } | null;
 
     // Skapa tabell för förstasida
@@ -146,18 +179,7 @@ export function _create_overview_page(current_audit: any, t: (key: string, opts?
                                 children: [create_heading_text(t('principle_breakdown'), 2)],
                                 heading: HeadingLevel.HEADING_2
                             }),
-                            new Paragraph({
-                                children: create_body_text(t('perceivable'), 22)
-                            }),
-                            new Paragraph({
-                                children: create_body_text(t('operable'), 22)
-                            }),
-                            new Paragraph({
-                                children: create_body_text(t('understandable'), 22)
-                            }),
-                            new Paragraph({
-                                children: create_body_text(t('robust'), 22)
-                            })
+                            ...build_principle_breakdown_paragraphs(current_audit, score_analysis, t)
                         ],
                         width: { size: 50, type: WidthType.PERCENTAGE }
                     })

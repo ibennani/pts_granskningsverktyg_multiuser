@@ -1,8 +1,9 @@
 /**
  * @fileoverview Bygger minimal taggad HTML för PDF-bilaga 3: h1, h2 (filnamn) och img med alt.
  */
-import { escape_html_internal } from './export_html_build_primitives.js';
+import { escape_html_internal, render_markdown_to_html } from './export_html_build_primitives.js';
 import { build_report_pdf_print_css } from './export_report_typography.js';
+import { resolve_appendix3_screenshots_template } from '../logic/appendix3_screenshots_template.js';
 import {
     get_screenshots_appendix_max_image_height_cm,
     type PreparedScreenshotsAppendixPdfItem,
@@ -17,6 +18,8 @@ function resolve_screenshots_appendix_doc_title(
     current_audit: Record<string, unknown>,
     t: ExportScreenshotsAppendixHtmlT
 ): string {
+    const resolved = resolve_appendix3_screenshots_template(current_audit as never);
+    if (resolved.title.trim()) return resolved.title;
     const actor = String(
         (current_audit.auditMetadata as { actorName?: string } | undefined)?.actorName ||
             t('filename_fallback_actor')
@@ -25,6 +28,12 @@ function resolve_screenshots_appendix_doc_title(
         (current_audit.auditMetadata as { caseNumber?: string } | undefined)?.caseNumber || ''
     ).trim();
     return case_num ? `${case_num} ${actor}` : actor;
+}
+
+function build_screenshots_appendix_intro_html(current_audit: Record<string, unknown>): string {
+    const resolved = resolve_appendix3_screenshots_template(current_audit as never);
+    if (!resolved.introText.trim()) return '';
+    return render_markdown_to_html(resolved.introText);
 }
 
 /** Bilaga 3: endast body-innehåll utan main/section/figure (h1, h2, img). */
@@ -55,6 +64,10 @@ export function build_screenshots_appendix_body_html(
     t: ExportScreenshotsAppendixHtmlT
 ): string {
     let html = `<h1>${escape_html_internal(resolve_screenshots_appendix_doc_title(current_audit, t))}</h1>`;
+    const intro_html = build_screenshots_appendix_intro_html(current_audit);
+    if (intro_html) {
+        html += intro_html;
+    }
 
     if (items.length === 0) {
         html += escape_html_internal(t('export_screenshots_appendix_empty'));
@@ -84,7 +97,11 @@ export function build_screenshots_appendix_pdf_title_chunk(
     t: ExportScreenshotsAppendixHtmlT
 ): string {
     const doc_title = resolve_screenshots_appendix_doc_title(current_audit, t);
-    const body_html = `<h1>${escape_html_internal(resolve_screenshots_appendix_doc_title(current_audit, t))}</h1>`;
+    let body_html = `<h1>${escape_html_internal(doc_title)}</h1>`;
+    const intro_html = build_screenshots_appendix_intro_html(current_audit);
+    if (intro_html) {
+        body_html += intro_html;
+    }
     return build_screenshots_appendix_pdf_html_document(doc_title, body_html);
 }
 
