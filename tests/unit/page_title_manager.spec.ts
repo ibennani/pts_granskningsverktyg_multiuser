@@ -61,7 +61,7 @@ function make_t_simple() {
         rulefile_section_sample_types_title: 'Granskningsdelstyper',
         rulefile_section_info_blocks_order_title: 'Informationsblock',
         rulefile_section_classifications_title: 'Klassificeringar',
-        rulefile_section_report_template_title: 'Mall'
+        rulefile_section_appendix_templates_title: 'Mall'
     };
     return (key: string, vars?: Record<string, unknown>) => {
         if (key === 'handle_updated_assessments_title' && vars?.count === '') return 'Uppdateringar';

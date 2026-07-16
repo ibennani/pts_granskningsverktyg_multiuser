@@ -4,9 +4,21 @@
  */
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import { append_sampletype_deficiency_chart_block } from './SampleTypeDeficiencyChartComponent.js';
+import {
+    WCAG_PRINCIPLE_FALLBACK_ORDER,
+} from '../../shared/classification/taxonomy_grouping.js';
 
-/** Samma ordning som serverns WCAG_PRINCIPLE_IDS. */
-const WCAG_PRINCIPLE_ORDER = ['perceivable', 'operable', 'understandable', 'robust'];
+/** Sorterar begrepps-id:n för statistikvy (fallback om metadata saknas). */
+function sort_principle_ids_for_statistics(principle_ids) {
+    const fallback_order = [...WCAG_PRINCIPLE_FALLBACK_ORDER];
+    const fallback_index = new Map(fallback_order.map((id, index) => [id, index]));
+    return [...new Set(principle_ids)].sort((a, b) => {
+        const index_a = fallback_index.get(a) ?? 9999;
+        const index_b = fallback_index.get(b) ?? 9999;
+        if (index_a !== index_b) return index_a - index_b;
+        return String(a).localeCompare(String(b), 'sv');
+    });
+}
 
 /**
  * @param {HTMLElement} el
@@ -154,7 +166,8 @@ export function append_statistics_sampletype_chart_block(plate, t, Helpers, char
  */
 export function append_statistics_score_analysis_block(plate, t, Helpers, Translation, year_data) {
     const pmd = year_data.principle_median_deficiency || {};
-    const has_median_data = WCAG_PRINCIPLE_ORDER.some((id) => {
+    const principle_order = sort_principle_ids_for_statistics(Object.keys(pmd));
+    const has_median_data = principle_order.some((id) => {
         const v = pmd[id];
         return v !== null && v !== undefined && !Number.isNaN(Number(v));
     });
@@ -197,7 +210,7 @@ export function append_statistics_score_analysis_block(plate, t, Helpers, Transl
     const completed = year_data.completed_count || 0;
     const get_override = () => {
         const principles = {};
-        for (const id of WCAG_PRINCIPLE_ORDER) {
+        for (const id of principle_order) {
             const raw = pmd[id];
             const n =
                 raw !== null && raw !== undefined && !Number.isNaN(Number(raw)) ? Number(raw) : 0;

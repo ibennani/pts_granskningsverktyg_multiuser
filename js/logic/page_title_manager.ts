@@ -118,7 +118,7 @@ export function get_page_title_prefix(
                 sample_types: 'rulefile_section_sample_types_title',
                 info_blocks_order: 'rulefile_section_info_blocks_order_title',
                 classifications: 'rulefile_section_classifications_title',
-                report_template: 'rulefile_section_report_template_title'
+                report_template: 'rulefile_section_appendix_templates_title'
             };
             const section = params.section || params.editSection || 'general';
             if (view_name === 'rulefile_sections' && section_to_menu_key[section]) {

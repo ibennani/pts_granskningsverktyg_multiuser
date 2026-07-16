@@ -10,7 +10,9 @@ export function create_element(tag_name, options = {}) {
     if (options.html_content) element.innerHTML = options.html_content;
     if (options.attributes) {
         for (const attr in options.attributes) {
-            element.setAttribute(attr, options.attributes[attr]);
+            const value = options.attributes[attr];
+            if (value === undefined || value === null) continue;
+            element.setAttribute(attr, String(value));
         }
     }
     if (options.event_listeners) {

@@ -3,6 +3,11 @@ import {
     deficiency_gauge_zone_stroke_css,
     get_deficiency_gauge_zone_boundary_degrees
 } from '../logic/deficiency_color_scale.js';
+import {
+    get_primary_grouping_taxonomy_id,
+    sort_concept_ids_for_display,
+    WCAG_PRINCIPLE_FALLBACK_ORDER,
+} from '../../shared/classification/taxonomy_grouping.js';
 import "./score_analysis_component.css";
 
 export const ScoreAnalysisComponent = {
@@ -99,14 +104,14 @@ export const ScoreAnalysisComponent = {
         // Fallback: graferna ska alltid vara synliga även innan något granskats.
         if (!analysis) {
             const safe_sample_count = this.getState()?.samples?.length || 0;
+            const rule_content = this.getState()?.ruleFileContent;
+            const empty_principles = calculateQualityScore({
+                ruleFileContent: rule_content,
+                samples: [],
+            }).principles;
             analysis = {
                 totalScore: 0,
-                principles: {
-                    perceivable: { labelKey: 'perceivable', score: 0 },
-                    operable: { labelKey: 'operable', score: 0 },
-                    understandable: { labelKey: 'understandable', score: 0 },
-                    robust: { labelKey: 'robust', score: 0 }
-                },
+                principles: empty_principles,
                 sampleCount: safe_sample_count
             };
         }
@@ -161,14 +166,21 @@ export const ScoreAnalysisComponent = {
 
         const list_container = this.Helpers.create_element('ul', { class_name: 'score-analysis-principles__list' });
 
-        const default_order = ['perceivable', 'operable', 'understandable', 'robust'];
+        const rule_content = this.getState()?.ruleFileContent;
+        const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
         const principle_ids = Object.keys(analysis.principles || {});
-        const ordered_principle_ids = default_order.every(id => principle_ids.includes(id))
-            ? default_order
-            : principle_ids;
+        let ordered_principle_ids = sort_concept_ids_for_display(
+            principle_ids,
+            rule_content?.metadata,
+            taxonomy_id
+        );
+        if (ordered_principle_ids.length === 0) {
+            ordered_principle_ids = [...WCAG_PRINCIPLE_FALLBACK_ORDER];
+        }
 
         for (const principleId of ordered_principle_ids) {
             const data = analysis.principles[principleId];
+            if (!data) continue;
 
             const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
             const formattedScore = this.Helpers.format_number_locally(data.score, lang_code);

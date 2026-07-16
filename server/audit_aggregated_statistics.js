@@ -8,9 +8,10 @@ import {
 } from '../js/audit_logic.ts';
 import { calculateQualityScore } from '../js/logic/ScoreCalculator.js';
 import { resolve_sample_vocab } from '../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { WCAG_PRINCIPLE_FALLBACK_ORDER } from '../shared/classification/taxonomy_grouping.js';
 
-/** Ordning för WCAG 2.2 POUR-principer (samma som i ScoreCalculator). */
-export const WCAG_PRINCIPLE_IDS = ['perceivable', 'operable', 'understandable', 'robust'];
+/** Fallback-ordning om inga begrepp har samlats in (bakåtkompatibilitet). */
+export const WCAG_PRINCIPLE_IDS = [...WCAG_PRINCIPLE_FALLBACK_ORDER];
 
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 /** Klienten ersätter med översatt etikett. */
@@ -299,14 +300,15 @@ function monitoring_sections_payload(by_monitoring) {
  */
 
 /**
- * Median bristindex (0–100) per WCAG-princip för valt år.
+ * Median bristindex (0–100) per taxonomibegrepp för valt år.
  * @param {Record<string, number[]>|undefined} principle_scores
  * @returns {Record<string, number|null>}
  */
 function principle_median_deficiency_payload(principle_scores) {
     /** @type {Record<string, number|null>} */
     const out = {};
-    for (const id of WCAG_PRINCIPLE_IDS) {
+    const ids = Object.keys(principle_scores || {});
+    for (const id of ids) {
         const arr = principle_scores?.[id];
         if (!Array.isArray(arr) || arr.length === 0) {
             out[id] = null;
@@ -316,6 +318,28 @@ function principle_median_deficiency_payload(principle_scores) {
         out[id] = med === null ? null : Math.round(med * 10) / 10;
     }
     return out;
+}
+
+/** @returns {Record<string, number[]>} */
+function create_empty_principle_scores() {
+    return {};
+}
+
+/**
+ * Lägger till ett bristindex-värde per begrepp från ScoreCalculator.
+ * @param {Record<string, number[]>} principle_scores
+ * @param {Record<string, { score?: number }>|undefined} principles
+ */
+function append_principle_scores(principle_scores, principles) {
+    if (!principles || typeof principles !== 'object') return;
+    for (const [id, entry] of Object.entries(principles)) {
+        const value = entry && typeof entry.score === 'number' && !Number.isNaN(entry.score)
+            ? entry.score
+            : null;
+        if (value === null) continue;
+        if (!Array.isArray(principle_scores[id])) principle_scores[id] = [];
+        principle_scores[id].push(value);
+    }
 }
 
 /**
@@ -348,7 +372,7 @@ function worst_sample_type_payload(by_sample_type_scores) {
 function create_empty_monitoring_year_detail() {
     return {
         durations: [],
-        principle_scores: Object.fromEntries(WCAG_PRINCIPLE_IDS.map((id) => [id, []])),
+        principle_scores: create_empty_principle_scores(),
         total_scores: [],
         sample_counts: [],
         by_sample_type_scores: new Map(),
@@ -526,7 +550,7 @@ export function build_statistics_from_audit_rows(rows) {
             by_year.set(year, {
                 durations: [],
                 by_monitoring: new Map(),
-                principle_scores: Object.fromEntries(WCAG_PRINCIPLE_IDS.map((id) => [id, []])),
+                principle_scores: create_empty_principle_scores(),
                 total_scores: [],
                 sample_counts: [],
                 by_sample_type_scores: new Map(),
@@ -583,14 +607,8 @@ export function build_statistics_from_audit_rows(rows) {
                     yb.total_scores.push(ts);
                     msub.total_scores.push(ts);
                 }
-                for (const id of WCAG_PRINCIPLE_IDS) {
-                    const p = qs.principles[id];
-                    const v = p && typeof p.score === 'number' && !Number.isNaN(p.score) ? p.score : null;
-                    if (v !== null) {
-                        yb.principle_scores[id].push(v);
-                        msub.principle_scores[id].push(v);
-                    }
-                }
+                append_principle_scores(yb.principle_scores, qs.principles);
+                append_principle_scores(msub.principle_scores, qs.principles);
             }
         }
         const mon = ensure_monitoring_bucket(yb.by_monitoring, monitoring_label);

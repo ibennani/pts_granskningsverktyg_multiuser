@@ -7,6 +7,7 @@ import {
     create_inline_input,
     create_small_button
 } from './rulefile_metadata_list_controls.js';
+import { render_taxonomies_editor } from '../rulefile_sections/rulefile_taxonomies_editor_ui.js';
 
 export function renderPageTypesEditor(ctx, container, workingMetadata) {
     container.innerHTML = '';
@@ -128,83 +129,5 @@ export function renderContentTypesEditor(ctx, container, workingMetadata) {
 }
 
 export function renderTaxonomiesEditor(ctx, container, workingMetadata) {
-    container.innerHTML = '';
-    const { Helpers, Translation } = ctx;
-    if (!Array.isArray(workingMetadata.taxonomies) || workingMetadata.taxonomies.length === 0) {
-        container.appendChild(Helpers.create_element('p', {
-            class_name: 'editable-empty',
-            text_content: Translation.t('rulefile_metadata_empty_value')
-        }));
-    }
-
-    workingMetadata.taxonomies.forEach((taxonomy, taxonomyIndex) => {
-        if (!taxonomy) {
-            workingMetadata.taxonomies[taxonomyIndex] = { id: '', label: '', version: '', uri: '', concepts: [] };
-            taxonomy = workingMetadata.taxonomies[taxonomyIndex];
-        }
-        taxonomy.concepts = Array.isArray(taxonomy.concepts) ? taxonomy.concepts : [];
-
-        const card = Helpers.create_element('article', { class_name: 'editable-card' });
-        const headingRow = Helpers.create_element('div', { class_name: 'editable-card-header' });
-        const heading = Helpers.create_element('h3', { text_content: taxonomy.label || Translation.t('rulefile_metadata_untitled_item') });
-        const removeTaxonomyInitial = Translation.t('rulefile_metadata_remove_taxonomy', { name: heading.textContent });
-        const removeTaxonomyBtn = create_small_button(ctx, removeTaxonomyInitial, 'delete', () => {
-            workingMetadata.taxonomies.splice(taxonomyIndex, 1);
-            renderTaxonomiesEditor(ctx, container, workingMetadata);
-        }, 'danger', { plainText: true, ariaLabel: removeTaxonomyInitial });
-        headingRow.append(heading, removeTaxonomyBtn);
-        card.appendChild(headingRow);
-
-        card.appendChild(create_inline_input(ctx, 'rulefile_metadata_field_label', taxonomy.label || '', value => {
-            taxonomy.label = value;
-            const updatedName = value || Translation.t('rulefile_metadata_untitled_item');
-            heading.textContent = updatedName;
-            const updatedLabel = Translation.t('rulefile_metadata_remove_taxonomy', { name: updatedName });
-            removeTaxonomyBtn.updateButtonText?.(updatedLabel, updatedLabel);
-        }));
-        card.appendChild(create_inline_input(ctx, 'rulefile_metadata_field_taxonomy_version', taxonomy.version || '', value => {
-            taxonomy.version = value;
-        }));
-        card.appendChild(create_inline_input(ctx, 'rulefile_metadata_field_taxonomy_uri', taxonomy.uri || '', value => {
-            taxonomy.uri = value;
-        }));
-
-        const conceptList = Helpers.create_element('div', { class_name: 'editable-sublist' });
-        taxonomy.concepts.forEach((concept, conceptIndex) => {
-            if (!concept) {
-                taxonomy.concepts[conceptIndex] = { id: '', label: '' };
-                concept = taxonomy.concepts[conceptIndex];
-            }
-            const row = Helpers.create_element('div', { class_name: 'editable-list-row' });
-            const conceptName = concept.label || Translation.t('rulefile_metadata_untitled_item');
-            const removeConceptInitial = Translation.t('rulefile_metadata_remove_taxonomy_concept', { name: conceptName });
-            const removeConceptBtn = create_small_button(ctx, removeConceptInitial, 'delete', () => {
-                taxonomy.concepts.splice(conceptIndex, 1);
-                renderTaxonomiesEditor(ctx, container, workingMetadata);
-            }, 'danger', { plainText: true, ariaLabel: removeConceptInitial });
-            row.appendChild(create_inline_input(ctx, 'rulefile_metadata_field_label', concept.label || '', value => {
-                concept.label = value;
-                const updatedName = value || Translation.t('rulefile_metadata_untitled_item');
-                const updatedLabel = Translation.t('rulefile_metadata_remove_taxonomy_concept', { name: updatedName });
-                removeConceptBtn.updateButtonText?.(updatedLabel, updatedLabel);
-            }));
-            row.appendChild(removeConceptBtn);
-            conceptList.appendChild(row);
-        });
-
-        const addConceptBtn = create_small_button(ctx, 'rulefile_metadata_add_taxonomy_concept', 'add', () => {
-            taxonomy.concepts.push({ id: '', label: '' });
-            renderTaxonomiesEditor(ctx, container, workingMetadata);
-        });
-        conceptList.appendChild(addConceptBtn);
-
-        card.appendChild(conceptList);
-        container.appendChild(card);
-    });
-
-    const addTaxonomyBtn = create_small_button(ctx, 'rulefile_metadata_add_taxonomy', 'add', () => {
-        workingMetadata.taxonomies.push({ id: '', label: '', version: '', uri: '', concepts: [] });
-        renderTaxonomiesEditor(ctx, container, workingMetadata);
-    });
-    container.appendChild(addTaxonomyBtn);
+    render_taxonomies_editor(ctx, container, workingMetadata);
 }

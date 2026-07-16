@@ -446,7 +446,7 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
                 error: 'PDF_EXPORT_AUDIT_NOT_FOUND',
             });
         }
-        const { htmlContent, htmlChunks } = req.body || {};
+        const { htmlContent, htmlChunks, pdfDocumentKind } = req.body || {};
         const chunks = Array.isArray(htmlChunks)
             ? htmlChunks.filter((chunk) => typeof chunk === 'string')
             : [];
@@ -478,7 +478,10 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
                 max_bytes: PDF_EXPORT_HTML_MAX_BYTES,
             });
         }
-        const pdf_buffer = await generate_pdf_from_html({ htmlContent });
+        const pdf_buffer = await generate_pdf_from_html({
+            htmlContent,
+            documentKind: pdfDocumentKind === 'appendix1' ? 'appendix1' : 'default',
+        });
         res.setHeader('Content-Type', 'application/pdf');
         res.send(pdf_buffer);
     } catch (err) {

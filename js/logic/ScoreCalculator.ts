@@ -1,12 +1,17 @@
 /**
- * @fileoverview Bristindex (0–100) per WCAG POUR-princip; samma publika API som tidigare ScoreCalculator.js.
+ * @fileoverview Bristindex (0–100) per primär grupperingstaxonomi; samma publika API som tidigare ScoreCalculator.js.
  */
 
 import { get_stored_requirement_result_for_def } from '../audit_logic.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { normalize_requirements_to_record } from './requirement_lookup.js';
 import { count_failed_pass_criteria_under_passed_checks } from './score_calculator_passed_check_failures.js';
-import { resolve_taxonomies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import {
+    get_concept_ids_for_requirement,
+    get_primary_grouping_taxonomy_id,
+    resolve_taxonomy_concepts,
+    type TaxonomyConcept,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 type RuleFileContentLike = {
     requirements?: unknown;
@@ -27,6 +32,32 @@ type RequirementDefLike = {
     contentType?: string[];
     classifications?: Array<{ taxonomyId?: string; conceptId?: string }>;
 };
+
+function identity_translation(key: string): string {
+    return key;
+}
+
+function build_empty_principles_report(
+    rule_file_content: RuleFileContentLike | null | undefined
+): Record<string, { labelKey?: string; label: string; score: number }> {
+    const taxonomy_id = get_primary_grouping_taxonomy_id(
+        rule_file_content as Record<string, unknown> | null | undefined
+    );
+    const concepts = resolve_taxonomy_concepts(
+        rule_file_content?.metadata,
+        taxonomy_id,
+        identity_translation
+    );
+    const report: Record<string, { labelKey?: string; label: string; score: number }> = {};
+    concepts.forEach((concept) => {
+        report[concept.id] = {
+            ...(concept.labelKey ? { labelKey: concept.labelKey } : {}),
+            label: concept.label,
+            score: 0,
+        };
+    });
+    return report;
+}
 
 function _calculate_requirement_weight (requirement: RequirementDefLike): number {
     const impact = requirement?.metadata?.impact;
@@ -72,12 +103,7 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
         consoleManager.log('[ScoreCalculator] auditState is null or undefined');
         return {
             totalScore: 0,
-            principles: {
-                perceivable: { labelKey: 'perceivable', score: 0 },
-                operable: { labelKey: 'operable', score: 0 },
-                understandable: { labelKey: 'understandable', score: 0 },
-                robust: { labelKey: 'robust', score: 0 }
-            },
+            principles: build_empty_principles_report(null),
             sampleCount: 0
         };
     }
@@ -86,31 +112,19 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
         consoleManager.log('[ScoreCalculator] Missing requirements in ruleFileContent');
         return {
             totalScore: 0,
-            principles: {
-                perceivable: { labelKey: 'perceivable', score: 0 },
-                operable: { labelKey: 'operable', score: 0 },
-                understandable: { labelKey: 'understandable', score: 0 },
-                robust: { labelKey: 'robust', score: 0 }
-            },
+            principles: build_empty_principles_report(audit_state.ruleFileContent),
             sampleCount: safe_sample_count
         };
     }
 
-    const taxonomies = resolve_taxonomies(audit_state.ruleFileContent.metadata);
-    const classifications = Array.isArray(taxonomies)
-        ? (taxonomies as Array<{ id?: string }>).find((tax) => tax?.id === 'wcag22-pour')
-        : null;
-
-    const concepts =
-        Array.isArray((classifications as { concepts?: unknown } | null)?.concepts)
-        && ((classifications as { concepts: unknown[] }).concepts.length > 0)
-            ? (classifications as { concepts: Array<{ id: string; labelKey?: string; label: string }> }).concepts
-            : [
-                { id: 'perceivable', labelKey: 'perceivable', label: 'Perceivable' },
-                { id: 'operable', labelKey: 'operable', label: 'Operable' },
-                { id: 'understandable', labelKey: 'understandable', label: 'Understandable' },
-                { id: 'robust', labelKey: 'robust', label: 'Robust' }
-            ];
+    const taxonomy_id = get_primary_grouping_taxonomy_id(
+        audit_state.ruleFileContent as Record<string, unknown>
+    );
+    const concepts: TaxonomyConcept[] = resolve_taxonomy_concepts(
+        audit_state.ruleFileContent.metadata,
+        taxonomy_id,
+        identity_translation
+    );
 
     let total_max_weight = 0;
     let total_deductions = 0;
@@ -128,9 +142,14 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
 
             total_max_weight += req_weight;
 
-            const principle_id = req_def.classifications?.find((c) => c.taxonomyId === 'wcag22-pour')?.conceptId;
-            if (principle_id && Object.prototype.hasOwnProperty.call(principle_scores, principle_id)) {
-                principle_scores[principle_id].maxWeight += req_weight;
+            const concept_ids = get_concept_ids_for_requirement(
+                req_def as Record<string, unknown>,
+                taxonomy_id
+            );
+            for (const principle_id of concept_ids) {
+                if (Object.prototype.hasOwnProperty.call(principle_scores, principle_id)) {
+                    principle_scores[principle_id].maxWeight += req_weight;
+                }
             }
 
             const requirements_obj = audit_state.ruleFileContent?.requirements;
@@ -148,8 +167,10 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
             const adjusted_deductions = Math.min(deficiency_points_for_req, req_weight);
 
             total_deductions += adjusted_deductions;
-            if (principle_id && Object.prototype.hasOwnProperty.call(principle_scores, principle_id)) {
-                principle_scores[principle_id].deductions += adjusted_deductions;
+            for (const principle_id of concept_ids) {
+                if (Object.prototype.hasOwnProperty.call(principle_scores, principle_id)) {
+                    principle_scores[principle_id].deductions += adjusted_deductions;
+                }
             }
         });
     });

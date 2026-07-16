@@ -114,7 +114,17 @@ export class AuditSettingsViewComponent {
         if (!this.deps) return;
         await this.deps.dispatch({
             type: this.deps.StoreActionTypes.UPDATE_METADATA,
-            payload: { appendix1SummaryText: text, skip_render: true },
+            payload: {
+                appendix1SummaryText: text,
+                appendix1SectionOverrides: {
+                    introduction: {
+                        title: '1. Inledning',
+                        content: text,
+                        format: 'paragraphs',
+                    },
+                },
+                skip_render: true,
+            },
         });
         try {
             await sync_to_server_now(this.deps.getState, this.deps.dispatch);

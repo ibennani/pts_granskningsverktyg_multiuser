@@ -6,6 +6,10 @@ import { extractDeficiencyNumber } from './export_format_helpers.js';
 import { get_export_requirement_result } from './export_bootstrap.js';
 import { REPORT_EXPORT_COLORS } from './export_report_typography.js';
 import { parse_markdown_to_text_runs } from './export_word_markdown_docx.js';
+import {
+    get_concept_labels_for_requirement,
+    get_primary_grouping_taxonomy_id,
+} from '../../shared/classification/taxonomy_grouping.js';
 
 // Gemensam hjälpfunktion för att extrahera referensnummer från en krav-referens
 export function extract_reference_number(requirement: any) {
@@ -71,24 +75,12 @@ export function create_metadata_paragraphs(
         }
     }
 
-    // Principer
+    // Principer (primär grupperingstaxonomi)
     {
-        const classifications = Array.isArray(requirement.classifications) ? requirement.classifications : [];
-        const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(
-            (taxonomy_entry: any) => taxonomy_entry.id === 'wcag22-pour'
-        );
-        const norm = (v: any) => String(v ?? '').trim().toLowerCase();
-        const principle_texts = taxonomy
-            ? classifications
-                .filter((c: any) => norm(c.taxonomyId) === 'wcag22-pour')
-                .map((c: any) => {
-                    const concept = taxonomy.concepts?.find?.((x: any) => norm(x?.id) === norm(c.conceptId));
-                    return (typeof concept?.label === 'string' && concept.label.trim())
-                        ? concept.label
-                        : c.conceptId;
-                })
-                .filter(Boolean)
-            : [];
+        const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
+        const metadata = rule_content?.metadata;
+        const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+        const principle_texts = get_concept_labels_for_requirement(requirement, metadata, taxonomy_id, _t);
 
         if (principle_texts.length > 0) {
             metadata_items.push(

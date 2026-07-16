@@ -104,13 +104,6 @@ describe('ScoreCalculator', () => {
     });
 
     test('calculates deficiency score correctly for failures', () => {
-        // Setup a failure
-        // Weight calculation: isCritical=true (1.0) * sqrt(10 + 0.5*5) = sqrt(12.5) ≈ 3.535
-        // Failure count = 1.
-        // Deduction = min(1 * 3.535, 3.535) = 3.535.
-        // Total Max Weight = 3.535.
-        // Index = (3.535 / 3.535) * 100 = 100.
-        
         const state = {
             ruleFileContent: mockRuleFileContent,
             samples: [
@@ -161,6 +154,84 @@ describe('ScoreCalculator', () => {
         // If I set overallStatus to 'passed', it should count the failure.
         expect(result).not.toBeNull();
         expect(result.totalScore).toBe(100.0);
+    });
+
+    test('räknar bristindex för alla kopplade begrepp, inte bara första', () => {
+        const multi_concept_requirement = {
+            ...mockRequirement,
+            classifications: [
+                { taxonomyId: 'wcag22-pour', conceptId: 'perceivable' },
+                { taxonomyId: 'wcag22-pour', conceptId: 'operable' }
+            ]
+        };
+        const state = {
+            ruleFileContent: {
+                metadata: { taxonomies: [mockTaxonomy] },
+                requirements: { req_1: multi_concept_requirement }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    selectedContentTypes: ['web'],
+                    requirementResults: {
+                        req_1: {
+                            checkResults: {
+                                check_1: {
+                                    overallStatus: 'passed',
+                                    passCriteria: { pc_1: { status: 'failed' } }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const result = calculateQualityScore(state);
+        expect(result.principles.perceivable.score).toBe(100);
+        expect(result.principles.operable.score).toBe(100);
+        expect(result.principles.understandable.score).toBe(0);
+    });
+
+    test('använder primaryGroupingTaxonomyId när den finns', () => {
+        const custom_taxonomy = {
+            id: 'custom-group',
+            concepts: [
+                { id: 'group_a', label: 'Grupp A' },
+                { id: 'group_b', label: 'Grupp B' }
+            ]
+        };
+        const custom_requirement = {
+            ...mockRequirement,
+            classifications: [{ taxonomyId: 'custom-group', conceptId: 'group_a' }]
+        };
+        const state = {
+            ruleFileContent: {
+                metadata: {
+                    primaryGroupingTaxonomyId: 'custom-group',
+                    taxonomies: [custom_taxonomy]
+                },
+                requirements: { req_1: custom_requirement }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    selectedContentTypes: ['web'],
+                    requirementResults: {
+                        req_1: {
+                            checkResults: {
+                                check_1: { overallStatus: 'passed', passCriteria: {} }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const result = calculateQualityScore(state);
+        expect(result.principles.group_a).toBeDefined();
+        expect(result.principles.group_b).toBeDefined();
+        expect(result.principles.perceivable).toBeUndefined();
     });
 });
 

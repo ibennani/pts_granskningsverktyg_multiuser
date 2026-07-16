@@ -11,6 +11,8 @@ import {
 } from '../utils/traverse_audit_data.js';
 import { ensure_samples_attached_media_shape } from '../logic/sample_attached_media_normalize.js';
 import { with_initialized_appendix1_summary_metadata, normalize_rulefile_appendix1 } from '../logic/appendix1_summary_text.js';
+import { normalize_rulefile_appendix2 } from '../logic/appendix2_excel_template.js';
+import { normalize_rulefile_appendix3 } from '../logic/appendix3_screenshots_template.js';
 import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
 
 export function reduce_initialize_new_audit (_current_state: any, action: any) {
@@ -43,7 +45,9 @@ export function reduce_discard_prepared_audit (current_state: any, _action: any)
 }
 
 export function reduce_initialize_rulefile_editing (_current_state: any, action: any) {
-    const normalized_content = normalize_rulefile_appendix1(action.payload.ruleFileContent);
+    let normalized_content = normalize_rulefile_appendix1(action.payload.ruleFileContent);
+    normalized_content = normalize_rulefile_appendix2(normalized_content);
+    normalized_content = normalize_rulefile_appendix3(normalized_content);
     return {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,

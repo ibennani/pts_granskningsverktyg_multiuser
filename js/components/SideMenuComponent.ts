@@ -404,7 +404,7 @@ export class SideMenuComponent {
                     { label: t('rulefile_metadata_section_content_types'), view_name: 'rulefile_sections', params: { section: 'content_types' } },
                     { label: t('rulefile_section_info_blocks_order_title'), view_name: 'rulefile_sections', params: { section: 'info_blocks_order' } },
                     { label: t('rulefile_section_classifications_title'), view_name: 'rulefile_sections', params: { section: 'classifications' } },
-                    { label: t('rulefile_section_report_template_title'), view_name: 'rulefile_sections', params: { section: 'report_template' } },
+                    { label: t('rulefile_section_appendix_templates_title'), view_name: 'rulefile_sections', params: { section: 'report_template' } },
                     { label: this.get_view_heading_label('audit_rules'), view_name: 'audit_rules', back_to_start: true }
                 ]
             };
