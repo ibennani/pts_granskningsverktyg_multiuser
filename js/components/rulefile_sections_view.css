@@ -1,4 +1,4 @@
-/* css/components/rulefile_sections_view.css */
+﻿/* css/components/rulefile_sections_view.css */
 
 .rulefile-sections-main-plate {
     width: 100%;
@@ -53,7 +53,7 @@
 }
 
 .rulefile-sections-content-plate {
-    /* Content plate för högerinnehållet */
+    /* Content plate f├Âr h├Âgerinneh├Ñllet */
     width: 100%;
 }
 
@@ -106,7 +106,7 @@
     line-height: 1.6;
 }
 
-/* Kompakt styling för Allmän information-redigeringsformuläret */
+/* Kompakt styling f├Âr Allm├ñn information-redigeringsformul├ñret */
 .rulefile-section-edit-form-container .rulefile-metadata-edit-form {
     gap: 0.75rem;
 }
@@ -143,7 +143,7 @@
     gap: 0.75rem;
 }
 
-/* Definition lists - förbättrad läsbarhet */
+/* Definition lists - f├Ârb├ñttrad l├ñsbarhet */
 .rulefile-section-content .metadata-definition-list {
     margin: 0;
     padding: 0;
@@ -215,7 +215,7 @@
 }
 
 
-/* Visningsläge: kompakt numrerad lista (ol/li) */
+/* Visningsl├ñge: kompakt numrerad lista (ol/li) */
 .info-blocks-order-list {
     list-style-type: decimal;
     padding-left: 1.5rem;
@@ -320,7 +320,7 @@
     color: var(--text-color);
 }
 
-/* Förbättringar för metadata cards */
+/* F├Ârb├ñttringar f├Âr metadata cards */
 .rulefile-section-content .metadata-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -355,7 +355,7 @@
     padding: 1rem 0;
 }
 
-/* Styling för sidtyper */
+/* Styling f├Âr sidtyper */
 .page-types-list-heading {
     margin: 0 0 0.25rem 0;
 }
@@ -433,7 +433,7 @@
     line-height: 1.6;
 }
 
-/* Förbättringar för länkar i innehållet */
+/* F├Ârb├ñttringar f├Âr l├ñnkar i inneh├Ñllet */
 .rulefile-section-content a {
     color: var(--link-color);
     text-decoration: underline;
@@ -444,7 +444,7 @@
     color: var(--link-hover-color);
 }
 
-/* Förbättringar för report sections */
+/* F├Ârb├ñttringar f├Âr report sections */
 .rulefile-section-content .report-sections-list {
     display: flex;
     flex-direction: column;
@@ -476,7 +476,7 @@
     padding: 0.75rem 0;
 }
 
-/* Responsive design – menyn ovanför innehållet vid skärmar under 1200 px */
+/* Responsive design ÔÇô menyn ovanf├Âr inneh├Ñllet vid sk├ñrmar under 1200 px */
 @media (max-width: 1199px) {
     .rulefile-sections-layout {
         flex-direction: column;
@@ -491,4 +491,22 @@
         flex: none;
     }
 
+}
+
+/* Bilaga 2 Excel-redigerare: flikväljare på samma rad som etiketten */
+.rulefile-appendix2-section .rulefile-appendix2-sheet-select-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rulefile-appendix2-section .rulefile-appendix2-sheet-select-group label {
+    margin: 0;
+}
+
+.rulefile-appendix2-section .rulefile-appendix2-sheet-select {
+    width: fit-content;
+    max-width: 100%;
 }

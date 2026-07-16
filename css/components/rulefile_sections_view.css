@@ -492,3 +492,21 @@
     }
 
 }
+
+/* Bilaga 2 Excel-redigerare: flikväljare på samma rad som etiketten */
+.rulefile-appendix2-section .rulefile-appendix2-sheet-select-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rulefile-appendix2-section .rulefile-appendix2-sheet-select-group label {
+    margin: 0;
+}
+
+.rulefile-appendix2-section .rulefile-appendix2-sheet-select {
+    width: fit-content;
+    max-width: 100%;
+}
