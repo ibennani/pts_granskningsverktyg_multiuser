@@ -100,8 +100,10 @@ function build_actions_cell(
 ): HTMLElement {
     const { Helpers } = ctx;
     const actions = Helpers.create_element('td', { class_name: 'audit-types-actions-cell' });
-    actions.appendChild(build_edit_button(ctx, row, taxonomies, on_saved));
-    actions.appendChild(build_delete_button(ctx, on_delete));
+    const stack = Helpers.create_element('div', { class_name: 'audit-types-actions-stack' });
+    stack.appendChild(build_edit_button(ctx, row, taxonomies, on_saved));
+    stack.appendChild(build_delete_button(ctx, on_delete));
+    actions.appendChild(stack);
     return actions;
 }
 
@@ -279,14 +281,6 @@ export function render_audit_types_editor(
     table_host.classList.add('audit-types-table-wrapper');
     container.appendChild(table_host);
 
-    const rerender_table = () => {
-        render_audit_types_table(ctx, table_host, working_metadata, {
-            read_only: false,
-            on_change: options.on_change,
-        });
-    };
-    rerender_table();
-
     const add_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-default', 'button-small', 'audit-types-add-button'],
         attributes: { type: 'button' },
@@ -309,5 +303,13 @@ export function render_audit_types_editor(
             }
         );
     });
-    container.appendChild(add_btn);
+
+    const rerender_table = () => {
+        render_audit_types_table(ctx, table_host, working_metadata, {
+            read_only: false,
+            on_change: options.on_change,
+        });
+        table_host.appendChild(add_btn);
+    };
+    rerender_table();
 }

@@ -936,6 +936,9 @@
 
 .rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .audit-types-add-button {
     flex-shrink: 0;
+    align-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) > .form-actions {
@@ -1044,22 +1047,40 @@
     max-width: 24rem;
 }
 
-.audit-types-actions-header,
-.audit-types-actions-cell {
-    width: 1%;
+.audit-types-actions-header {
+    width: auto;
+    min-width: 14rem;
     white-space: nowrap;
     vertical-align: top;
     text-align: left;
     border-left: none;
 }
 
+.audit-types-actions-cell {
+    width: auto;
+    min-width: 14rem;
+    vertical-align: top;
+    text-align: left;
+    border-left: none;
+}
+
+.audit-types-actions-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: fit-content;
+    max-width: 100%;
+}
+
 .audit-types-row-edit-button,
 .audit-types-row-delete-button {
     white-space: nowrap;
-}
-
-.audit-types-row-delete-button {
-    margin-left: 0.35rem;
+    align-self: flex-start;
+    width: auto;
+    max-width: 100%;
+    margin-right: 0;
+    flex-shrink: 0;
 }
 
 .audit-types-add-button {

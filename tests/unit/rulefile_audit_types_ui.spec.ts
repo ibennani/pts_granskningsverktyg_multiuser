@@ -136,6 +136,39 @@ describe('rulefile_audit_types_ui', () => {
         expect(container.querySelector('.audit-types-row-delete-button')).not.toBeNull();
     });
 
+    test('Åtgärdscellen staplar Redigera och Ta bort vänsterjusterat', () => {
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: { t: (key: string) => key },
+        };
+        render_audit_types_editor(ctx, container, { ...sample_metadata });
+
+        const actions_cell = container.querySelector('.audit-types-actions-cell') as HTMLTableCellElement;
+        expect(actions_cell).not.toBeNull();
+        expect(actions_cell.children.length).toBe(1);
+
+        const stack = actions_cell.querySelector(':scope > .audit-types-actions-stack') as HTMLElement;
+        expect(stack).not.toBeNull();
+        expect(stack.children.length).toBe(2);
+        expect(stack.querySelector(':scope > .audit-types-row-edit-button')).not.toBeNull();
+        expect(stack.querySelector(':scope > .audit-types-row-delete-button')).not.toBeNull();
+    });
+
+    test('Lägg till-knappen ligger i tabellayouten och följer tabellens bredd', () => {
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: { t: (key: string) => key },
+        };
+        render_audit_types_editor(ctx, container, { ...sample_metadata });
+
+        const layout = container.querySelector('.rulefile-classifications-table-layout') as HTMLElement;
+        const add_button = container.querySelector('.audit-types-add-button') as HTMLButtonElement;
+        expect(layout).not.toBeNull();
+        expect(add_button).not.toBeNull();
+        expect(add_button.parentElement).toBe(layout);
+        expect(layout.querySelector('.audit-types-scroll-wrapper')?.parentElement).toBe(layout);
+    });
+
     test('Filter visas när tabellen har minst tre rader', () => {
         const ctx = {
             Helpers: create_helpers(),
