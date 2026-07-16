@@ -939,7 +939,7 @@
   "rulefile_sections_edit_report_template_aria": "Redigera standardtext för Bilaga 1",
   "markdown_preview_editor_edit_button": "Redigera",
   "markdown_preview_editor_save_button": "Spara",
-  "markdown_preview_editor_show_preview_button": "Visa förhandsgranskning",
+  "markdown_preview_editor_discard_button": "Återgå utan att spara",
   "markdown_preview_editor_empty": "Ingen text är angiven ännu.",
   "rule_file_err_appendix1_object": "appendix1 måste vara ett objekt",
   "rule_file_err_appendix1_summary_text_string": "appendix1.summaryText måste vara en sträng",

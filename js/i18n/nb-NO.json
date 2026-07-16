@@ -1045,7 +1045,7 @@
   "manage_users_title": "Brukere i verktøyet",
   "markdown_preview_editor_edit_button": "Rediger",
   "markdown_preview_editor_save_button": "Lagre",
-  "markdown_preview_editor_show_preview_button": "Vis forhåndsvisning",
+  "markdown_preview_editor_discard_button": "Gå tilbake uten å lagre",
   "markdown_preview_editor_empty": "Ingen tekst er angitt ennå.",
   "manage_users_update_success": "Brukeren er oppdatert.",
   "mark_all_unreviewed_passed_button": "Merk alle ugjennomgåtte som \"Ingen merknader\"",

@@ -247,16 +247,13 @@ export function render_audit_settings_summary_section(
             on_save: async (text) => {
                 await handlers.on_summary_save(text);
             },
+            on_discard: handlers.on_back,
+            on_back: handlers.on_back,
+            back_button_key: back_label_key,
         }
     );
     summary_section.classList.add('audit-settings__summary-section');
     plate.appendChild(summary_section);
-
-    if (!readonly) {
-        plate.appendChild(
-            create_back_row(helpers, t, back_label_key, handlers.on_back)
-        );
-    }
 }
 
 export function normalize_audit_settings_section(raw: unknown): AuditSettingsSection {

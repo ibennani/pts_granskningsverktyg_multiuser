@@ -977,7 +977,7 @@
   "manage_users_title": "Users in Leffe",
   "markdown_preview_editor_edit_button": "Edit",
   "markdown_preview_editor_save_button": "Save",
-  "markdown_preview_editor_show_preview_button": "Show preview",
+  "markdown_preview_editor_discard_button": "Return without saving",
   "markdown_preview_editor_empty": "No text has been entered yet.",
   "manage_users_update_success": "User has been updated.",
   "mark_all_unreviewed_passed_button": "Mark all unreviewed as \"No remarks\"",
