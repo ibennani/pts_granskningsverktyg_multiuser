@@ -86,6 +86,7 @@ describe('page_title_manager', () => {
 
     afterEach(() => {
         document.title = '';
+        window.history.pushState({}, '', '/');
     });
 
     test('build_page_title returnerar suffix och vytext', () => {
@@ -338,6 +339,33 @@ describe('page_title_manager', () => {
         const title = build_page_title('start', {}, { getState, Translation });
         expect(title.startsWith('Bolag')).toBe(false);
         expect(title).toContain('Hantera granskningar');
+    });
+
+    test('build_page_title är identisk på test-server och v2', () => {
+        const title_v2 = (() => {
+            window.history.pushState({}, '', '/v2/');
+            return build_page_title('start', {}, { getState, Translation });
+        })();
+        const title_test = (() => {
+            window.history.pushState({}, '', '/test-server/');
+            return build_page_title('start', {}, { getState, Translation });
+        })();
+        expect(title_test).toBe(title_v2);
+        expect(title_test).toContain('Hantera granskningar');
+    });
+
+    test('updatePageTitle med testserver-prefix på /test-server/', () => {
+        window.history.pushState({}, '', '/test-server/');
+        updatePageTitle('start', {}, { getState, Translation });
+        expect(document.title.startsWith('Testserver Leffe: ')).toBe(true);
+        expect(document.title).toContain('Hantera granskningar');
+    });
+
+    test('updatePageTitle utan testserver-prefix på /v2/', () => {
+        window.history.pushState({}, '', '/v2/');
+        updatePageTitle('start', {}, { getState, Translation });
+        expect(document.title.startsWith('Testserver Leffe: ')).toBe(false);
+        expect(document.title).toContain('Hantera granskningar');
     });
 
     test('updatePageTitle skriver document.title', () => {

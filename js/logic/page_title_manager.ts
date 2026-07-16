@@ -4,6 +4,7 @@
  */
 
 import { consoleManager } from '../utils/console_manager.js';
+import { apply_test_server_document_title_prefix } from './test_server_indicator.js';
 
 /** Krav i regelfil (löst, för uppslag i state). */
 type RulefileRequirement = {
@@ -375,7 +376,7 @@ export function updatePageTitle(
         );
         return;
     }
-    document.title = new_title;
+    document.title = apply_test_server_document_title_prefix(new_title);
 }
 
 export type UpdatePageTitleFromCurrentViewArgs = {

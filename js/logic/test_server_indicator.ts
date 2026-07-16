@@ -10,6 +10,9 @@ const VIEWPORT_CLASS = 'test-server-viewport';
 const BANNER_CLASS = 'test-server-banner';
 const BANNER_ID = 'test-server-banner';
 
+/** Prefix i document.title på testservern (inte dev eller /v2/). */
+export const TEST_SERVER_DOCUMENT_TITLE_PREFIX = 'Testserver Leffe: ';
+
 declare global {
     interface Window {
         BUILD_INFO?: {
@@ -46,6 +49,13 @@ export function apply_test_server_viewport_indicator(): void {
     const body = document.body;
     if (!body) return;
     body.insertBefore(banner, body.firstChild);
+}
+
+/** Lägger till testserver-prefix i sidtitel när appen körs under /test-server/. */
+export function apply_test_server_document_title_prefix(title: string): string {
+    const trimmed = String(title ?? '').trim();
+    if (!trimmed || !is_test_server_instance()) return trimmed;
+    return `${TEST_SERVER_DOCUMENT_TITLE_PREFIX}${trimmed}`;
 }
 
 /** Uppdaterar banner-text efter att build-info laddats. */

@@ -1,6 +1,7 @@
 import {
     format_test_server_banner_text,
     apply_test_server_viewport_indicator,
+    apply_test_server_document_title_prefix,
     update_test_server_banner_text
 } from '../../js/logic/test_server_indicator.ts';
 
@@ -48,5 +49,19 @@ describe('test_server_indicator', () => {
         apply_test_server_viewport_indicator();
         expect(document.getElementById('test-server-banner')).toBeNull();
         expect(document.documentElement.classList.contains('test-server-viewport')).toBe(false);
+    });
+
+    test('apply_test_server_document_title_prefix på test-server', () => {
+        window.history.pushState({}, '', '/test-server/');
+        expect(apply_test_server_document_title_prefix('Hantera granskningar | Digital tillsyn')).toBe(
+            'Testserver Leffe: Hantera granskningar | Digital tillsyn'
+        );
+    });
+
+    test('apply_test_server_document_title_prefix utanför test-server', () => {
+        window.history.pushState({}, '', '/v2/');
+        expect(apply_test_server_document_title_prefix('Hantera granskningar | Digital tillsyn')).toBe(
+            'Hantera granskningar | Digital tillsyn'
+        );
     });
 });
