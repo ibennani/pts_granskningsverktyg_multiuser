@@ -5,7 +5,7 @@ import { open_http_href_in_background_tab } from '../logic/open_all_sample_urls_
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 import {
-    resolve_content_types,
+    // resolve_content_types,
     resolve_sample_vocab
 } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
@@ -107,12 +107,12 @@ export const SampleListComponent = {
             this.ul_element_for_delegation.innerHTML = '';
         }
         
-        // Skapa lookup-maps (tål att metadata/vokabulärer saknas i vissa lägen).
-        const content_types_map = new Map();
-        const content_types = resolve_content_types(state?.ruleFileContent?.metadata);
-        content_types.forEach(parent => {
-            (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
-        });
+        // Innehållstyper visas inte i granskningsdelslistan (tillfälligt dolt).
+        // const content_types_map = new Map();
+        // const content_types = resolve_content_types(state?.ruleFileContent?.metadata);
+        // content_types.forEach(parent => {
+        //     (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
+        // });
 
         const sample_categories_map = new Map();
         const sample_subcategories_map = new Map();
@@ -189,21 +189,22 @@ export const SampleListComponent = {
                 }));
             }
             
-            if (sample.selectedContentTypes?.length > 0) {
-                const content_types_heading_id = `sample-content-types-heading-${sample.id}`;
-                const content_types_wrapper = create_element('div', { class_name: 'content-types-wrapper' });
-                content_types_wrapper.appendChild(create_element('h3', {
-                    class_name: 'audit-status-stack__distribution-title',
-                    id: content_types_heading_id,
-                    text_content: t('content_types') + ':'
-                }));
-                const tags_container = create_element('div', { class_name: 'content-types-tags-container' });
-                sample.selectedContentTypes.forEach(ct_id => {
-                    tags_container.appendChild(create_element('span', { class_name: 'content-type-tag', text_content: escape_html(content_types_map.get(ct_id) || ct_id) }));
-                });
-                content_types_wrapper.appendChild(tags_container);
-                info_div.appendChild(content_types_wrapper);
-            }
+            // Innehållstyper visas inte i granskningsdelslistan (tillfälligt dolt).
+            // if (sample.selectedContentTypes?.length > 0) {
+            //     const content_types_heading_id = `sample-content-types-heading-${sample.id}`;
+            //     const content_types_wrapper = create_element('div', { class_name: 'content-types-wrapper' });
+            //     content_types_wrapper.appendChild(create_element('h3', {
+            //         class_name: 'audit-status-stack__distribution-title',
+            //         id: content_types_heading_id,
+            //         text_content: t('content_types') + ':'
+            //     }));
+            //     const tags_container = create_element('div', { class_name: 'content-types-tags-container' });
+            //     sample.selectedContentTypes.forEach(ct_id => {
+            //         tags_container.appendChild(create_element('span', { class_name: 'content-type-tag', text_content: escape_html(content_types_map.get(ct_id) || ct_id) }));
+            //     });
+            //     content_types_wrapper.appendChild(tags_container);
+            //     info_div.appendChild(content_types_wrapper);
+            // }
             li.appendChild(info_div);
 
             const actions_wrapper_div = create_element('div', { class_name: 'sample-actions-wrapper' });
