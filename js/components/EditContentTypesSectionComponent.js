@@ -586,8 +586,7 @@ export const EditContentTypesSectionComponent = {
         const save_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button', 'aria-label': t('rulefile_metadata_save_content_types') },
-            html_content: `<span>${t('rulefile_metadata_save_content_types')}</span>` +
-                (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+            html_content: this.Helpers.build_save_button_html_content(t('rulefile_metadata_save_content_types')),
         });
         save_button.addEventListener('click', async () => {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });

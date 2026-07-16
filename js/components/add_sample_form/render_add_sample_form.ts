@@ -159,16 +159,12 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
 
     // --- Actions ---
     const actions_div = component.Helpers.create_element('div', { class_name: 'form-actions' });
-    const save_button = component.Helpers.create_element('button', { class_name: ['button', 'button-primary'], attributes: { type: 'submit' } });
     const button_text = component.current_editing_sample_id ? t('save_changes_button') : t('save_sample_button');
-    const button_span = component.Helpers.create_element('span', { text_content: button_text });
-    save_button.appendChild(button_span);
-    if (component.Helpers.get_icon_svg) {
-        const icon_svg = component.Helpers.get_icon_svg(component.current_editing_sample_id ? 'save' : 'add');
-        if (icon_svg) {
-            save_button.insertAdjacentHTML('beforeend', icon_svg);
-        }
-    }
+    const save_button = component.Helpers.create_element('button', {
+        class_name: ['button', 'button-primary'],
+        attributes: { type: 'submit' },
+        html_content: component.Helpers.build_save_button_html_content(button_text),
+    });
     actions_div.appendChild(save_button);
 
     if (component.show_back_to_samples_button && typeof component.discard_callback === 'function') {

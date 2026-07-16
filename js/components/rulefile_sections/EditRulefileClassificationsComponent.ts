@@ -6,6 +6,7 @@ import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.j
 import { normalize_rulefile_metadata_vocabularies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { render_taxonomies_editor } from './rulefile_taxonomies_editor_ui.js';
 import { render_requirement_mapping_ui } from './rulefile_requirement_mapping_ui.js';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 import '../edit_rulefile_metadata_view.css';
 
 type Deps = {
@@ -259,8 +260,7 @@ export class EditRulefileClassificationsComponent {
         const save_button = this.deps.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'submit' },
-            html_content: `<span>${t('save_changes_button')}</span>` +
-                (this.deps.Helpers.get_icon_svg ? this.deps.Helpers.get_icon_svg('save') : ''),
+            html_content: build_save_button_html_content(t('save_changes_button')),
         });
         const back_button = this.deps.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],

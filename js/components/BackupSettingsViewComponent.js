@@ -322,7 +322,9 @@ export class BackupSettingsViewComponent {
         const btn_row = this.Helpers.create_element('div', { class_name: 'backup-settings-buttons' });
         const save_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
-            text_content: this._save_in_progress ? t('backup_settings_saving') : t('backup_settings_save'),
+            html_content: this.Helpers.build_save_button_html_content(
+                this._save_in_progress ? t('backup_settings_saving') : t('backup_settings_save')
+            ),
             attributes: { type: 'button' }
         });
         save_btn.addEventListener('click', this._handle_save);

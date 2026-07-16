@@ -559,8 +559,7 @@ export const EditInfoBlocksSectionComponent = {
         const save_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            html_content: `<span>${t('save_changes_button')}</span>` +
-                          (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+            html_content: this.Helpers.build_save_button_html_content(t('save_changes_button')),
         });
         save_button.addEventListener('click', () => {
             const inputs = list.querySelectorAll('.info-blocks-order-name-input');

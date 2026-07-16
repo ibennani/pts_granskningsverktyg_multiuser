@@ -4,6 +4,7 @@
 
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import type { AuditListGroup } from '../logic/audit_list_case_grouping.js';
+import { build_save_button_html_content } from '../ui/save_button_html.js';
 
 type ModalDeps = {
     Helpers: { create_element: (...args: unknown[]) => HTMLElement };
@@ -58,7 +59,7 @@ function build_modal_actions(
     const actions = Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
     const save_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-primary'],
-        text_content: t('audit_group_actor_edit_modal_save'),
+        html_content: build_save_button_html_content(t('audit_group_actor_edit_modal_save')),
         attributes: { type: 'button' }
     });
     save_btn.addEventListener('click', on_save);

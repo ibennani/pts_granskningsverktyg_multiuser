@@ -175,8 +175,9 @@ export const EditSampleTypesSectionComponent = {
                 type: 'button',
                 'aria-label': t('rulefile_metadata_save_sample_types') || 'Spara granskningsdelstyper'
             },
-            html_content: `<span>${t('rulefile_metadata_save_sample_types') || 'Spara granskningsdelstyper'}</span>` +
-                (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('save', ['currentColor'], 16)}</span>` : '')
+            html_content: this.Helpers.build_save_button_html_content(
+                t('rulefile_metadata_save_sample_types') || 'Spara granskningsdelstyper'
+            ),
         });
         save_button.addEventListener('click', async () => {
             this.autosave_session?.flush?.({ should_trim: true, skip_render: true });

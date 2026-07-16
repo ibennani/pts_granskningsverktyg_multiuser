@@ -113,7 +113,9 @@ export class EditMetadataViewComponent {
                 stay_btn.addEventListener('click', () => modal_instance.close());
                 const confirm_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
-                    text_content: t('metadata_end_date_clamp_modal_confirm_button')
+                    html_content: this.Helpers.build_save_button_html_content(
+                        t('metadata_end_date_clamp_modal_confirm_button')
+                    )
                 });
                 confirm_btn.addEventListener('click', () => {
                     modal_instance.close(null, { skipHistoryPop: true });

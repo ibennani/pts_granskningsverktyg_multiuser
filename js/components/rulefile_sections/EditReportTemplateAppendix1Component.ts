@@ -5,6 +5,7 @@ import { normalize_rulefile_appendix1 } from '../../logic/appendix1_sections.js'
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
 import { create_rulefile_appendix_subpage_back_row } from './rulefile_appendix_templates_render.js';
 import { render_appendix1_sections_editor } from './rulefile_appendix1_sections_editor_ui.js';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type Deps = {
     router: (view: string, params?: Record<string, string>) => void;
@@ -96,7 +97,9 @@ export class EditReportTemplateAppendix1Component {
         const save_btn = this.deps.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            html_content: `<span>${this.deps.Translation.t('save_changes_button')}</span>${this.deps.Helpers.get_icon_svg?.('save') ?? ''}`,
+            html_content: build_save_button_html_content(
+                this.deps.Translation.t('save_changes_button')
+            ),
         });
         save_btn.addEventListener('click', () => {
             void this.save_sections();

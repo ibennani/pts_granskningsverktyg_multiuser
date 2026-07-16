@@ -16,6 +16,7 @@ import {
     read_input_label_values,
     type Appendix2SheetEditorHost,
 } from './appendix2_excel_editor_ui.js';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type Deps = {
     router: (view: string, params?: Record<string, string>) => void;
@@ -110,7 +111,7 @@ export class EditReportTemplateAppendix2Component {
         const save_btn = helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'submit' },
-            text_content: t('save_changes_button'),
+            html_content: build_save_button_html_content(t('save_changes_button')),
         });
         const discard_btn = helpers.create_element('button', {
             class_name: ['button', 'button-default'],

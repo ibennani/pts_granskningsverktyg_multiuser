@@ -279,7 +279,7 @@ export class ConfirmSampleEditViewComponent {
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
         const confirm_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
-            text_content: t('sample_edit_confirm_action_button')
+            html_content: this.Helpers.build_save_button_html_content(t('sample_edit_confirm_action_button'))
         });
         const discard_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-danger'],

@@ -104,7 +104,7 @@ export class EditRulefileMetadataViewComponent {
             const footerSaveButton = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
                 attributes: { type: 'button' },
-                html_content: `<span>${this.Translation.t('rulefile_metadata_save_metadata')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+                html_content: this.Helpers.build_save_button_html_content(this.Translation.t('rulefile_metadata_save_metadata'))
             });
             footerSaveButton.addEventListener('click', () => form.requestSubmit());
 
@@ -203,7 +203,7 @@ export class EditRulefileMetadataViewComponent {
         const footerSaveButton = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            html_content: `<span>${this.Translation.t('rulefile_metadata_save_metadata')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+            html_content: this.Helpers.build_save_button_html_content(this.Translation.t('rulefile_metadata_save_metadata'))
         });
         footerSaveButton.addEventListener('click', () => form.requestSubmit());
 
@@ -250,7 +250,7 @@ export class EditRulefileMetadataViewComponent {
         const saveTopButton = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            html_content: `<span>${t('rulefile_metadata_save_metadata')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+            html_content: this.Helpers.build_save_button_html_content(t('rulefile_metadata_save_metadata'))
         });
         saveTopButton.addEventListener('click', () => form.requestSubmit());
 

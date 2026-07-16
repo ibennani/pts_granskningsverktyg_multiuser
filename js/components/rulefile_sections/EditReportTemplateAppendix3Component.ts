@@ -13,6 +13,7 @@ import {
 import { create_rulefile_appendix_subpage_back_row } from './rulefile_appendix_templates_render.js';
 import '../../components/markdown_preview_editor.css';
 import '../audit_settings_view_component.css';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type Deps = {
     router: (view: string, params?: Record<string, string>) => void;
@@ -112,7 +113,7 @@ export class EditReportTemplateAppendix3Component {
         const save_btn = helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            text_content: t('save_button_label'),
+            html_content: build_save_button_html_content(t('save_changes_button')),
         });
         save_btn.addEventListener('click', () => {
             void this.save_template();

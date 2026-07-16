@@ -733,7 +733,7 @@ export class EditRulefileRequirementComponent {
         const save_button = this.Helpers.create_element('button', {
             type: 'submit',
             class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('save_changes_button')}</span>` + this.Helpers.get_icon_svg('save')
+            html_content: this.Helpers.build_save_button_html_content(t('save_changes_button')),
         });
 
         const cancel_button = this.Helpers.create_element('button', {

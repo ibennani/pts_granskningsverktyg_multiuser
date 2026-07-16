@@ -17,6 +17,7 @@ import {
 import type { AttachMediaDuplicateScope } from './attach_media_duplicate_filename_status.js';
 import { create_attach_media_status_handlers } from './attach_media_modal_status.js';
 import { create_online_upload_section } from './attach_media_modal_online_upload.js';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -406,7 +407,7 @@ export function setup_attach_media_modal_content(
     const save_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-primary'],
         attributes: { type: 'button' },
-        text_content: t('attach_media_modal_save')
+        html_content: build_save_button_html_content(t('attach_media_modal_save'))
     }) as HTMLButtonElement;
     close_focus_el = save_btn;
     save_btn.addEventListener('click', () => {

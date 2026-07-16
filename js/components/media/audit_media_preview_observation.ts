@@ -3,6 +3,7 @@
  */
 
 import { MODAL_TRANSITION_MS } from '../../../shared/constants/modal_layout.js';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -238,7 +239,7 @@ function build_observation_edit_panel(
         Helpers.create_element('button', {
             class_name: ['button', 'button-primary', 'audit-media-preview-observation__save-btn'],
             attributes: { type: 'button' },
-            text_content: t('audit_media_preview_observation_save')
+            html_content: build_save_button_html_content(t('audit_media_preview_observation_save'))
         })
     );
     actions.appendChild(

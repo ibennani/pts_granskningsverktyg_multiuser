@@ -28,6 +28,7 @@ export function get_current_iso_datetime_utc() {
 
 export { escape_html } from './html_escape.js';
 export { get_external_link_icon_html, get_icon_svg } from '../ui/icons.js';
+export { build_save_button_html_content } from '../ui/save_button_html.js';
 export {
     sanitize_plain_input,
     sanitize_plain_array,

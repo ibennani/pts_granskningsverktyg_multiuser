@@ -500,7 +500,7 @@ export class AuditProblemsViewComponent {
                 const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
                 const save_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
-                    text_content: t('stuck_modal_save')
+                    html_content: this.Helpers.build_save_button_html_content(t('stuck_modal_save'))
                 });
                 save_btn.addEventListener('click', () => {
                     const raw = textarea.value || '';

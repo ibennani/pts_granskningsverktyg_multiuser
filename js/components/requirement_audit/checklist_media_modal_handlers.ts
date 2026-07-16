@@ -11,6 +11,7 @@ import { collect_attached_media_filenames } from '../../logic/audit_attached_med
 import { can_edit_observation_detail } from '../../logic/audit_observation_edit_policy.js';
 import { open_attach_media_modal } from '../media/AttachMediaModal.js';
 import type { ChecklistEventHandlerHost } from './checklist_event_handler_types.js';
+import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 export function handle_attach_media_click(
     host: ChecklistEventHandlerHost,
@@ -145,7 +146,7 @@ function build_stuck_modal_actions(
     const actions_wrapper = host.Helpers!.create_element('div', { class_name: 'modal-attach-media-actions' });
     const save_btn = host.Helpers!.create_element('button', {
         class_name: ['button', 'button-primary'],
-        text_content: t('stuck_modal_save')
+        html_content: build_save_button_html_content(t('stuck_modal_save'))
     });
     save_btn.addEventListener('click', () => {
         void (async () => {

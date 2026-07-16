@@ -812,8 +812,7 @@ export class EditPageTypesSectionComponent {
                 type: 'button',
                 'aria-label': t('rulefile_metadata_save_page_types')
             },
-            html_content: `<span>${t('rulefile_metadata_save_page_types')}</span>` + 
-                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('save', ['currentColor'], 16)}</span>` : '')
+            html_content: this.Helpers.build_save_button_html_content(t('rulefile_metadata_save_page_types')),
         });
         
         save_button.addEventListener('click', async () => {

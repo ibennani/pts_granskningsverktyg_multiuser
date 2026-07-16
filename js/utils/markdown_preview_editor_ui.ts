@@ -4,6 +4,7 @@
 import '../components/markdown_preview_editor.css';
 
 import { render_markdown_to_html } from '../export/export_html_build_primitives.js';
+import { build_save_button_html_content } from '../ui/save_button_html.js';
 
 export type MarkdownPreviewEditorDeps = {
     Helpers: {
@@ -159,7 +160,7 @@ function render_markdown_preview_editor_body(
         const save_btn = Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            text_content: t('markdown_preview_editor_save_button'),
+            html_content: build_save_button_html_content(t('markdown_preview_editor_save_button')),
         });
         save_btn.addEventListener('click', async () => {
             host.working_text = textarea.value;

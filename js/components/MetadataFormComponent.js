@@ -439,7 +439,7 @@ export const MetadataFormComponent = {
             const submit_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
                 attributes: { type: 'submit' },
-                html_content: `<span>${submitButtonText}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_forward') : '')
+                html_content: this.Helpers.build_save_button_html_content(submitButtonText)
             });
             form_actions_wrapper.appendChild(submit_button);
 
@@ -447,7 +447,7 @@ export const MetadataFormComponent = {
                 const go_to_list_button = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
                     attributes: { type: 'button' },
-                    text_content: goToListButtonText
+                    html_content: this.Helpers.build_save_button_html_content(goToListButtonText)
                 });
                 go_to_list_button.addEventListener('click', () => this.handle_go_to_list_click());
                 form_actions_wrapper.appendChild(go_to_list_button);
