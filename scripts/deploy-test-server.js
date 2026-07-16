@@ -80,10 +80,11 @@ async function main() {
         await putDirectory(serverDir, `${remotePath}/server`);
         await putFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await putFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
+        await putFile(join(projectRoot, 'scripts', 'pm2-leffe-common.sh'), `${remotePath}/scripts/pm2-leffe-common.sh`);
         await putFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
         await putFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
         await exec(
-            `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`,
+            `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh ${remotePath}/scripts/pm2-leffe-common.sh`,
             { cwd: false }
         );
         await putFile(join(projectRoot, 'docker-compose.yml'), `${remotePath}/docker-compose.yml`);
@@ -127,7 +128,7 @@ async function main() {
         console.log(`[deploy:test-server] Startar endast ${PM2_NAME} (rör inte ${PROD_PM2_NAME})...`);
         const pm2Start = [
             `(npx pm2 delete ${PM2_NAME} 2>/dev/null || true)`,
-            `npx pm2 start npm --name ${PM2_NAME} -- run dev:server`,
+            `npx pm2 start npm --name ${PM2_NAME} --cwd ${remotePath} --max-memory-restart 600M --exp-backoff-restart-delay 200 -- run dev:server`,
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
         const server_setup = [

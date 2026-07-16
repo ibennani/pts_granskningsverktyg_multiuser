@@ -89,6 +89,7 @@ Torrkörning: `npm run seed:test-server -- --dry-run`
 | `npm run copy:v2-users-to-test-server` | Kopiera användare och lösenord från v2 (prod) till testservern |
 | `npm run seed:test-server -- --confirm` | Kopiera lokal DB + filer till testservern |
 | `npm run setup:test-server` | Seed + deploy i ett steg (kräver SSH) |
+| `npm run setup:boot` | Konfigurera automatisk omstart vid serverboot (v2 + test-server) |
 | `scripts\setup-test-server.cmd` | Samma som ovan (Windows) |
 
 ## SSH-lösenord

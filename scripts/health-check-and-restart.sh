@@ -1,32 +1,45 @@
 #!/bin/bash
-# Kontrollerar om backend svarar. Om inte – startar om PM2.
-# Körs t.ex. via cron var 5:e minut: */5 * * * * /var/www/granskningsverktyget-v2/scripts/health-check-and-restart.sh
+# Backup-drift: körs var 5:e minut via cron (npm run setup:cron).
+# Kompletterar watchdog (var 45:e sekund) om processer saknas, hänger eller watchdog tystnat.
 #
-# Sätt upp cron: npm run deploy:setup-cron
-# Eller manuellt: crontab -e och lägg till raden som deploy:setup-cron visar
+# Sätt upp: npm run setup:cron  eller  npm run setup:drift
 
-set -e
+set +e
 
 DIR="${0%/*}"
 cd "$DIR/.." || exit 1
 
-RESP=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 http://localhost:3000/api/health 2>/dev/null || echo "000")
+# shellcheck source=pm2-leffe-common.sh
+. "$DIR/pm2-leffe-common.sh"
 
-if [ "$RESP" = "200" ]; then
-    exit 0
+CHANGED=0
+
+leffe_ensure_postgres
+
+if leffe_ensure_watchdog; then
+    :
+else
+    CHANGED=1
 fi
 
-# Försök först säkerställa att Postgres är igång (vanligaste orsaken till att backend inte svarar).
-# Använd fast docker compose-projektnamn så att rätt volym används.
-PROJECT_DIR="/var/www/granskningsverktyget-v2"
-DOCKER_PROJECT="granskningsverktyget-v2"
-DB_CONTAINER="granskningsverktyget-db"
-
-if ! docker exec "$DB_CONTAINER" pg_isready -U granskning >/dev/null 2>&1; then
-    echo "$(date -Iseconds) Postgres verkar nere – försöker starta (endast postgres)"
-    (cd "$PROJECT_DIR" && docker compose -p "$DOCKER_PROJECT" up -d postgres) || true
+if leffe_restart_or_start_backend "v2-backend" "3000" "$LEFFE_V2_APP" "$GV_SERVER_DIR"; then
+    :
+else
+    CHANGED=1
 fi
 
-# Backend svarar inte – starta om
-echo "$(date -Iseconds) Backend svarade inte (HTTP $RESP) – startar om PM2"
-(npx pm2 restart granskningsverktyget-v2 2>/dev/null || pm2 restart granskningsverktyget-v2 2>/dev/null) || true
+if [ -d "$GV_TEST_SERVER_DIR" ] && [ -f "$GV_TEST_SERVER_DIR/package.json" ]; then
+    if leffe_restart_or_start_backend "test-server-backend" "3001" "$LEFFE_TEST_APP" "$GV_TEST_SERVER_DIR"; then
+        :
+    else
+        CHANGED=1
+    fi
+fi
+
+leffe_note_nginx_status
+
+if [ "$CHANGED" -eq 1 ]; then
+    npx pm2 save 2>/dev/null || true
+fi
+
+exit 0

@@ -90,9 +90,10 @@ async function main() {
         await scpDir(serverDir, `${remotePath}/server`);
         await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await scpFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
+        await scpFile(join(projectRoot, 'scripts', 'pm2-leffe-common.sh'), `${remotePath}/scripts/pm2-leffe-common.sh`);
         await scpFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
         await scpFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
-        await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`]], { cwd: false });
+        await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh ${remotePath}/scripts/pm2-leffe-common.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh ${remotePath}/scripts/pm2-leffe-common.sh`]], { cwd: false });
         await scpFile(join(projectRoot, 'docker-compose.yml'), `${remotePath}/docker-compose.yml`);
         await scpFile(join(projectRoot, 'package.json'), `${remotePath}/package.json`);
         await scpFile(join(projectRoot, 'package-lock.json'), `${remotePath}/package-lock.json`);
@@ -157,8 +158,8 @@ async function main() {
 
         console.log('[deploy] Kör kommandon på servern...');
         const pm2Start = [
-            '(npx pm2 delete granskningsverktyget-v2 2>/dev/null || true) && npx pm2 start npm --name granskningsverktyget-v2 -- run dev:server',
-            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)',
+            `(npx pm2 delete granskningsverktyget-v2 2>/dev/null || true) && npx pm2 start npm --name granskningsverktyget-v2 --cwd ${remotePath} --max-memory-restart 600M --exp-backoff-restart-delay 200 -- run dev:server`,
+            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog --max-memory-restart 150M --exp-backoff-restart-delay 200)',
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
         await sshOrRun(

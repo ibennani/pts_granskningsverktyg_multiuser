@@ -7,15 +7,16 @@
  *
  * Användning: npm run start:v2:remote
  */
-import { exec, disconnect } from './deploy-utils.js';
+import { exec, disconnect, remotePath } from './deploy-utils.js';
 
 async function main() {
     try {
         console.info('[start:v2] Startar PM2 på servern (backend + watchdog)...\n');
+        const rp = remotePath.replace(/'/g, "'\\''");
         const pm2_block = [
             '(npx pm2 delete granskningsverktyget-v2 2>/dev/null || true)',
-            'npx pm2 start npm --name granskningsverktyget-v2 -- run dev:server',
-            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)',
+            `npx pm2 start npm --name granskningsverktyget-v2 --cwd '${rp}' --max-memory-restart 600M --exp-backoff-restart-delay 200 -- run dev:server`,
+            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog --max-memory-restart 150M --exp-backoff-restart-delay 200)',
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
         await exec(pm2_block);
