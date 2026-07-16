@@ -124,6 +124,81 @@ test.describe('Regelfil: Klassificeringar redigering', () => {
         await expect(main.locator('.taxonomies-editor')).toBeVisible();
         await expect(main.getByRole('tab', { name: 'Taxonomier' })).toBeVisible();
 
+        const mapping_tab = main.getByRole('tab', { name: 'Kravkoppling' });
+        await expect(mapping_tab).toBeVisible();
+        await mapping_tab.click();
+
+        await expect(main.locator('.requirement-mapping-matrix-wrapper')).toBeVisible({ timeout: 5000 });
+        await expect(main.locator('.requirement-mapping-table')).toBeVisible();
+        await expect(main.locator('.requirement-mapping-cards')).toBeAttached();
+        await expect(main.locator('.requirement-mapping-matrix-wrapper input[type="checkbox"]').first()).toBeVisible();
+
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
+
+    test('Kravkoppling visar kortlayout på smal skärm', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() !== 'error') return;
+            const text = msg.text();
+            if (/ResizeObserver/i.test(text)) return;
+            if (/insertBefore/i.test(text)) return;
+            console_errors.push(text);
+        });
+        page.on('pageerror', (err) => {
+            const text = String(err);
+            if (/insertBefore/i.test(text)) return;
+            if (/can not be found here/i.test(text)) return;
+            if (/ResizeObserver/i.test(text)) return;
+            console_errors.push(text);
+        });
+
+        await page.addInitScript(
+            ({ key, state_json, token }) => {
+                sessionStorage.setItem(key, state_json);
+                sessionStorage.setItem('gv_auth_token', token);
+                sessionStorage.setItem('gv_current_user_name', 'e2e-test-user');
+                sessionStorage.setItem('gv_current_user_is_admin', '1');
+            },
+            {
+                key: 'digitalTillsynAppCentralState',
+                state_json: JSON.stringify(buildRulefileState()),
+                token: 'e2e-cls-jwt',
+            }
+        );
+
+        await setupApiMocks(page);
+        await page.goto('/v2/#rulefile_sections?section=classifications');
+        await ensureSwedishAndDismissRestore(page);
+
+        await expect(page.locator('#app-main-view-root')).toContainText('Klassificeringar');
+
+        const edit_button = page.getByRole('button', { name: /Redigera klassificeringar/i });
+        await expect(edit_button).toBeVisible();
+        await edit_button.click();
+
+        const main = page.locator('#app-main-view-root');
+        await expect(main.locator('.rulefile-classifications-edit-form').first()).toBeVisible({ timeout: 5000 });
+
+        const mapping_tab = main.getByRole('tab', { name: 'Kravkoppling' });
+        await expect(mapping_tab).toBeVisible();
+        await mapping_tab.click();
+        await expect(main.locator('.requirement-mapping-cards')).toBeAttached({ timeout: 5000 });
+
+        await page.setViewportSize({ width: 375, height: 812 });
+        await page.waitForTimeout(300);
+
+        await expect(main.locator('.requirement-mapping-cards')).toBeVisible({ timeout: 5000 });
+        await expect(main.locator('.requirement-mapping-card').first()).toBeVisible();
+        await expect(main.locator('.requirement-mapping-card-label').first()).toBeVisible();
+
+        const matrix_display = await main.locator('.requirement-mapping-matrix-wrapper').evaluate(
+            (el) => window.getComputedStyle(el).display
+        );
+        expect(matrix_display).toBe('none');
+
         if (console_errors.length > 0) {
             throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
         }
