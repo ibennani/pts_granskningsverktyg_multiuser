@@ -1,5 +1,5 @@
 /**
- * E2E: Klassificeringar redigeringsläge renderar huvudinnehåll.
+ * E2E: Klassificeringar hub och undersidor.
  */
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -87,51 +87,135 @@ function buildRulefileState() {
     };
 }
 
-test.describe('Regelfil: Klassificeringar redigering', () => {
-    test('Redigera-knapp visar taxonomiformulär i main', async ({ page }) => {
+async function bootstrapClassificationsPage(page) {
+    await page.addInitScript(
+        ({ key, state_json, token }) => {
+            sessionStorage.setItem(key, state_json);
+            sessionStorage.setItem('gv_auth_token', token);
+            sessionStorage.setItem('gv_current_user_name', 'e2e-test-user');
+            sessionStorage.setItem('gv_current_user_is_admin', '1');
+        },
+        {
+            key: 'digitalTillsynAppCentralState',
+            state_json: JSON.stringify(buildRulefileState()),
+            token: 'e2e-cls-jwt',
+        }
+    );
+    await setupApiMocks(page);
+    await page.goto('/v2/#rulefile_sections?section=classifications');
+    await ensureSwedishAndDismissRestore(page);
+    await expect(page.locator('#app-main-view-root')).toContainText('Klassificeringar');
+}
+
+test.describe('Regelfil: Klassificeringar hub', () => {
+    test('Hub visar fyra länkar utan global redigera-knapp', async ({ page }) => {
         const console_errors = [];
         page.on('console', (msg) => {
             if (msg.type() === 'error') console_errors.push(msg.text());
         });
         page.on('pageerror', (err) => console_errors.push(String(err)));
 
-        await page.addInitScript(
-            ({ key, state_json, token }) => {
-                sessionStorage.setItem(key, state_json);
-                sessionStorage.setItem('gv_auth_token', token);
-                sessionStorage.setItem('gv_current_user_name', 'e2e-test-user');
-                sessionStorage.setItem('gv_current_user_is_admin', '1');
-            },
-            {
-                key: 'digitalTillsynAppCentralState',
-                state_json: JSON.stringify(buildRulefileState()),
-                token: 'e2e-cls-jwt',
-            }
-        );
+        await bootstrapClassificationsPage(page);
 
-        await setupApiMocks(page);
-        await page.goto('/v2/#rulefile_sections?section=classifications');
-        await ensureSwedishAndDismissRestore(page);
+        const main = page.locator('#app-main-view-root');
+        await expect(main.getByRole('link', { name: /Bristtyper/i })).toBeVisible();
+        await expect(main.getByRole('link', { name: /Granskningstyper/i })).toBeVisible();
+        await expect(main.getByRole('link', { name: /Taxonomi/i })).toBeVisible();
+        await expect(main.getByRole('link', { name: /Kravkoppling/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /Redigera klassificeringar/i })).toHaveCount(0);
 
-        await expect(page.locator('#app-main-view-root')).toContainText('Klassificeringar');
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
 
-        const edit_button = page.getByRole('button', { name: /Redigera klassificeringar/i });
+    test('Taxonomi-undersida har egen redigera-knapp och förenklad editor', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+
+        await page.getByRole('link', { name: /Taxonomi/i }).click();
+        await expect(page).toHaveURL(/part=taxonomy/);
+        await expect(page.locator('#app-main-view-root')).toContainText('Taxonomi');
+
+        const edit_button = page.getByRole('button', { name: /Redigera taxonomi/i });
         await expect(edit_button).toBeVisible();
         await edit_button.click();
 
         const main = page.locator('#app-main-view-root');
         await expect(main.locator('.rulefile-classifications-edit-form')).toBeVisible({ timeout: 5000 });
-        await expect(main.locator('.taxonomies-editor')).toBeVisible();
-        await expect(main.getByRole('tab', { name: 'Taxonomier' })).toBeVisible();
+        await expect(main.locator('.taxonomy-simplified-card')).toBeVisible();
 
-        const mapping_tab = main.getByRole('tab', { name: 'Kravkoppling' });
-        await expect(mapping_tab).toBeVisible();
-        await mapping_tab.click();
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
 
+    test('Kravkoppling öppnas direkt i redigeringsläge från hub-länk', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+
+        await page.getByRole('link', { name: /Kravkoppling/i }).click();
+        await expect(page).toHaveURL(/part=mapping.*edit=true/);
+
+        const main = page.locator('#app-main-view-root');
         await expect(main.locator('.requirement-mapping-matrix-wrapper')).toBeVisible({ timeout: 5000 });
         await expect(main.locator('.requirement-mapping-table')).toBeVisible();
         await expect(main.locator('.requirement-mapping-cards')).toBeAttached();
         await expect(main.locator('.requirement-mapping-matrix-wrapper input[type="checkbox"]').first()).toBeVisible();
+
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
+
+    test('Granskningstyper öppnas direkt i redigeringsläge från hub-länk', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+
+        await page.getByRole('link', { name: /Granskningstyper/i }).click();
+        await expect(page).toHaveURL(/part=audit_types.*edit=true/);
+
+        const main = page.locator('#app-main-view-root');
+        await expect(main.locator('.audit-types-table')).toBeVisible({ timeout: 5000 });
+        await expect(main.locator('.audit-types-row-edit-button').first()).toBeVisible();
+        await expect(main.getByRole('button', { name: /Redigera granskningstyper/i })).toHaveCount(0);
+
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
+
+    test('Bristtyper öppnas direkt i redigeringsläge från hub-länk', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+
+        await page.getByRole('link', { name: /Bristtyper/i }).click();
+        await expect(page).toHaveURL(/part=deficiency_types.*edit=true/);
+
+        const main = page.locator('#app-main-view-root');
+        await expect(main.locator('.deficiency-types-table')).toBeVisible({ timeout: 5000 });
+        await expect(main.getByRole('button', { name: /Redigera bristtyper/i })).toHaveCount(0);
+        await expect(main.locator('.deficiency-types-row-edit-button').first()).toBeVisible();
 
         if (console_errors.length > 0) {
             throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
@@ -155,36 +239,11 @@ test.describe('Regelfil: Klassificeringar redigering', () => {
             console_errors.push(text);
         });
 
-        await page.addInitScript(
-            ({ key, state_json, token }) => {
-                sessionStorage.setItem(key, state_json);
-                sessionStorage.setItem('gv_auth_token', token);
-                sessionStorage.setItem('gv_current_user_name', 'e2e-test-user');
-                sessionStorage.setItem('gv_current_user_is_admin', '1');
-            },
-            {
-                key: 'digitalTillsynAppCentralState',
-                state_json: JSON.stringify(buildRulefileState()),
-                token: 'e2e-cls-jwt',
-            }
-        );
-
-        await setupApiMocks(page);
-        await page.goto('/v2/#rulefile_sections?section=classifications');
+        await bootstrapClassificationsPage(page);
+        await page.goto('/v2/#rulefile_sections?section=classifications&part=mapping&edit=true');
         await ensureSwedishAndDismissRestore(page);
 
-        await expect(page.locator('#app-main-view-root')).toContainText('Klassificeringar');
-
-        const edit_button = page.getByRole('button', { name: /Redigera klassificeringar/i });
-        await expect(edit_button).toBeVisible();
-        await edit_button.click();
-
         const main = page.locator('#app-main-view-root');
-        await expect(main.locator('.rulefile-classifications-edit-form').first()).toBeVisible({ timeout: 5000 });
-
-        const mapping_tab = main.getByRole('tab', { name: 'Kravkoppling' });
-        await expect(mapping_tab).toBeVisible();
-        await mapping_tab.click();
         await expect(main.locator('.requirement-mapping-cards')).toBeAttached({ timeout: 5000 });
 
         await page.setViewportSize({ width: 375, height: 812 });
@@ -192,12 +251,93 @@ test.describe('Regelfil: Klassificeringar redigering', () => {
 
         await expect(main.locator('.requirement-mapping-cards')).toBeVisible({ timeout: 5000 });
         await expect(main.locator('.requirement-mapping-card').first()).toBeVisible();
-        await expect(main.locator('.requirement-mapping-card-label').first()).toBeVisible();
 
         const matrix_display = await main.locator('.requirement-mapping-matrix-wrapper').evaluate(
             (el) => window.getComputedStyle(el).display
         );
         expect(matrix_display).toBe('none');
+
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
+
+    test('Hub fyller inte viewport-höjd', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+
+        const hub_layout = await page.evaluate(() => {
+            const app_layout = document.querySelector('#app-layout');
+            const plate = document.querySelector('.rulefile-sections-main-plate');
+            return {
+                app_layout_min_height: app_layout
+                    ? window.getComputedStyle(app_layout).minHeight
+                    : '',
+                plate_display: plate ? window.getComputedStyle(plate).display : '',
+                has_table_edit_form: Boolean(
+                    document.querySelector(
+                        '.rulefile-classifications-edit-form .rulefile-classifications-table-layout'
+                    )
+                ),
+            };
+        });
+        expect(hub_layout.has_table_edit_form).toBe(false);
+        expect(hub_layout.app_layout_min_height).not.toContain('100dvh');
+        expect(hub_layout.plate_display).not.toBe('flex');
+
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
+
+    test('Tabellredigering: scrollzon med max-höjd, inte onödig tillväxt', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+        await page.goto('/v2/#rulefile_sections?section=classifications&part=mapping&edit=true');
+        await ensureSwedishAndDismissRestore(page);
+
+        const main = page.locator('#app-main-view-root');
+        await expect(main.locator('.rulefile-classifications-edit-form')).toBeVisible({ timeout: 5000 });
+        await expect(main.locator('.requirement-mapping-matrix-wrapper')).toBeVisible();
+
+        const layout_metrics = await page.evaluate(() => {
+            const form = document.querySelector('.rulefile-classifications-edit-form');
+            const scroll = form?.querySelector('.rulefile-classifications-table-scroll-wrapper');
+            const table = scroll?.querySelector('table');
+            const actions = form?.querySelector('.form-actions');
+            if (!form || !scroll || !table || !actions) return null;
+            const form_rect = form.getBoundingClientRect();
+            const actions_rect = actions.getBoundingClientRect();
+            const scroll_style = window.getComputedStyle(scroll);
+            const scroll_rect = scroll.getBoundingClientRect();
+            const table_rect = table.getBoundingClientRect();
+            return {
+                scroll_overflow_y: scroll_style.overflowY,
+                scroll_flex_grow: scroll_style.flexGrow,
+                scroll_max_height: scroll_style.maxHeight,
+                gap_below_actions_px: Math.round(form_rect.bottom - actions_rect.bottom),
+                wrapper_vs_table_gap_px: Math.round(scroll_rect.height - table_rect.height),
+                scroll_height: scroll.scrollHeight,
+                client_height: scroll.clientHeight,
+            };
+        });
+
+        expect(layout_metrics).not.toBeNull();
+        expect(layout_metrics.scroll_overflow_y).toBe('auto');
+        expect(Number(layout_metrics.scroll_flex_grow)).toBe(0);
+        expect(layout_metrics.scroll_max_height).not.toBe('none');
+        expect(layout_metrics.gap_below_actions_px).toBeLessThanOrEqual(4);
+        expect(layout_metrics.wrapper_vs_table_gap_px).toBeLessThanOrEqual(4);
 
         if (console_errors.length > 0) {
             throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);

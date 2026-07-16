@@ -2,13 +2,22 @@
  * @fileoverview Matris- och kortvy för koppling mellan krav och taxonomibegrepp.
  */
 import { normalize_requirements_to_record } from '../../logic/requirement_lookup.js';
-import { get_requirement_display_label } from '../../logic/requirement_display_name.ts';
+import { get_requirement_display_label } from '../../logic/requirement_display_name.js';
 import {
     apply_requirement_classifications,
     get_concept_ids_for_requirement,
     get_primary_grouping_taxonomy_id,
     resolve_taxonomy_concepts,
 } from '../../logic/requirement_classifications.js';
+import {
+    append_classifications_table_filter_to_layout,
+    append_classifications_table_scroll_area,
+    attach_classifications_elements_filter,
+    attach_classifications_table_row_filter,
+    create_classifications_table,
+    create_classifications_table_layout,
+    create_classifications_table_scroll_wrapper,
+} from './rulefile_classifications_table_ui.js';
 
 type MappingCtx = {
     Helpers: {
@@ -26,10 +35,6 @@ type RequirementRow = {
 };
 
 type CheckboxRefs = { matrix?: HTMLInputElement; card?: HTMLInputElement };
-
-function normalize_filter(value: string): string {
-    return value.trim().toLowerCase();
-}
 
 export function build_requirement_rows(requirements: unknown): RequirementRow[] {
     const record = normalize_requirements_to_record(requirements);
@@ -92,6 +97,47 @@ function register_checkbox_ref(
     checkbox_refs.set(map_key, existing);
 }
 
+function build_matrix_checkbox_cell(
+    ctx: MappingCtx,
+    row: RequirementRow,
+    concept: ConceptEntry,
+    checkbox_state: Map<string, boolean>,
+    checkbox_refs: Map<string, CheckboxRefs>,
+    set_concept_checked: ReturnType<typeof create_set_concept_checked>
+): HTMLElement {
+    const { Helpers, Translation } = ctx;
+    const t = Translation.t;
+    const map_key = build_mapping_checkbox_key(row.key, concept.id);
+    const checkbox_id = build_checkbox_id(row.key, concept.id, 'matrix');
+    const checkbox = Helpers.create_element('input', {
+        class_name: 'requirement-mapping-checkbox',
+        attributes: {
+            id: checkbox_id,
+            type: 'checkbox',
+            'data-requirement-key': row.key,
+            'data-concept-id': concept.id,
+        },
+    }) as HTMLInputElement;
+    checkbox.checked = checkbox_state.get(map_key) ?? false;
+    checkbox.addEventListener('change', () => {
+        set_concept_checked(row.key, concept.id, checkbox.checked, checkbox);
+    });
+
+    const label = Helpers.create_element('label', {
+        class_name: 'visually-hidden',
+        attributes: { for: checkbox_id },
+        text_content: t('rulefile_classifications_mapping_checkbox_label', {
+            requirement: row.display_label || row.key,
+            concept: concept.label || concept.id,
+        }),
+    });
+
+    const td = Helpers.create_element('td', { class_name: 'requirement-mapping-cell' });
+    td.append(checkbox, label);
+    register_checkbox_ref(checkbox_refs, map_key, 'matrix', checkbox);
+    return td;
+}
+
 function render_matrix_layout(
     ctx: MappingCtx,
     rows: RequirementRow[],
@@ -102,88 +148,37 @@ function render_matrix_layout(
 ): { wrapper: HTMLElement; row_elements: HTMLElement[] } {
     const { Helpers, Translation } = ctx;
     const t = Translation.t;
-    const wrapper = Helpers.create_element('div', { class_name: 'requirement-mapping-matrix-wrapper' });
-    const table = Helpers.create_element('table', { class_name: 'requirement-mapping-table' });
-    table.appendChild(
-        Helpers.create_element('caption', {
-            text_content: t('rulefile_classifications_mapping_table_caption'),
-        })
+    const wrapper = create_classifications_table_scroll_wrapper(
+        Helpers,
+        'requirement-mapping-matrix-wrapper'
     );
 
-    const header_row = Helpers.create_element('tr');
-    header_row.appendChild(
-        Helpers.create_element('th', {
-            class_name: 'requirement-mapping-corner-header',
-            attributes: { scope: 'col' },
-            text_content: t('rulefile_classifications_mapping_requirement_column'),
-        })
-    );
-    concepts.forEach((concept) => {
-        header_row.appendChild(
-            Helpers.create_element('th', {
+    const { table, row_elements } = create_classifications_table(ctx, {
+        caption: t('rulefile_classifications_mapping_table_caption'),
+        extra_table_classes: 'requirement-mapping-table',
+        columns: [
+            {
+                text: t('rulefile_classifications_mapping_requirement_column'),
+                class_name: 'requirement-mapping-corner-header',
+            },
+            ...concepts.map((concept) => ({
+                text: concept.label || concept.id,
                 class_name: 'requirement-mapping-concept-header',
-                attributes: { scope: 'col' },
-                text_content: concept.label || concept.id,
-            })
-        );
-    });
-    const thead = Helpers.create_element('thead');
-    thead.appendChild(header_row);
-    table.appendChild(thead);
-
-    const tbody = Helpers.create_element('tbody');
-    const row_elements: HTMLElement[] = [];
-
-    rows.forEach((row) => {
-        const tr = Helpers.create_element('tr', {
-            class_name: 'requirement-mapping-row',
-            attributes: { 'data-requirement-key': row.key },
-        });
-        tr.appendChild(
-            Helpers.create_element('th', {
-                class_name: 'requirement-mapping-row-header',
-                attributes: { scope: 'row' },
-                text_content: row.display_label || row.key,
-            })
-        );
-
-        concepts.forEach((concept) => {
-            const map_key = build_mapping_checkbox_key(row.key, concept.id);
-            const checkbox_id = build_checkbox_id(row.key, concept.id, 'matrix');
-            const checkbox = Helpers.create_element('input', {
-                class_name: 'requirement-mapping-checkbox',
-                attributes: {
-                    id: checkbox_id,
-                    type: 'checkbox',
-                    'data-requirement-key': row.key,
-                    'data-concept-id': concept.id,
-                },
-            }) as HTMLInputElement;
-            checkbox.checked = checkbox_state.get(map_key) ?? false;
-            checkbox.addEventListener('change', () => {
-                set_concept_checked(row.key, concept.id, checkbox.checked, checkbox);
-            });
-
-            const label = Helpers.create_element('label', {
-                class_name: 'visually-hidden',
-                attributes: { for: checkbox_id },
-                text_content: t('rulefile_classifications_mapping_checkbox_label', {
-                    requirement: row.display_label || row.key,
-                    concept: concept.label || concept.id,
-                }),
-            });
-
-            const td = Helpers.create_element('td', { class_name: 'requirement-mapping-cell' });
-            td.append(checkbox, label);
-            register_checkbox_ref(checkbox_refs, map_key, 'matrix', checkbox);
-            tr.appendChild(td);
-        });
-
-        tbody.appendChild(tr);
-        row_elements.push(tr);
+            })),
+        ],
+        rows: rows.map((row) => ({
+            key: row.key,
+            row_class: 'requirement-mapping-row',
+            row_header_class: 'requirement-mapping-row-header',
+            row_header_text: row.display_label || row.key,
+            cells: concepts.map((concept) =>
+                build_matrix_checkbox_cell(
+                    ctx, row, concept, checkbox_state, checkbox_refs, set_concept_checked
+                )
+            ),
+        })),
     });
 
-    table.appendChild(tbody);
     wrapper.appendChild(table);
     return { wrapper, row_elements };
 }
@@ -253,28 +248,6 @@ function render_cards_layout(
     return { wrapper, card_elements };
 }
 
-function attach_filter_handler(
-    filter_input: HTMLInputElement,
-    matrix_rows: HTMLElement[],
-    card_elements: HTMLElement[]
-): void {
-    filter_input.addEventListener('input', () => {
-        const needle = normalize_filter(filter_input.value);
-        matrix_rows.forEach((row_el) => {
-            const title = normalize_filter(row_el.querySelector('th')?.textContent ?? '');
-            const key = normalize_filter(row_el.getAttribute('data-requirement-key') ?? '');
-            row_el.hidden = Boolean(needle) && !title.includes(needle) && !key.includes(needle);
-        });
-        card_elements.forEach((card_el) => {
-            const title = normalize_filter(
-                card_el.querySelector('.requirement-mapping-card-title')?.textContent ?? ''
-            );
-            const key = normalize_filter(card_el.getAttribute('data-requirement-key') ?? '');
-            card_el.hidden = Boolean(needle) && !title.includes(needle) && !key.includes(needle);
-        });
-    });
-}
-
 /**
  * Renderar krav x begrepp-matris och kortvy; returnerar spara-callback.
  */
@@ -309,25 +282,18 @@ export function render_requirement_mapping_ui(
         })
     );
 
-    const filter_id = `requirement-mapping-filter-${Math.random().toString(36).substring(2, 8)}`;
-    const filter_row = Helpers.create_element('div', { class_name: 'form-group requirement-mapping-filter' });
-    filter_row.appendChild(
-        Helpers.create_element('label', {
-            attributes: { for: filter_id },
-            text_content: t('rulefile_classifications_mapping_filter_label'),
-        })
-    );
-    const filter_input = Helpers.create_element('input', {
-        class_name: 'form-control',
-        attributes: { id: filter_id, type: 'search' },
-    }) as HTMLInputElement;
-    filter_row.appendChild(filter_input);
-    container.appendChild(filter_row);
+    const layout = create_classifications_table_layout(Helpers);
+    layout.classList.add('requirement-mapping-layout');
 
     const rows = build_requirement_rows(rule_file_content.requirements);
     const checkbox_state = build_initial_checkbox_state(rows, concepts, taxonomy_id);
     const checkbox_refs = new Map<string, CheckboxRefs>();
     const set_concept_checked = create_set_concept_checked(checkbox_state, checkbox_refs, on_change);
+
+    const filter_input = append_classifications_table_filter_to_layout(layout, ctx, rows.length, {
+        label_key: 'rulefile_classifications_mapping_filter_label',
+        id_prefix: 'requirement-mapping-filter',
+    });
 
     const matrix = render_matrix_layout(
         ctx, rows, concepts, checkbox_state, checkbox_refs, set_concept_checked
@@ -336,8 +302,14 @@ export function render_requirement_mapping_ui(
         ctx, rows, concepts, checkbox_state, checkbox_refs, set_concept_checked
     );
 
-    container.append(matrix.wrapper, cards.wrapper);
-    attach_filter_handler(filter_input, matrix.row_elements, cards.card_elements);
+    layout.append(matrix.wrapper, cards.wrapper);
+    container.appendChild(layout);
+    if (filter_input) {
+        attach_classifications_table_row_filter(filter_input, matrix.row_elements);
+        attach_classifications_elements_filter(filter_input, cards.card_elements, {
+            title_selector: '.requirement-mapping-card-title',
+        });
+    }
 
     return {
         apply_changes: () => {

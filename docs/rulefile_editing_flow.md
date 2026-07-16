@@ -16,13 +16,16 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 | Sidtyper           | rulefile_sections     | page_types        | Lista med underkategorier  | EditPageTypesSectionComponent       |
 | Innehållstyper     | rulefile_sections     | content_types     | Nästlad lista              | EditContentTypesSectionComponent    |
 | Informationsblock  | rulefile_sections     | info_blocks_order | Numrerad lista             | EditInfoBlocksSectionComponent      |
-| Klassificeringar   | rulefile_sections     | classifications   | Platshållare               | –                                   |
-| Rapportmall        | rulefile_sections     | report_template   | Platshållare               | –                                   |
+| Klassificeringar   | rulefile_sections     | classifications   | Hub + fyra undersidor      | EditRulefileClassificationsComponent (per part) |
+| Rapportmall        | rulefile_sections     | report_template   | Hub + bilagor              | EditRulefileAppendix* (per bilaga)              |
 
 ## URL-format
 
 - **Visning:** `#rulefile_sections?section=<section_id>`
 - **Redigering:** `#rulefile_sections?section=<section_id>&edit=true`
+- **Klassificeringar hub:** `#rulefile_sections?section=classifications`
+- **Klassificeringar undersida:** `#rulefile_sections?section=classifications&part=<deficiency_types|audit_types|taxonomy|mapping>`
+- **Klassificeringar redigering:** lägg till `&edit=true` på undersida-URL
 - **Krav:** `#rulefile_requirements`, `#rulefile_view_requirement?id=...`, `#rulefile_edit_requirement?id=...`, `#rulefile_add_requirement`
 
 ## Komponentansvar
@@ -32,7 +35,8 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 - Hanterar routing för `rulefile_sections` med `section`-param
 - Visar header (h1) och antingen visningsinnehåll eller redigeringsformulär
 - Laddar dynamiskt Edit*SectionComponent för redigeringsläge
-- För Klassificeringar och Rapportmall: visar platshållare med "Denna funktion kommer senare"
+- **Klassificeringar:** hub med länkar till bristtyper, granskningstyper, taxonomi och kravkoppling. Redigera-knapp visas per undersida, inte på hubben.
+- **Rapportmall:** hub med bilagor (separat flöde)
 
 ### Edit*SectionComponent
 
@@ -43,6 +47,17 @@ Varje sektion har en dedikerad redigeringskomponent:
 - **EditPageTypesSectionComponent** – Sidtyper med underkategorier
 - **EditContentTypesSectionComponent** – Innehållstyper (hierarki)
 - **EditInfoBlocksSectionComponent** – Informationsblock (ordning och namn)
+- **EditRulefileClassificationsComponent** – Klassificeringar per del (taxonomi, kravkoppling, granskningstyper, bristtyper)
+
+### Klassificeringar (hub)
+
+1. Användaren öppnar **Klassificeringar** i sidomenyn och ser en hub med fyra länkar.
+2. Varje länk leder till en undersida (`part`-parameter i URL).
+3. På undersidan finns **Redigera** som öppnar redigeringsläge för just den delen.
+4. **Taxonomi:** förenklad redigering med begrepp (etikett synlig, id hanteras internt) och val av primär grupperingstaxonomi.
+5. **Kravkoppling:** befintlig matris/kort-vy mot primär taxonomi.
+6. **Granskningstyper:** lista med namn och koppling till hel taxonomi; standardvärden seedas vid första redigering om fältet saknas.
+7. **Bristtyper:** tabell per krav med modal för bristtypens text (del 1 och del 2 som en bristtyp).
 
 ### RulefileRequirementsListComponent
 
@@ -70,9 +85,6 @@ Det finns ett separat flöde för att **byta till en nyare regelfil** (från ser
 
 Skillnad mot "regelfilsredigering" ovan: här ersätts hela regelfilen med serverns version; det är ingen sektion-för-sektion-redigering.
 
-## Platshållarsektioner
+## Rapportmall (platshållare)
 
-Klassificeringar och Rapportmall visar för närvarande:
-
-- Korrekt H1 (sektionens titel)
-- Texten "Denna funktion kommer senare" (översättningsnyckel: `rulefile_section_coming_soon`)
+Rapportmall har eget hub-flöde med bilagor. Övriga platshållarsektioner utan implementation kan visa `rulefile_section_coming_soon`.

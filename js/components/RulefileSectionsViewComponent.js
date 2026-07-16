@@ -12,9 +12,13 @@ import {
 import {
     render_rulefile_general_section,
     render_rulefile_publisher_source_section,
-    render_rulefile_classifications_section,
     render_rulefile_coming_soon_section
 } from './rulefile_sections/rulefile_sections_basic_views.js';
+import {
+    render_rulefile_classifications_hub_section,
+    render_rulefile_classifications_part_section,
+    resolve_classifications_part,
+} from './rulefile_sections/rulefile_classifications_views.js';
 import {
     flush_info_blocks_order_from_dom,
     render_rulefile_page_types_section,
@@ -52,6 +56,7 @@ export class RulefileSectionsViewComponent {
         this.general_form_initial_focus_set = false;
         this.page_types_form_initial_focus_set = false;
         this.content_types_form_initial_focus_set = false;
+        this._render_generation = 0;
     }
 
     async init({ root, deps }) {
@@ -69,21 +74,21 @@ export class RulefileSectionsViewComponent {
         this.general_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på general-formuläret
         this.page_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på page_types-formuläret
         this.content_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på content_types-formuläret
-        
-            }
+        this._render_generation = 0;
+    }
 
     _get_section_config(section_id) {
         return get_section_config(section_id, this.Translation.t);
     }
 
-    _create_header(section_config, is_editing = false, appendix = '') {
+    _create_header(section_config, is_editing = false, appendix = '', classifications_part = '') {
         return create_rulefile_section_header({
             Helpers: this.Helpers,
             Translation: this.Translation,
             router: this.router,
             getState: this.getState,
             get_page_types_edit_component: () => this.page_types_edit_component
-        }, section_config, is_editing, appendix);
+        }, section_config, is_editing, appendix, classifications_part);
     }
 
     _format_simple_value(value) {
@@ -120,9 +125,18 @@ export class RulefileSectionsViewComponent {
         );
     }
 
-    _render_classifications_section(metadata, ruleFileContent) {
-        return render_rulefile_classifications_section(
-            { Helpers: this.Helpers, Translation: this.Translation },
+    _render_classifications_hub_section() {
+        return render_rulefile_classifications_hub_section({
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            router: this.router,
+        });
+    }
+
+    _render_classifications_part_section(part, metadata, ruleFileContent) {
+        return render_rulefile_classifications_part_section(
+            { Helpers: this.Helpers, Translation: this.Translation, router: this.router },
+            part,
             metadata,
             ruleFileContent
         );
@@ -224,6 +238,7 @@ export class RulefileSectionsViewComponent {
             this.report_template_edit_component.destroy();
         }
         this.report_template_edit_component = null;
+        this.report_template_edit_appendix = null;
     }
 
     _destroy_classifications_edit_component() {
@@ -244,24 +259,47 @@ export class RulefileSectionsViewComponent {
         );
     }
 
-    async _render_classifications_edit_form(container, _metadata) {
+    async _render_classifications_edit_form(container, _metadata, part) {
         return render_rulefile_classifications_edit_form(
-            { deps: this.deps, view: this },
+            { deps: { ...this.deps, params: { ...(this.deps.params || {}), part } }, view: this },
             container,
-            _metadata
+            _metadata,
+            part
         );
     }
 
     async render() {
         if (!this.root) return;
+        const render_generation = ++this._render_generation;
         const state = this.getState();
         const params = this.deps.params || {};
         const section_id = params.section || 'general';
         let appendix = normalize_report_template_appendix_param(params.appendix);
+        const classifications_part = resolve_classifications_part(params.part);
         const is_editing = params.edit === 'true';
 
         if (section_id === 'report_template' && is_editing && !appendix) {
             this.router('rulefile_sections', { section: 'report_template', appendix: '1', edit: 'true' });
+            return;
+        }
+
+        if (section_id === 'classifications' && is_editing && !classifications_part) {
+            this.router('rulefile_sections', { section: 'classifications' });
+            return;
+        }
+
+        if (section_id === 'classifications' && classifications_part === 'mapping' && !is_editing) {
+            this.router('rulefile_sections', { section: 'classifications', part: 'mapping', edit: 'true' });
+            return;
+        }
+
+        if (section_id === 'classifications' && classifications_part === 'deficiency_types' && !is_editing) {
+            this.router('rulefile_sections', { section: 'classifications', part: 'deficiency_types', edit: 'true' });
+            return;
+        }
+
+        if (section_id === 'classifications' && classifications_part === 'audit_types' && !is_editing) {
+            this.router('rulefile_sections', { section: 'classifications', part: 'audit_types', edit: 'true' });
             return;
         }
 
@@ -292,13 +330,16 @@ export class RulefileSectionsViewComponent {
         }
 
         this.root.innerHTML = '';
-        const main_plate = await this._build_main_plate(state, section_id, is_editing, appendix);
-        this.root.appendChild(main_plate);
+        const main_plate = await this._build_main_plate(state, section_id, is_editing, appendix, classifications_part);
+        if (render_generation !== this._render_generation) {
+            return;
+        }
+        this.root.replaceChildren(main_plate);
         this._apply_focus_after_load();
         this.is_initial_render = false;
     }
 
-    async _build_main_plate(state, section_id, is_editing, appendix = '') {
+    async _build_main_plate(state, section_id, is_editing, appendix = '', classifications_part = '') {
         const metadata = state?.ruleFileContent?.metadata || {};
         const main_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-main-plate' });
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
@@ -306,17 +347,18 @@ export class RulefileSectionsViewComponent {
         let section_content;
         let header_section_config;
         const section_heading_id = `rulefile-section-${section_id}-heading`;
-        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'info_blocks_order' || section_id === 'classifications' || (section_id === 'report_template' && appendix))) {
+        const classifications_editing = is_editing && section_id === 'classifications' && classifications_part;
+        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'info_blocks_order' || classifications_editing || (section_id === 'report_template' && appendix))) {
             header_section_config = this._get_section_config(section_id);
-            right_wrapper.appendChild(this._create_header(header_section_config, is_editing, appendix));
+            right_wrapper.appendChild(this._create_header(header_section_config, is_editing, appendix, classifications_part));
             const edit_form_container = this.Helpers.create_element('div', { class_name: 'rulefile-section-edit-form-container' });
             if (section_id === 'general') await this._render_general_edit_form(edit_form_container, metadata);
             else if (section_id === 'page_types') await this._render_page_types_edit_form(edit_form_container, metadata);
             else if (section_id === 'content_types') await this._render_content_types_edit_form(edit_form_container, metadata);
             else if (section_id === 'info_blocks_order') await this._render_info_blocks_edit_form(edit_form_container, metadata);
-            else if (section_id === 'classifications') {
+            else if (classifications_editing) {
                 this._destroy_classifications_edit_component();
-                await this._render_classifications_edit_form(edit_form_container, metadata);
+                await this._render_classifications_edit_form(edit_form_container, metadata, classifications_part);
             }
             else if (section_id === 'report_template') {
                 this._destroy_report_template_edit_component();
@@ -337,7 +379,15 @@ export class RulefileSectionsViewComponent {
                     break;
                 case 'classifications':
                     header_section_config = this._get_section_config(section_id);
-                    section_content = this._render_classifications_section(metadata, state.ruleFileContent);
+                    if (!classifications_part) {
+                        section_content = this._render_classifications_hub_section();
+                    } else {
+                        section_content = this._render_classifications_part_section(
+                            classifications_part,
+                            metadata,
+                            state.ruleFileContent
+                        );
+                    }
                     break;
                 case 'page_types':
                     header_section_config = this._get_section_config(section_id);
@@ -367,7 +417,7 @@ export class RulefileSectionsViewComponent {
                     header_section_config = this._get_section_config('general');
                     section_content = this._render_general_section(metadata);
             }
-            right_wrapper.appendChild(this._create_header(header_section_config, is_editing, appendix));
+            right_wrapper.appendChild(this._create_header(header_section_config, is_editing, appendix, classifications_part));
             if (section_content && header_section_config) {
                 section_content.setAttribute('aria-labelledby', `rulefile-section-${header_section_config.id}-heading`);
             }
@@ -418,7 +468,8 @@ export class RulefileSectionsViewComponent {
             this.classifications_edit_component = null;
         }
         this._destroy_report_template_edit_component();
-        
+        this._render_generation += 1;
+
         this.general_form_initial_focus_set = false;
         this.page_types_form_initial_focus_set = false;
         this.content_types_form_initial_focus_set = false;

@@ -82,6 +82,24 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         }
     }
 
+    if (meta.auditTypes !== undefined) {
+        if (!Array.isArray(meta.auditTypes)) {
+            return { isValid: false, message: t('rule_file_err_metadata_audit_types_array') };
+        }
+        for (const [index, entry] of meta.auditTypes.entries()) {
+            if (!entry || typeof entry !== 'object') {
+                return { isValid: false, message: t('rule_file_err_metadata_audit_type_object', { index: String(index) }) };
+            }
+            const row = entry as Record<string, unknown>;
+            if (typeof row.label !== 'string') {
+                return { isValid: false, message: t('rule_file_err_metadata_audit_type_label_string', { index: String(index) }) };
+            }
+            if (typeof row.taxonomyId !== 'string') {
+                return { isValid: false, message: t('rule_file_err_metadata_audit_type_taxonomy_string', { index: String(index) }) };
+            }
+        }
+    }
+
     if (root.appendix1) {
         if (typeof root.appendix1 !== 'object' || root.appendix1 === null) {
             return { isValid: false, message: t('rule_file_err_appendix1_object') };
@@ -92,6 +110,30 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         }
         if (appendix1.coverImage !== undefined && typeof appendix1.coverImage !== 'string') {
             return { isValid: false, message: t('rule_file_err_appendix1_cover_image_string') };
+        }
+        if (appendix1.bodyText !== undefined && typeof appendix1.bodyText !== 'string') {
+            return { isValid: false, message: t('rule_file_err_appendix1_body_text_string') };
+        }
+        if (appendix1.bodyTextByTaxonomy !== undefined) {
+            if (
+                typeof appendix1.bodyTextByTaxonomy !== 'object'
+                || appendix1.bodyTextByTaxonomy === null
+                || Array.isArray(appendix1.bodyTextByTaxonomy)
+            ) {
+                return { isValid: false, message: t('rule_file_err_appendix1_body_text_by_taxonomy_object') };
+            }
+            for (const [taxonomy_id, value] of Object.entries(
+                appendix1.bodyTextByTaxonomy as Record<string, unknown>
+            )) {
+                if (typeof value !== 'string') {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_appendix1_body_text_by_taxonomy_value_string', {
+                            taxonomyId: taxonomy_id,
+                        }),
+                    };
+                }
+            }
         }
         if (
             appendix1.groupingTaxonomyId !== undefined

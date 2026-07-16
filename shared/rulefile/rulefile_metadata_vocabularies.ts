@@ -4,6 +4,7 @@
  */
 
 import { apply_detection_patterns_for_rulefile_metadata } from './content_type_detection_pattern_rulefile_apply.js';
+import { normalize_audit_types_for_persist } from './rulefile_audit_types.js';
 
 export type RulefileMetadataVocabularyNormalizeMode = 'read' | 'persist';
 
@@ -113,6 +114,7 @@ function apply_canonical_vocab_fields(metadata: MetadataRecord, options: { mode?
     delete next.vocabularies;
 
     if (options.mode === 'persist') {
+        normalize_audit_types_for_persist(next);
         return apply_detection_patterns_for_rulefile_metadata(next);
     }
 

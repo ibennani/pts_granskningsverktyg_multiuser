@@ -2,7 +2,9 @@ import {
     collect_deficiency_types_grouped_by_principle,
     collect_deficiency_types_grouped_by_taxonomy,
     read_deficiency_type_node,
+    resolve_requirement_deficiency_type_display,
 } from '../../js/export/export_deficiency_types_collect.ts';
+import { build_appendix1_pdf_print_css } from '../../js/export/export_report_appendix1_print_css.ts';
 import { build_appendix1_summary_body_html } from '../../js/export/export_report_html_appendix1_summary.ts';
 import { build_appendix1_pts_pdf_document } from '../../js/export/export_report_html_appendix1_pts.ts';
 import {
@@ -130,6 +132,217 @@ describe('export_deficiency_types_collect', () => {
         expect(read_deficiency_type_node({ DeficiencyType: { SecondaryText: 'Sekundär' } })).toBeNull();
     });
 
+    test('resolve_requirement_deficiency_type_display läser endast requirement.DeficiencyType', () => {
+        const from_requirement = resolve_requirement_deficiency_type_display({
+            DeficiencyType: { PrimaryText: 'Kravnivå', SecondaryText: 'Sekundär krav' },
+            checks: [
+                {
+                    passCriteria: [
+                        {
+                            DeficiencyType: {
+                                PrimaryText: 'PassCriteria',
+                                SecondaryText: 'Sekundär pc',
+                            },
+                        },
+                    ],
+                },
+            ],
+        });
+        expect(from_requirement).toEqual({ primary: 'Kravnivå', secondary: 'Sekundär krav' });
+    });
+
+    test('resolve_requirement_deficiency_type_display ignorerar passCriteria utan kravnivå', () => {
+        const from_pass_criteria = resolve_requirement_deficiency_type_display({
+            checks: [
+                {
+                    passCriteria: [
+                        { requirement: 'Utan bristtyp' },
+                        {
+                            DeficiencyType: {
+                                PrimaryText: 'Semantiska element används inte.',
+                                SecondaryText: 'Till exempel rubriker.',
+                            },
+                        },
+                    ],
+                },
+            ],
+        });
+        expect(from_pass_criteria).toBeNull();
+    });
+
+    test('resolve_requirement_deficiency_type_display ignorerar passCriteria som objekt-karta utan kravnivå', () => {
+        const resolved = resolve_requirement_deficiency_type_display({
+            checks: [
+                {
+                    id: 'chk1',
+                    passCriteria: {
+                        pc1: { requirement: 'Utan bristtyp' },
+                        pc2: {
+                            DeficiencyType: {
+                                PrimaryText: 'Primär från objekt-karta',
+                                SecondaryText: 'Sekundär från objekt-karta',
+                            },
+                        },
+                    },
+                },
+            ],
+        });
+        expect(resolved).toBeNull();
+    });
+
+    test('read_deficiency_type_node ignorerar platta PrimaryText-fält utan DeficiencyType-wrapper', () => {
+        expect(
+            read_deficiency_type_node({
+                PrimaryText: 'Platt primär',
+                SecondaryText: 'Platt sekundär',
+            })
+        ).toBeNull();
+    });
+
+    test('resolve_requirement_deficiency_type_display ignorerar failureStatementTemplate', () => {
+        const template =
+            'Allt som är inte visuellt formgivet som en rubrik är uppmärkt med <h1>…<h6>. [ange var och hur det brister]';
+        const resolved = resolve_requirement_deficiency_type_display({
+            id: 'krav_rubriker',
+            title: 'Information och relationer för rubriker',
+            standardReference: { text: '1.3.1 Info and Relationships' },
+            checks: [
+                {
+                    id: '1',
+                    passCriteria: [
+                        {
+                            id: '1.1',
+                            requirement:
+                                'Allt som är visuellt formgivet som en rubrik är uppmärkt med <h1>…<h6>.',
+                            failureStatementTemplate: template,
+                        },
+                    ],
+                },
+            ],
+        });
+        expect(resolved).toBeNull();
+    });
+
+    test('collect_deficiency_types_grouped_by_taxonomy faller tillbaka till requirement.DeficiencyType i regelfilen', () => {
+        const audit = {
+            ruleFileContent: {
+                appendix1: { groupingTaxonomyId: 'wcag22-pour' },
+                metadata: {
+                    taxonomies: [
+                        {
+                            id: 'wcag22-pour',
+                            concepts: [{ id: 'perceivable', label: 'Möjligt att uppfatta' }],
+                        },
+                    ],
+                },
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Rubriker',
+                        classifications: [{ taxonomyId: 'wcag22-pour', conceptId: 'perceivable' }],
+                        DeficiencyType: {
+                            PrimaryText: 'Rubrikerna förekommer i icke-hierarkisk ordning.',
+                            SecondaryText: 'Till exempel hopp över nivåer.',
+                        },
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [
+                                    {
+                                        id: 'pc1',
+                                        requirement: 'Rubrikerna kommer i hierarkisk ordning.',
+                                        failureStatementTemplate:
+                                            'Rubrikerna förekommer i icke‑hierarkisk ordning. [ange var och hur det brister]',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: {
+                                            status: 'failed',
+                                            deficiencyId: 'B001',
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+        };
+        const groups = collect_deficiency_types_grouped_by_taxonomy(audit, 'wcag22-pour', t);
+        expect(groups).toHaveLength(1);
+        expect(groups[0].types[0].primary).toBe('Rubrikerna förekommer i icke-hierarkisk ordning.');
+        expect(groups[0].types[0].secondary).toBe('Till exempel hopp över nivåer.');
+    });
+
+    test('collect_deficiency_types_grouped_by_taxonomy ignorerar failureStatementTemplate utan DeficiencyType', () => {
+        const template = 'Rubrikerna förekommer i icke‑hierarkisk ordning. [ange var och hur det brister]';
+        const audit = {
+            ruleFileContent: {
+                appendix1: { groupingTaxonomyId: 'wcag22-pour' },
+                metadata: {
+                    taxonomies: [
+                        {
+                            id: 'wcag22-pour',
+                            concepts: [{ id: 'perceivable', label: 'Möjligt att uppfatta' }],
+                        },
+                    ],
+                },
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Rubriker',
+                        classifications: [{ taxonomyId: 'wcag22-pour', conceptId: 'perceivable' }],
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [
+                                    {
+                                        id: 'pc1',
+                                        requirement: 'Rubrikerna kommer i hierarkisk ordning.',
+                                        failureStatementTemplate: template,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: {
+                                            status: 'failed',
+                                            deficiencyId: 'B001',
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+        };
+        const groups = collect_deficiency_types_grouped_by_taxonomy(audit, 'wcag22-pour', t);
+        expect(groups).toHaveLength(0);
+    });
+
     test('collect_deficiency_types_grouped_by_principle sorterar per princip och avdubblerar', () => {
         const audit = create_audit_with_deficiency_types();
         const groups = collect_deficiency_types_grouped_by_principle(audit, t);
@@ -165,6 +378,91 @@ describe('export_report_html_appendix1_pts', () => {
         expect(html).toContain('{{APPENDIX1_COVER_SRC}}');
     });
 
+    test('PDF HTML visar granskning avslutad när sluttid finns', () => {
+        const audit = {
+            ...create_audit_with_deficiency_types(),
+            auditStatus: 'locked',
+            endTime: '2024-06-20T14:00:00.000Z',
+            auditMetadata: {
+                ...create_audit_with_deficiency_types().auditMetadata,
+                endTime: '2024-06-20T14:00:00.000Z',
+            },
+        };
+        const html = build_appendix1_pts_pdf_document(audit, t);
+        expect(html).toContain('Granskning avslutad');
+        expect(html).toMatch(/2024-06-2[01]/);
+    });
+
+    test('PDF HTML ersätter {{endDate}} i sektionsinnehåll', () => {
+        const audit = {
+            ...create_audit_with_deficiency_types(),
+            auditStatus: 'locked',
+            endTime: '2024-06-20T14:00:00.000Z',
+            auditMetadata: {
+                ...create_audit_with_deficiency_types().auditMetadata,
+                appendix1SummaryText: 'Avslutad den {{endDate}}.',
+            },
+        };
+        const html = build_appendix1_pts_pdf_document(audit, t);
+        expect(html).toMatch(/Avslutad den 2024-06-2[01]/);
+        expect(html).not.toContain('{{endDate}}');
+    });
+
+    test('PDF HTML tar bort duplicerad inledningsrubrik i sektionsinnehåll', () => {
+        const audit = {
+            ...create_audit_with_deficiency_types(),
+            auditMetadata: {
+                ...create_audit_with_deficiency_types().auditMetadata,
+                appendix1SummaryText: '# 1. Inledning\n\nUnik brödtext.',
+            },
+        };
+        const html = build_appendix1_pts_pdf_document(audit, t);
+        const introduction_matches = html.match(/<h1>1\. Inledning<\/h1>/g) ?? [];
+        expect(introduction_matches).toHaveLength(1);
+        expect(html).toContain('Unik brödtext.');
+    });
+
+    test('PDF HTML har kompakt PTS-kontaktblock utan separata adressstycken', () => {
+        const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
+        expect(html).toContain('class="appendix1-audit-info__contact"');
+        expect(html).toContain('Post- och telestyrelsen<br>Box 6101<br>');
+        expect(html.match(/<p>Post- och telestyrelsen<\/p>/g)).toBeNull();
+    });
+
+    test('PDF print-CSS har tight kontakt och punktledare i innehållsförteckning', () => {
+        const css = build_appendix1_pdf_print_css();
+        expect(css).toContain('.appendix1-audit-info__contact');
+        expect(css).toMatch(/line-height:\s*1\.15/);
+        expect(css).toContain('.appendix1-toc__leader');
+        expect(css).toMatch(/dotted #000000/);
+        expect(css).toContain('.appendix1-toc__item--level-2 .appendix1-toc__label');
+        expect(css).toMatch(/text-align:\s*right/);
+        expect(css).not.toContain('transform: translateY');
+    });
+
+    test('PDF HTML har innehållsförteckning med punktledare', () => {
+        const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
+        expect(html).toContain('class="appendix1-toc__leader"');
+        expect(html).toContain('class="appendix1-toc__page"');
+        expect(html).toContain('class="appendix1-toc__link"');
+        expect(html).toContain('appendix1-toc__item--level-2');
+        expect(html).toContain('href="#section-audit-info"');
+    });
+
+    test('PDF HTML har numrerade bristtypslistor under 3.x', () => {
+        const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
+        expect(html).toContain('<div class="appendix1-deficiency-list"><ol>');
+        expect(html).toContain('<strong>Semantiska element används inte.</strong>');
+    });
+
+    test('PDF print-CSS har sidnummer i innehållsförteckning och helsidesomslag', () => {
+        const css = build_appendix1_pdf_print_css();
+        expect(css).toContain('.appendix1-toc__page');
+        expect(css).not.toContain('target-counter');
+        expect(css).toMatch(/height:\s*297mm/);
+        expect(css).toContain('object-fit: cover');
+    });
+
     test('build_appendix1_summary_pdf_filename använder sammanfattning-suffix', () => {
         const filename = build_appendix1_summary_pdf_filename(
             { auditMetadata: { actorName: 'Test AB', caseNumber: '2026-001' } },
@@ -188,5 +486,16 @@ describe('export_word_appendix1_summary', () => {
         append_word_appendix1_summary_paragraphs(children, create_audit_with_deficiency_types(), t);
         expect(children.length).toBeGreaterThan(10);
         expect(children.every((child) => child instanceof Paragraph)).toBe(true);
+    });
+
+    test('Word-innehållsförteckning använder högerställd positional tab mot marginal', () => {
+        const children: unknown[] = [];
+        append_word_appendix1_summary_paragraphs(children, create_audit_with_deficiency_types(), t);
+
+        const serialized = JSON.stringify(children);
+        expect(serialized).toContain('"rootKey":"w:ptab"');
+        expect(serialized).toContain('"alignment":"right"');
+        expect(serialized).toContain('"relativeTo":"margin"');
+        expect(serialized).toContain('"leader":"dot"');
     });
 });

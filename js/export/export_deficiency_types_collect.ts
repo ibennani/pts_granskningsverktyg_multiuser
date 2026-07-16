@@ -7,7 +7,6 @@ import {
     get_concept_ids_for_requirement,
     resolve_taxonomy_concepts,
 } from '../../shared/classification/taxonomy_grouping.js';
-import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
 import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
 
 export const WCAG_PRINCIPLE_ORDER = ['perceivable', 'operable', 'understandable', 'robust'] as const;
@@ -26,15 +25,42 @@ export type DeficiencyTypesByConcept = {
 /** @deprecated Använd DeficiencyTypesByConcept. */
 export type DeficiencyTypesByPrinciple = DeficiencyTypesByConcept;
 
-export function read_deficiency_type_node(node: unknown): DeficiencyTypeText | null {
-    const deficiency_type = (node as { DeficiencyType?: { PrimaryText?: unknown; SecondaryText?: unknown } })
-        ?.DeficiencyType;
-    if (!deficiency_type) return null;
-    const primary = typeof deficiency_type.PrimaryText === 'string' ? deficiency_type.PrimaryText.trim() : '';
-    const secondary =
-        typeof deficiency_type.SecondaryText === 'string' ? deficiency_type.SecondaryText.trim() : '';
+const PRIMARY_TEXT_KEYS = ['PrimaryText', 'primaryText', 'primary'] as const;
+const SECONDARY_TEXT_KEYS = ['SecondaryText', 'secondaryText', 'secondary'] as const;
+
+function read_string_field(source: Record<string, unknown>, keys: readonly string[]): string {
+    for (const key of keys) {
+        const value = source[key];
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
+    }
+    return '';
+}
+
+/** Läser bristtyp enbart från DeficiencyType-objektet (inte bristbeskrivningsmallar). */
+function read_deficiency_text_from_record(record: Record<string, unknown>): DeficiencyTypeText | null {
+    const nested = record.DeficiencyType;
+    if (!nested || typeof nested !== 'object') return null;
+    const primary = read_string_field(nested as Record<string, unknown>, PRIMARY_TEXT_KEYS);
+    const secondary = read_string_field(nested as Record<string, unknown>, SECONDARY_TEXT_KEYS);
     if (!primary) return null;
     return { primary, secondary };
+}
+
+export function read_deficiency_type_node(node: unknown): DeficiencyTypeText | null {
+    if (!node || typeof node !== 'object') return null;
+    return read_deficiency_text_from_record(node as Record<string, unknown>);
+}
+
+/**
+ * Löser bristtypstext för visning på kravnivå från requirement.DeficiencyType.
+ * Använder inte failureStatementTemplate eller andra bristbeskrivningsfält.
+ */
+export function resolve_requirement_deficiency_type_display(
+    requirement: Record<string, unknown>
+): DeficiencyTypeText | null {
+    return read_deficiency_type_node(requirement);
 }
 
 /** @deprecated Använd resolve_taxonomy_concepts med get_appendix1_grouping_taxonomy_id. */
@@ -72,20 +98,10 @@ export function collect_deficiency_types_grouped_by_taxonomy(
         groups.get(concept_id)!.set(dedupe_key, entry);
     };
 
-    for_each_failed_export_pass_criterion(current_audit, ({ req_definition, check_id, pc_id, pc_obj }) => {
+    for_each_failed_export_pass_criterion(current_audit, ({ req_definition, pc_obj }) => {
         let type = read_deficiency_type_node(pc_obj);
         if (!type) {
-            const req = req_definition as Record<string, unknown>;
-            const checks = Array.isArray(req.checks) ? req.checks : [];
-            const check_def = find_check_def_by_storage_id(
-                checks as Array<{ id?: unknown; key?: unknown; passCriteria?: unknown[] }>,
-                check_id
-            );
-            const pc_def = find_pass_criterion_def_by_storage_id(
-                check_def?.passCriteria as Array<{ id?: unknown; key?: unknown }> | undefined,
-                pc_id
-            );
-            type = read_deficiency_type_node(pc_def);
+            type = read_deficiency_type_node(req_definition);
         }
         if (!type) return;
         const concept_ids = get_concept_ids_for_requirement(req_definition as Record<string, unknown>, taxonomy_id);

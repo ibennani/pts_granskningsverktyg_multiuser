@@ -1,11 +1,18 @@
 /**
- * @fileoverview Redigerar regelfilens klassificeringar: taxonomier och kravkoppling.
+ * @fileoverview Redigerar regelfilens klassificeringar per hub-del (part).
  */
 import { clone_metadata, ensure_metadata_defaults } from '../../logic/rulefile_metadata_model.js';
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
 import { normalize_rulefile_metadata_vocabularies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
-import { render_taxonomies_editor } from './rulefile_taxonomies_editor_ui.js';
+import { normalize_audit_types_for_persist } from '../../../shared/rulefile/rulefile_audit_types.js';
+import {
+    normalize_classification_part_param,
+    type ClassificationPartId,
+} from './rulefile_classifications_parts.js';
+import { render_taxonomy_simplified_editor, finalize_taxonomy_ids_for_persist } from './rulefile_taxonomy_simplified_editor_ui.js';
 import { render_requirement_mapping_ui } from './rulefile_requirement_mapping_ui.js';
+import { render_audit_types_editor } from './rulefile_audit_types_ui.js';
+import { render_deficiency_types_editor } from './rulefile_deficiency_types_ui.js';
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
 import '../edit_rulefile_metadata_view.css';
 
@@ -21,20 +28,18 @@ type Deps = {
     };
     NotificationComponent: { show_global_message: (msg: string, type: string) => void };
     AutosaveService?: { create_session?: (opts: unknown) => { request_autosave?: () => void; destroy?: () => void } };
+    params?: Record<string, string>;
 };
-
-type TabId = 'taxonomies' | 'mapping';
 
 export class EditRulefileClassificationsComponent {
     private root: HTMLElement | null = null;
     private deps: Deps | null = null;
     private form_element_ref: HTMLFormElement | null = null;
     private working_metadata: Record<string, unknown> | null = null;
-    private active_tab: TabId = 'taxonomies';
-    private taxonomies_container: HTMLElement | null = null;
-    private mapping_container: HTMLElement | null = null;
+    private part: ClassificationPartId = 'taxonomy';
+    private panel_container: HTMLElement | null = null;
     private mapping_apply: (() => Record<string, unknown>) | null = null;
-    private mapping_rendered = false;
+    private deficiency_apply: (() => Record<string, unknown>) | null = null;
     private autosave_session: { request_autosave?: () => void; destroy?: () => void } | null = null;
     skip_autosave_on_destroy = false;
 
@@ -43,16 +48,17 @@ export class EditRulefileClassificationsComponent {
         this.deps = deps;
         this.form_element_ref = null;
         this.working_metadata = null;
-        this.active_tab = 'taxonomies';
+        this.part = normalize_classification_part_param(deps.params?.part) || 'taxonomy';
+        this.panel_container = null;
         this.mapping_apply = null;
-        this.mapping_rendered = false;
+        this.deficiency_apply = null;
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
     }
 
     private get_editor_ctx() {
         if (!this.deps) throw new Error('Missing deps');
-        return { Helpers: this.deps.Helpers, Translation: this.deps.Translation };
+        return { Helpers: this.deps.Helpers, Translation: this.deps.Translation, router: this.deps.router };
     }
 
     private ensure_working_metadata(): Record<string, unknown> {
@@ -64,28 +70,37 @@ export class EditRulefileClassificationsComponent {
         return this.working_metadata;
     }
 
-    private build_updated_rulefile(skip_render: boolean): Record<string, unknown> {
-        const state = this.deps!.getState();
-        const current = (state.ruleFileContent as Record<string, unknown>) || {};
-        const working = this.ensure_working_metadata();
-        const normalized_metadata = normalize_rulefile_metadata_vocabularies({ ...working }, { mode: 'read' });
-        let next_rulefile: Record<string, unknown> = {
-            ...current,
-            metadata: { ...(current.metadata as object), ...normalized_metadata },
-        };
-        if (this.mapping_apply) {
-            next_rulefile = this.mapping_apply();
-            next_rulefile.metadata = { ...(next_rulefile.metadata as object), ...normalized_metadata };
-        }
-        this.dispatch_save(next_rulefile, skip_render);
-        return next_rulefile;
-    }
-
     private dispatch_save(rule_file_content: Record<string, unknown>, skip_render: boolean): void {
         this.deps?.dispatch({
             type: this.deps.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
             payload: { ruleFileContent: rule_file_content, skip_render },
         });
+    }
+
+    private build_updated_rulefile(skip_render: boolean): Record<string, unknown> {
+        const state = this.deps!.getState();
+        const current = (state.ruleFileContent as Record<string, unknown>) || {};
+        const working = this.ensure_working_metadata();
+        finalize_taxonomy_ids_for_persist(working);
+        normalize_audit_types_for_persist(working);
+        const normalized_metadata = normalize_rulefile_metadata_vocabularies({ ...working }, { mode: 'read' });
+
+        let next_rulefile: Record<string, unknown> = {
+            ...current,
+            metadata: { ...(current.metadata as object), ...normalized_metadata },
+        };
+
+        if (this.mapping_apply) {
+            next_rulefile = this.mapping_apply();
+            next_rulefile.metadata = { ...(next_rulefile.metadata as object), ...normalized_metadata };
+        }
+        if (this.deficiency_apply) {
+            next_rulefile = this.deficiency_apply();
+            next_rulefile.metadata = { ...(next_rulefile.metadata as object), ...normalized_metadata };
+        }
+
+        this.dispatch_save(next_rulefile, skip_render);
+        return next_rulefile;
     }
 
     private handle_autosave_input = (): void => {
@@ -96,79 +111,46 @@ export class EditRulefileClassificationsComponent {
         this.build_updated_rulefile(skip_render);
     }
 
-    private render_taxonomies_panel(): void {
-        if (!this.taxonomies_container || !this.deps) return;
-        render_taxonomies_editor(this.get_editor_ctx(), this.taxonomies_container, this.ensure_working_metadata(), {
-            on_change: this.handle_autosave_input,
-        });
-    }
-
-    private render_mapping_panel(): void {
-        if (!this.mapping_container || !this.deps || this.mapping_rendered) return;
+    private render_panel(): void {
+        if (!this.panel_container || !this.deps) return;
+        this.panel_container.innerHTML = '';
+        const ctx = this.get_editor_ctx();
         const state = this.deps.getState();
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
-        const mapping = render_requirement_mapping_ui(
-            this.get_editor_ctx(),
-            this.mapping_container,
-            { ...rule_file, metadata: this.ensure_working_metadata() },
-            this.handle_autosave_input
-        );
-        this.mapping_apply = mapping.apply_changes;
-        this.mapping_rendered = true;
-    }
 
-    private ensure_tab_panel_rendered(tab_id: TabId): void {
-        if (tab_id === 'taxonomies') {
-            this.render_taxonomies_panel();
+        if (this.part === 'taxonomy') {
+            render_taxonomy_simplified_editor(ctx, this.panel_container, this.ensure_working_metadata(), {
+                on_change: this.handle_autosave_input,
+            });
             return;
         }
-        this.render_mapping_panel();
+        if (this.part === 'mapping') {
+            const mapping = render_requirement_mapping_ui(
+                ctx,
+                this.panel_container,
+                { ...rule_file, metadata: this.ensure_working_metadata() },
+                this.handle_autosave_input
+            );
+            this.mapping_apply = mapping.apply_changes;
+            return;
+        }
+        if (this.part === 'audit_types') {
+            render_audit_types_editor(ctx, this.panel_container, this.ensure_working_metadata(), {
+                on_change: this.handle_autosave_input,
+            });
+            return;
+        }
+        const deficiency = render_deficiency_types_editor(
+            ctx,
+            this.panel_container,
+            rule_file,
+            { on_change: this.handle_autosave_input }
+        );
+        this.deficiency_apply = deficiency.apply_changes;
     }
 
-    private render_tab_panels(): void {
-        this.ensure_tab_panel_rendered(this.active_tab);
-    }
-
-    private set_active_tab(tab_id: TabId, button: HTMLButtonElement): void {
-        if (!this.form_element_ref || !this.deps) return;
-        this.active_tab = tab_id;
-        this.form_element_ref.querySelectorAll('[data-classifications-tab]').forEach((el) => {
-            const is_active = el.getAttribute('data-classifications-tab') === tab_id;
-            el.classList.toggle('is-active', is_active);
-            if (el.matches('[role="tab"]')) {
-                el.setAttribute('aria-selected', is_active ? 'true' : 'false');
-                (el as HTMLElement).tabIndex = is_active ? 0 : -1;
-            }
-            if (el.matches('[role="tabpanel"]')) {
-                (el as HTMLElement).hidden = !is_active;
-            }
-        });
-        this.ensure_tab_panel_rendered(tab_id);
-        button.focus();
-    }
-
-    private create_tab_button(tab_id: TabId, label_key: string, panel_id: string): HTMLButtonElement {
-        const t = this.deps!.Translation.t;
-        const is_active = this.active_tab === tab_id;
-        const button = this.deps!.Helpers.create_element('button', {
-            class_name: ['button', 'button-default', 'classifications-tab-button', ...(is_active ? ['is-active'] : [])],
-            attributes: {
-                type: 'button',
-                role: 'tab',
-                id: `classifications-tab-${tab_id}`,
-                'aria-controls': panel_id,
-                'aria-selected': is_active ? 'true' : 'false',
-                tabindex: is_active ? '0' : '-1',
-                'data-classifications-tab': tab_id,
-            },
-            text_content: t(label_key),
-        }) as HTMLButtonElement;
-        button.addEventListener('click', () => this.set_active_tab(tab_id, button));
-        return button;
-    }
-
-    private navigate_back_to_view(): void {
-        this.deps?.router('rulefile_sections', { section: 'classifications' });
+    private navigate_back_to_part_view(): void {
+        this.deps?.router('rulefile_sections', { section: 'classifications', part: this.part });
     }
 
     private async save_and_sync(): Promise<void> {
@@ -183,26 +165,15 @@ export class EditRulefileClassificationsComponent {
             this.deps.Translation.t('rulefile_classifications_saved'),
             'success'
         );
-        this.navigate_back_to_view();
-    }
-
-    private create_tab_panel_attributes(tab_id: TabId, panel_id: string, labelled_by: string): Record<string, string> {
-        const attributes: Record<string, string> = {
-            role: 'tabpanel',
-            id: panel_id,
-            'aria-labelledby': labelled_by,
-            'data-classifications-tab': tab_id,
-        };
-        if (this.active_tab !== tab_id) {
-            attributes.hidden = 'hidden';
-        }
-        return attributes;
+        this.navigate_back_to_part_view();
     }
 
     render(): void {
         if (!this.root || !this.deps) return;
         this.root.innerHTML = '';
-        const t = this.deps.Translation.t;
+        this.part = normalize_classification_part_param(this.deps.params?.part) || 'taxonomy';
+        this.mapping_apply = null;
+        this.deficiency_apply = null;
         this.ensure_working_metadata();
 
         const form = this.deps.Helpers.create_element('form', {
@@ -210,64 +181,23 @@ export class EditRulefileClassificationsComponent {
         }) as HTMLFormElement;
         this.form_element_ref = form;
 
-        const tablist = this.deps.Helpers.create_element('div', {
-            class_name: 'classifications-tablist',
-            attributes: { role: 'tablist', 'aria-label': t('rulefile_classifications_tablist_label') },
+        this.panel_container = this.deps.Helpers.create_element('div', {
+            class_name: 'classifications-part-panel',
         });
-        const taxonomies_panel_id = 'classifications-panel-taxonomies';
-        const mapping_panel_id = 'classifications-panel-mapping';
-        tablist.append(
-            this.create_tab_button('taxonomies', 'rulefile_classifications_tab_taxonomies', taxonomies_panel_id),
-            this.create_tab_button('mapping', 'rulefile_classifications_tab_mapping', mapping_panel_id)
-        );
-        form.appendChild(tablist);
-
-        const taxonomies_panel = this.deps.Helpers.create_element('section', {
-            class_name: 'classifications-tab-panel',
-            attributes: this.create_tab_panel_attributes(
-                'taxonomies',
-                taxonomies_panel_id,
-                'classifications-tab-taxonomies'
-            ),
-        });
-        taxonomies_panel.appendChild(
-            this.deps.Helpers.create_element('p', {
-                class_name: 'field-hint',
-                text_content: t('rulefile_classifications_taxonomies_intro'),
-            })
-        );
-        this.taxonomies_container = this.deps.Helpers.create_element('div', {
-            class_name: 'taxonomies-editor',
-        });
-        taxonomies_panel.appendChild(this.taxonomies_container);
-        form.appendChild(taxonomies_panel);
-
-        const mapping_panel = this.deps.Helpers.create_element('section', {
-            class_name: 'classifications-tab-panel',
-            attributes: this.create_tab_panel_attributes(
-                'mapping',
-                mapping_panel_id,
-                'classifications-tab-mapping'
-            ),
-        });
-        this.mapping_container = this.deps.Helpers.create_element('div', {
-            class_name: 'requirement-mapping-editor',
-        });
-        mapping_panel.appendChild(this.mapping_container);
-        form.appendChild(mapping_panel);
+        form.appendChild(this.panel_container);
 
         const actions = this.deps.Helpers.create_element('div', { class_name: 'form-actions' });
         const save_button = this.deps.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'submit' },
-            html_content: build_save_button_html_content(t('save_changes_button')),
+            html_content: build_save_button_html_content(this.deps.Translation.t('save_changes_button')),
         });
         const back_button = this.deps.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             attributes: { type: 'button' },
-            text_content: t('rulefile_info_blocks_back_to_view'),
+            text_content: this.deps.Translation.t('rulefile_info_blocks_back_to_view'),
         });
-        back_button.addEventListener('click', () => this.navigate_back_to_view());
+        back_button.addEventListener('click', () => this.navigate_back_to_part_view());
         actions.append(save_button, back_button);
         form.appendChild(actions);
 
@@ -277,7 +207,7 @@ export class EditRulefileClassificationsComponent {
         });
 
         this.root.appendChild(form);
-        this.render_tab_panels();
+        this.render_panel();
 
         if (this.deps.AutosaveService?.create_session) {
             this.autosave_session = this.deps.AutosaveService.create_session({
@@ -295,10 +225,9 @@ export class EditRulefileClassificationsComponent {
         this.deps = null;
         this.form_element_ref = null;
         this.working_metadata = null;
-        this.taxonomies_container = null;
-        this.mapping_container = null;
+        this.panel_container = null;
         this.mapping_apply = null;
-        this.mapping_rendered = false;
+        this.deficiency_apply = null;
         this.autosave_session = null;
     }
 }

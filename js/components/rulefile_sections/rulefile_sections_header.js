@@ -4,6 +4,13 @@
 
 import { can_edit_rulefile } from '../../utils/helpers.js';
 
+import {
+    classification_part_opens_directly_in_edit,
+    get_classification_part_edit_aria_key,
+    get_classification_part_title_key,
+    normalize_classification_part_param,
+} from './rulefile_classifications_parts.js';
+
 /**
  * @param {object} deps
  * @param {object} deps.Helpers
@@ -12,10 +19,11 @@ import { can_edit_rulefile } from '../../utils/helpers.js';
  * @param {function} deps.getState
  * @param {() => unknown | null} [deps.get_page_types_edit_component]
  * @param {string} [appendix]
+ * @param {string} [classifications_part]
  * @param {object} section_config
  * @param {boolean} [is_editing]
  */
-export function create_rulefile_section_header(deps, section_config, is_editing = false, appendix = '') {
+export function create_rulefile_section_header(deps, section_config, is_editing = false, appendix = '', classifications_part = '') {
     const t = deps.Translation.t;
     const Helpers = deps.Helpers;
     const header_wrapper = Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
@@ -30,7 +38,15 @@ export function create_rulefile_section_header(deps, section_config, is_editing 
                 : appendix === '3'
                     ? 'rulefile_appendix_hub_3_title'
                     : null;
-    const heading_text = appendix_title_key ? t(appendix_title_key) : section_config.title;
+    const normalized_part = normalize_classification_part_param(classifications_part);
+    const classification_part_title_key = normalized_part
+        ? get_classification_part_title_key(normalized_part)
+        : null;
+    const heading_text = appendix_title_key
+        ? t(appendix_title_key)
+        : classification_part_title_key
+            ? t(classification_part_title_key)
+            : section_config.title;
     const heading = Helpers.create_element('h1', {
         text_content: heading_text,
         attributes: { id: heading_id }
@@ -72,18 +88,28 @@ export function create_rulefile_section_header(deps, section_config, is_editing 
         heading_row.appendChild(edit_button);
     }
 
-    if (can_edit && section_config.id === 'classifications' && !is_editing) {
+    if (
+        can_edit &&
+        section_config.id === 'classifications' &&
+        !is_editing &&
+        normalized_part &&
+        !classification_part_opens_directly_in_edit(normalized_part)
+    ) {
         const edit_button = Helpers.create_element('button', {
             class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
             attributes: {
                 type: 'button',
-                'aria-label': t('rulefile_sections_edit_classifications_aria')
+                'aria-label': t(get_classification_part_edit_aria_key(normalized_part))
             },
             html_content: `<span>${t('edit_button_label')}</span>` +
                           (Helpers.get_icon_svg ? Helpers.get_icon_svg('edit') : '')
         });
         edit_button.addEventListener('click', () => {
-            deps.router('rulefile_sections', { section: 'classifications', edit: 'true' });
+            deps.router('rulefile_sections', {
+                section: 'classifications',
+                part: normalized_part,
+                edit: 'true'
+            });
         });
         heading_row.appendChild(edit_button);
     }

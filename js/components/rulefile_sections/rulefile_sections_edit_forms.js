@@ -143,14 +143,15 @@ export async function render_rulefile_info_blocks_edit_form(ctx, container, _met
  * @param {HTMLElement} container
  * @param {object} _metadata
  */
-export async function render_rulefile_classifications_edit_form(ctx, container, _metadata) {
+export async function render_rulefile_classifications_edit_form(ctx, container, _metadata, part = '') {
     const { deps, view } = ctx;
+    const next_part = String(part || deps.params?.part || '').trim();
 
-    if (view.classifications_edit_component && container.children.length > 0) {
-        return;
-    }
-
-    if (view.classifications_edit_component && typeof view.classifications_edit_component.destroy === 'function') {
+    if (view.classifications_edit_component) {
+        const same_part = view.classifications_edit_part === next_part;
+        if (same_part && container.children.length > 0) {
+            return;
+        }
         view.classifications_edit_component.skip_autosave_on_destroy = true;
         view.classifications_edit_component.destroy();
         view.classifications_edit_component = null;
@@ -158,9 +159,16 @@ export async function render_rulefile_classifications_edit_form(ctx, container, 
 
     const { EditRulefileClassificationsComponent } = await import('./EditRulefileClassificationsComponent.js');
     const comp = new EditRulefileClassificationsComponent();
-    await comp.init({ root: container, deps });
+    await comp.init({
+        root: container,
+        deps: {
+            ...deps,
+            params: { ...(deps.params || {}), part: next_part },
+        },
+    });
     comp.render();
     view.classifications_edit_component = comp;
+    view.classifications_edit_part = next_part;
 }
 
 /**
@@ -170,26 +178,36 @@ export async function render_rulefile_classifications_edit_form(ctx, container, 
  */
 export async function render_rulefile_report_template_edit_form(ctx, container, ruleFileContent, appendix = '1') {
     const { deps, view } = ctx;
+    const next_appendix = String(appendix || '1');
 
-    if (view.report_template_edit_component && container.children.length > 0) {
-        return;
+    if (view.report_template_edit_component) {
+        const same_appendix = view.report_template_edit_appendix === next_appendix;
+        if (same_appendix && container.children.length > 0) {
+            return;
+        }
+        if (typeof view.report_template_edit_component.destroy === 'function') {
+            view.report_template_edit_component.destroy();
+        }
+        view.report_template_edit_component = null;
     }
 
-    if (appendix === '2') {
+    if (next_appendix === '2') {
         const { EditReportTemplateAppendix2Component } = await import('./EditReportTemplateAppendix2Component.js');
         const comp = new EditReportTemplateAppendix2Component();
         await comp.init({ root: container, deps });
         comp.render();
         view.report_template_edit_component = comp;
+        view.report_template_edit_appendix = next_appendix;
         return;
     }
 
-    if (appendix === '3') {
+    if (next_appendix === '3') {
         const { EditReportTemplateAppendix3Component } = await import('./EditReportTemplateAppendix3Component.js');
         const comp = new EditReportTemplateAppendix3Component();
         await comp.init({ root: container, deps });
         comp.render();
         view.report_template_edit_component = comp;
+        view.report_template_edit_appendix = next_appendix;
         return;
     }
 
@@ -198,4 +216,5 @@ export async function render_rulefile_report_template_edit_form(ctx, container, 
     await comp.init({ root: container, deps });
     comp.render();
     view.report_template_edit_component = comp;
+    view.report_template_edit_appendix = next_appendix;
 }

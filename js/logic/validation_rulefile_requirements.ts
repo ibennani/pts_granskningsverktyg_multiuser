@@ -76,6 +76,24 @@ function validate_requirement_info_blocks(req_id: string, req: Record<string, un
     return { ok: true };
 }
 
+function validate_requirement_deficiency_type(
+    req_id: string,
+    req: Record<string, unknown>
+): { ok: true } | { ok: false; message: string } {
+    if (!req.DeficiencyType) return { ok: true };
+    if (typeof req.DeficiencyType !== 'object' || req.DeficiencyType === null) {
+        return { ok: false, message: `Requirement '${req_id}' DeficiencyType måste vara ett objekt` };
+    }
+    const node = req.DeficiencyType as Record<string, unknown>;
+    if (node.PrimaryText !== undefined && typeof node.PrimaryText !== 'string') {
+        return { ok: false, message: `Requirement '${req_id}' DeficiencyType.PrimaryText måste vara en sträng` };
+    }
+    if (node.SecondaryText !== undefined && typeof node.SecondaryText !== 'string') {
+        return { ok: false, message: `Requirement '${req_id}' DeficiencyType.SecondaryText måste vara en sträng` };
+    }
+    return { ok: true };
+}
+
 function validate_one_requirement_shape(
     req_obj: unknown,
     req_id: string
@@ -97,6 +115,8 @@ function validate_one_requirement_shape(
     }
     const ib = validate_requirement_info_blocks(req_id, req);
     if (!ib.ok) return ib;
+    const deficiency = validate_requirement_deficiency_type(req_id, req);
+    if (!deficiency.ok) return deficiency;
     return { ok: true };
 }
 

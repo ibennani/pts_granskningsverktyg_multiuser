@@ -505,9 +505,30 @@
     color: var(--button-primary-text-color, #fff);
 }
 
-.requirement-mapping-matrix-wrapper {
-    display: none;
+.requirement-mapping-layout,
+.rulefile-classifications-table-layout,
+.deficiency-types-table-wrapper,
+.audit-types-table-wrapper {
+    width: max-content;
+    max-width: 100%;
+}
+
+.requirement-mapping-layout .rulefile-classifications-table-filter .form-control,
+.rulefile-classifications-table-layout .rulefile-classifications-table-filter .form-control,
+.deficiency-types-table-wrapper .rulefile-classifications-table-filter .form-control,
+.audit-types-table-wrapper .rulefile-classifications-table-filter .form-control {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.rulefile-classifications-table-scroll-wrapper {
     overflow: auto;
+    max-width: 100%;
+}
+
+.requirement-mapping-matrix-wrapper,
+.rulefile-classifications-table-scroll-wrapper.requirement-mapping-matrix-wrapper {
+    display: none;
     max-height: 70vh;
     margin-top: 1rem;
 }
@@ -560,36 +581,117 @@
     cursor: pointer;
 }
 
-.requirement-mapping-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+.rulefile-classifications-table,
+.requirement-mapping-table,
+.deficiency-types-table,
+.audit-types-table {
+    width: max-content;
+    max-width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
 }
 
+.rulefile-classifications-table caption,
+.requirement-mapping-table caption,
+.deficiency-types-table caption,
+.audit-types-table caption {
+    caption-side: top;
+    text-align: left;
+    padding: 0 0 0.5rem;
+    font-weight: 600;
+}
+
+.rulefile-classifications-table th,
+.rulefile-classifications-table td,
 .requirement-mapping-table th,
-.requirement-mapping-table td {
+.requirement-mapping-table td,
+.deficiency-types-table th,
+.deficiency-types-table td,
+.audit-types-table th,
+.audit-types-table td {
     border: 1px solid var(--border-color, #ccc);
-    padding: 0.5rem;
-    vertical-align: middle;
-    background-color: var(--surface-card-bg, var(--plate-background-color, #fff));
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
-.requirement-mapping-table thead th {
+.rulefile-classifications-table thead th:not(.visually-hidden),
+.requirement-mapping-table thead th:not(.visually-hidden),
+.deficiency-types-table thead th:not(.visually-hidden),
+.audit-types-table thead th:not(.visually-hidden) {
     position: sticky;
     top: 0;
     z-index: 2;
-    background-color: var(--surface-card-bg, var(--plate-background-color, #fff));
+    font-weight: 600;
+    background-color: var(--surface-card-bg);
+    border-bottom: 2px solid var(--border-color, #ccc);
 }
 
-.requirement-mapping-row-header {
+.rulefile-classifications-table thead th:empty,
+.requirement-mapping-table thead th:empty,
+.deficiency-types-table thead th:empty,
+.audit-types-table thead th:empty {
+    padding: 0.5rem 0.75rem;
+}
+
+.rulefile-classifications-table tbody tr:nth-child(odd) th,
+.rulefile-classifications-table tbody tr:nth-child(odd) td,
+.requirement-mapping-table tbody tr:nth-child(odd) th,
+.requirement-mapping-table tbody tr:nth-child(odd) td,
+.deficiency-types-table tbody tr:nth-child(odd) th,
+.deficiency-types-table tbody tr:nth-child(odd) td,
+.audit-types-table tbody tr:nth-child(odd) th,
+.audit-types-table tbody tr:nth-child(odd) td {
+    background-color: var(--plate-background-color);
+}
+
+.rulefile-classifications-table tbody tr:nth-child(even) th,
+.rulefile-classifications-table tbody tr:nth-child(even) td,
+.requirement-mapping-table tbody tr:nth-child(even) th,
+.requirement-mapping-table tbody tr:nth-child(even) td,
+.deficiency-types-table tbody tr:nth-child(even) th,
+.deficiency-types-table tbody tr:nth-child(even) td,
+.audit-types-table tbody tr:nth-child(even) th,
+.audit-types-table tbody tr:nth-child(even) td {
+    background-color: var(--surface-emphasis-bg);
+}
+
+.rulefile-classifications-row-header,
+.requirement-mapping-row-header,
+.deficiency-types-row-header,
+.audit-types-row-header {
     position: sticky;
     left: 0;
     z-index: 1;
-    min-width: 12rem;
-    max-width: 18rem;
-    text-align: left;
-    white-space: normal;
-    word-break: break-word;
+    width: 1%;
+    min-width: 16rem;
+    max-width: 32rem;
+    font-weight: 500;
+}
+
+.rulefile-classifications-table tbody tr:nth-child(odd) .rulefile-classifications-row-header,
+.rulefile-classifications-table tbody tr:nth-child(odd) .requirement-mapping-row-header,
+.requirement-mapping-table tbody tr:nth-child(odd) .requirement-mapping-row-header,
+.requirement-mapping-table tbody tr:nth-child(odd) .rulefile-classifications-row-header,
+.deficiency-types-table tbody tr:nth-child(odd) .deficiency-types-row-header,
+.deficiency-types-table tbody tr:nth-child(odd) .rulefile-classifications-row-header,
+.audit-types-table tbody tr:nth-child(odd) .audit-types-row-header,
+.audit-types-table tbody tr:nth-child(odd) .rulefile-classifications-row-header {
+    background-color: var(--plate-background-color);
+}
+
+.rulefile-classifications-table tbody tr:nth-child(even) .rulefile-classifications-row-header,
+.rulefile-classifications-table tbody tr:nth-child(even) .requirement-mapping-row-header,
+.requirement-mapping-table tbody tr:nth-child(even) .requirement-mapping-row-header,
+.requirement-mapping-table tbody tr:nth-child(even) .rulefile-classifications-row-header,
+.deficiency-types-table tbody tr:nth-child(even) .deficiency-types-row-header,
+.deficiency-types-table tbody tr:nth-child(even) .rulefile-classifications-row-header,
+.audit-types-table tbody tr:nth-child(even) .audit-types-row-header,
+.audit-types-table tbody tr:nth-child(even) .rulefile-classifications-row-header {
+    background-color: var(--surface-emphasis-bg);
 }
 
 .requirement-mapping-corner-header {
@@ -597,20 +699,26 @@
     left: 0;
     top: 0;
     z-index: 3;
-    min-width: 12rem;
-    background-color: var(--surface-card-bg, var(--plate-background-color, #fff));
+    width: 1%;
+    min-width: 16rem;
+    max-width: 32rem;
+    background-color: var(--surface-card-bg);
 }
 
 .requirement-mapping-concept-header {
-    min-width: 6rem;
-    text-align: center;
+    width: 1%;
+    min-width: 4rem;
+    max-width: 10rem;
+    text-align: left;
     white-space: normal;
 }
 
 .requirement-mapping-cell {
-    text-align: center;
+    width: 1%;
     min-width: 2.75rem;
-    padding: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    text-align: center;
+    vertical-align: top;
 }
 
 .requirement-mapping-cell .requirement-mapping-checkbox {
@@ -629,7 +737,8 @@
 }
 
 @media (min-width: 768px) {
-    .requirement-mapping-matrix-wrapper {
+    .requirement-mapping-matrix-wrapper,
+    .rulefile-classifications-table-scroll-wrapper.requirement-mapping-matrix-wrapper {
         display: block;
     }
 
@@ -673,4 +782,302 @@
 
 .rulefile-section-content .rulefile-appendix2-value-list li:last-child {
     margin-bottom: 0;
+}
+
+/* Bilaga 1 brödtextredigerare */
+.appendix1-sections-editor-host .appendix1-editor-intro {
+    margin-bottom: 1rem;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__lead {
+    margin-bottom: 0.75rem;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__subheading {
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-list {
+    margin: 0 0 0.75rem 1.5rem;
+    line-height: 1.35;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-list li,
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-item {
+    margin-bottom: 0.15rem;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-token {
+    font-family: var(--font-family-monospace, ui-monospace, monospace);
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-copy-btn {
+    flex: 0 0 auto;
+    margin: 0;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: normal;
+}
+
+.appendix1-sections-editor-host .appendix1-editor-intro__note {
+    margin-bottom: 0;
+}
+
+.appendix1-sections-editor-host .appendix1-grouping-taxonomy-select {
+    width: 100%;
+    min-width: 20rem;
+    max-width: 100%;
+}
+
+.appendix1-sections-editor-host .appendix1-deficiency-sections-panel {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--surface-emphasis-border);
+    border-radius: 8px;
+    background: var(--surface-emphasis-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.appendix1-sections-editor-host .appendix1-deficiency-sections-panel__hint {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.appendix1-sections-editor-host .appendix1-deficiency-sections-preview {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.appendix1-sections-editor-host .appendix1-deficiency-sections-preview__item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--plate-background-color);
+    line-height: 1.45;
+}
+
+.appendix1-sections-editor-host .appendix1-deficiency-sections-preview__number {
+    flex-shrink: 0;
+    min-width: 2.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-color);
+}
+
+.appendix1-sections-editor-host .appendix1-deficiency-sections-preview__title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Klassificeringar: hub (återanvänder audit-settings__hub-* från audit_settings_view_component.css) */
+.rulefile-classifications-hub-intro {
+    margin-bottom: 1rem;
+}
+
+.classifications-part-panel {
+    margin-top: 0;
+}
+
+/* Klassificeringsredigering med tabell: scroll-zonen får bara begränsad höjd (max-height) så att
+   innehållet kan scrolla internt när tabellen är hög. Kort tabell = naturlig höjd, ingen flex-tillväxt
+   och ingen tom yta i scroll-wrapper eller under knapparna. */
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) {
+    --rulefile-classifications-table-scroll-max-height: min(70vh, calc(100dvh - 18rem));
+    display: flex;
+    flex-direction: column;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) > .classifications-part-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .classifications-part-panel > .field-hint,
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .classifications-part-panel > .view-intro-text {
+    flex-shrink: 0;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .rulefile-classifications-table-layout {
+    display: flex;
+    flex-direction: column;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .rulefile-classifications-table-filter {
+    flex-shrink: 0;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .rulefile-classifications-table-scroll-wrapper {
+    overflow: auto;
+    max-height: var(--rulefile-classifications-table-scroll-max-height);
+    max-width: 100%;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .audit-types-add-button {
+    flex-shrink: 0;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) > .form-actions {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 767px) {
+    .rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .requirement-mapping-cards {
+        overflow: auto;
+        max-height: var(--rulefile-classifications-table-scroll-max-height);
+        margin-top: 0;
+    }
+}
+
+.rulefile-sections-header:has(+ .rulefile-section-content .rulefile-classifications-edit-form) {
+    margin-bottom: 0.25rem;
+}
+
+.rulefile-classifications-back-row {
+    margin-bottom: 0.75rem;
+}
+
+/* Bristtyper */
+.deficiency-types-table-wrapper {
+    margin-top: 0.75rem;
+}
+
+.deficiency-types-scroll-wrapper,
+.rulefile-classifications-table-scroll-wrapper.deficiency-types-scroll-wrapper {
+    max-height: 70vh;
+    margin-top: 0;
+}
+
+.deficiency-types-requirement-header,
+.deficiency-types-row-header {
+    width: 1%;
+    min-width: 16rem;
+    max-width: 32rem;
+}
+
+.deficiency-types-text-header,
+.deficiency-types-text-cell {
+    width: auto;
+    min-width: 12rem;
+    max-width: 36rem;
+}
+
+.deficiency-types-actions-header,
+.deficiency-types-actions-cell {
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: top;
+    text-align: left;
+    border-left: none;
+}
+
+.deficiency-types-row-edit-button {
+    white-space: nowrap;
+}
+
+.deficiency-types-part-line {
+    margin: 0 0 0.35rem;
+}
+
+.deficiency-types-part-line:last-child {
+    margin-bottom: 0;
+}
+
+.deficiency-type-edit-dialog {
+    max-width: 36rem;
+    width: calc(100% - 2rem);
+}
+
+.deficiency-type-requirement-label {
+    font-weight: 600;
+    margin: 0 0 1rem;
+}
+
+/* Granskningstyper */
+.audit-types-table-wrapper {
+    margin-top: 0.75rem;
+}
+
+.audit-types-scroll-wrapper,
+.rulefile-classifications-table-scroll-wrapper.audit-types-scroll-wrapper {
+    max-height: 70vh;
+    margin-top: 0;
+}
+
+.audit-types-table {
+    table-layout: auto;
+}
+
+.audit-types-type-header,
+.audit-types-row-header {
+    width: 1%;
+    min-width: 20rem;
+    max-width: 40rem;
+}
+
+.audit-types-taxonomy-header,
+.audit-types-taxonomy-cell {
+    width: auto;
+    min-width: 10rem;
+    max-width: 24rem;
+}
+
+.audit-types-actions-header,
+.audit-types-actions-cell {
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: top;
+    text-align: left;
+    border-left: none;
+}
+
+.audit-types-row-edit-button,
+.audit-types-row-delete-button {
+    white-space: nowrap;
+}
+
+.audit-types-row-delete-button {
+    margin-left: 0.35rem;
+}
+
+.audit-types-add-button {
+    margin-top: 0.75rem;
+}
+
+.audit-type-edit-dialog {
+    max-width: 36rem;
+    width: calc(100% - 2rem);
+}
+
+/* Förenklad taxonomi */
+.taxonomy-concept-list {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+
+.taxonomy-concept-row {
+    margin-bottom: 0.5rem;
 }
