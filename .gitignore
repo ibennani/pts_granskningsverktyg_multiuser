@@ -24,6 +24,8 @@ build/
 
 # Nabu klar-notis (lokal uppgifts-etikett, skrivs av set_nabu_task)
 .cursor/nabu_task_context.txt
+# Nabu fråge-notis (lokal sammanfattning, skrivs av set_nabu_question / notify_question)
+.cursor/nabu_question_context.txt
 
 # Parallella agenter: vilka filer vilken agent rört (för Pusha-urval)
 .cursor/agent_touched_files.json

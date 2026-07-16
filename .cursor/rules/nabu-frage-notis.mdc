@@ -1,0 +1,96 @@
+---
+description: Fråge-notis till Galaxy Watch (Nabu-webhook) när användaren ska svara i planläge
+alwaysApply: true
+---
+
+# Fråge-notis till Galaxy Watch (Nabu)
+
+Kompletterar **klar-notis** (`.cursor/rules/nabu-klar-notis.mdc`). Klar-notis skickas när uppgiften är färdig; **fråge-notis** skickas när agenten **väntar på ditt svar**.
+
+## Gäller alla agenter och alla Cursor-lägen
+
+Samma webhook och samma agenter som klar-notis: **Composer, Agent, enkel chatt, underagent** osv.
+
+## När
+
+Skicka **fråge-notis** när **alla** följande gäller:
+
+1. Du arbetar i **planläge** (Plan Mode) eller presenterar en **plan före implementation** enligt projektets planeringsregler.
+2. Agenten **behöver ditt svar** innan den kan fortsätta. Det gäller till exempel:
+   - **`AskQuestion`** med val som planuppdatering, godkännande eller annat beslut.
+   - **Planuppdateringsval** enligt `13-plan-uppdateringsval.mdc` (uppdatera planen eller köra på nuvarande).
+   - **Godkännande av plan** innan implementation får starta.
+3. Agenten har **skrivit frågan/planen** i chatten så att du ser vad som behövs.
+
+**Skicka inte fråge-notis** när uppgiften är klar (använd **klar-notis**), vid rena informationsmeddelanden utan svarskrav, eller mitt i pågående implementation.
+
+## Obligatorisk avslutning (agent)
+
+1. **Frågan ska vara skriven först** — användaren ska se planen, alternativen eller frågorna i chatten innan notisen skickas.
+2. **Notisen allra sist** — kör `notify_question.cmd` (eller `scripts\nabu_notify_fraga.cmd`) som **enda och sista** verktygsanrop i det svaret, **efter** plan-/frågetexten (och efter `AskQuestion` om det används). Blanda **aldrig** fråge-notis med andra verktyg i samma batch.
+3. Det räcker **inte** att bara skriva i chatten — notisen måste skickas via skriptet.
+4. **`NABU_WEBHOOK_URL`** läses som för klar-notis: från miljön eller `.cursor/rules/nabu-webhook.local.mdc` via `nabu_notify_fraga.ps1`.
+
+## Sammanfattning till notisen
+
+Formulera **en kort svensk mening** (ungefär 3–12 ord) som beskriver **vad användaren ska svara på**, inte hela planen.
+
+Exempel:
+
+| Situation | Sammanfattning |
+|-----------|----------------|
+| Ultimat plan skiljer sig från huvudplanen | `om planen ska uppdateras eller behållas` |
+| Val mellan två exportformat | `vilket exportformat som ska användas` |
+| Godkännande av plan före kod | `om planen ska godkännas för implementation` |
+
+Meddelandet på klockan blir då:
+
+`Du måste svara på frågor om {sammanfattning}`
+
+## Rekommenderat (fråge-notis)
+
+Kör från projektroten med **cmd** (inte PowerShell-alias för `curl`):
+
+```bat
+notify_question.cmd om planen ska uppdateras eller behållas
+```
+
+Med **€, %, &** eller andra specialtecken: spara gärna via UTF-8-fil (sker automatiskt). Vid `%` i **cmd** kan tecknet försvinna om det inte citeras; skriv då till `.cursor/nabu_question_context.txt` (UTF-8) och kör `notify_question.cmd` utan argument, eller använd `set_nabu_question` / `notify_question.ps1` direkt från PowerShell med citattecken runt hela texten.
+
+```bat
+scripts\set_nabu_question.cmd pris 50%% och valuta €12
+notify_question.cmd
+```
+
+Direktanrop (läser `.cursor/nabu_question_context.txt` om inga argument ges):
+
+```bat
+cmd.exe /c scripts\nabu_notify_fraga.cmd
+```
+
+Med miljövariabel i stället för argument:
+
+```bat
+set NABU_QUESTION_SUMMARY=om planen ska godkännas för implementation
+cmd.exe /c scripts\nabu_notify_fraga.cmd
+```
+
+**`notify_question.cmd`** sätter **UTF-8-konsol** (`chcp 65001`), sparar sammanfattningen och skickar notisen.
+
+## Prioritet för sammanfattning (nabu_notify_fraga.ps1)
+
+1. **`NABU_QUESTION_SUMMARY`** (miljövariabel)
+2. **`.cursor/nabu_question_context.txt`** (UTF-8, skrivs av `notify_question.ps1` / `set_nabu_question`)
+3. **Argument** (reserv om skriptet anropas direkt)
+
+## Miljövariabler
+
+| Variabel | Krav | Syfte |
+|----------|------|--------|
+| **`NABU_WEBHOOK_URL`** | Obligatorisk för notisen | Samma webhook som klar-notis. **Committa aldrig** i repo. |
+| **`NABU_QUESTION_SUMMARY`** | Valfri | Kort mening; **överstyr** fil och argument. Annars läses `.cursor/nabu_question_context.txt`. |
+
+## Se även
+
+- **Klar-notis:** `.cursor/rules/nabu-klar-notis.mdc`, `01-nabu-sista-steget.mdc`
+- **Planuppdatering:** `13-plan-uppdateringsval.mdc`

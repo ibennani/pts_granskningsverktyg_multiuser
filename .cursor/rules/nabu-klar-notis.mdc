@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Klar-notis till Galaxy Watch (Nabu)
 
+**Fråge-notis** (när du ska svara i planläge): se `.cursor/rules/nabu-frage-notis.mdc` och `02-nabu-frage-notis.mdc`.
+
 ## Gäller alla agenter och alla Cursor-lägen
 
 Denna regel gäller **varje** AI-assistent som arbetar i detta repo — **Composer, Agent, enkel chatt, underagent** osv. Det räcker inte att bara **en** agent följer den; om en annan agent avslutar utan att köra notisen får du ingen signal på klockan.
@@ -17,7 +19,7 @@ Denna regel gäller **varje** AI-assistent som arbetar i detta repo — **Compos
 2. Lägg till följande under **Cursor Settings → Rules for AI** (eller motsvarande **User Rules**), så gäller det **alla** projekt och agenter tills du tar bort det. Alternativt (filbaserat, alla projekt på maskinen): skapa eller uppdatera **`%USERPROFILE%\.cursor\rules\leffe-nabu-klar-notis.mdc`** med samma innehåll — kör **`scripts\kopiera_nabu_user_rule.cmd`** för att kopiera User Rules-texten till urklipp.
 
 ```
-I Leffe-projektet (denna arbetskatalog): skicka klar-notis först när hela uppgiften är klar och det avslutande användarsvaret är skrivet. Kör notify_done.cmd som sista och enda verktygsanrop i sista svaret (inte parallellt med annat). Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc och 01-nabu-sista-steget.mdc
+I Leffe-projektet (denna arbetskatalog): skicka klar-notis först när hela uppgiften är klar och det avslutande användarsvaret är skrivet. Kör notify_done.cmd som sista och enda verktygsanrop i sista svaret (inte parallellt med annat). I planläge när användaren ska svara: kör notify_question.cmd med kort sammanfattning som sista verktygsanrop (fråge-notis). Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc, nabu-frage-notis.mdc, 01-nabu-sista-steget.mdc och 02-nabu-frage-notis.mdc
 ```
 
 3. **Molnlägen / fjärragent** kan sakna tillgång till lokala filer — sätt då **`NABU_WEBHOOK_URL`** i agentens miljöinställningar eller använd en maskin där filen finns.
@@ -102,3 +104,7 @@ set NABU_WEBHOOK_URL=https://hooks.nabu.casa/...
 set NABU_TASK_LABEL=Kort etikett
 cmd.exe /c scripts\nabu_notify.cmd
 ```
+
+## Se även
+
+- **Fråge-notis** (planläge, väntar på svar): `.cursor/rules/nabu-frage-notis.mdc`, `02-nabu-frage-notis.mdc`, `notify_question.cmd`

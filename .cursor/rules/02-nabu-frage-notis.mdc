@@ -1,0 +1,22 @@
+---
+description: Sista steget i planläge — skicka fråge-notis när användaren ska svara
+alwaysApply: true
+---
+
+# Fråge-notis innan du slutar svara (planläge)
+
+**Först:** planen, frågorna eller valet ska vara skrivet i chatten så att användaren ser vad som behövs.
+
+**Sedan**, när du **väntar på användarens svar** i planläge (Plan Mode) eller vid planuppdateringsval, som **enda och sista** verktygsanrop — från **projektets rotmapp** kör:
+
+```bat
+notify_question.cmd {kort sammanfattning}
+```
+
+- **`notify_question.cmd`** sparar sammanfattningen som UTF-8 (`set_nabu_question`) och skickar notisen. Fungerar med **åäö, €, %, &** m.m.
+- Sammanfattningen ska vara **en kort mening** om vad användaren ska svara på. Meddelandet blir: `Du måste svara på frågor om {sammanfattning}`.
+- **`NABU_WEBHOOK_URL`** behöver inte vara satt om **`.cursor/rules/nabu-webhook.local.mdc`** finns.
+- Gäller **alla** Cursor-agenter och **alla** chatt-/composer-lägen när svar krävs i planläge.
+- **Kör inte** fråge-notis när uppgiften är klar — då gäller **klar-notis** (`01-nabu-sista-steget.mdc`).
+
+Mer detaljer: `.cursor/rules/nabu-frage-notis.mdc`.
