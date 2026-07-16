@@ -8,6 +8,7 @@ import {
     get_appendix1_section_dom_id,
     read_rulefile_appendix1_grouping_taxonomy_id,
     resolve_appendix1_sections_list,
+    strip_leading_duplicate_appendix1_heading,
     type Appendix1SectionDefinition,
 } from '../logic/appendix1_sections.js';
 import {
@@ -100,12 +101,14 @@ function build_audit_info_html(
     }
 
     const contact_html =
-        `<p>${escape_html_internal(t('export_appendix1_pts_name'))}</p>` +
-        `<p>${escape_html_internal(t('export_appendix1_pts_address_line1'))}</p>` +
-        `<p>${escape_html_internal(t('export_appendix1_pts_address_line2'))}</p>` +
-        `<p>${escape_html_internal(t('export_appendix1_pts_phone'))}</p>` +
-        `<p>${build_link_html('mailto:pts@pts.se', 'pts@pts.se')}</p>` +
-        `<p>${build_link_html('http://www.pts.se/', 'www.pts.se')}</p>`;
+        `<p class="appendix1-audit-info__contact">` +
+        `${escape_html_internal(t('export_appendix1_pts_name'))}<br>` +
+        `${escape_html_internal(t('export_appendix1_pts_address_line1'))}<br>` +
+        `${escape_html_internal(t('export_appendix1_pts_address_line2'))}<br>` +
+        `${escape_html_internal(t('export_appendix1_pts_phone'))}<br>` +
+        `${build_link_html('mailto:pts@pts.se', 'pts@pts.se')}<br>` +
+        `${build_link_html('http://www.pts.se/', 'www.pts.se')}` +
+        `</p>`;
 
     return (
         `<section class="appendix1-page appendix1-audit-info" id="section-audit-info">` +
@@ -124,11 +127,14 @@ function build_toc_html(
     let list_html = '<ul>';
     for (const entry of entries) {
         const level_class = entry.heading_level === 2 ? ' appendix1-toc__item--level-2' : '';
+        const href = `#${escape_html_internal(entry.section_id)}`;
         list_html +=
             `<li class="appendix1-toc__item${level_class}">` +
-            `<a href="#${escape_html_internal(entry.section_id)}">${escape_html_internal(entry.title)}</a>` +
+            `<a class="appendix1-toc__link" href="${href}">` +
+            `<span class="appendix1-toc__label">${escape_html_internal(entry.title)}</span>` +
             `<span class="appendix1-toc__leader" aria-hidden="true"></span>` +
-            `</li>`;
+            `<span class="appendix1-toc__page" aria-hidden="true"></span>` +
+            `</a></li>`;
     }
     list_html += '</ul>';
 
@@ -144,7 +150,11 @@ function build_section_content_html(
     section: Appendix1SectionDefinition,
     context: ReturnType<typeof build_appendix1_placeholder_context>
 ): string {
-    const resolved = apply_appendix1_placeholders(section.content, context).trim();
+    const title = apply_appendix1_placeholders(section.title, context);
+    const resolved = apply_appendix1_placeholders(
+        strip_leading_duplicate_appendix1_heading(section.content, title),
+        context
+    ).trim();
     if (!resolved) return '';
     if (section.format === 'list') {
         const items = resolved
@@ -160,13 +170,13 @@ function build_section_content_html(
 
 function build_deficiency_list_html(types: DeficiencyTypeText[]): string {
     if (types.length === 0) return '';
-    let html = '<ul>';
+    let html = '<ol>';
     for (const entry of types) {
         const primary = escape_html_internal(entry.primary);
         const secondary = entry.secondary ? ` ${escape_html_internal(entry.secondary)}` : '';
         html += `<li><strong>${primary}</strong>${secondary}</li>`;
     }
-    html += '</ul>';
+    html += '</ol>';
     return html;
 }
 

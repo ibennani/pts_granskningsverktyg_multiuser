@@ -1,169 +1,824 @@
 /**
- * @fileoverview Redigerings-UI för Bilaga 1-sektionslistan i regelfilen.
+
+ * @fileoverview Redigerings-UI för Bilaga 1 brödtext och bristgrupper i regelfilen.
+
  */
+
 import {
+
+    format_appendix1_placeholder_token,
+
     generate_deficiency_sections_from_taxonomy,
+
+    read_rulefile_appendix1_body_text,
+
+    read_rulefile_appendix1_body_text_by_taxonomy,
+
     read_rulefile_appendix1_grouping_taxonomy_id,
-    read_rulefile_appendix1_sections_list,
+
 } from '../../logic/appendix1_sections.js';
+
 import { resolve_taxonomies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+
 import type { Appendix1SectionDefinition } from '../../logic/appendix1_sections_types.js';
 
+
+
 type EditorCtx = {
+
     Helpers: {
+
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
+
+        escape_html?: (value: string) => string;
+
+        get_icon_svg?: (name: string, colors?: string[], size?: number) => string;
+
         init_auto_resize_for_textarea?: (el: HTMLTextAreaElement) => void;
+
     };
+
     Translation: { t: (key: string, opts?: Record<string, unknown>) => string };
+
+    NotificationComponent?: { show_global_message?: (msg: string, type: string) => void };
+
 };
 
-export function render_appendix1_sections_editor(
+
+
+const APPENDIX1_PLACEHOLDER_KEYS = [
+
+    'caseNumber',
+
+    'actorName',
+
+    'actorLink',
+
+    'actorLinkDomain',
+
+    'startDate',
+
+    'endDate',
+
+    'exportDate',
+
+    'auditorName',
+
+    'caseHandler',
+
+] as const;
+
+
+
+function create_form_field_label(
+
+    Helpers: EditorCtx['Helpers'],
+
+    for_id: string,
+
+    label_text: string
+
+): HTMLLabelElement {
+
+    const safe_label = Helpers.escape_html ? Helpers.escape_html(label_text) : label_text;
+
+    return Helpers.create_element('label', {
+
+        attributes: { for: for_id },
+
+        html_content: `<strong>${safe_label}</strong>`,
+
+    }) as HTMLLabelElement;
+
+}
+
+
+
+async function copy_appendix1_placeholder_token(
+
     ctx: EditorCtx,
-    container: HTMLElement,
-    rule_file_content: Record<string, unknown>,
-    options: {
-        on_change?: () => void;
-        on_generate?: (sections: Appendix1SectionDefinition[]) => void;
-    } = {}
-): { get_sections: () => Appendix1SectionDefinition[]; get_grouping_taxonomy_id: () => string } {
+
+    token: string
+
+): Promise<void> {
+
+    const t = ctx.Translation.t;
+
+    try {
+
+        await navigator.clipboard.writeText(token);
+
+        ctx.NotificationComponent?.show_global_message?.(
+
+            t('rulefile_appendix1_copy_placeholder_success', { placeholder: token }),
+
+            'success'
+
+        );
+
+    } catch {
+
+        ctx.NotificationComponent?.show_global_message?.(
+
+            t('rulefile_appendix1_copy_placeholder_failed'),
+
+            'error'
+
+        );
+
+    }
+
+}
+
+
+
+function create_placeholder_list_item(
+
+    ctx: EditorCtx,
+
+    key: (typeof APPENDIX1_PLACEHOLDER_KEYS)[number]
+
+): HTMLLIElement {
+
     const { Helpers, Translation } = ctx;
+
     const t = Translation.t;
+
+    const token = format_appendix1_placeholder_token(key);
+
+    const label_text = t(`rulefile_appendix1_body_text_placeholder_${key}`);
+
+    const description_text = label_text.startsWith(token)
+
+        ? label_text.slice(token.length)
+
+        : '';
+
+    const item = Helpers.create_element('li', {
+
+        class_name: 'appendix1-editor-intro__placeholder-item',
+
+    }) as HTMLLIElement;
+
+
+
+    item.appendChild(
+
+        Helpers.create_element('span', {
+
+            class_name: 'appendix1-editor-intro__placeholder-token',
+
+            text_content: token,
+
+        })
+
+    );
+
+
+
+    if (description_text) {
+
+        item.appendChild(
+
+            Helpers.create_element('span', {
+
+                class_name: 'appendix1-editor-intro__placeholder-description',
+
+                text_content: description_text,
+
+            })
+
+        );
+
+    }
+
+
+
+    const copy_icon = Helpers.get_icon_svg?.('content_copy', ['currentColor'], 16) ?? '';
+
+    const copy_label_short = t('rulefile_appendix1_copy_placeholder_button_short');
+
+    const copy_btn = Helpers.create_element('button', {
+
+        class_name: [
+
+            'button',
+
+            'button-small',
+
+            'button-default',
+
+            'appendix1-editor-intro__placeholder-copy-btn',
+
+        ],
+
+        attributes: {
+
+            type: 'button',
+
+            'aria-label': t('rulefile_appendix1_copy_placeholder_button', { placeholder: token }),
+
+        },
+
+        html_content: copy_icon
+
+            ? `<span>${copy_label_short}</span><span aria-hidden="true">${copy_icon}</span>`
+
+            : `<span>${t('rulefile_appendix1_copy_placeholder_button', { placeholder: token })}</span>`,
+
+    });
+
+    copy_btn.addEventListener('click', () => {
+
+        void copy_appendix1_placeholder_token(ctx, token);
+
+    });
+
+    item.appendChild(copy_btn);
+
+
+
+    return item;
+
+}
+
+
+
+function split_chapter_title(title: string): { number: string; label: string } {
+
+    const trimmed = title.trim();
+
+    const match = /^(\d+(?:\.\d+)*)\s+(.+)$/.exec(trimmed);
+
+    if (match) {
+
+        return { number: match[1], label: match[2] };
+
+    }
+
+    return { number: '', label: trimmed };
+
+}
+
+
+
+function create_deficiency_preview_item(
+
+    Helpers: EditorCtx['Helpers'],
+
+    section: Appendix1SectionDefinition
+
+): HTMLLIElement {
+
+    const display_title = section.title || section.id;
+
+    const { number, label } = split_chapter_title(display_title);
+
+    const item = Helpers.create_element('li', {
+
+        class_name: 'appendix1-deficiency-sections-preview__item',
+
+    }) as HTMLLIElement;
+
+
+
+    if (number) {
+
+        item.appendChild(
+
+            Helpers.create_element('span', {
+
+                class_name: 'appendix1-deficiency-sections-preview__number',
+
+                text_content: number,
+
+            })
+
+        );
+
+        item.appendChild(
+
+            Helpers.create_element('span', {
+
+                class_name: 'appendix1-deficiency-sections-preview__title',
+
+                text_content: label,
+
+            })
+
+        );
+
+    } else {
+
+        item.appendChild(
+
+            Helpers.create_element('span', {
+
+                class_name: 'appendix1-deficiency-sections-preview__title',
+
+                text_content: display_title,
+
+            })
+
+        );
+
+    }
+
+
+
+    return item;
+
+}
+
+
+
+function render_structured_intro(ctx: EditorCtx, container: HTMLElement): void {
+
+    const { Helpers, Translation } = ctx;
+
+    const t = Translation.t;
+
+    const intro_block = Helpers.create_element('div', {
+
+        class_name: 'appendix1-editor-intro',
+
+    });
+
+
+
+    intro_block.appendChild(
+
+        Helpers.create_element('p', {
+
+            class_name: 'field-hint appendix1-editor-intro__lead',
+
+            text_content: t('rulefile_appendix1_body_text_intro_lead'),
+
+        })
+
+    );
+
+
+
+    intro_block.appendChild(
+
+        Helpers.create_element('p', {
+
+            class_name: 'field-hint appendix1-editor-intro__note',
+
+            text_content: t('rulefile_appendix1_body_text_auto_generated_note'),
+
+        })
+
+    );
+
+
+
+    const placeholders_heading = Helpers.create_element('p', {
+
+        class_name: 'field-hint appendix1-editor-intro__subheading',
+
+        text_content: t('rulefile_appendix1_body_text_placeholders_heading'),
+
+    });
+
+    intro_block.appendChild(placeholders_heading);
+
+
+
+    const placeholder_list = Helpers.create_element('ul', {
+
+        class_name: 'appendix1-editor-intro__placeholder-list',
+
+    });
+
+    APPENDIX1_PLACEHOLDER_KEYS.forEach((key) => {
+
+        placeholder_list.appendChild(create_placeholder_list_item(ctx, key));
+
+    });
+
+    intro_block.appendChild(placeholder_list);
+
+
+
+    container.appendChild(intro_block);
+
+}
+
+
+
+function persist_current_body_text(
+
+    body_text_by_taxonomy: Map<string, string>,
+
+    taxonomy_id: string,
+
+    body_text: string
+
+): void {
+
+    const id = taxonomy_id.trim();
+
+    if (!id) return;
+
+    body_text_by_taxonomy.set(id, body_text);
+
+}
+
+
+
+function load_body_text_for_taxonomy(
+
+    body_text_by_taxonomy: Map<string, string>,
+
+    taxonomy_id: string,
+
+    fallback_body_text: string
+
+): string {
+
+    const id = taxonomy_id.trim();
+
+    if (id && body_text_by_taxonomy.has(id)) {
+
+        return body_text_by_taxonomy.get(id) ?? fallback_body_text;
+
+    }
+
+    return fallback_body_text;
+
+}
+
+
+
+export function render_appendix1_sections_editor(
+
+    ctx: EditorCtx,
+
+    container: HTMLElement,
+
+    rule_file_content: Record<string, unknown>,
+
+    options: {
+
+        on_change?: () => void;
+
+        on_generate?: (sections: Appendix1SectionDefinition[]) => void;
+
+    } = {}
+
+): {
+
+    get_body_text: () => string;
+
+    get_body_text_by_taxonomy: () => Record<string, string>;
+
+    get_sections: () => Appendix1SectionDefinition[];
+
+    get_grouping_taxonomy_id: () => string;
+
+} {
+
+    const { Helpers, Translation } = ctx;
+
+    const t = Translation.t;
+
     container.innerHTML = '';
 
-    let sections = read_rulefile_appendix1_sections_list(rule_file_content).map((section) => ({ ...section }));
+
+
     let grouping_taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(rule_file_content);
+
     const taxonomies = resolve_taxonomies(rule_file_content.metadata as Record<string, unknown>) as Array<{
+
         id?: string;
+
         label?: string;
+
     }>;
 
-    const intro = Helpers.create_element('p', {
-        class_name: 'field-hint',
-        text_content: t('rulefile_appendix1_sections_intro'),
-    });
-    container.appendChild(intro);
+    const taxonomy_ids = taxonomies
 
-    const taxonomy_field = Helpers.create_element('div', { class_name: 'form-group' });
-    const select_id = `appendix1-grouping-taxonomy-${Math.random().toString(36).slice(2, 8)}`;
-    taxonomy_field.appendChild(
-        Helpers.create_element('label', {
-            attributes: { for: select_id },
-            text_content: t('rulefile_appendix1_grouping_taxonomy_label'),
-        })
+        .map((taxonomy) => String(taxonomy.id ?? '').trim())
+
+        .filter(Boolean);
+
+
+
+    const body_text_by_taxonomy = new Map<string, string>(
+
+        Object.entries(read_rulefile_appendix1_body_text_by_taxonomy(rule_file_content, taxonomy_ids))
+
     );
+
+    let body_text = load_body_text_for_taxonomy(
+
+        body_text_by_taxonomy,
+
+        grouping_taxonomy_id,
+
+        read_rulefile_appendix1_body_text(rule_file_content, grouping_taxonomy_id)
+
+    );
+
+    persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_text);
+
+
+
+    let deficiency_sections = generate_deficiency_sections_from_taxonomy(
+
+        {
+
+            ...rule_file_content,
+
+            appendix1: {
+
+                ...(rule_file_content.appendix1 as Record<string, unknown> | undefined),
+
+                groupingTaxonomyId: grouping_taxonomy_id,
+
+            },
+
+        },
+
+        t
+
+    );
+
+
+
+    render_structured_intro(ctx, container);
+
+
+
+    const taxonomy_field = Helpers.create_element('div', {
+
+        class_name: 'form-group appendix1-grouping-taxonomy-field',
+
+    });
+
+    const select_id = `appendix1-grouping-taxonomy-${Math.random().toString(36).slice(2, 8)}`;
+
+    taxonomy_field.appendChild(
+
+        create_form_field_label(Helpers, select_id, t('rulefile_appendix1_grouping_taxonomy_label'))
+
+    );
+
     const select = Helpers.create_element('select', {
-        class_name: 'form-control',
+
+        class_name: ['form-control', 'dropdown-select', 'appendix1-grouping-taxonomy-select'],
+
         attributes: { id: select_id, name: 'appendix1GroupingTaxonomyId' },
+
     }) as HTMLSelectElement;
+
     taxonomies.forEach((taxonomy) => {
+
         const id = String(taxonomy.id ?? '').trim();
+
         if (!id) return;
+
         select.appendChild(
+
             Helpers.create_element('option', {
+
                 attributes: { value: id },
+
                 text_content: String(taxonomy.label ?? id),
+
             })
+
         );
+
     });
+
     select.value = grouping_taxonomy_id;
+
+
+
+    const body_field = Helpers.create_element('div', { class_name: 'form-group' });
+
+    const body_id = `appendix1-body-text-${Math.random().toString(36).slice(2, 8)}`;
+
+    body_field.appendChild(
+
+        create_form_field_label(Helpers, body_id, t('rulefile_appendix1_body_text_label'))
+
+    );
+
+    const body_input = Helpers.create_element('textarea', {
+
+        class_name: 'form-control appendix1-body-text-editor',
+
+        attributes: { id: body_id, rows: '24' },
+
+    }) as HTMLTextAreaElement;
+
+    body_input.value = body_text;
+
+    Helpers.init_auto_resize_for_textarea?.(body_input);
+
+
+
+    const refresh_deficiency_sections = () => {
+
+        const next_rule_file = {
+
+            ...rule_file_content,
+
+            appendix1: {
+
+                ...(rule_file_content.appendix1 as Record<string, unknown> | undefined),
+
+                groupingTaxonomyId: grouping_taxonomy_id,
+
+            },
+
+        };
+
+        deficiency_sections = generate_deficiency_sections_from_taxonomy(next_rule_file, t);
+
+        render_deficiency_preview();
+
+    };
+
+
+
+    const render_deficiency_preview = () => {
+
+        deficiency_list.innerHTML = '';
+
+        deficiency_sections.forEach((section) => {
+
+            deficiency_list.appendChild(create_deficiency_preview_item(Helpers, section));
+
+        });
+
+    };
+
+
+
     select.addEventListener('change', () => {
+
+        persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_input.value);
+
         grouping_taxonomy_id = select.value.trim();
+
+        body_text = load_body_text_for_taxonomy(
+
+            body_text_by_taxonomy,
+
+            grouping_taxonomy_id,
+
+            read_rulefile_appendix1_body_text(rule_file_content, grouping_taxonomy_id)
+
+        );
+
+        persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_text);
+
+        body_input.value = body_text;
+
+        Helpers.init_auto_resize_for_textarea?.(body_input);
+
+        refresh_deficiency_sections();
+
         options.on_change?.();
+
     });
+
     taxonomy_field.appendChild(select);
+
     container.appendChild(taxonomy_field);
 
-    const sections_host = Helpers.create_element('div', { class_name: 'appendix1-sections-editor-list' });
 
-    const render_section_cards = () => {
-        sections_host.innerHTML = '';
-        sections.forEach((section, index) => {
-            const card = Helpers.create_element('article', { class_name: 'editable-card appendix1-section-card' });
-            card.appendChild(
-                Helpers.create_element('h3', {
-                    text_content: section.title || section.id || t('rulefile_metadata_untitled_item'),
-                })
-            );
-            const title_id = `appendix1-section-title-${index}`;
-            const content_id = `appendix1-section-content-${index}`;
-            const title_field = Helpers.create_element('div', { class_name: 'form-group' });
-            title_field.appendChild(
-                Helpers.create_element('label', {
-                    attributes: { for: title_id },
-                    text_content: t('rulefile_appendix1_section_title_label'),
-                })
-            );
-            const title_input = Helpers.create_element('input', {
-                class_name: 'form-control',
-                attributes: { id: title_id, type: 'text' },
-            }) as HTMLInputElement;
-            title_input.value = section.title ?? '';
-            title_input.addEventListener('input', () => {
-                sections[index] = { ...sections[index], title: title_input.value };
-                options.on_change?.();
-            });
-            title_field.appendChild(title_input);
-            card.appendChild(title_field);
 
-            const content_field = Helpers.create_element('div', { class_name: 'form-group' });
-            content_field.appendChild(
-                Helpers.create_element('label', {
-                    attributes: { for: content_id },
-                    text_content: t('rulefile_appendix1_section_content_label'),
-                })
-            );
-            const content_input = Helpers.create_element('textarea', {
-                class_name: 'form-control',
-                attributes: { id: content_id, rows: '6' },
-            }) as HTMLTextAreaElement;
-            content_input.value = section.content ?? '';
-            Helpers.init_auto_resize_for_textarea?.(content_input);
-            content_input.addEventListener('input', () => {
-                sections[index] = { ...sections[index], content: content_input.value };
-                options.on_change?.();
-            });
-            content_field.appendChild(content_input);
-            card.appendChild(content_field);
+    body_input.addEventListener('input', () => {
 
-            if (section.kind === 'deficiency_group') {
-                card.appendChild(
-                    Helpers.create_element('p', {
-                        class_name: 'field-hint',
-                        text_content: t('rulefile_appendix1_section_deficiency_hint', {
-                            concept: section.conceptId ?? '',
-                        }),
-                    })
-                );
-            }
-            sections_host.appendChild(card);
-        });
-    };
+        body_text = body_input.value;
 
-    render_section_cards();
-    container.appendChild(sections_host);
+        persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_text);
+
+        options.on_change?.();
+
+    });
+
+    body_field.appendChild(body_input);
+
+    container.appendChild(body_field);
+
+
+
+    const deficiency_panel = Helpers.create_element('section', {
+
+        class_name: 'appendix1-deficiency-sections-panel',
+
+    });
+
+    const deficiency_hint_id = `appendix1-deficiency-sections-hint-${Math.random().toString(36).slice(2, 8)}`;
+
+    deficiency_panel.appendChild(
+
+        Helpers.create_element('p', {
+
+            class_name: 'field-hint appendix1-deficiency-sections-panel__hint',
+
+            attributes: { id: deficiency_hint_id },
+
+            text_content: t('rulefile_appendix1_deficiency_sections_hint'),
+
+        })
+
+    );
+
+
+
+    const deficiency_list = Helpers.create_element('ul', {
+
+        class_name: 'appendix1-deficiency-sections-preview',
+
+        attributes: {
+
+            'aria-labelledby': deficiency_hint_id,
+
+        },
+
+    });
+
+    render_deficiency_preview();
+
+    deficiency_panel.appendChild(deficiency_list);
+
+
 
     const generate_btn = Helpers.create_element('button', {
+
         class_name: ['button', 'button-secondary'],
+
         attributes: { type: 'button' },
+
         text_content: t('rulefile_appendix1_generate_sections_button'),
+
     });
+
     generate_btn.addEventListener('click', () => {
-        const next_rule_file = {
-            ...rule_file_content,
-            appendix1: {
-                ...(rule_file_content.appendix1 as Record<string, unknown> | undefined),
-                groupingTaxonomyId: grouping_taxonomy_id,
-            },
-        };
-        sections = generate_deficiency_sections_from_taxonomy(next_rule_file, t);
-        render_section_cards();
-        options.on_generate?.(sections);
-        options.on_change?.();
+
+        grouping_taxonomy_id = select.value.trim();
+
+        refresh_deficiency_sections();
+
+        options.on_generate?.(deficiency_sections);
+
     });
-    container.appendChild(generate_btn);
+
+
+
+    const deficiency_actions = Helpers.create_element('div', {
+
+        class_name: 'appendix1-deficiency-sections-panel__actions',
+
+    });
+
+    deficiency_actions.appendChild(generate_btn);
+
+    deficiency_panel.appendChild(deficiency_actions);
+
+    container.appendChild(deficiency_panel);
+
+
 
     return {
-        get_sections: () => sections.map((section) => ({ ...section })),
+
+        get_body_text: () => body_text,
+
+        get_body_text_by_taxonomy: () => {
+
+            persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_input.value);
+
+            const result: Record<string, string> = {};
+
+            body_text_by_taxonomy.forEach((value, taxonomy_id) => {
+
+                const trimmed = value.trim();
+
+                if (trimmed) {
+
+                    result[taxonomy_id] = trimmed;
+
+                }
+
+            });
+
+            return result;
+
+        },
+
+        get_sections: () => deficiency_sections.map((section) => ({ ...section })),
+
         get_grouping_taxonomy_id: () => grouping_taxonomy_id,
+
     };
+
 }
+

@@ -149,14 +149,30 @@ export function migrate_appendix1_sections_object_to_array(
     return result;
 }
 
+/** Behåller första förekomsten per id (ordning från källan). */
+export function dedupe_appendix1_sections_by_id(
+    sections: Appendix1SectionDefinition[]
+): Appendix1SectionDefinition[] {
+    const seen = new Set<string>();
+    const result: Appendix1SectionDefinition[] = [];
+    for (const section of sections) {
+        if (seen.has(section.id)) continue;
+        seen.add(section.id);
+        result.push(section);
+    }
+    return result;
+}
+
 /**
  * Tolkar sections-fält som array eller legacy-objekt.
  */
 export function parse_appendix1_sections_raw(sections_raw: unknown): Appendix1SectionDefinition[] {
     if (Array.isArray(sections_raw)) {
-        return sections_raw
-            .map((entry) => normalize_section_definition(entry))
-            .filter((entry): entry is Appendix1SectionDefinition => Boolean(entry));
+        return dedupe_appendix1_sections_by_id(
+            sections_raw
+                .map((entry) => normalize_section_definition(entry))
+                .filter((entry): entry is Appendix1SectionDefinition => Boolean(entry))
+        );
     }
     if (sections_raw && typeof sections_raw === 'object') {
         return migrate_appendix1_sections_object_to_array(sections_raw as Record<string, unknown>);

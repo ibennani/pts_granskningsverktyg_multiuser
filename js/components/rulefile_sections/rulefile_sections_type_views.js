@@ -8,7 +8,7 @@ import {
     resolve_page_types,
     resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
-import { read_rulefile_appendix1_sections } from '../../logic/appendix1_sections.js';
+import { read_rulefile_appendix1_body_text } from '../../logic/appendix1_sections.js';
 import { read_rulefile_appendix2_labels } from '../../logic/appendix2_excel_template.js';
 import { read_rulefile_appendix3_template } from '../../logic/appendix3_screenshots_template.js';
 import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
@@ -237,8 +237,7 @@ export function render_rulefile_appendix_templates_hub_section(ctx) {
 export function render_rulefile_appendix1_template_section(ctx, ruleFileContent) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-    const introduction_text =
-        read_rulefile_appendix1_sections(ruleFileContent).introduction?.content ?? '';
+    const body_text = read_rulefile_appendix1_body_text(ruleFileContent);
 
     render_appendix1_summary_editor_page(
         { Helpers: ctx.Helpers, Translation: ctx.Translation },
@@ -249,11 +248,11 @@ export function render_rulefile_appendix1_template_section(ctx, ruleFileContent)
             intro_key: 'rulefile_appendix1_summary_intro',
             label_key: 'rulefile_appendix1_summary_label',
             textarea_id: 'rulefile-appendix1-summary-text-view',
-            initial_text: introduction_text,
+            initial_text: body_text,
             readonly: true,
             summary_host: {
                 is_editing: false,
-                working_text: introduction_text,
+                working_text: body_text,
                 textarea_ref: null,
                 preview_container_ref: null,
             },

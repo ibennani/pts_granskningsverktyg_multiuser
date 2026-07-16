@@ -3,7 +3,7 @@
  */
 
 import JSZip from 'jszip';
-import { get_download_filename_date } from '../utils/download_filename_utils.js';
+import { build_appendix2_export_filename } from './export_report_filename.js';
 
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
 const AEONIC_FONT = 'Aeonic';
@@ -31,37 +31,24 @@ export function sanitize_excel_download_filename_segment(segment: string): strin
         .trim();
 }
 
-/**
- * Bygger nedladdningsfilnamn: [diarienummer] [Aktör] [label] [YYYY-MM-DD].[extension]
- */
+/** Bygger nedladdningsfilnamn för bilaga 2 (Excel/CSV): [dnr]_[aktör]_bilaga_2_protokoll.[extension] */
 export function build_deficiency_export_filename(
     audit: { auditMetadata?: { caseNumber?: string; actorName?: string } },
     t: TExport,
     _export_date: Date = new Date(),
-    extension = 'xlsx'
+    extension: 'xlsx' | 'csv' = 'xlsx'
 ): string {
-    const case_number = sanitize_excel_download_filename_segment(audit?.auditMetadata?.caseNumber || '');
-    const actor = sanitize_excel_download_filename_segment(
-        audit?.auditMetadata?.actorName || t('filename_fallback_actor')
-    );
-    const label = t('excel_export_filename_label');
-    const date_str = get_download_filename_date(null, '-');
-    const parts: string[] = [];
-    if (case_number) {
-        parts.push(case_number);
-    }
-    parts.push(actor, label, date_str);
-    const safe_extension = String(extension || 'xlsx').replace(/^\./, '');
-    return `${parts.join(' ')}.${safe_extension}`;
+    const safe_extension = extension === 'csv' ? 'csv' : 'xlsx';
+    return build_appendix2_export_filename(audit, safe_extension, t);
 }
 
 /** Bygger nedladdningsfilnamn för Excel (.xlsx). */
 export function build_excel_export_filename(
     audit: { auditMetadata?: { caseNumber?: string; actorName?: string } },
     t: TExport,
-    export_date: Date = new Date()
+    _export_date: Date = new Date()
 ): string {
-    return build_deficiency_export_filename(audit, t, export_date, 'xlsx');
+    return build_appendix2_export_filename(audit, 'xlsx', t);
 }
 
 /**

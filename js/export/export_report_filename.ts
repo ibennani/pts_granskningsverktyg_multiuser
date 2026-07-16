@@ -2,19 +2,52 @@
  * @fileoverview Gemensam filnamnslogik för Word- och PDF-rapporter.
  */
 import {
-    get_download_filename_date,
     get_download_filename_datetime,
     sanitize_filename_segment,
 } from '../utils/download_filename_utils.js';
-import { sanitize_excel_download_filename_segment } from './excel_export_helpers.js';
 
 export type ExportReportFilenameT = (key: string, opts?: Record<string, unknown>) => string;
 
+/** Bilagans korta typ i filnamn (fast svenska slug, utan datum). */
+export const APPENDIX_EXPORT_TYPE_SUMMARY = 'sammanfattning';
+export const APPENDIX_EXPORT_TYPE_PROTOCOL = 'protokoll';
+export const APPENDIX_EXPORT_TYPE_SCREENSHOTS = 'skarmbilder';
+export const APPENDIX_EXPORT_TYPE_ALL_ZIP = 'alla_bilagor';
+
+type AppendixAuditMetadata = {
+    auditMetadata?: { caseNumber?: string; actorName?: string };
+    updated_at?: string | null;
+};
+
+function sanitize_case_number_for_filename(case_number: string): string {
+    return case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+}
+
+function build_appendix_export_filename(
+    current_audit: AppendixAuditMetadata,
+    appendix_number: 1 | 2 | 3,
+    appendix_type: string,
+    extension: string,
+    t: ExportReportFilenameT
+): string {
+    const actor_name = sanitize_filename_segment(
+        current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
+    );
+    const sanitized_case_number = sanitize_case_number_for_filename(
+        (current_audit.auditMetadata?.caseNumber || '').trim()
+    );
+    const type_slug = sanitize_filename_segment(appendix_type);
+    const safe_extension = String(extension || '').replace(/^\./, '');
+    const bilaga_part = `bilaga_${appendix_number}_${type_slug}`;
+
+    if (sanitized_case_number) {
+        return `${sanitized_case_number}_${actor_name}_${bilaga_part}.${safe_extension}`;
+    }
+    return `${actor_name}_${bilaga_part}.${safe_extension}`;
+}
+
 export function build_report_export_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     is_sort_by_requirements: boolean,
     extension: 'docx' | 'pdf',
     t: ExportReportFilenameT
@@ -22,8 +55,9 @@ export function build_report_export_filename(
     const actor_name = sanitize_filename_segment(
         current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
     );
-    const case_number = (current_audit.auditMetadata?.caseNumber || '').trim();
-    const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+    const sanitized_case_number = sanitize_case_number_for_filename(
+        (current_audit.auditMetadata?.caseNumber || '').trim()
+    );
     const sort_suffix = is_sort_by_requirements ? '_sorterat_på_krav' : '_sorterat_på_granskningsdel';
     const date_str = get_download_filename_datetime(null);
 
@@ -38,44 +72,35 @@ export function get_audit_export_filename_datetime_segment(): string {
     return get_download_filename_datetime(null);
 }
 
-function build_appendix1_summary_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
-    extension: 'docx' | 'pdf',
-    t: ExportReportFilenameT
-): string {
-    const base = build_report_export_filename(current_audit, true, extension, t);
-    return base.replace(new RegExp(`\\.${extension}$`, 'i'), `_bilaga_1_sammanfattning.${extension}`);
-}
-
 export function build_appendix1_summary_pdf_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
-    return build_appendix1_summary_filename(current_audit, 'pdf', t);
+    return build_appendix_export_filename(
+        current_audit,
+        1,
+        APPENDIX_EXPORT_TYPE_SUMMARY,
+        'pdf',
+        t
+    );
 }
 
 export function build_appendix1_summary_word_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
-    return build_appendix1_summary_filename(current_audit, 'docx', t);
+    return build_appendix_export_filename(
+        current_audit,
+        1,
+        APPENDIX_EXPORT_TYPE_SUMMARY,
+        'docx',
+        t
+    );
 }
 
 /** @deprecated Använd build_appendix1_summary_pdf_filename */
 export function build_deficiency_types_appendix_pdf_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
     return build_appendix1_summary_pdf_filename(current_audit, t);
@@ -83,31 +108,28 @@ export function build_deficiency_types_appendix_pdf_filename(
 
 /** @deprecated Använd build_appendix1_summary_word_filename */
 export function build_deficiency_types_appendix_word_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
     return build_appendix1_summary_word_filename(current_audit, t);
 }
 
-function build_deficiency_types_appendix_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
-    extension: 'docx' | 'pdf',
+export function build_appendix2_export_filename(
+    current_audit: AppendixAuditMetadata,
+    extension: 'xlsx' | 'csv',
     t: ExportReportFilenameT
 ): string {
-    return build_appendix1_summary_filename(current_audit, extension, t);
+    return build_appendix_export_filename(
+        current_audit,
+        2,
+        APPENDIX_EXPORT_TYPE_PROTOCOL,
+        extension,
+        t
+    );
 }
 
 export function build_observation_texts_word_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
     const base = build_report_export_filename(current_audit, true, 'docx', t);
@@ -115,66 +137,46 @@ export function build_observation_texts_word_filename(
 }
 
 export function build_screenshots_appendix_word_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
-    return build_screenshots_appendix_filename(current_audit, 'docx', t);
+    return build_appendix_export_filename(
+        current_audit,
+        3,
+        APPENDIX_EXPORT_TYPE_SCREENSHOTS,
+        'docx',
+        t
+    );
 }
 
 export function build_screenshots_appendix_pdf_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
-    return build_screenshots_appendix_filename(current_audit, 'pdf', t);
+    return build_appendix_export_filename(
+        current_audit,
+        3,
+        APPENDIX_EXPORT_TYPE_SCREENSHOTS,
+        'pdf',
+        t
+    );
 }
 
-/** Zip med bilaga 1–3: [diarienummer]_[aktör]_alla_bilagor.zip (suffix översatt). */
+/** Zip med bilaga 1–3: [diarienummer]_[aktör]_alla_bilagor.zip */
 export function build_all_appendices_zip_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-    },
+    current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
     const actor_name = sanitize_filename_segment(
         current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
     );
-    const case_number = (current_audit.auditMetadata?.caseNumber || '').trim();
-    const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-    const suffix = sanitize_filename_segment(t('audit_actions_all_appendices_zip_filename_suffix'))
-        || 'alla_bilagor';
+    const sanitized_case_number = sanitize_case_number_for_filename(
+        (current_audit.auditMetadata?.caseNumber || '').trim()
+    );
+    const suffix = APPENDIX_EXPORT_TYPE_ALL_ZIP;
 
     if (sanitized_case_number) {
         return `${sanitized_case_number}_${actor_name}_${suffix}.zip`;
     }
     return `${actor_name}_${suffix}.zip`;
-}
-
-function build_screenshots_appendix_filename(
-    current_audit: {
-        auditMetadata?: { caseNumber?: string; actorName?: string };
-        updated_at?: string | null;
-    },
-    extension: 'docx' | 'pdf',
-    t: ExportReportFilenameT
-): string {
-    const case_number = sanitize_excel_download_filename_segment(
-        current_audit.auditMetadata?.caseNumber || ''
-    );
-    const actor = sanitize_excel_download_filename_segment(
-        current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
-    );
-    const label = t('screenshots_appendix_export_filename_label');
-    const date_label = get_download_filename_date(null, '-');
-    const parts: string[] = [];
-    if (case_number) {
-        parts.push(case_number);
-    }
-    parts.push(actor, label, date_label);
-    return `${parts.join(' ')}.${extension}`;
 }

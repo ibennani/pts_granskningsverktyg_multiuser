@@ -146,10 +146,12 @@ export async function render_rulefile_info_blocks_edit_form(ctx, container, _met
 export async function render_rulefile_classifications_edit_form(ctx, container, _metadata, part = '') {
     const { deps, view } = ctx;
     const next_part = String(part || deps.params?.part || '').trim();
+    const next_taxonomy_id = String(deps.params?.taxonomyId ?? '').trim();
 
     if (view.classifications_edit_component) {
         const same_part = view.classifications_edit_part === next_part;
-        if (same_part && container.children.length > 0) {
+        const same_taxonomy = (view.classifications_edit_taxonomy_id || '') === next_taxonomy_id;
+        if (same_part && same_taxonomy && container.children.length > 0) {
             return;
         }
         view.classifications_edit_component.skip_autosave_on_destroy = true;
@@ -169,6 +171,7 @@ export async function render_rulefile_classifications_edit_form(ctx, container, 
     comp.render();
     view.classifications_edit_component = comp;
     view.classifications_edit_part = next_part;
+    view.classifications_edit_taxonomy_id = next_taxonomy_id;
 }
 
 /**

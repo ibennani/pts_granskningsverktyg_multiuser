@@ -98,6 +98,17 @@
     flex-shrink: 0;
 }
 
+.rulefile-sections-header-row--taxonomy-detail {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.rulefile-sections-header-row--taxonomy-detail .taxonomy-detail-edit-button {
+    flex-shrink: 0;
+    margin-left: 0;
+}
+
 .rulefile-sections-add-button-wrapper {
     margin-top: 1rem;
 }
@@ -508,7 +519,8 @@
 .requirement-mapping-layout,
 .rulefile-classifications-table-layout,
 .deficiency-types-table-wrapper,
-.audit-types-table-wrapper {
+.audit-types-table-wrapper,
+.taxonomy-table-wrapper {
     width: max-content;
     max-width: 100%;
 }
@@ -518,7 +530,31 @@
 .deficiency-types-table-wrapper .rulefile-classifications-table-filter .form-control,
 .audit-types-table-wrapper .rulefile-classifications-table-filter .form-control {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
+}
+
+.requirement-mapping-layout .rulefile-classifications-table-filter {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.requirement-mapping-layout .requirement-mapping-taxonomy-field {
+    width: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.requirement-mapping-layout .requirement-mapping-taxonomy-field .form-control {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.requirement-mapping-layout .rulefile-classifications-table-filter label,
+.requirement-mapping-layout .requirement-mapping-taxonomy-field label {
+    font-weight: bold;
 }
 
 .rulefile-classifications-table-scroll-wrapper {
@@ -761,8 +797,7 @@
 }
 
 .rulefile-appendix2-section .rulefile-appendix2-sheet-select {
-    width: fit-content;
-    max-width: 100%;
+    min-width: 0;
 }
 
 /* Bilaga 2 visningsläge: täta punktlistor utan luft under rubrik */
@@ -835,9 +870,7 @@
 }
 
 .appendix1-sections-editor-host .appendix1-grouping-taxonomy-select {
-    width: 100%;
-    min-width: 20rem;
-    max-width: 100%;
+    min-width: 0;
 }
 
 .appendix1-sections-editor-host .appendix1-deficiency-sections-panel {
@@ -891,9 +924,13 @@
     color: var(--text-color);
 }
 
-/* Klassificeringar: hub (återanvänder audit-settings__hub-* från audit_settings_view_component.css) */
-.rulefile-classifications-hub-intro {
-    margin-bottom: 1rem;
+/* Hub-sidor (Klassificeringar, Bilagornas malltexter): samma h1→intro-avstånd som .content-plate h1 */
+.rulefile-sections-header:has(+ .rulefile-section-content > .view-intro-text:first-child) {
+    margin-bottom: 0.5rem;
+}
+
+.rulefile-sections-header:has(+ .rulefile-section-content.taxonomy-list-view > .view-intro-text:first-child) {
+    margin-bottom: 0.25rem;
 }
 
 .classifications-part-panel {
@@ -926,6 +963,16 @@
 
 .rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .rulefile-classifications-table-filter {
     flex-shrink: 0;
+    width: 0;
+    min-width: 100%;
+    max-width: 100%;
+}
+
+.rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .requirement-mapping-taxonomy-field {
+    flex-shrink: 0;
+    width: auto;
+    max-width: 100%;
+    align-self: flex-start;
 }
 
 .rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .rulefile-classifications-table-scroll-wrapper {
@@ -1090,6 +1137,141 @@
 .audit-type-edit-dialog {
     max-width: 36rem;
     width: calc(100% - 2rem);
+}
+
+/* Taxonomi (visningsvy) */
+.taxonomy-list-view > .view-intro-text,
+.taxonomy-detail-view > .view-intro-text {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.taxonomy-table-wrapper {
+    margin-top: 0;
+}
+
+.taxonomy-scroll-wrapper,
+.rulefile-classifications-table-scroll-wrapper.taxonomy-scroll-wrapper {
+    max-height: 70vh;
+    margin-top: 0;
+}
+
+.taxonomy-table {
+    table-layout: auto;
+}
+
+.taxonomy-name-header,
+.taxonomy-row-header {
+    width: 1%;
+    min-width: 16rem;
+    max-width: 40rem;
+}
+
+.taxonomy-principles-header,
+.taxonomy-principles-cell {
+    width: 1%;
+    min-width: 8rem;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.taxonomy-actions-header {
+    width: auto;
+    min-width: 14rem;
+    white-space: nowrap;
+    vertical-align: top;
+    text-align: left;
+    border-left: none;
+}
+
+.taxonomy-actions-cell {
+    width: auto;
+    min-width: 14rem;
+    vertical-align: top;
+    text-align: left;
+    border-left: none;
+}
+
+.taxonomy-actions-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+
+.taxonomy-row-edit-button,
+.taxonomy-row-delete-button {
+    white-space: nowrap;
+    align-self: flex-start;
+    width: auto;
+    margin-right: 0;
+}
+
+.taxonomy-add-button {
+    margin-top: 0.75rem;
+}
+
+.taxonomy-name-link {
+    text-decoration: underline;
+}
+
+.taxonomy-principles-table-wrapper {
+    width: max-content;
+    max-width: 100%;
+}
+
+.taxonomy-principles-table {
+    width: auto;
+}
+
+.taxonomy-editor-name-field label,
+.taxonomy-editor-primary-field label,
+.taxonomy-editor-principle-row label {
+    font-weight: bold;
+}
+
+.taxonomy-editor-principles-heading {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.taxonomy-editor-principles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.taxonomy-editor-principle-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.taxonomy-add-principle-button {
+    margin-top: 0.75rem;
+}
+
+.taxonomy-table th,
+.taxonomy-table td {
+    vertical-align: top;
+    padding: 0.5rem 0.75rem;
+}
+
+.taxonomy-table thead th:not(.visually-hidden) {
+    font-weight: 600;
+    text-align: left;
+}
+
+.taxonomy-table tbody tr:nth-child(odd) th,
+.taxonomy-table tbody tr:nth-child(odd) td {
+    background-color: var(--plate-background-color, #f5f5f5);
+}
+
+.taxonomy-table tbody tr:nth-child(even) th,
+.taxonomy-table tbody tr:nth-child(even) td {
+    background-color: var(--surface-card-bg, #fff);
 }
 
 /* Förenklad taxonomi */

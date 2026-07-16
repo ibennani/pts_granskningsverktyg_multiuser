@@ -48,6 +48,7 @@ describe('reduce_set_audit_status', () => {
         const next = reduce_set_audit_status(state, { payload: { status: 'locked' } });
         expect(next.auditStatus).toBe('locked');
         expect(next.endTime).toMatch(ISO_RE);
+        expect(next.auditMetadata.endTime).toMatch(ISO_RE);
         expect(next.auditLastUpdatedAtFrozen).toBe(activity_ts);
         expect(next.auditMetadata[AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY]).toBe(activity_ts);
     });
@@ -72,6 +73,7 @@ describe('reduce_set_audit_status', () => {
         const next = reduce_set_audit_status(state, { payload: { status: 'in_progress' } });
         expect(next.auditStatus).toBe('in_progress');
         expect(next.endTime).toBeNull();
+        expect(next.auditMetadata.endTime).toBeUndefined();
         expect(next.auditLastUpdatedAtFrozen).toBeNull();
         expect(next.auditMetadata[AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY]).toBeUndefined();
         expect(next.deficiencyCounter).toBe(1);

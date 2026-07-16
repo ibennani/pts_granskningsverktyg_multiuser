@@ -5,6 +5,7 @@ import puppeteer, { type Browser, type Page } from 'puppeteer';
 import { merge_pdf_export_html_chunks } from '../../shared/pdf/merge_pdf_export_html_chunks.js';
 import { PUPPETEER_LAUNCH_ARGS } from './page_screenshot_stealth.js';
 import { inject_appendix1_cover_image } from './appendix1_cover_image.js';
+import { inject_appendix1_toc_page_numbers } from './appendix1_toc_page_numbers.js';
 
 export type PdfDocumentKind = 'default' | 'appendix1';
 
@@ -23,10 +24,10 @@ const PDF_MARGIN_INCHES = {
 };
 
 const APPENDIX1_PDF_MARGIN_INCHES = {
-    top: 25 / 25.4,
-    bottom: 25 / 25.4,
-    left: 25 / 25.4,
-    right: 25 / 25.4,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
 };
 
 const PDF_BASE_TIMEOUT_MS = 120_000;
@@ -39,6 +40,9 @@ function resolve_pdf_timeout_ms(html_length: number): number {
 
 async function render_pdf_buffer(page: Page, document_kind: PdfDocumentKind = 'default'): Promise<Buffer> {
     await page.emulateMediaType('print');
+    if (document_kind === 'appendix1') {
+        await inject_appendix1_toc_page_numbers(page);
+    }
     const margins = document_kind === 'appendix1' ? APPENDIX1_PDF_MARGIN_INCHES : PDF_MARGIN_INCHES;
     const client = await page.createCDPSession();
     const result = await client.send('Page.printToPDF', {

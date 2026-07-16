@@ -1,9 +1,12 @@
 /**
  * @fileoverview Redigerar Bilaga 1-sektioner och grupperingstaxonomi i regelfilens Rapportmall.
  */
-import { normalize_rulefile_appendix1 } from '../../logic/appendix1_sections.js';
+import {
+    build_rulefile_appendix1_persisted_sections,
+    normalize_rulefile_appendix1,
+} from '../../logic/appendix1_sections.js';
+import type { Appendix1SectionDefinition } from '../../logic/appendix1_sections_types.js';
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
-import { create_rulefile_appendix_subpage_back_row } from './rulefile_appendix_templates_render.js';
 import { render_appendix1_sections_editor } from './rulefile_appendix1_sections_editor_ui.js';
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
@@ -21,6 +24,8 @@ type Deps = {
 };
 
 type EditorHandles = {
+    get_body_text: () => string;
+    get_body_text_by_taxonomy: () => Record<string, string>;
     get_sections: () => Array<Record<string, unknown>>;
     get_grouping_taxonomy_id: () => string;
 };
@@ -39,34 +44,51 @@ export class EditReportTemplateAppendix1Component {
         this.deps?.router('rulefile_sections', { section: 'report_template', appendix: '1' });
     }
 
-    private navigate_back_to_hub(): void {
-        this.deps?.router('rulefile_sections', { section: 'report_template' });
+    private handle_generate_sections(): void {
+        void this.save_sections('rulefile_appendix1_sections_generated');
     }
 
-    private async save_sections(): Promise<void> {
-        if (!this.deps || !this.editor_handles) return;
-        const state = this.deps.getState();
+    private async save_sections(
+        success_message_key = 'rulefile_appendix1_section_saved'
+    ): Promise<void> {
+        const deps = this.deps;
+        const editor_handles = this.editor_handles;
+        if (!deps || !editor_handles) return;
+
+        const state = deps.getState();
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
         const normalized = normalize_rulefile_appendix1(rule_file);
         const appendix = (normalized.appendix1 as Record<string, unknown>) || {};
-        appendix.sections = this.editor_handles.get_sections();
-        appendix.groupingTaxonomyId = this.editor_handles.get_grouping_taxonomy_id();
+        const grouping_taxonomy_id = editor_handles.get_grouping_taxonomy_id();
+        const body_text_by_taxonomy = editor_handles.get_body_text_by_taxonomy();
+        appendix.bodyTextByTaxonomy = body_text_by_taxonomy;
+        const body_text =
+            body_text_by_taxonomy[grouping_taxonomy_id]?.trim()
+            ?? editor_handles.get_body_text().trim();
+        appendix.bodyText = body_text;
+        appendix.sections = build_rulefile_appendix1_persisted_sections(
+            body_text,
+            editor_handles.get_sections() as Appendix1SectionDefinition[]
+        );
+        appendix.groupingTaxonomyId = grouping_taxonomy_id;
         normalized.appendix1 = appendix;
 
-        await this.deps.dispatch({
-            type: this.deps.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+        await deps.dispatch({
+            type: deps.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
             payload: { ruleFileContent: normalized, skip_render: true },
         });
 
+        // Visa toast före serversynk: flush kan trigga omrendering som förstör komponenten.
+        deps.NotificationComponent.show_global_message(
+            deps.Translation.t(success_message_key),
+            'success'
+        );
+
         try {
-            await flush_rulefile_editing_sync_if_active(this.deps.getState, this.deps.dispatch);
+            await flush_rulefile_editing_sync_if_active(deps.getState, deps.dispatch);
         } catch {
             // Fel visas av sync
         }
-        this.deps.NotificationComponent.show_global_message(
-            this.deps.Translation.t('rulefile_appendix1_section_saved'),
-            'success'
-        );
     }
 
     render(): void {
@@ -87,9 +109,16 @@ export class EditReportTemplateAppendix1Component {
             class_name: 'appendix1-sections-editor-host',
         });
         this.editor_handles = render_appendix1_sections_editor(
-            { Helpers: this.deps.Helpers, Translation: this.deps.Translation },
+            {
+                Helpers: this.deps.Helpers,
+                Translation: this.deps.Translation,
+                NotificationComponent: this.deps.NotificationComponent,
+            },
             editor_host,
-            normalized
+            normalized,
+            {
+                on_generate: () => this.handle_generate_sections(),
+            }
         );
         this.root.appendChild(editor_host);
 
@@ -112,13 +141,6 @@ export class EditReportTemplateAppendix1Component {
         back_btn.addEventListener('click', () => this.navigate_back_to_view());
         actions.append(save_btn, back_btn);
         this.root.appendChild(actions);
-
-        this.root.appendChild(
-            create_rulefile_appendix_subpage_back_row(
-                { Helpers: this.deps.Helpers, Translation: this.deps.Translation, router: this.deps.router },
-                () => this.navigate_back_to_hub()
-            )
-        );
     }
 
     destroy(): void {

@@ -463,20 +463,20 @@ describe('export_report_html_appendix1_pts', () => {
         expect(css).toContain('object-fit: cover');
     });
 
-    test('build_appendix1_summary_pdf_filename använder sammanfattning-suffix', () => {
+    test('build_appendix1_summary_pdf_filename använder dnr, aktör, bilaga och typ utan datum', () => {
         const filename = build_appendix1_summary_pdf_filename(
-            { auditMetadata: { actorName: 'Test AB', caseNumber: '2026-001' } },
+            { auditMetadata: { actorName: 'NetOnNet AB', caseNumber: '25-20478' } },
             t
         );
-        expect(filename).toMatch(/_bilaga_1_sammanfattning\.pdf$/);
+        expect(filename).toBe('25-20478_NetOnNet_AB_bilaga_1_sammanfattning.pdf');
     });
 
-    test('build_appendix1_summary_word_filename använder sammanfattning-suffix', () => {
+    test('build_appendix1_summary_word_filename använder dnr, aktör, bilaga och typ utan datum', () => {
         const filename = build_appendix1_summary_word_filename(
-            { auditMetadata: { actorName: 'Test AB', caseNumber: '2026-001' } },
+            { auditMetadata: { actorName: 'NetOnNet AB', caseNumber: '25-20478' } },
             t
         );
-        expect(filename).toMatch(/_bilaga_1_sammanfattning\.docx$/);
+        expect(filename).toBe('25-20478_NetOnNet_AB_bilaga_1_sammanfattning.docx');
     });
 });
 
@@ -497,5 +497,14 @@ describe('export_word_appendix1_summary', () => {
         expect(serialized).toContain('"alignment":"right"');
         expect(serialized).toContain('"relativeTo":"margin"');
         expect(serialized).toContain('"leader":"dot"');
+    });
+
+    test('Word-export sätter sidbrytning så omslag räknas som sida 1', () => {
+        const children: unknown[] = [];
+        append_word_appendix1_summary_paragraphs(children, create_audit_with_deficiency_types(), t);
+
+        const serialized = JSON.stringify(children);
+        expect(serialized).toContain('"rootKey":"w:pageBreakBefore"');
+        expect(serialized).toContain('"name":"appendix1_audit_info"');
     });
 });

@@ -20,6 +20,11 @@ import {
     resolve_classifications_part,
 } from './rulefile_sections/rulefile_classifications_views.js';
 import {
+    find_taxonomy_by_key,
+    taxonomy_display_name,
+    taxonomy_row_key,
+} from './rulefile_sections/rulefile_taxonomy_keys.js';
+import {
     flush_info_blocks_order_from_dom,
     render_rulefile_page_types_section,
     render_rulefile_content_types_section,
@@ -81,14 +86,41 @@ export class RulefileSectionsViewComponent {
         return get_section_config(section_id, this.Translation.t);
     }
 
-    _create_header(section_config, is_editing = false, appendix = '', classifications_part = '') {
+    _create_header(
+        section_config,
+        is_editing = false,
+        appendix = '',
+        classifications_part = '',
+        heading_text_override = '',
+        taxonomy_detail_context = null
+    ) {
         return create_rulefile_section_header({
             Helpers: this.Helpers,
             Translation: this.Translation,
             router: this.router,
             getState: this.getState,
-            get_page_types_edit_component: () => this.page_types_edit_component
-        }, section_config, is_editing, appendix, classifications_part);
+            get_page_types_edit_component: () => this.page_types_edit_component,
+            taxonomy_detail_context,
+        }, section_config, is_editing, appendix, classifications_part, heading_text_override);
+    }
+
+    _resolve_taxonomy_detail_header_context(metadata, classifications_part, is_editing) {
+        if (is_editing || classifications_part !== 'taxonomy') {
+            return null;
+        }
+        const taxonomy_id = String(this.deps.params?.taxonomyId ?? '').trim();
+        if (!taxonomy_id) {
+            return null;
+        }
+        const match = find_taxonomy_by_key(metadata, taxonomy_id);
+        if (!match) {
+            return null;
+        }
+        return {
+            heading: taxonomy_display_name(match.taxonomy, this.Translation.t),
+            taxonomy: match.taxonomy,
+            taxonomy_key: taxonomy_row_key(match.taxonomy, match.index),
+        };
     }
 
     _format_simple_value(value) {
@@ -135,10 +167,18 @@ export class RulefileSectionsViewComponent {
 
     _render_classifications_part_section(part, metadata, ruleFileContent) {
         return render_rulefile_classifications_part_section(
-            { Helpers: this.Helpers, Translation: this.Translation, router: this.router },
+            {
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                router: this.router,
+                getState: this.getState,
+                dispatch: this.dispatch,
+                StoreActionTypes: this.StoreActionTypes,
+            },
             part,
             metadata,
-            ruleFileContent
+            ruleFileContent,
+            this.deps.params || {}
         );
     }
 
@@ -341,6 +381,12 @@ export class RulefileSectionsViewComponent {
 
     async _build_main_plate(state, section_id, is_editing, appendix = '', classifications_part = '') {
         const metadata = state?.ruleFileContent?.metadata || {};
+        const taxonomy_detail_context = this._resolve_taxonomy_detail_header_context(
+            metadata,
+            classifications_part,
+            is_editing
+        );
+        const taxonomy_detail_heading = taxonomy_detail_context?.heading ?? '';
         const main_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-main-plate' });
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
@@ -350,7 +396,14 @@ export class RulefileSectionsViewComponent {
         const classifications_editing = is_editing && section_id === 'classifications' && classifications_part;
         if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'info_blocks_order' || classifications_editing || (section_id === 'report_template' && appendix))) {
             header_section_config = this._get_section_config(section_id);
-            right_wrapper.appendChild(this._create_header(header_section_config, is_editing, appendix, classifications_part));
+            right_wrapper.appendChild(this._create_header(
+                header_section_config,
+                is_editing,
+                appendix,
+                classifications_part,
+                taxonomy_detail_heading,
+                taxonomy_detail_context
+            ));
             const edit_form_container = this.Helpers.create_element('div', { class_name: 'rulefile-section-edit-form-container' });
             if (section_id === 'general') await this._render_general_edit_form(edit_form_container, metadata);
             else if (section_id === 'page_types') await this._render_page_types_edit_form(edit_form_container, metadata);
@@ -417,7 +470,14 @@ export class RulefileSectionsViewComponent {
                     header_section_config = this._get_section_config('general');
                     section_content = this._render_general_section(metadata);
             }
-            right_wrapper.appendChild(this._create_header(header_section_config, is_editing, appendix, classifications_part));
+            right_wrapper.appendChild(this._create_header(
+                header_section_config,
+                is_editing,
+                appendix,
+                classifications_part,
+                taxonomy_detail_heading,
+                taxonomy_detail_context
+            ));
             if (section_content && header_section_config) {
                 section_content.setAttribute('aria-labelledby', `rulefile-section-${header_section_config.id}-heading`);
             }

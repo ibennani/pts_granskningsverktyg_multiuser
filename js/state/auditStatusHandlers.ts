@@ -52,11 +52,23 @@ export function reduce_set_audit_status(current_state: any, action: any) {
             ...audit_metadata,
             [AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY]: frozen_last_updated
         };
-    } else if (
+    } else     if (
         newStatus === 'in_progress'
         && (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived')
     ) {
         audit_metadata = without_last_in_progress_activity_in_metadata(audit_metadata);
+        const { endTime: _removed_end, ...rest } = audit_metadata;
+        audit_metadata = rest;
+    }
+    if (
+        newStatus === 'locked'
+        && current_state.auditStatus === 'in_progress'
+        && state_before_status_change.endTime
+    ) {
+        audit_metadata = {
+            ...audit_metadata,
+            endTime: state_before_status_change.endTime,
+        };
     }
     if (
         (newStatus === 'locked' && current_state.auditStatus === 'in_progress')

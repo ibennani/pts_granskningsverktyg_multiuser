@@ -35,9 +35,13 @@ export type Appendix1SectionKey =
 
 export type Appendix1SectionsMap = Record<Appendix1SectionKey, Appendix1Section>;
 
+export type Appendix1BodyTextByTaxonomy = Record<string, string>;
+
 export type Appendix1RulefileSlice = {
     appendix1?: {
         summaryText?: unknown;
+        bodyText?: unknown;
+        bodyTextByTaxonomy?: unknown;
         coverImage?: unknown;
         groupingTaxonomyId?: unknown;
         sections?: unknown;
@@ -46,6 +50,8 @@ export type Appendix1RulefileSlice = {
 
 export type Appendix1AuditSlice = {
     ruleFileContent?: Appendix1RulefileSlice | null;
+    auditStatus?: string;
+    updated_at?: unknown;
     auditMetadata?: {
         appendix1SummaryText?: unknown;
         appendix1SectionOverrides?: unknown;

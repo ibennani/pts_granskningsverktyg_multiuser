@@ -87,4 +87,16 @@ describe('pdf_generation_service', () => {
         );
         expect(buffer.subarray(0, 4).toString('utf8')).toBe('%PDF');
     });
+
+    test('appendix1 injicerar TOC-sidnummer efter print-media', async () => {
+        const html =
+            '<!DOCTYPE html><html lang="sv"><body>' +
+            '<nav class="appendix1-toc"><a class="appendix1-toc__link" href="#section-audit-info">' +
+            '<span class="appendix1-toc__page"></span></a></nav>' +
+            '<section id="section-audit-info"></section></body></html>';
+        await generate_pdf_from_html({ htmlContent: html, documentKind: 'appendix1' });
+
+        expect(emulate_media_type_mock).toHaveBeenCalledWith('print');
+        expect(evaluate_mock.mock.calls.length).toBeGreaterThanOrEqual(3);
+    });
 });
