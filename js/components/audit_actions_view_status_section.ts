@@ -7,6 +7,22 @@ import { find_requirement_definition } from '../audit_logic.js';
 /**
  * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
  */
+export function resolve_audit_actions_status_section_title_key(audit_status) {
+    switch (audit_status) {
+        case 'locked':
+            return 'audit_actions_status_section_title_locked';
+        case 'archived':
+            return 'audit_actions_status_section_title_archived';
+        case 'in_progress':
+            return 'audit_actions_status_section_title_in_progress';
+        default:
+            return 'audit_actions_status_section_title_not_started';
+    }
+}
+
+/**
+ * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
+ */
 export function build_audit_actions_status_section(view, state, t) {
     const is_after_exports = state.auditStatus === 'locked' || state.auditStatus === 'archived';
     const status_section = view.Helpers.create_element('section', {
@@ -16,7 +32,7 @@ export function build_audit_actions_status_section(view, state, t) {
     });
     status_section.appendChild(view.Helpers.create_element('h2', {
         class_name: 'audit-actions__section-title',
-        text_content: t('audit_actions_status_section_title'),
+        text_content: t(resolve_audit_actions_status_section_title_key(state.auditStatus)),
     }));
 
     const status_actions = view.Helpers.create_element('div', { class_name: 'audit-actions__status-list' });

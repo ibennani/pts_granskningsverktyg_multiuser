@@ -134,7 +134,7 @@ describe('AuditActionsViewComponent statusknappar', () => {
             headings.indexOf('audit_actions_exports_title')
         );
         expect(headings.indexOf('audit_actions_exports_title')).toBeLessThan(
-            headings.indexOf('audit_actions_status_section_title')
+            headings.indexOf('audit_actions_status_section_title_locked')
         );
 
         component.destroy();
@@ -152,7 +152,7 @@ describe('AuditActionsViewComponent statusknappar', () => {
             headings.indexOf('audit_actions_exports_title')
         );
         expect(headings.indexOf('audit_actions_exports_title')).toBeLessThan(
-            headings.indexOf('audit_actions_status_section_title')
+            headings.indexOf('audit_actions_status_section_title_archived')
         );
 
         component.destroy();
@@ -163,7 +163,7 @@ describe('AuditActionsViewComponent statusknappar', () => {
         const { root, component } = await render_with_status('in_progress');
         const headings = heading_texts(root);
 
-        expect(headings).toEqual(['audit_actions_status_section_title']);
+        expect(headings).toEqual(['audit_actions_status_section_title_in_progress']);
 
         component.destroy();
         root.remove();
@@ -226,7 +226,7 @@ describe('AuditActionsViewComponent statusknappar', () => {
         const ids = button_ids(root);
         const headings = heading_texts(root);
 
-        expect(headings).toEqual(['audit_actions_status_section_title']);
+        expect(headings).toEqual(['audit_actions_status_section_title_in_progress']);
         expect(root.textContent).not.toContain('audit_not_locked_for_export');
         expect(root.textContent).not.toContain('audit_actions_appendix_guide_title');
         expect(root.textContent).not.toContain('audit_actions_exports_title');
@@ -240,10 +240,28 @@ describe('AuditActionsViewComponent statusknappar', () => {
         const { root, component } = await render_with_status('not_started');
         const headings = heading_texts(root);
 
-        expect(headings).toEqual(['audit_actions_status_section_title']);
+        expect(headings).toEqual(['audit_actions_status_section_title_not_started']);
         expect(root.textContent).not.toContain('audit_not_locked_for_export');
         component.destroy();
         root.remove();
+    });
+
+    test('statusrubrik matchar granskningens läge', async () => {
+        const { resolve_audit_actions_status_section_title_key } = await import(
+            '../../js/components/audit_actions_view_status_section.ts'
+        );
+        expect(resolve_audit_actions_status_section_title_key('in_progress')).toBe(
+            'audit_actions_status_section_title_in_progress'
+        );
+        expect(resolve_audit_actions_status_section_title_key('locked')).toBe(
+            'audit_actions_status_section_title_locked'
+        );
+        expect(resolve_audit_actions_status_section_title_key('archived')).toBe(
+            'audit_actions_status_section_title_archived'
+        );
+        expect(resolve_audit_actions_status_section_title_key('not_started')).toBe(
+            'audit_actions_status_section_title_not_started'
+        );
     });
 
     test('klick på avsluta fadar ut, dispatchar locked och uppdaterar vyn', async () => {
@@ -264,7 +282,7 @@ describe('AuditActionsViewComponent statusknappar', () => {
             payload: { status: 'locked' }
         });
         expect(deps.flush_sync_to_server).not.toHaveBeenCalled();
-        const content_after_swap = root.querySelector('.audit-actions__content') as HTMLElement | null;
+        const content_after_swap = root.querySelector('.audit-actions__content');
         expect(content_after_swap?.style.opacity).toBe('0');
         await jest.runAllTimersAsync();
         expect(root.querySelector('#audit-action-btn-unlock-audit')).toBeTruthy();
