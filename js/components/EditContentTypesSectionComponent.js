@@ -1,18 +1,23 @@
 // js/components/EditContentTypesSectionComponent.js
 
-import {
-    get_requirements_count_by_content_type_id,
-    get_requirements_count_for_parent_content_type,
-    remove_content_type_from_requirements
-} from '../utils/content_types_helper.js';
-import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import { ensure_metadata_defaults, clone_metadata } from '../logic/rulefile_metadata_model.js';
 import {
     resolve_content_types,
     normalize_rulefile_metadata_vocabularies
 } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
+import { remove_content_type_from_requirements } from '../utils/content_types_helper.js';
+import {
+    CONTENT_TYPE_NEW_PARAM,
+    content_type_list_route_params,
+    ensure_draft_content_type_for_create,
+    find_content_type_by_child_id,
+    resolve_content_type_edit_mode,
+} from './rulefile_sections/rulefile_content_type_keys.js';
+import { render_content_types_overview } from './rulefile_sections/rulefile_content_types_ui.js';
+import { render_content_type_edit_form } from './rulefile_sections/rulefile_content_type_edit_ui.js';
 import './edit_rulefile_metadata_view.css';
+import './rulefile_sections_view.css';
 
 export const EditContentTypesSectionComponent = {
     async init({ root, deps }) {
@@ -29,11 +34,15 @@ export const EditContentTypesSectionComponent = {
         this.form_element_ref = null;
         this.working_metadata = null;
         this.initial_metadata_snapshot = null;
+        this.initial_rulefile_snapshot = null;
+        this.panel_container = null;
+        this.content_type_location = null;
+        this.sync_edit_form = null;
+        this.refresh_requirements_table = null;
         this.skip_autosave_on_destroy = false;
-        this.content_types_container = null;
-        this.handle_autosave_input = this.handle_autosave_input.bind(this);
-
-            },
+        this.edit_mode = 'overview';
+        this.content_type_id_param = '';
+    },
 
     _clone_metadata(metadata) {
         return clone_metadata(metadata);
@@ -64,465 +73,43 @@ export const EditContentTypesSectionComponent = {
         return candidate;
     },
 
-    _create_inline_input(label_key, value, onChange, options = {}) {
-        const { textarea = false, rawLabel = null } = options;
-        const wrapper = this.Helpers.create_element('div', { class_name: 'inline-field' });
-        const inputId = `inline-${Math.random().toString(36).substring(2, 10)}`;
-        const labelText = rawLabel ?? this.Translation.t(label_key);
-        const label = this.Helpers.create_element('label', { attributes: { for: inputId }, text_content: labelText });
-        wrapper.appendChild(label);
-
-        let input;
-        if (textarea) {
-            input = this.Helpers.create_element('textarea', {
-                class_name: 'form-control form-control-compact',
-                attributes: { id: inputId, rows: '3' }
-            });
-            input.value = value ?? '';
-            this.Helpers.init_auto_resize_for_textarea?.(input);
-            input.addEventListener('input', event => onChange(event.target.value));
-        } else {
-            input = this.Helpers.create_element('input', {
-                class_name: 'form-control form-control-compact',
-                attributes: { id: inputId, type: 'text' }
-            });
-            input.value = value ?? '';
-            input.addEventListener('input', event => onChange(event.target.value));
-        }
-
-        wrapper.appendChild(input);
-        return wrapper;
-    },
-
-    _create_small_button(text_or_key, icon_name, onClick, variant = 'secondary', options = {}) {
-        const { plainText = false, ariaLabel = null } = options;
-        const resolveText = (value) => plainText ? value : this.Translation.t(value);
-        const computeHtml = (value) => {
-            const label = resolveText(value);
-            const safeLabel = this.Helpers.escape_html ? this.Helpers.escape_html(label) : label;
-            return `<span>${safeLabel}</span>` + (icon_name && this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(icon_name) : '');
+    _get_editor_ctx() {
+        return {
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            router: this.router,
         };
-
-        const button = this.Helpers.create_element('button', {
-            class_name: ['button', `button-${variant}`, 'button-small'],
-            attributes: { type: 'button' },
-            html_content: computeHtml(text_or_key)
-        });
-
-        const resolvedAria = ariaLabel || resolveText(text_or_key);
-        if (resolvedAria) {
-            button.setAttribute('aria-label', resolvedAria);
-        }
-
-        button.addEventListener('click', onClick);
-
-        button.updateButtonText = (newText, newAria) => {
-            button.innerHTML = computeHtml(newText);
-            const aria = newAria || resolveText(newText);
-            if (aria) {
-                button.setAttribute('aria-label', aria);
-            }
-        };
-
-        return button;
     },
 
-    _render_content_types_editor(container, workingMetadata, addAnimation = null, focusAfterRender = null) {
-        const t = this.Translation.t;
-        const ruleFileContent = this.getState()?.ruleFileContent || {};
-        container.innerHTML = '';
-
-        const content_types = resolve_content_types(workingMetadata);
-
-        if (!Array.isArray(content_types) || content_types.length === 0) {
-            container.appendChild(this.Helpers.create_element('p', {
-                class_name: 'editable-empty',
-                text_content: t('rulefile_metadata_empty_value')
-            }));
-        }
-
-        content_types.forEach((parent, parentIndex) => {
-            if (!parent) {
-                content_types[parentIndex] = { id: '', text: '', description: '', types: [] };
-                parent = content_types[parentIndex];
-            }
-            parent.types = Array.isArray(parent.types) ? parent.types : [];
-
-            const card = this.Helpers.create_element('article', { class_name: 'editable-card content-type-card' });
-            const headingRow = this.Helpers.create_element('div', { class_name: 'editable-card-header' });
-            const heading = this.Helpers.create_element('h3', { text_content: parent.text || t('rulefile_metadata_untitled_item') });
-            const initialRemoveLabel = this.Translation.t('rulefile_metadata_remove_content_type', { name: heading.textContent });
-            const parentDisplayName = parent.text || t('rulefile_metadata_untitled_item');
-            const removeParentBtn = this._create_small_button(initialRemoveLabel, 'delete', () => {
-                const h1_text = this.Translation.t('modal_h1_delete_content_type');
-                const reqCount = get_requirements_count_for_parent_content_type(ruleFileContent, parent);
-                const message_text = reqCount > 0
-                    ? this.Translation.t('modal_message_delete_content_type_with_requirements', {
-                        name: parentDisplayName,
-                        count: reqCount
-                    })
-                    : this.Translation.t('modal_message_delete_content_type', { name: parentDisplayName });
-                if (show_confirm_delete_modal) {
-                    show_confirm_delete_modal({
-                        h1_text,
-                        warning_text: message_text,
-                        delete_button: removeParentBtn,
-                        on_confirm: () => this._delete_content_type_with_animation(workingMetadata, parentIndex, card)
-                    });
-                } else {
-                    this._delete_content_type_with_animation(workingMetadata, parentIndex, card);
-                }
-            }, 'danger', { plainText: true, ariaLabel: initialRemoveLabel });
-            headingRow.append(heading, removeParentBtn);
-            card.appendChild(headingRow);
-
-            card.appendChild(this._create_inline_input('rulefile_metadata_field_text', parent.text || '', value => {
-                parent.text = value;
-                const displayName = value || t('rulefile_metadata_untitled_item');
-                heading.textContent = displayName;
-                const updatedLabel = this.Translation.t('rulefile_metadata_remove_content_type', { name: displayName });
-                removeParentBtn.updateButtonText?.(updatedLabel, updatedLabel);
-                this.handle_autosave_input();
-            }));
-
-            const childList = this.Helpers.create_element('div', { class_name: 'editable-sublist' });
-            const subheading = this.Helpers.create_element('h4', {
-                text_content: t('rulefile_metadata_subcategories_title') || 'Underkategorier'
-            });
-            childList.appendChild(subheading);
-
-            parent.types.forEach((child, childIndex) => {
-                if (!child) {
-                    parent.types[childIndex] = { id: '', text: '', description: '', detectionPattern: '' };
-                    child = parent.types[childIndex];
-                }
-                const childId = child.id || (parent.id ? `${parent.id}-${this._generate_slug(child.text)}` : '');
-                const reqCount = childId ? get_requirements_count_by_content_type_id(ruleFileContent, childId) : 0;
-
-                const childCard = this.Helpers.create_element('div', { class_name: 'editable-card editable-child-card' });
-                const childHeader = this.Helpers.create_element('div', { class_name: 'editable-card-header' });
-                const childDisplayName = child.text || t('rulefile_metadata_untitled_item');
-                const removeChildInitial = this.Translation.t('rulefile_metadata_remove_content_subtype', { name: childDisplayName });
-                const removeChildBtn = this._create_small_button(removeChildInitial, 'delete', () => {
-                    const msg = reqCount > 0
-                        ? (t('rulefile_metadata_remove_content_type_with_requirements', { count: reqCount })
-                            || `Denna underkategori är kopplad till ${reqCount} krav. Vill du ta bort den? Kopplingen till kraven tas bort.`)
-                        : (t('confirm_delete_content_subtype', { name: childDisplayName }) || `Är du säker på att du vill ta bort undertypen "${childDisplayName}"?`);
-                    if (show_confirm_delete_modal) {
-                        show_confirm_delete_modal({
-                            warning_text: msg,
-                            delete_button: removeChildBtn,
-                            on_confirm: () => this._delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, childCard)
-                        });
-                    } else {
-                        this._delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, childCard);
-                    }
-                }, 'danger', { plainText: true, ariaLabel: removeChildInitial });
-                childHeader.appendChild(removeChildBtn);
-
-                if (reqCount > 0) {
-                    const countSpan = this.Helpers.create_element('span', {
-                        class_name: 'content-type-requirements-count',
-                        text_content: t('rulefile_metadata_content_type_requirements_count', { count: reqCount }) || `${reqCount} krav kopplade`
-                    });
-                    childHeader.appendChild(countSpan);
-                }
-                childCard.appendChild(childHeader);
-
-                childCard.appendChild(this._create_inline_input('rulefile_metadata_field_text', child.text || '', value => {
-                    child.text = value;
-                    const updatedName = value || t('rulefile_metadata_untitled_item');
-                    const updatedLabel = this.Translation.t('rulefile_metadata_remove_content_subtype', { name: updatedName });
-                    removeChildBtn.updateButtonText?.(updatedLabel, updatedLabel);
-                    this.handle_autosave_input();
-                }));
-                childCard.appendChild(this._create_inline_input('rulefile_metadata_field_description', child.description || '', value => {
-                    child.description = value;
-                    this.handle_autosave_input();
-                }, { textarea: true }));
-                childCard.appendChild(this._create_inline_input('rulefile_metadata_field_detection_pattern', child.detectionPattern || '', value => {
-                    child.detectionPattern = value;
-                    this.handle_autosave_input();
-                }));
-                const pattern_help = this.Helpers.create_element('p', {
-                    class_name: 'inline-field-help',
-                    text_content: t('rulefile_metadata_field_detection_pattern_help')
-                });
-                childCard.appendChild(pattern_help);
-                childList.appendChild(childCard);
-            });
-
-            const addChildBtn = this._create_small_button('rulefile_metadata_add_content_subtype', 'add', () => {
-                parent.types.push({ id: '', text: '', description: '', detectionPattern: '' });
-                this._render_content_types_editor(container, workingMetadata, {
-                    type: 'child',
-                    parentIndex,
-                    childIndex: parent.types.length - 1
-                });
-            });
-            childList.appendChild(addChildBtn);
-            card.appendChild(childList);
-            container.appendChild(card);
-        });
-
-        const addParentBtn = this._create_small_button('rulefile_metadata_add_content_type', 'add', () => {
-            content_types.push({ id: '', text: '', description: '', types: [] });
-            this._render_content_types_editor(container, workingMetadata, {
-                type: 'parent',
-                index: content_types.length - 1
-            });
-        });
-        container.appendChild(addParentBtn);
-
-        if (addAnimation) {
-            this._apply_add_fade_in(container, addAnimation);
-        }
-        if (focusAfterRender) {
-            this._focus_after_render(container, focusAfterRender);
-        }
+    _read_content_type_id_param() {
+        return String(this.deps?.params?.contentTypeId ?? '').trim();
     },
 
-    _apply_add_fade_in(container, addAnimation) {
-        const fade_duration_ms = 1000;
-        let targetEl = null;
-
-        if (addAnimation.type === 'parent') {
-            const cards = Array.from(container.children).filter(el => el.classList.contains('content-type-card'));
-            targetEl = cards[addAnimation.index] || null;
-        } else if (addAnimation.type === 'child') {
-            const cards = Array.from(container.children).filter(el => el.classList.contains('content-type-card'));
-            const parentCard = cards[addAnimation.parentIndex] || null;
-            const childList = parentCard?.querySelector('.editable-sublist');
-            const childCards = childList ? childList.querySelectorAll('.editable-child-card') : [];
-            targetEl = childCards[addAnimation.childIndex] || null;
-        }
-
-        if (!targetEl) return;
-
-        targetEl.style.opacity = '0';
-        targetEl.style.transition = `opacity ${fade_duration_ms}ms ease-out`;
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                targetEl.style.opacity = '1';
-            });
-        });
-
-        const nameInput = targetEl.querySelector('.inline-field input');
-        if (nameInput) {
-            requestAnimationFrame(() => {
-                nameInput.focus();
-            });
-        }
+    _resolve_edit_mode() {
+        this.content_type_id_param = this._read_content_type_id_param();
+        this.edit_mode = resolve_content_type_edit_mode(this.content_type_id_param);
     },
 
-    _focus_after_render(container, focusAfterRender) {
-        const cards = Array.from(container.children).filter(el => el.classList.contains('content-type-card'));
-        let buttonToFocus = null;
-
-        if (focusAfterRender.type === 'parent') {
-            const card = cards[focusAfterRender.index];
-            if (card) {
-                buttonToFocus = card.querySelector('.editable-card-header .button');
-            }
-            if (!buttonToFocus) {
-                buttonToFocus = container.lastElementChild;
-            }
-        } else if (focusAfterRender.type === 'child') {
-            const parentCard = cards[focusAfterRender.parentIndex] || null;
-            if (parentCard) {
-                const childList = parentCard.querySelector('.editable-sublist');
-                const childCards = childList ? childList.querySelectorAll('.editable-child-card') : [];
-                const childCard = childCards[focusAfterRender.childIndex];
-                if (childCard) {
-                    buttonToFocus = childCard.querySelector('.editable-card-header .button');
-                }
-                if (!buttonToFocus) {
-                    buttonToFocus = childList?.lastElementChild;
-                }
-            }
-        }
-
-        if (buttonToFocus) {
-            requestAnimationFrame(() => {
-                buttonToFocus.focus();
-            });
-        }
-    },
-
-    _delete_content_type_with_animation(workingMetadata, parentIndex, elementToDelete) {
-        this.handle_autosave_input();
-        const content_types = resolve_content_types(workingMetadata);
-
-        if (parentIndex < 0 || parentIndex >= content_types.length) return;
-
-        const fade_duration_ms = 1000;
-        const move_duration_ms = 1000;
-        const gap = 12; // 0.75rem från content-types-editor
-        const totalHeight = elementToDelete.offsetHeight + gap;
-
-        elementToDelete.style.transition = `opacity ${fade_duration_ms}ms ease-out, transform ${fade_duration_ms}ms ease-out`;
-        requestAnimationFrame(() => {
-            elementToDelete.style.opacity = '0';
-            elementToDelete.style.transform = 'scale(0.95)';
-        });
-
-        setTimeout(() => {
-            if (elementToDelete.parentNode) {
-                elementToDelete.parentNode.removeChild(elementToDelete);
-            }
-
-            const parent = this.content_types_container;
-            if (!parent) return;
-            const cardsArray = Array.from(parent.children).filter(el => el.classList.contains('content-type-card'));
-            const itemsAfter = cardsArray.slice(parentIndex);
-
-            itemsAfter.forEach((item) => {
-                item.style.transition = `transform ${move_duration_ms}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-                item.style.transform = `translateY(-${totalHeight}px)`;
-            });
-
-            const addBtn = parent.lastElementChild;
-            if (addBtn && !addBtn.classList.contains('editable-card')) {
-                addBtn.style.transition = `transform ${move_duration_ms}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-                addBtn.style.transform = `translateY(-${totalHeight}px)`;
-            }
-
-            setTimeout(() => {
-                content_types.splice(parentIndex, 1);
-                this._render_content_types_editor(this.content_types_container, workingMetadata, null, {
-                    type: 'parent',
-                    index: parentIndex
-                });
-            }, move_duration_ms);
-        }, fade_duration_ms);
-    },
-
-    _delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, elementToDelete) {
-        const ruleFileContent = this.getState()?.ruleFileContent || {};
-        const childId = child.id;
-        const reqCount = childId ? get_requirements_count_by_content_type_id(ruleFileContent, childId) : 0;
-
-        this.handle_autosave_input();
-
-        const content_types = resolve_content_types(workingMetadata);
-        const fade_duration_ms = 1000;
-        const move_duration_ms = 1000;
-        const gap = 8; // 0.5rem från editable-sublist
-        const totalHeight = elementToDelete.offsetHeight + gap;
-
-        elementToDelete.style.transition = `opacity ${fade_duration_ms}ms ease-out, transform ${fade_duration_ms}ms ease-out`;
-        requestAnimationFrame(() => {
-            elementToDelete.style.opacity = '0';
-            elementToDelete.style.transform = 'scale(0.95)';
-        });
-
-        setTimeout(() => {
-            const parentList = elementToDelete.parentElement;
-            if (elementToDelete.parentNode) {
-                elementToDelete.parentNode.removeChild(elementToDelete);
-            }
-            if (!parentList) return;
-            const childCards = parentList.querySelectorAll('.editable-child-card');
-            const cardsArray = Array.from(childCards);
-            const itemsAfter = cardsArray.slice(childIndex);
-
-            itemsAfter.forEach((item) => {
-                item.style.transition = `transform ${move_duration_ms}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-                item.style.transform = `translateY(-${totalHeight}px)`;
-            });
-
-            const addChildBtn = parentList.lastElementChild;
-            if (addChildBtn && addChildBtn.classList.contains('button')) {
-                addChildBtn.style.transition = `transform ${move_duration_ms}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-                addChildBtn.style.transform = `translateY(-${totalHeight}px)`;
-            }
-
-            setTimeout(() => {
-                content_types[parentIndex].types.splice(childIndex, 1);
-                this._render_content_types_editor(this.content_types_container, workingMetadata, null, {
-                    type: 'child',
-                    parentIndex,
-                    childIndex: childIndex
-                });
-
-                let updatedRulefile = this.getState()?.ruleFileContent || {};
-                if (childId && reqCount > 0) {
-                    updatedRulefile = remove_content_type_from_requirements(updatedRulefile, childId);
-                }
-                updatedRulefile = {
-                    ...updatedRulefile,
-                    metadata: normalize_rulefile_metadata_vocabularies({
-                        ...updatedRulefile.metadata,
-                        contentTypes: content_types
-                    }, { mode: 'read' })
-                };
-                this.dispatch({
-                    type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-                    payload: { ruleFileContent: updatedRulefile }
-                });
-            }, move_duration_ms);
-        }, fade_duration_ms);
-    },
-
-    /**
-     * Läser innehållet från DOM (alla sidtypsfält) så att autospar alltid sparar senaste värdet.
-     * Anropas före sparning så att vi inte enbart förlitar oss på input-handlers.
-     */
-    _read_content_types_from_dom(container, shouldTrim) {
-        if (!container) return [];
-        const normalize = (val) => {
-            const s = (val ?? '').toString();
+    _normalize_content_types_for_persist(content_types, shouldTrim) {
+        const trim = (value) => {
+            const s = (value ?? '').toString();
             return shouldTrim ? s.trim() : s;
         };
-        const parent_cards = container.querySelectorAll('.content-type-card');
-        const result = [];
-        parent_cards.forEach((card) => {
-            const text_field = card.querySelector('.inline-field input, .inline-field textarea');
-            const parent_text = text_field ? normalize(text_field.value) : '';
-            const child_cards = card.querySelectorAll('.editable-sublist .editable-child-card');
-            const types = [];
-            child_cards.forEach((child_card) => {
-                const fields = child_card.querySelectorAll('.inline-field input, .inline-field textarea');
-                const text_val = fields[0] ? normalize(fields[0].value) : '';
-                const desc_val = fields[1] ? normalize(fields[1].value) : '';
-                const pattern_val = fields[2] ? normalize(fields[2].value) : '';
-                types.push({
-                    id: '',
-                    text: text_val,
-                    description: desc_val,
-                    detectionPattern: pattern_val
-                });
-            });
-            result.push({ id: '', text: parent_text, description: '', types });
-        });
-        return result;
-    },
-
-    _perform_save(shouldTrim, skip_render) {
-        if (!this.form_element_ref || !this.working_metadata) return;
-
-        const state = this.getState();
-        const currentRulefile = state?.ruleFileContent || {};
-        const content_types_from_dom = this._read_content_types_from_dom(this.content_types_container, shouldTrim);
-        const content_types = content_types_from_dom.length > 0
-            ? content_types_from_dom
-            : resolve_content_types(this.working_metadata);
 
         const cleanedContentTypes = content_types.map(parent => {
             const cleanedParent = {
-                id: (parent.id || '').trim(),
-                text: (parent.text || '').trim(),
+                id: trim(parent.id),
+                text: trim(parent.text),
                 description: ''
             };
             const childTypes = Array.isArray(parent.types) ? parent.types : [];
             cleanedParent.types = childTypes
                 .map(child => {
                     const cleaned = {
-                        id: (child?.id || '').trim(),
-                        text: (child?.text || '').trim(),
-                        description: (child?.description || '').trim(),
-                        detectionPattern: (child?.detectionPattern || '').trim()
+                        id: trim(child?.id),
+                        text: trim(child?.text),
+                        description: trim(child?.description),
+                        detectionPattern: trim(child?.detectionPattern)
                     };
                     if (!cleaned.detectionPattern) {
                         delete cleaned.detectionPattern;
@@ -536,7 +123,11 @@ export const EditContentTypesSectionComponent = {
         const contentTypeSlugSet = new Set(cleanedContentTypes.map(ct => ct.id).filter(Boolean));
         cleanedContentTypes.forEach(parent => {
             if (!parent.id) {
-                parent.id = this._ensure_unique_slug(contentTypeSlugSet, this._generate_slug(parent.text), 'content-type');
+                parent.id = this._ensure_unique_slug(
+                    contentTypeSlugSet,
+                    this._generate_slug(parent.text),
+                    'content-type'
+                );
             } else {
                 contentTypeSlugSet.add(parent.id);
             }
@@ -554,116 +145,289 @@ export const EditContentTypesSectionComponent = {
             });
         });
 
+        return cleanedContentTypes;
+    },
+
+    _build_rulefile_payload(shouldTrim, skip_render) {
+        const state = this.getState();
+        const currentRulefile = state?.ruleFileContent || {};
+        const content_types = resolve_content_types(this.working_metadata);
+        const cleanedContentTypes = this._normalize_content_types_for_persist(content_types, shouldTrim);
+
         const updatedMetadata = normalize_rulefile_metadata_vocabularies({
             ...currentRulefile.metadata,
             contentTypes: cleanedContentTypes
         }, { mode: 'read' });
 
-        const updatedRulefileContent = {
-            ...currentRulefile,
-            metadata: updatedMetadata
+        return {
+            ruleFileContent: {
+                ...currentRulefile,
+                metadata: updatedMetadata
+            },
+            skip_render: skip_render === true
         };
+    },
 
+    _dispatch_rulefile(payload) {
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: updatedRulefileContent, skip_render: skip_render === true }
+            payload
         });
+    },
+
+    _perform_save(shouldTrim, skip_render) {
+        if (!this.working_metadata) return;
+        if (this.sync_edit_form) {
+            this.content_type_location = this.sync_edit_form(shouldTrim);
+        }
+        this._dispatch_rulefile(this._build_rulefile_payload(shouldTrim, skip_render));
+        if (this.refresh_requirements_table) {
+            this.refresh_requirements_table();
+        }
+        if (this.content_type_location && this.edit_mode === 'create') {
+            const new_id = String(this.content_type_location.child.id ?? '').trim();
+            if (new_id && new_id !== this.content_type_id_param) {
+                this.content_type_id_param = new_id;
+            }
+        }
     },
 
     handle_autosave_input() {
         this.autosave_session?.request_autosave();
     },
 
-    _create_form(metadata) {
+    _update_section_heading(name) {
+        if (this.edit_mode !== 'edit') return;
+        const heading = document.getElementById('main-content-heading')
+            || document.getElementById('rulefile-section-content_types-heading');
+        if (!heading) return;
         const t = this.Translation.t;
-        const form = this.Helpers.create_element('form', { class_name: 'content-types-edit-form' });
-
-        this.content_types_container = this.Helpers.create_element('div', { class_name: 'editable-card-list content-types-editor' });
-        this._render_content_types_editor(this.content_types_container, metadata);
-        form.appendChild(this.content_types_container);
-
-        const save_button_container = this.Helpers.create_element('div', { class_name: 'form-actions' });
-        const save_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            attributes: { type: 'button', 'aria-label': t('rulefile_metadata_save_content_types') },
-            html_content: this.Helpers.build_save_button_html_content(t('rulefile_metadata_save_content_types')),
+        heading.textContent = t('rulefile_content_types_edit_heading', {
+            name: name || t('rulefile_metadata_untitled_item')
         });
-        save_button.addEventListener('click', async () => {
-            this.autosave_session?.flush({ should_trim: true, skip_render: true });
-            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
-            this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
-            this.router('rulefile_sections', { section: 'content_types' });
+    },
+
+    _resolve_edit_location() {
+        if (this.edit_mode === 'create') {
+            return ensure_draft_content_type_for_create(this.working_metadata);
+        }
+        const found = find_content_type_by_child_id(this.working_metadata, this.content_type_id_param);
+        if (!found) {
+            this.router('rulefile_sections', content_type_list_route_params());
+            return null;
+        }
+        return found;
+    },
+
+    _delete_current_content_type() {
+        if (!this.content_type_location) return;
+        const { parent_index, child_index, child } = this.content_type_location;
+        const child_id = String(child.id ?? '').trim();
+        const parents = resolve_content_types(this.working_metadata);
+        const parent = parents[parent_index];
+        if (parent?.types) {
+            parent.types.splice(child_index, 1);
+            this.working_metadata.contentTypes = parents;
+        }
+
+        const state = this.getState();
+        let rulefile = state?.ruleFileContent || {};
+        if (child_id) {
+            rulefile = remove_content_type_from_requirements(rulefile, child_id);
+        }
+        const payload = this._build_rulefile_payload(true, true);
+        payload.ruleFileContent = {
+            ...rulefile,
+            metadata: payload.ruleFileContent.metadata
+        };
+        this._dispatch_rulefile(payload);
+        this.skip_autosave_on_destroy = true;
+        this.autosave_session?.cancel_pending?.();
+        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        this.router('rulefile_sections', content_type_list_route_params());
+    },
+
+    _navigate_back_without_saving() {
+        this._restore_initial_state();
+        this.skip_autosave_on_destroy = true;
+        this.autosave_session?.cancel_pending?.();
+        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        this.router('rulefile_sections', content_type_list_route_params());
+    },
+
+    async _save_and_return_to_overview() {
+        this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
+        await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
+        this.NotificationComponent.show_global_message?.(
+            this.Translation.t('rulefile_metadata_edit_saved'),
+            'success'
+        );
+        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        this.router('rulefile_sections', content_type_list_route_params());
+    },
+
+    _render_overview() {
+        if (!this.panel_container || !this.working_metadata) return;
+        const rule_file_content = this.getState()?.ruleFileContent || {};
+        render_content_types_overview(
+            this._get_editor_ctx(),
+            this.panel_container,
+            this.working_metadata,
+            rule_file_content,
+            {
+                on_change: () => this.handle_autosave_input(),
+                get_rule_file_content: () => this.getState()?.ruleFileContent || {},
+                on_rule_file_content_change: (updated_rule_file_content) => {
+                    const payload = this._build_rulefile_payload(false, true);
+                    this._dispatch_rulefile({
+                        ...payload,
+                        ruleFileContent: {
+                            ...updated_rule_file_content,
+                            metadata: payload.ruleFileContent.metadata
+                        }
+                    });
+                }
+            }
+        );
+    },
+
+    _render_detail() {
+        if (!this.panel_container || !this.working_metadata) return;
+
+        const location = this._resolve_edit_location();
+        if (!location) return;
+        this.content_type_location = location;
+
+        const rule_file_content = this.getState()?.ruleFileContent || {};
+        const is_create = this.edit_mode === 'create';
+        this._update_section_heading(location.child.text?.trim() || '');
+
+        const edit_result = render_content_type_edit_form(
+            this._get_editor_ctx(),
+            this.panel_container,
+            this.working_metadata,
+            rule_file_content,
+            {
+                location,
+                is_create,
+                on_change: () => this.handle_autosave_input(),
+                on_delete: () => this._delete_current_content_type(),
+                on_back: () => this._navigate_back_without_saving(),
+                get_rule_file_content: () => this.getState()?.ruleFileContent || {},
+                on_rule_file_content_change: (updated_rule_file_content) => {
+                    const payload = this._build_rulefile_payload(false, true);
+                    this._dispatch_rulefile({
+                        ...payload,
+                        ruleFileContent: {
+                            ...updated_rule_file_content,
+                            metadata: payload.ruleFileContent.metadata
+                        }
+                    });
+                },
+                update_heading: (name) => this._update_section_heading(name),
+            }
+        );
+
+        this.form_element_ref = edit_result.form;
+        this.sync_edit_form = edit_result.sync_from_form;
+        this.refresh_requirements_table = edit_result.refresh_requirements_table;
+
+        edit_result.form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            void this._save_and_return_to_overview();
         });
 
-        const cancel_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            attributes: { type: 'button', 'aria-label': t('rulefile_content_types_back_without_saving') },
-            html_content: `<span>${t('rulefile_content_types_back_without_saving')}</span>`
-        });
-        cancel_button.addEventListener('click', () => {
-            this._restore_initial_state();
-            this.skip_autosave_on_destroy = true;
-            this.autosave_session?.cancel_pending();
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
-            this.router('rulefile_sections', { section: 'content_types' });
-        });
+        this.autosave_session?.destroy();
+        this.autosave_session = this.AutosaveService?.create_session({
+            form_element: edit_result.form,
+            focus_root: edit_result.form,
+            debounce_ms: 250,
+            on_save: ({ should_trim, skip_render }) => {
+                this._perform_save(should_trim, skip_render);
+            }
+        }) || null;
+    },
 
-        save_button_container.appendChild(save_button);
-        save_button_container.appendChild(cancel_button);
-        form.appendChild(save_button_container);
+    _render_panel() {
+        if (this.edit_mode === 'overview') {
+            this._render_overview();
+            return;
+        }
+        this._render_detail();
+    },
 
-        form.addEventListener('submit', event => event.preventDefault());
-        return { form, workingMetadata: metadata };
+    _create_overview_shell() {
+        const shell = this.Helpers.create_element('div', {
+            class_name: 'rulefile-classifications-edit-form content-types-edit-form content-types-overview-shell'
+        });
+        this.panel_container = this.Helpers.create_element('div', {
+            class_name: 'classifications-part-panel'
+        });
+        shell.appendChild(this.panel_container);
+        return shell;
     },
 
     _restore_initial_state() {
         if (!this.initial_metadata_snapshot) return;
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
-        const restoredRulefileContent = {
-            ...currentRulefile,
-            metadata: this.initial_metadata_snapshot
-        };
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: restoredRulefileContent, skip_render: true }
+            payload: {
+                ruleFileContent: this.initial_rulefile_snapshot || {
+                    ...currentRulefile,
+                    metadata: this.initial_metadata_snapshot
+                },
+                skip_render: true
+            }
         });
     },
 
     render() {
         if (!this.root) return;
         const state = this.getState();
-
         if (!state?.ruleFileContent?.metadata) return;
 
-        if (this.form_element_ref && this.root.contains(this.form_element_ref) && this.root.children.length > 0) {
+        this._resolve_edit_mode();
+        const same_shell =
+            this.form_element_ref &&
+            this.root.contains(this.form_element_ref) &&
+            this.root.dataset.contentTypeView === this.edit_mode &&
+            this.root.dataset.contentTypeId === this.content_type_id_param;
+
+        if (same_shell) return;
+
+        this.initial_metadata_snapshot = this._clone_metadata(state.ruleFileContent.metadata);
+        this.initial_rulefile_snapshot = this._clone_metadata(state.ruleFileContent);
+        this.root.innerHTML = '';
+        this.working_metadata = this._ensure_metadata_defaults(
+            this._clone_metadata(state.ruleFileContent.metadata)
+        );
+
+        if (this.edit_mode === 'overview') {
+            const shell = this._create_overview_shell();
+            this.form_element_ref = shell;
+            this.root.dataset.contentTypeView = 'overview';
+            this.root.dataset.contentTypeId = '';
+            this.root.appendChild(shell);
+            this.autosave_session?.destroy();
+            this.autosave_session = null;
+            this._render_panel();
             return;
         }
 
-        this.initial_metadata_snapshot = this._clone_metadata(state.ruleFileContent.metadata);
-        this.root.innerHTML = '';
-
-        const { form, workingMetadata } = this._create_form(this._ensure_metadata_defaults(this._clone_metadata(state.ruleFileContent.metadata)));
-        this.form_element_ref = form;
-        this.working_metadata = workingMetadata;
-
-        this.autosave_session?.destroy();
-        this.autosave_session = this.AutosaveService?.create_session({
-            form_element: form,
-            focus_root: form,
-            debounce_ms: 250,
-            on_save: ({ should_trim, skip_render }) => {
-                this._perform_save(should_trim, skip_render);
-            }
-        }) || null;
-
-        this.root.appendChild(form);
+        this.root.dataset.contentTypeView = this.edit_mode;
+        this.root.dataset.contentTypeId = this.content_type_id_param;
+        this.panel_container = this.Helpers.create_element('div', {
+            class_name: 'classifications-part-panel content-types-detail-panel'
+        });
+        this.root.appendChild(this.panel_container);
+        this._render_panel();
     },
 
     destroy() {
-        if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
-            this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        if (!this.skip_autosave_on_destroy && this.working_metadata && this.edit_mode !== 'overview') {
+            this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
         }
         void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy();
@@ -676,7 +440,11 @@ export const EditContentTypesSectionComponent = {
         this.form_element_ref = null;
         this.working_metadata = null;
         this.initial_metadata_snapshot = null;
-        this.content_types_container = null;
+        this.initial_rulefile_snapshot = null;
+        this.panel_container = null;
+        this.content_type_location = null;
+        this.sync_edit_form = null;
+        this.refresh_requirements_table = null;
         this.deps = null;
     }
 };

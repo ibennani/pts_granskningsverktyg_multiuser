@@ -25,6 +25,10 @@ import {
     taxonomy_row_key,
 } from './rulefile_sections/rulefile_taxonomy_keys.js';
 import {
+    CONTENT_TYPE_NEW_PARAM,
+    find_content_type_by_child_id,
+} from './rulefile_sections/rulefile_content_type_keys.js';
+import {
     flush_info_blocks_order_from_dom,
     render_rulefile_page_types_section,
     render_rulefile_content_types_section,
@@ -93,7 +97,8 @@ export class RulefileSectionsViewComponent {
         appendix = '',
         classifications_part = '',
         heading_text_override = '',
-        taxonomy_detail_context = null
+        taxonomy_detail_context = null,
+        content_type_detail_context = null
     ) {
         return create_rulefile_section_header({
             Helpers: this.Helpers,
@@ -102,7 +107,33 @@ export class RulefileSectionsViewComponent {
             getState: this.getState,
             get_page_types_edit_component: () => this.page_types_edit_component,
             taxonomy_detail_context,
+            content_type_detail_context,
         }, section_config, is_editing, appendix, classifications_part, heading_text_override);
+    }
+
+    _resolve_content_type_detail_header_context(metadata, section_id, is_editing) {
+        if (!is_editing || section_id !== 'content_types') {
+            return null;
+        }
+        const content_type_id = String(this.deps.params?.contentTypeId ?? '').trim();
+        const t = this.Translation.t;
+        if (!content_type_id) {
+            return { content_type_id: '', intro_key: null, heading: '' };
+        }
+        if (content_type_id === CONTENT_TYPE_NEW_PARAM) {
+            return {
+                content_type_id,
+                intro_key: 'rulefile_content_types_add_intro',
+                heading: t('rulefile_content_types_add_heading'),
+            };
+        }
+        const found = find_content_type_by_child_id(metadata, content_type_id);
+        const name = found?.child?.text?.trim() || t('rulefile_metadata_untitled_item');
+        return {
+            content_type_id,
+            intro_key: 'rulefile_content_types_edit_intro',
+            heading: t('rulefile_content_types_edit_heading', { name }),
+        };
     }
 
     _resolve_taxonomy_detail_header_context(metadata, classifications_part, is_editing) {
@@ -354,6 +385,11 @@ export class RulefileSectionsViewComponent {
             return;
         }
 
+        if (section_id === 'content_types' && !is_editing) {
+            this.router('rulefile_sections', { section: 'content_types', edit: 'true' });
+            return;
+        }
+
         if (section_id === 'classifications' && classifications_part === 'deficiency_index_basis' && is_editing) {
             this.router('rulefile_sections', { section: 'classifications', part: 'deficiency_index_basis' });
             return;
@@ -403,7 +439,14 @@ export class RulefileSectionsViewComponent {
             classifications_part,
             is_editing
         );
+        const content_type_detail_context = this._resolve_content_type_detail_header_context(
+            metadata,
+            section_id,
+            is_editing
+        );
         const taxonomy_detail_heading = taxonomy_detail_context?.heading ?? '';
+        const content_type_heading = content_type_detail_context?.heading ?? '';
+        const section_heading_override = taxonomy_detail_heading || content_type_heading;
         const main_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-main-plate' });
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
@@ -418,8 +461,9 @@ export class RulefileSectionsViewComponent {
                 is_editing,
                 appendix,
                 classifications_part,
-                taxonomy_detail_heading,
-                taxonomy_detail_context
+                section_heading_override,
+                taxonomy_detail_context,
+                content_type_detail_context
             ));
             const edit_form_container = this.Helpers.create_element('div', { class_name: 'rulefile-section-edit-form-container' });
             if (section_id === 'general') await this._render_general_edit_form(edit_form_container, metadata);
@@ -505,8 +549,9 @@ export class RulefileSectionsViewComponent {
                 is_editing,
                 appendix,
                 classifications_part,
-                taxonomy_detail_heading,
-                taxonomy_detail_context
+                section_heading_override,
+                taxonomy_detail_context,
+                content_type_detail_context
             ));
             if (section_content && header_section_config) {
                 section_content.setAttribute('aria-labelledby', `rulefile-section-${header_section_config.id}-heading`);
@@ -547,6 +592,7 @@ export class RulefileSectionsViewComponent {
         if (this.content_types_edit_component && typeof this.content_types_edit_component.destroy === 'function') {
             this.content_types_edit_component.destroy();
             this.content_types_edit_component = null;
+            this.content_types_edit_content_type_id = '';
         }
         if (this.info_blocks_edit_component && typeof this.info_blocks_edit_component.destroy === 'function') {
             this.info_blocks_edit_component.destroy();

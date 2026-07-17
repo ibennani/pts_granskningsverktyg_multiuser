@@ -143,20 +143,24 @@ export function create_rulefile_section_header(
         heading_row.appendChild(edit_button);
     }
 
-    if (can_edit && section_config.id === 'content_types' && !is_editing) {
-        const edit_button = Helpers.create_element('button', {
+    if (can_edit && section_config.id === 'content_types' && is_editing && !deps.content_type_detail_context?.content_type_id) {
+        const add_button = Helpers.create_element('button', {
             class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
             attributes: {
                 type: 'button',
-                'aria-label': t('rulefile_sections_edit_content_types_aria')
+                'aria-label': t('rulefile_content_types_add_aria')
             },
-            html_content: `<span>${t('edit_button_label')}</span>` +
-                          (Helpers.get_icon_svg ? Helpers.get_icon_svg('edit') : '')
+            html_content: `<span>${t('rulefile_metadata_add_content_type')}</span>` +
+                          (Helpers.get_icon_svg ? `<span aria-hidden="true">${Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
         });
-        edit_button.addEventListener('click', () => {
-            deps.router('rulefile_sections', { section: 'content_types', edit: 'true' });
+        add_button.addEventListener('click', () => {
+            deps.router('rulefile_sections', {
+                section: 'content_types',
+                edit: 'true',
+                contentTypeId: 'new'
+            });
         });
-        heading_row.appendChild(edit_button);
+        heading_row.appendChild(add_button);
     }
 
     if (can_edit && section_config.id === 'info_blocks_order' && !is_editing) {
@@ -226,11 +230,13 @@ export function create_rulefile_section_header(
     header_wrapper.appendChild(heading_row);
 
     if (section_config.id === 'content_types' && is_editing) {
-        const intro = Helpers.create_element('p', {
-            class_name: 'field-hint rulefile-sections-header-intro',
-            text_content: t('rulefile_metadata_content_types_intro')
-        });
-        header_wrapper.appendChild(intro);
+        const detail = deps.content_type_detail_context ?? null;
+        if (detail?.intro_key) {
+            header_wrapper.appendChild(Helpers.create_element('p', {
+                class_name: 'field-hint rulefile-sections-header-intro',
+                text_content: t(detail.intro_key)
+            }));
+        }
     }
 
     if (section_config.id === 'info_blocks_order') {

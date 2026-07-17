@@ -68,6 +68,14 @@ export default {
     '^.+[\\\\/]taxonomy_persist\\.js$': '<rootDir>/js/logic/taxonomy_persist.ts',
     '^.+[\\\\/]rulefile_taxonomy_keys\\.js$':
       '<rootDir>/js/components/rulefile_sections/rulefile_taxonomy_keys.ts',
+    '^.+[\\\\/]rulefile_content_type_keys\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_content_type_keys.ts',
+    '^.+[\\\\/]rulefile_content_type_requirements\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_content_type_requirements.ts',
+    '^.+[\\\\/]rulefile_content_types_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_content_types_ui.ts',
+    '^.+[\\\\/]rulefile_content_type_edit_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_content_type_edit_ui.ts',
     '^.+[\\\\/]rulefile_taxonomy_principles_editor_ui\\.js$':
       '<rootDir>/js/components/rulefile_sections/rulefile_taxonomy_principles_editor_ui.ts',
     '^.+[\\\\/]rulefile_taxonomy_principle_intro_ui\\.js$':

@@ -85,10 +85,17 @@ export async function render_rulefile_page_types_edit_form(ctx, container, _meta
  */
 export async function render_rulefile_content_types_edit_form(ctx, container, _metadata) {
     const { deps, view } = ctx;
+    const next_content_type_id = String(deps.params?.contentTypeId ?? '').trim();
     const is_first_render = !view.content_types_edit_component;
 
-    if (view.content_types_edit_component && container.children.length > 0) {
-        return;
+    if (view.content_types_edit_component) {
+        const same_id = (view.content_types_edit_content_type_id || '') === next_content_type_id;
+        if (same_id && container.children.length > 0) {
+            return;
+        }
+        view.content_types_edit_component.skip_autosave_on_destroy = false;
+        view.content_types_edit_component.destroy();
+        view.content_types_edit_component = null;
     }
 
     const { EditContentTypesSectionComponent } = await import('../EditContentTypesSectionComponent.js');
@@ -102,16 +109,17 @@ export async function render_rulefile_content_types_edit_form(ctx, container, _m
 
     if (is_first_render && !view.content_types_form_initial_focus_set) {
         setTimeout(() => {
-            const firstH2 = container.querySelector('h2');
-            if (firstH2) {
-                firstH2.setAttribute('tabindex', '-1');
-                firstH2.focus();
+            const focus_target = container.querySelector('.content-types-table, .content-type-edit-form input');
+            if (focus_target) {
+                focus_target.setAttribute('tabindex', '-1');
+                focus_target.focus();
                 view.content_types_form_initial_focus_set = true;
             }
         }, 100);
     }
 
     view.content_types_edit_component = EditContentTypesSectionComponent;
+    view.content_types_edit_content_type_id = next_content_type_id;
 }
 
 /**
