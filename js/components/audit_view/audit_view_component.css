@@ -1,5 +1,7 @@
 /* AuditViewComponent - Hantera granskningar och regelfiler */
 
+@import '../../../css/components/expandable_panel.css';
+
 .audit-plate {
     max-width: 100%;
 }
