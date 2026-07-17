@@ -54,6 +54,7 @@ export type Appendix1AuditSlice = {
     updated_at?: unknown;
     auditMetadata?: {
         appendix1SummaryText?: unknown;
+        appendix1PrincipleIntroOverrides?: unknown;
         appendix1SectionOverrides?: unknown;
         caseNumber?: unknown;
         actorName?: unknown;

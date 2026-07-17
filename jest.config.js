@@ -53,14 +53,38 @@ export default {
     '^.+[\\\\/]export_word_deficiency_types\\.js$': '<rootDir>/js/export/export_word_deficiency_types.ts',
     '^.+[\\\\/]export_word_appendix1_summary\\.js$': '<rootDir>/js/export/export_word_appendix1_summary.ts',
     '^.+[\\\\/]export_html_to_word_paragraphs\\.js$': '<rootDir>/js/export/export_html_to_word_paragraphs.ts',
+    '^.+[\\\\/]appendix1_summary_legacy\\.js$': '<rootDir>/js/logic/appendix1_summary_legacy.ts',
     '^.+[\\\\/]appendix1_summary_text\\.js$': '<rootDir>/js/logic/appendix1_summary_text.ts',
     '^.+[\\\\/]appendix1_sections\\.js$': '<rootDir>/js/logic/appendix1_sections.ts',
+    '^.+[\\\\/]appendix1_principle_intro\\.js$': '<rootDir>/js/logic/appendix1_principle_intro.ts',
+    '^.+[\\\\/]appendix1_sections_defaults\\.js$': '<rootDir>/js/logic/appendix1_sections_defaults.ts',
+    '^.+[\\\\/]appendix1_sections_export\\.js$': '<rootDir>/js/logic/appendix1_sections_export.ts',
+    '^.+[\\\\/]appendix1_sections_normalize\\.js$': '<rootDir>/js/logic/appendix1_sections_normalize.ts',
     '^.+[\\\\/]appendix1_sections_migrate\\.js$': '<rootDir>/js/logic/appendix1_sections_migrate.ts',
     '^.+[\\\\/]appendix1_sections_types\\.js$': '<rootDir>/js/logic/appendix1_sections_types.ts',
     '^.+[\\\\/]shared/classification/taxonomy_grouping\\.js$':
       '<rootDir>/shared/classification/taxonomy_grouping.ts',
+    '^.+[\\\\/]taxonomy_usage\\.js$': '<rootDir>/js/logic/taxonomy_usage.ts',
+    '^.+[\\\\/]taxonomy_persist\\.js$': '<rootDir>/js/logic/taxonomy_persist.ts',
+    '^.+[\\\\/]rulefile_taxonomy_keys\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_taxonomy_keys.ts',
+    '^.+[\\\\/]rulefile_taxonomy_principles_editor_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_taxonomy_principles_editor_ui.ts',
+    '^.+[\\\\/]rulefile_taxonomy_principle_intro_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_taxonomy_principle_intro_ui.ts',
+    '^.+[\\\\/]rulefile_appendix1_sections_editor_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_appendix1_sections_editor_ui.ts',
+    '^.+[\\\\/]rulefile_appendix1_deficiency_intros_editor_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/rulefile_appendix1_deficiency_intros_editor_ui.ts',
+    '^.+[\\\\/]EditReportTemplateAppendix1Component\\.js$':
+      '<rootDir>/js/components/rulefile_sections/EditReportTemplateAppendix1Component.ts',
+    '^.+[\\\\/]shared/pdf/appendix1_toc_page_numbers\\.js$':
+      '<rootDir>/shared/pdf/appendix1_toc_page_numbers.ts',
     '^.+[\\\\/]requirement_classifications\\.js$': '<rootDir>/js/logic/requirement_classifications.ts',
     '^.+[\\\\/]appendix1_cover_image\\.js$': '<rootDir>/server/services/appendix1_cover_image.ts',
+    '^.+[\\\\/]appendix1_toc_page_numbers\\.js$': '<rootDir>/server/services/appendix1_toc_page_numbers.ts',
+    '^.+[\\\\/]appendix1_toc_browser_scripts_loader\\.js$':
+      '<rootDir>/server/services/appendix1_toc_browser_scripts_loader.ts',
     '^.+[\\\\/]export_screenshots_appendix_collect\\.js$': '<rootDir>/js/export/export_screenshots_appendix_collect.ts',
     '^.+[\\\\/]export_screenshots_appendix_media\\.js$': '<rootDir>/js/export/export_screenshots_appendix_media.ts',
     '^.+[\\\\/]export_screenshots_appendix_pdf_encode\\.js$': '<rootDir>/js/export/export_screenshots_appendix_pdf_encode.ts',

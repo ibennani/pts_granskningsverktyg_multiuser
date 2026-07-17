@@ -16,7 +16,7 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 | Sidtyper           | rulefile_sections     | page_types        | Lista med underkategorier  | EditPageTypesSectionComponent       |
 | Innehållstyper     | rulefile_sections     | content_types     | Nästlad lista              | EditContentTypesSectionComponent    |
 | Informationsblock  | rulefile_sections     | info_blocks_order | Numrerad lista             | EditInfoBlocksSectionComponent      |
-| Klassificeringar   | rulefile_sections     | classifications   | Hub + fyra undersidor      | EditRulefileClassificationsComponent (per part) |
+| Klassificeringar   | rulefile_sections     | classifications   | Hub + fem undersidor      | EditRulefileClassificationsComponent (per part) + inline underlag bristindex |
 | Rapportmall        | rulefile_sections     | report_template   | Hub + bilagor              | EditRulefileAppendix* (per bilaga)              |
 
 ## URL-format
@@ -24,7 +24,9 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 - **Visning:** `#rulefile_sections?section=<section_id>`
 - **Redigering:** `#rulefile_sections?section=<section_id>&edit=true`
 - **Klassificeringar hub:** `#rulefile_sections?section=classifications`
-- **Klassificeringar undersida:** `#rulefile_sections?section=classifications&part=<deficiency_types|audit_types|taxonomy|mapping>`
+- **Klassificeringar undersida:** `#rulefile_sections?section=classifications&part=<deficiency_types|audit_types|taxonomy|mapping|deficiency_index_basis>`
+- **Taxonomi infosida:** `#rulefile_sections?section=classifications&part=taxonomy&taxonomyId=<id>`
+- **Taxonomi skapa/redigera:** `#rulefile_sections?section=classifications&part=taxonomy&edit=true` (lägg till `&taxonomyId=<id>` vid redigering)
 - **Klassificeringar redigering:** lägg till `&edit=true` på undersida-URL
 - **Krav:** `#rulefile_requirements`, `#rulefile_view_requirement?id=...`, `#rulefile_edit_requirement?id=...`, `#rulefile_add_requirement`
 
@@ -35,7 +37,7 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 - Hanterar routing för `rulefile_sections` med `section`-param
 - Visar header (h1) och antingen visningsinnehåll eller redigeringsformulär
 - Laddar dynamiskt Edit*SectionComponent för redigeringsläge
-- **Klassificeringar:** hub med länkar till bristtyper, granskningstyper, taxonomi och kravkoppling. Redigera-knapp visas per undersida, inte på hubben.
+- **Klassificeringar:** hub med länkar till bristtyper, granskningstyper, taxonomi, kravkoppling och underlag för bristindex. Redigera-knapp visas per undersida, inte på hubben. Underlag för bristindex har inline-redigering utan separat redigeringsläge.
 - **Rapportmall:** hub med bilagor (separat flöde)
 
 ### Edit*SectionComponent
@@ -51,13 +53,14 @@ Varje sektion har en dedikerad redigeringskomponent:
 
 ### Klassificeringar (hub)
 
-1. Användaren öppnar **Klassificeringar** i sidomenyn och ser en hub med fyra länkar.
+1. Användaren öppnar **Klassificeringar** i sidomenyn och ser en hub med fem länkar.
 2. Varje länk leder till en undersida (`part`-parameter i URL).
 3. På undersidan finns **Redigera** som öppnar redigeringsläge för just den delen.
-4. **Taxonomi:** förenklad redigering med begrepp (etikett synlig, id hanteras internt) och val av primär grupperingstaxonomi.
+4. **Taxonomi:** tabellöversikt med länk till kompakt infosida per taxonomi. Infosidan visar namn, antal principer, primär gruppering och principlista. Redigering sker på egen sida (namn, principer, Bilaga 1-inledning per princip, checkbox för primär gruppering). Ny taxonomi skapas via **Lägg till taxonomi**. Radering kräver bekräftelse och blockeras om taxonomin används (kravkoppling, granskningstyper, bilaga m.m.).
 5. **Kravkoppling:** befintlig matris/kort-vy mot primär taxonomi.
 6. **Granskningstyper:** lista med namn och koppling till hel taxonomi; standardvärden seedas vid första redigering om fältet saknas.
 7. **Bristtyper:** tabell per krav med modal för bristtypens text (del 1 och del 2 som en bristtyp).
+8. **Underlag för bristindex:** tabell med alla krav. Primär poäng, sekundär poäng och kritiskt-flagga redigeras inline i tabellen. Beräknad vikt visas per rad. Ändringar autosparas.
 
 ### RulefileRequirementsListComponent
 

@@ -129,7 +129,7 @@ test.describe('Regelfil: Klassificeringar hub', () => {
         }
     });
 
-    test('Taxonomi-undersida har egen redigera-knapp och förenklad editor', async ({ page }) => {
+    test('Taxonomi-undersida visar intro och tabell utan redigera-knapp', async ({ page }) => {
         const console_errors = [];
         page.on('console', (msg) => {
             if (msg.type() === 'error') console_errors.push(msg.text());
@@ -140,15 +140,46 @@ test.describe('Regelfil: Klassificeringar hub', () => {
 
         await page.getByRole('link', { name: /Taxonomi/i }).click();
         await expect(page).toHaveURL(/part=taxonomy/);
-        await expect(page.locator('#app-main-view-root')).toContainText('Taxonomi');
-
-        const edit_button = page.getByRole('button', { name: /Redigera taxonomi/i });
-        await expect(edit_button).toBeVisible();
-        await edit_button.click();
+        await expect(page).not.toHaveURL(/edit=true/);
 
         const main = page.locator('#app-main-view-root');
-        await expect(main.locator('.rulefile-classifications-edit-form')).toBeVisible({ timeout: 5000 });
-        await expect(main.locator('.taxonomy-simplified-card')).toBeVisible();
+        await expect(main).toContainText('Taxonomi');
+        await expect(main.locator('.view-intro-text')).toBeVisible();
+        await expect(main.locator('.taxonomy-table-section-heading')).toHaveCount(0);
+        await expect(main.locator('.audit-settings__back-row')).toHaveCount(0);
+        await expect(main.locator('.taxonomy-table')).toBeVisible();
+        await expect(main.locator('.taxonomy-table caption')).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /Redigera taxonomi/i })).toHaveCount(0);
+
+        if (console_errors.length > 0) {
+            throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);
+        }
+    });
+
+    test('Taxonomi-detaljvy visar sammanfattning utan tillbaka-knapp', async ({ page }) => {
+        const console_errors = [];
+        page.on('console', (msg) => {
+            if (msg.type() === 'error') console_errors.push(msg.text());
+        });
+        page.on('pageerror', (err) => console_errors.push(String(err)));
+
+        await bootstrapClassificationsPage(page);
+
+        await page.getByRole('link', { name: /Taxonomi/i }).click();
+        await expect(page).toHaveURL(/part=taxonomy/);
+
+        const main = page.locator('#app-main-view-root');
+        await main.getByRole('link', { name: /WCAG 2\.2 POUR/i }).click();
+        await expect(page).toHaveURL(/part=taxonomy.*taxonomyId=wcag22-pour/);
+        await expect(page).not.toHaveURL(/edit=true/);
+
+        await expect(main.locator('.taxonomy-detail-view')).toBeVisible();
+        await expect(main.getByRole('heading', { level: 1 })).toContainText('WCAG 2.2 POUR');
+        await expect(main.locator('.taxonomy-detail-heading')).toHaveCount(0);
+        await expect(main.locator('.taxonomy-detail-summary')).toHaveCount(0);
+        await expect(main.locator('.rulefile-sections-header-row .taxonomy-detail-edit-button')).toBeVisible();
+        await expect(main.locator('.taxonomy-principles-table')).toBeVisible();
+        await expect(page.getByRole('button', { name: /Tillbaka till taxonomilistan/i })).toHaveCount(0);
 
         if (console_errors.length > 0) {
             throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);

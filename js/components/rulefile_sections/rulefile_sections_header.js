@@ -5,11 +5,12 @@
 import { can_edit_rulefile } from '../../utils/helpers.js';
 
 import {
-    classification_part_opens_directly_in_edit,
+    classification_part_shows_header_edit_button,
     get_classification_part_edit_aria_key,
     get_classification_part_title_key,
     normalize_classification_part_param,
 } from './rulefile_classifications_parts.js';
+import { build_taxonomy_detail_edit_button } from './rulefile_taxonomy_detail_ui.js';
 
 /**
  * @param {object} deps
@@ -20,10 +21,18 @@ import {
  * @param {() => unknown | null} [deps.get_page_types_edit_component]
  * @param {string} [appendix]
  * @param {string} [classifications_part]
+ * @param {string} [heading_text_override]
  * @param {object} section_config
  * @param {boolean} [is_editing]
  */
-export function create_rulefile_section_header(deps, section_config, is_editing = false, appendix = '', classifications_part = '') {
+export function create_rulefile_section_header(
+    deps,
+    section_config,
+    is_editing = false,
+    appendix = '',
+    classifications_part = '',
+    heading_text_override = ''
+) {
     const t = deps.Translation.t;
     const Helpers = deps.Helpers;
     const header_wrapper = Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
@@ -42,11 +51,13 @@ export function create_rulefile_section_header(deps, section_config, is_editing 
     const classification_part_title_key = normalized_part
         ? get_classification_part_title_key(normalized_part)
         : null;
-    const heading_text = appendix_title_key
-        ? t(appendix_title_key)
-        : classification_part_title_key
-            ? t(classification_part_title_key)
-            : section_config.title;
+    const heading_text = String(heading_text_override ?? '').trim()
+        ? String(heading_text_override).trim()
+        : appendix_title_key
+            ? t(appendix_title_key)
+            : classification_part_title_key
+                ? t(classification_part_title_key)
+                : section_config.title;
     const heading = Helpers.create_element('h1', {
         text_content: heading_text,
         attributes: { id: heading_id }
@@ -55,6 +66,24 @@ export function create_rulefile_section_header(deps, section_config, is_editing 
 
     const state_for_header = typeof deps.getState === 'function' ? deps.getState() : null;
     const can_edit = can_edit_rulefile(state_for_header);
+    const taxonomy_detail_context = deps.taxonomy_detail_context ?? null;
+
+    if (
+        can_edit &&
+        taxonomy_detail_context &&
+        section_config.id === 'classifications' &&
+        !is_editing &&
+        normalized_part === 'taxonomy'
+    ) {
+        heading_row.classList.add('rulefile-sections-header-row--taxonomy-detail');
+        heading_row.appendChild(
+            build_taxonomy_detail_edit_button(
+                { Helpers, Translation: deps.Translation, router: deps.router },
+                taxonomy_detail_context.taxonomy,
+                taxonomy_detail_context.taxonomy_key
+            )
+        );
+    }
 
     if (can_edit && section_config.id === 'general' && !is_editing) {
         const edit_button = Helpers.create_element('button', {
@@ -93,7 +122,7 @@ export function create_rulefile_section_header(deps, section_config, is_editing 
         section_config.id === 'classifications' &&
         !is_editing &&
         normalized_part &&
-        !classification_part_opens_directly_in_edit(normalized_part)
+        classification_part_shows_header_edit_button(normalized_part)
     ) {
         const edit_button = Helpers.create_element('button', {
             class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],

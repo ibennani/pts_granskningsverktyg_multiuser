@@ -41,6 +41,7 @@ import {
     render_rulefile_content_types_edit_form,
     render_rulefile_info_blocks_edit_form,
     render_rulefile_classifications_edit_form,
+    render_rulefile_deficiency_index_basis_section,
     render_rulefile_report_template_edit_form
 } from './rulefile_sections/rulefile_sections_edit_forms.js';
 import './rulefile_sections_view.css';
@@ -291,6 +292,16 @@ export class RulefileSectionsViewComponent {
         }
     }
 
+    _destroy_deficiency_index_basis_component() {
+        if (this.deficiency_index_basis_component) {
+            this.deficiency_index_basis_component.skip_autosave_on_destroy = true;
+            if (typeof this.deficiency_index_basis_component.destroy === 'function') {
+                this.deficiency_index_basis_component.destroy();
+            }
+            this.deficiency_index_basis_component = null;
+        }
+    }
+
     async _render_info_blocks_edit_form(container, _metadata) {
         return render_rulefile_info_blocks_edit_form(
             { deps: this.deps, view: this },
@@ -343,6 +354,11 @@ export class RulefileSectionsViewComponent {
             return;
         }
 
+        if (section_id === 'classifications' && classifications_part === 'deficiency_index_basis' && is_editing) {
+            this.router('rulefile_sections', { section: 'classifications', part: 'deficiency_index_basis' });
+            return;
+        }
+
         // Redirect: gamla Granskningsdel-länken pekar nu på Sidtyper
         if (section_id === 'sample_types') {
             this.router('rulefile_sections', { section: 'page_types', edit: params.edit || undefined });
@@ -367,6 +383,7 @@ export class RulefileSectionsViewComponent {
 
         if (section_id === 'classifications') {
             this._destroy_classifications_edit_component();
+            this._destroy_deficiency_index_basis_component();
         }
 
         this.root.innerHTML = '';
@@ -434,6 +451,19 @@ export class RulefileSectionsViewComponent {
                     header_section_config = this._get_section_config(section_id);
                     if (!classifications_part) {
                         section_content = this._render_classifications_hub_section();
+                    } else if (classifications_part === 'deficiency_index_basis') {
+                        section_content = this.Helpers.create_element('section', {
+                            class_name: 'rulefile-section-content',
+                            attributes: { 'aria-labelledby': section_heading_id }
+                        });
+                        const basis_form_container = this.Helpers.create_element('div', {
+                            class_name: 'rulefile-section-edit-form-container'
+                        });
+                        section_content.appendChild(basis_form_container);
+                        await render_rulefile_deficiency_index_basis_section(
+                            { deps: this.deps, view: this },
+                            basis_form_container
+                        );
                     } else {
                         section_content = this._render_classifications_part_section(
                             classifications_part,
@@ -527,6 +557,7 @@ export class RulefileSectionsViewComponent {
             this.classifications_edit_component.destroy();
             this.classifications_edit_component = null;
         }
+        this._destroy_deficiency_index_basis_component();
         this._destroy_report_template_edit_component();
         this._render_generation += 1;
 

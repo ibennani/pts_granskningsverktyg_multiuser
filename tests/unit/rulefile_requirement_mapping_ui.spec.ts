@@ -34,20 +34,24 @@ function create_helpers() {
     };
 }
 
-function build_rule_file() {
+function build_rule_file(extra_taxonomy?: { id: string; label: string; concepts: Array<{ id: string; label: string }> }) {
+    const taxonomies = [
+        {
+            id: 'wcag22-pour',
+            label: 'WCAG-principer',
+            concepts: [
+                { id: 'perceivable', label: 'Uppfattningsbar' },
+                { id: 'operable', label: 'Hanterbar' },
+            ],
+        },
+    ];
+    if (extra_taxonomy) {
+        taxonomies.push(extra_taxonomy);
+    }
     return {
         metadata: {
             primaryGroupingTaxonomyId: 'wcag22-pour',
-            taxonomies: [
-                {
-                    id: 'wcag22-pour',
-                    label: 'WCAG-principer',
-                    concepts: [
-                        { id: 'perceivable', label: 'Uppfattningsbar' },
-                        { id: 'operable', label: 'Hanterbar' },
-                    ],
-                },
-            ],
+            taxonomies,
         },
         requirements: {
             req_b: {
@@ -191,5 +195,121 @@ describe('rulefile_requirement_mapping_ui', () => {
             'perceivable',
         ]);
         expect(map_key).toBe('req_a::operable');
+    });
+
+    test('taxonomi-dropdown använder delad dropdown-select-klass', () => {
+        const container = document.createElement('div');
+        render_requirement_mapping_ui(
+            {
+                Helpers: create_helpers(),
+                Translation: { t: (key: string) => key },
+            },
+            container,
+            build_rule_file()
+        );
+
+        const select = container.querySelector(
+            '.requirement-mapping-taxonomy-field select'
+        ) as HTMLSelectElement;
+        expect(select).not.toBeNull();
+        expect(select.classList.contains('form-control')).toBe(true);
+        expect(select.classList.contains('dropdown-select')).toBe(true);
+    });
+
+    test('taxonomi-dropdown renderas ovanför filtret med fetstilta etiketter', () => {
+        const container = document.createElement('div');
+        render_requirement_mapping_ui(
+            {
+                Helpers: create_helpers(),
+                Translation: { t: (key: string) => key },
+            },
+            container,
+            build_rule_file()
+        );
+
+        const layout = container.querySelector('.requirement-mapping-layout');
+        expect(layout).not.toBeNull();
+
+        const taxonomy_field = layout?.querySelector('.requirement-mapping-taxonomy-field');
+        const filter_field = layout?.querySelector('.rulefile-classifications-table-filter');
+        expect(taxonomy_field).not.toBeNull();
+        expect(filter_field).not.toBeNull();
+
+        const children = Array.from(layout?.children ?? []);
+        const taxonomy_index = children.indexOf(taxonomy_field as Element);
+        const filter_index = children.indexOf(filter_field as Element);
+        expect(taxonomy_index).toBeGreaterThanOrEqual(0);
+        expect(filter_index).toBeGreaterThan(taxonomy_index);
+
+        const taxonomy_label = taxonomy_field?.querySelector('label');
+        const filter_label = filter_field?.querySelector('label');
+        expect(taxonomy_label?.textContent).toBe('rulefile_classifications_mapping_taxonomy_label');
+        expect(filter_label?.textContent).toBe('rulefile_classifications_mapping_filter_label');
+    });
+
+    test('byte av taxonomi uppdaterar matrisens kolumner', () => {
+        const container = document.createElement('div');
+        render_requirement_mapping_ui(
+            {
+                Helpers: create_helpers(),
+                Translation: { t: (key: string) => key },
+            },
+            container,
+            build_rule_file({
+                id: 'impact',
+                label: 'Påverkan',
+                concepts: [{ id: 'high', label: 'Hög' }],
+            })
+        );
+
+        const select = container.querySelector(
+            '.requirement-mapping-taxonomy-field select'
+        ) as HTMLSelectElement;
+        expect(select.value).toBe('wcag22-pour');
+        expect(container.querySelectorAll('.requirement-mapping-table thead th').length).toBe(3);
+
+        select.value = 'impact';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(container.querySelectorAll('.requirement-mapping-table thead th').length).toBe(2);
+    });
+
+    test('apply_changes bevarar klassificeringar i andra taxonomier', () => {
+        const container = document.createElement('div');
+        const rule_file = build_rule_file({
+            id: 'impact',
+            label: 'Påverkan',
+            concepts: [{ id: 'high', label: 'Hög' }],
+        });
+        rule_file.requirements.req_a.classifications = [
+            { taxonomyId: 'wcag22-pour', conceptId: 'perceivable' },
+            { taxonomyId: 'impact', conceptId: 'high' },
+        ];
+
+        const { apply_changes } = render_requirement_mapping_ui(
+            {
+                Helpers: create_helpers(),
+                Translation: { t: (key: string) => key },
+            },
+            container,
+            rule_file
+        );
+
+        const select = container.querySelector(
+            '.requirement-mapping-taxonomy-field select'
+        ) as HTMLSelectElement;
+        select.value = 'impact';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const impact_checkbox = container.querySelector(
+            '.requirement-mapping-matrix-wrapper input[data-requirement-key="req_a"][data-concept-id="high"]'
+        ) as HTMLInputElement;
+        impact_checkbox.checked = false;
+        impact_checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const updated = apply_changes();
+        const req_record = updated.requirements as Record<string, Record<string, unknown>>;
+        expect(get_concept_ids_for_requirement(req_record.req_a, 'wcag22-pour')).toEqual(['perceivable']);
+        expect(get_concept_ids_for_requirement(req_record.req_a, 'impact')).toEqual([]);
     });
 });

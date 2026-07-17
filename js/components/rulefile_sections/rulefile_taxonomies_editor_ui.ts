@@ -130,7 +130,7 @@ function render_primary_grouping_select(
         })
     );
     const select = Helpers.create_element('select', {
-        class_name: 'form-control',
+        class_name: ['form-control', 'dropdown-select'],
         attributes: { id: select_id, name: 'primaryGroupingTaxonomyId' },
     }) as HTMLSelectElement;
 

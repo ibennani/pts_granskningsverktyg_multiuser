@@ -34,15 +34,8 @@ export function render_rulefile_classifications_hub(
 
     const nav = Helpers.create_element('nav', {
         class_name: 'audit-settings__hub-nav',
-        attributes: { 'aria-labelledby': 'rulefile-classifications-hub-heading' },
+        attributes: { 'aria-label': t('rulefile_classifications_hub_nav_heading') },
     });
-    nav.appendChild(
-        Helpers.create_element('h2', {
-            attributes: { id: 'rulefile-classifications-hub-heading' },
-            class_name: 'sr-only',
-            text_content: t('rulefile_classifications_hub_nav_heading'),
-        })
-    );
 
     const list = Helpers.create_element('ul', { class_name: 'audit-settings__hub-list' });
     CLASSIFICATION_PARTS.forEach((part) => {

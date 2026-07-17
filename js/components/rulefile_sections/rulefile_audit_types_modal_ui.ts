@@ -56,7 +56,7 @@ function build_taxonomy_select(
     selected_id: string
 ): HTMLSelectElement {
     const select = Helpers.create_element('select', {
-        class_name: 'form-control',
+        class_name: ['form-control', 'dropdown-select'],
         attributes: { id },
     }) as HTMLSelectElement;
     taxonomies.forEach((taxonomy) => {

@@ -100,6 +100,55 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         }
     }
 
+    if (meta.taxonomies !== undefined) {
+        if (!Array.isArray(meta.taxonomies)) {
+            return { isValid: false, message: t('rule_file_err_metadata_taxonomies_array') };
+        }
+        for (const [tax_index, entry] of meta.taxonomies.entries()) {
+            if (!entry || typeof entry !== 'object') {
+                return {
+                    isValid: false,
+                    message: t('rule_file_err_metadata_taxonomy_object', { index: String(tax_index) }),
+                };
+            }
+            const taxonomy = entry as Record<string, unknown>;
+            if (taxonomy.concepts !== undefined) {
+                if (!Array.isArray(taxonomy.concepts)) {
+                    return {
+                        isValid: false,
+                        message: t('rule_file_err_metadata_taxonomy_concepts_array', {
+                            index: String(tax_index),
+                        }),
+                    };
+                }
+                for (const [concept_index, concept_entry] of taxonomy.concepts.entries()) {
+                    if (!concept_entry || typeof concept_entry !== 'object') {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_metadata_taxonomy_concept_object', {
+                                taxonomyIndex: String(tax_index),
+                                conceptIndex: String(concept_index),
+                            }),
+                        };
+                    }
+                    const concept = concept_entry as Record<string, unknown>;
+                    if (
+                        concept.appendix1Intro !== undefined
+                        && typeof concept.appendix1Intro !== 'string'
+                    ) {
+                        return {
+                            isValid: false,
+                            message: t('rule_file_err_metadata_taxonomy_concept_appendix1_intro_string', {
+                                taxonomyIndex: String(tax_index),
+                                conceptIndex: String(concept_index),
+                            }),
+                        };
+                    }
+                }
+            }
+        }
+    }
+
     if (root.appendix1) {
         if (typeof root.appendix1 !== 'object' || root.appendix1 === null) {
             return { isValid: false, message: t('rule_file_err_appendix1_object') };
@@ -478,6 +527,27 @@ export function validate_saved_audit_file(json_object: unknown, options: Validat
 
     if (typeof root.auditMetadata !== 'object' || root.auditMetadata === null) {
         return { isValid: false, message: t('error_saved_audit_metadata_not_object') };
+    }
+
+    const audit_meta = root.auditMetadata as Record<string, unknown>;
+    if (audit_meta.appendix1PrincipleIntroOverrides !== undefined) {
+        const overrides = audit_meta.appendix1PrincipleIntroOverrides;
+        if (typeof overrides !== 'object' || overrides === null || Array.isArray(overrides)) {
+            return {
+                isValid: false,
+                message: t('error_saved_audit_appendix1_principle_intro_overrides_object'),
+            };
+        }
+        for (const [concept_id, value] of Object.entries(overrides as Record<string, unknown>)) {
+            if (typeof value !== 'string') {
+                return {
+                    isValid: false,
+                    message: t('error_saved_audit_appendix1_principle_intro_override_string', {
+                        conceptId: concept_id,
+                    }),
+                };
+            }
+        }
     }
 
     if (!Array.isArray(root.samples)) {

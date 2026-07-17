@@ -210,9 +210,10 @@ export async function handle_submit(deps) {
         cleanedTaxonomy.concepts = concepts
             .map(concept => ({
                 id: (concept?.id || '').trim(),
-                label: (concept?.label || '').trim()
+                label: (concept?.label || '').trim(),
+                appendix1Intro: typeof concept?.appendix1Intro === 'string' ? concept.appendix1Intro : '',
             }))
-            .filter(concept => concept.id || concept.label);
+            .filter(concept => concept.id || concept.label || concept.appendix1Intro);
         return cleanedTaxonomy;
     }).filter(taxonomy => taxonomy.id || taxonomy.label || taxonomy.version || taxonomy.uri || (taxonomy.concepts && taxonomy.concepts.length > 0));
 

@@ -177,6 +177,30 @@ export async function render_rulefile_classifications_edit_form(ctx, container, 
 /**
  * @param {{ deps: object, view: object }} ctx
  * @param {HTMLElement} container
+ */
+export async function render_rulefile_deficiency_index_basis_section(ctx, container) {
+    const { deps, view } = ctx;
+
+    if (view.deficiency_index_basis_component && container.children.length > 0) {
+        return;
+    }
+
+    if (view.deficiency_index_basis_component) {
+        view.deficiency_index_basis_component.skip_autosave_on_destroy = true;
+        view.deficiency_index_basis_component.destroy();
+        view.deficiency_index_basis_component = null;
+    }
+
+    const { RulefileDeficiencyIndexBasisComponent } = await import('./RulefileDeficiencyIndexBasisComponent.js');
+    const comp = new RulefileDeficiencyIndexBasisComponent();
+    await comp.init({ root: container, deps });
+    comp.render();
+    view.deficiency_index_basis_component = comp;
+}
+
+/**
+ * @param {{ deps: object, view: object }} ctx
+ * @param {HTMLElement} container
  * @param {object} ruleFileContent
  */
 export async function render_rulefile_report_template_edit_form(ctx, container, ruleFileContent, appendix = '1') {

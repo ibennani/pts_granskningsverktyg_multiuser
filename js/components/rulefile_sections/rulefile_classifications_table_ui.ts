@@ -52,6 +52,10 @@ export type ClassificationsTableRowSpec = {
 
     row_header_text: string;
 
+    /** Om satt ersätter row_header_text (t.ex. länk i radhuvud). */
+
+    row_header_element?: HTMLElement;
+
     cells: HTMLElement[];
 
 };
@@ -288,15 +292,25 @@ function build_row_header(
 
 ): HTMLElement {
 
-    return Helpers.create_element('th', {
+    const th = Helpers.create_element('th', {
 
         class_name: join_class_names(RULEFILE_CLASSIFICATIONS_ROW_HEADER_CLASS, row.row_header_class),
 
         attributes: { scope: 'row' },
 
-        text_content: row.row_header_text,
-
     });
+
+    if (row.row_header_element) {
+
+        th.appendChild(row.row_header_element);
+
+    } else {
+
+        th.textContent = row.row_header_text;
+
+    }
+
+    return th;
 
 }
 
@@ -308,7 +322,7 @@ export function create_classifications_table(
 
     options: {
 
-        caption: string;
+        caption?: string;
 
         extra_table_classes?: string | string[];
 
@@ -330,11 +344,11 @@ export function create_classifications_table(
 
 
 
-    table.appendChild(
-
-        Helpers.create_element('caption', { text_content: options.caption })
-
-    );
+    if (options.caption) {
+        table.appendChild(
+            Helpers.create_element('caption', { text_content: options.caption })
+        );
+    }
 
 
 

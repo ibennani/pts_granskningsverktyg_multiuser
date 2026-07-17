@@ -55,11 +55,12 @@ describe('appendix1_sections', () => {
         });
         const appendix1 = normalized.appendix1 as {
             bodyText: string;
-            sections: Array<{ id: string; kind?: string }>;
+            sections: Array<{ id: string; kind?: string; content?: string }>;
         };
         expect(typeof appendix1.bodyText).toBe('string');
         expect(appendix1.bodyText).toContain('# 1. Inledning');
         expect(appendix1.sections.every((section) => section.kind === 'deficiency_group')).toBe(true);
+        expect(appendix1.sections.every((section) => !section.content?.trim())).toBe(true);
         expect(appendix1.sections.find((section) => section.id === 'introduction')).toBeUndefined();
     });
 

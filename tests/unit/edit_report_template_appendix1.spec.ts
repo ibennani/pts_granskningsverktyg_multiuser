@@ -88,7 +88,7 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
         );
 
         const preview_items = container.querySelectorAll(
-            '.appendix1-deficiency-sections-preview__item'
+            '.appendix1-deficiency-intro-field'
         );
         expect(preview_items.length).toBe(2);
         expect(
@@ -147,7 +147,7 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
         expect(handles.get_sections()[0]?.conceptId).toBe('robust');
 
         const preview_items = container.querySelectorAll(
-            '.appendix1-deficiency-sections-preview__item'
+            '.appendix1-deficiency-intro-field'
         );
         expect(preview_items).toHaveLength(1);
     });

@@ -108,7 +108,7 @@ function append_sheet_select(
         })
     );
     const select = helpers.create_element('select', {
-        class_name: ['form-control', 'rulefile-appendix2-sheet-select'],
+        class_name: ['form-control', 'dropdown-select', 'rulefile-appendix2-sheet-select'],
         attributes: { id: select_id, name: select_id },
     }) as HTMLSelectElement;
 

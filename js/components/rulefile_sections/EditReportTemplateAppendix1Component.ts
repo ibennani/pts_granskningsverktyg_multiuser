@@ -5,6 +5,7 @@ import {
     build_rulefile_appendix1_persisted_sections,
     normalize_rulefile_appendix1,
 } from '../../logic/appendix1_sections.js';
+import { merge_concept_intros_into_metadata } from '../../logic/appendix1_principle_intro.js';
 import type { Appendix1SectionDefinition } from '../../logic/appendix1_sections_types.js';
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
 import { render_appendix1_sections_editor } from './rulefile_appendix1_sections_editor_ui.js';
@@ -28,6 +29,7 @@ type EditorHandles = {
     get_body_text_by_taxonomy: () => Record<string, string>;
     get_sections: () => Array<Record<string, unknown>>;
     get_grouping_taxonomy_id: () => string;
+    get_concept_intros: () => Record<string, string>;
 };
 
 export class EditReportTemplateAppendix1Component {
@@ -71,6 +73,11 @@ export class EditReportTemplateAppendix1Component {
             editor_handles.get_sections() as Appendix1SectionDefinition[]
         );
         appendix.groupingTaxonomyId = grouping_taxonomy_id;
+        merge_concept_intros_into_metadata(
+            normalized,
+            grouping_taxonomy_id,
+            editor_handles.get_concept_intros()
+        );
         normalized.appendix1 = appendix;
 
         await deps.dispatch({

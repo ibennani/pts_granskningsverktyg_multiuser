@@ -24,6 +24,8 @@ export type TaxonomyConcept = {
     id: string;
     label: string;
     labelKey?: string;
+    /** Inledningstext för Bilaga 1 kapitel 3.x (sammanfattning per princip). */
+    appendix1Intro?: string;
 };
 
 export type TaxonomyDefinition = {
