@@ -3,6 +3,10 @@
 
 import { load_audit_with_rule_file } from '../api/client.js';
 import { is_fetch_network_error } from './connectivity_service.js';
+import {
+    audit_needs_legacy_type_prompt,
+    show_audit_type_legacy_prompt,
+} from './audit_type_legacy_prompt.js';
 
 function get_translation_func(Translation) {
     if (Translation && typeof Translation.t === 'function') {
@@ -43,6 +47,7 @@ export function navigate_to_default_audit_view(full_state, router) {
  * @param {Object} params.ValidationLogic
  * @param {function} params.router
  * @param {Object} [params.NotificationComponent]
+ * @param {Object} [params.Helpers]
  * @param {function} [params.t] - Översättningsfunktion
  * @returns {Promise<boolean>} true om allt lyckades, annars false
  */
@@ -54,6 +59,7 @@ export async function open_audit_by_id(params) {
         ValidationLogic,
         router,
         NotificationComponent,
+        Helpers,
         t: t_input
     } = params || {};
 
@@ -72,6 +78,15 @@ export async function open_audit_by_id(params) {
                 type: StoreActionTypes.LOAD_AUDIT_FROM_FILE,
                 payload: full_state
             });
+
+            if (audit_needs_legacy_type_prompt(full_state) && Helpers && dispatch && StoreActionTypes) {
+                show_audit_type_legacy_prompt(full_state, {
+                    Helpers,
+                    t,
+                    dispatch,
+                    StoreActionTypes,
+                });
+            }
 
             if (NotificationComponent?.show_global_message) {
                 NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');

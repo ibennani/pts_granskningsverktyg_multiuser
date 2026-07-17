@@ -12,7 +12,9 @@ export const initial_state = {
         actorLink: '',
         auditorName: '',
         caseHandler: '',
-        internalComment: ''
+        internalComment: '',
+        auditTypeId: '',
+        auditTypeLabel: ''
     },
     auditStatus: 'not_started',
     startTime: null,

@@ -33,7 +33,18 @@ import { flush_sync_rulefile_to_server } from '../../logic/server_sync.js';
 import { build_rulefile_download_filename } from '../../logic/prepare_rulefile_content_for_persist.js';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { create_audit_filter_skip_link } from './audit_filter_skip_link.js';
-import { announce_audit_filter_reset } from './audit_filter_live_status.js';
+import {
+    announce_audit_filter_reset,
+    announce_audit_filter_status,
+    build_secondary_filter_live_labels,
+    schedule_audit_filter_no_results_announcement
+} from './audit_filter_live_status.js';
+import { update_audit_filter_primary_row_ui } from './audit_filter_primary_row.js';
+import {
+    build_audit_list_section_configs,
+    count_filtered_audits_in_sections,
+    count_secondary_filters
+} from '../../logic/audit_list_section_filter.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_audits_sections, render_audit_samples_section } from './AuditSamplesSection.js';
 import {
@@ -85,21 +96,27 @@ export class AuditViewComponent {
         this.audits = [];
         this.audit_filter_query = '';
         this.audit_type_filter = '';
+        this.granskningstyp_filter = '';
         this.audit_list_group_mode = read_audit_list_group_mode_pref();
         this.audit_filter_panel_open = false;
         this.audit_table_page_size = 'all';
         this._auditFilterHadFocus = false;
         this._auditTypeSelectHadFocus = false;
+        this._granskningstypSelectHadFocus = false;
         this._auditPageSizeSelectHadFocus = false;
         this._auditGroupByCaseHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
         this._auditTypeSelectRef = null;
+        this._granskningstypSelectRef = null;
         this._auditPageSizeSelectRef = null;
         this._auditGroupByCaseSelectRef = null;
         this._auditFilterToggleRef = null;
         this._auditFilterResetRef = null;
+        this._auditFilterPrimaryResetRef = null;
+        this._auditFilterSecondaryRowRef = null;
         this._auditFilterLiveRegionRef = null;
+        this._auditFilterKeydownHandler = null;
         this._audit_list_toggle_animating = false;
         this.router = deps.router;
         this.getState = deps.getState;
@@ -143,10 +160,12 @@ export class AuditViewComponent {
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
         this.handle_filter_input = this.handle_filter_input.bind(this);
         this.handle_type_filter_change = this.handle_type_filter_change.bind(this);
+        this.handle_granskningstyp_filter_change = this.handle_granskningstyp_filter_change.bind(this);
         this.handle_audit_table_page_size_change = this.handle_audit_table_page_size_change.bind(this);
         this.handle_audit_list_group_mode_change = this.handle_audit_list_group_mode_change.bind(this);
         this.handle_audit_filter_toggle = this.handle_audit_filter_toggle.bind(this);
         this.handle_audit_filter_reset = this.handle_audit_filter_reset.bind(this);
+        this.handle_audit_filter_reset_secondary = this.handle_audit_filter_reset_secondary.bind(this);
         this.handle_skip_to_audit_filter = this.handle_skip_to_audit_filter.bind(this);
 
                 this._unsubscribe_audits = null;
@@ -222,20 +241,164 @@ export class AuditViewComponent {
         await this._run_audit_lists_change_with_animation(() => {
             this._render_audit_lists_section();
         });
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status();
     }
 
-    handle_audit_filter_toggle() {
-        this.audit_filter_panel_open = !this.audit_filter_panel_open;
+    _get_audit_filter_context() {
+        return {
+            audits: this.audits,
+            audit_filter_query: this.audit_filter_query,
+            audit_type_filter: this.audit_type_filter,
+            granskningstyp_filter: this.granskningstyp_filter,
+            audit_list_group_mode: this.audit_list_group_mode,
+            audit_table_page_size: this.audit_table_page_size
+        };
+    }
+
+    _update_audit_filter_ui_state() {
+        if (this.audit_mode !== 'audits') return;
+        update_audit_filter_primary_row_ui(this);
+        const secondary_row = this._auditFilterSecondaryRowRef;
+        if (secondary_row) {
+            secondary_row.hidden = !this.audit_filter_panel_open;
+        }
         const wrapper = this.root?.querySelector('.audit-filter-wrapper') ?? null;
         if (wrapper) {
             wrapper.classList.toggle('audit-filter-wrapper--open', this.audit_filter_panel_open);
         }
-        if (this._auditFilterToggleRef) {
-            this._auditFilterToggleRef.setAttribute(
-                'aria-expanded',
-                this.audit_filter_panel_open ? 'true' : 'false'
+    }
+
+    _focus_first_secondary_filter_field() {
+        const target =
+            (this._granskningstypSelectRef && document.contains(this._granskningstypSelectRef)
+                ? this._granskningstypSelectRef
+                : null) ||
+            (this._auditTypeSelectRef && document.contains(this._auditTypeSelectRef)
+                ? this._auditTypeSelectRef
+                : null);
+        if (!target) return;
+        setTimeout(() => {
+            if (!document.contains(target)) return;
+            try {
+                target.focus({ preventScroll: true });
+            } catch {
+                target.focus();
+            }
+        }, 0);
+    }
+
+    _announce_filter_list_status(include_search = false) {
+        if (this.audit_mode !== 'audits' || !this._auditFilterLiveRegionRef) return;
+        const t = this.get_t_func();
+        const filter_result = build_audit_list_section_configs(this._get_audit_filter_context());
+        const total = count_filtered_audits_in_sections(filter_result.section_configs);
+        const panel_closed = !this.audit_filter_panel_open;
+
+        if (filter_result.has_list_narrowing_filter) {
+            schedule_audit_filter_no_results_announcement(
+                this._auditFilterLiveRegionRef,
+                total === 0,
+                t('audit_filter_live_no_results')
             );
         }
+
+        if (!panel_closed) return;
+
+        const secondary_labels = build_secondary_filter_live_labels(this, t);
+        if (secondary_labels.length === 0 && !include_search) return;
+
+        const filter_text = secondary_labels.join(', ');
+        announce_audit_filter_status(
+            this._auditFilterLiveRegionRef,
+            t('audit_filter_live_secondary', {
+                count: total,
+                filters: filter_text
+            })
+        );
+    }
+
+    _attach_audit_filter_keydown() {
+        if (this._auditFilterKeydownHandler) {
+            document.removeEventListener('keydown', this._auditFilterKeydownHandler);
+        }
+        this._auditFilterKeydownHandler = (event) => {
+            if (event.key !== 'Escape' || !this.audit_filter_panel_open) return;
+            event.preventDefault();
+            this.audit_filter_panel_open = false;
+            this._update_audit_filter_ui_state();
+            if (this._auditFilterToggleRef && document.contains(this._auditFilterToggleRef)) {
+                try {
+                    this._auditFilterToggleRef.focus({ preventScroll: true });
+                } catch {
+                    this._auditFilterToggleRef.focus();
+                }
+            }
+        };
+        document.addEventListener('keydown', this._auditFilterKeydownHandler);
+    }
+
+    handle_audit_filter_toggle() {
+        this.audit_filter_panel_open = !this.audit_filter_panel_open;
+        this._update_audit_filter_ui_state();
+        if (this.audit_filter_panel_open) {
+            this._focus_first_secondary_filter_field();
+        } else if (this._auditFilterToggleRef && document.contains(this._auditFilterToggleRef)) {
+            try {
+                this._auditFilterToggleRef.focus({ preventScroll: true });
+            } catch {
+                this._auditFilterToggleRef.focus();
+            }
+        }
+    }
+
+    async handle_audit_filter_reset_secondary() {
+        const default_page_size = 'all';
+        const already_default =
+            !this.audit_type_filter &&
+            !this.granskningstyp_filter &&
+            this.audit_table_page_size === default_page_size &&
+            this.audit_list_group_mode === 'all';
+        if (already_default || this._audit_list_toggle_animating) return;
+
+        if (this._auditTypeSelectRef) {
+            this._auditTypeSelectRef.value = '';
+        }
+        if (this._granskningstypSelectRef) {
+            this._granskningstypSelectRef.value = '';
+        }
+        if (this._auditPageSizeSelectRef) {
+            this._auditPageSizeSelectRef.value = default_page_size;
+        }
+        if (this._auditGroupByCaseSelectRef) {
+            this._auditGroupByCaseSelectRef.value = 'all';
+        }
+
+        this.audit_type_filter = '';
+        this.granskningstyp_filter = '';
+        this.audit_table_page_size = default_page_size;
+        this.audit_list_group_mode = 'all';
+        write_audit_list_group_mode_pref('all');
+        this._reset_all_audit_table_pages();
+
+        await this._run_audit_lists_change_with_animation(() => {
+            this._render_audit_lists_section();
+        });
+
+        this._update_audit_filter_ui_state();
+
+        if (this._auditFilterPrimaryResetRef && document.contains(this._auditFilterPrimaryResetRef)) {
+            try {
+                this._auditFilterPrimaryResetRef.focus({ preventScroll: true });
+            } catch {
+                this._auditFilterPrimaryResetRef.focus();
+            }
+        }
+
+        announce_audit_filter_reset(
+            this._auditFilterLiveRegionRef,
+            this.get_t_func()('audit_filter_reset_secondary_announced')
+        );
     }
 
     async handle_audit_filter_reset() {
@@ -243,6 +406,7 @@ export class AuditViewComponent {
         const already_default =
             !this.audit_filter_query &&
             !this.audit_type_filter &&
+            !this.granskningstyp_filter &&
             this.audit_table_page_size === default_page_size &&
             this.audit_list_group_mode === 'all';
         if (already_default || this._audit_list_toggle_animating) return;
@@ -253,6 +417,9 @@ export class AuditViewComponent {
         if (this._auditTypeSelectRef) {
             this._auditTypeSelectRef.value = '';
         }
+        if (this._granskningstypSelectRef) {
+            this._granskningstypSelectRef.value = '';
+        }
         if (this._auditPageSizeSelectRef) {
             this._auditPageSizeSelectRef.value = default_page_size;
         }
@@ -262,6 +429,7 @@ export class AuditViewComponent {
 
         this.audit_filter_query = '';
         this.audit_type_filter = '';
+        this.granskningstyp_filter = '';
         this.audit_table_page_size = default_page_size;
         this.audit_list_group_mode = 'all';
         write_audit_list_group_mode_pref('all');
@@ -270,6 +438,9 @@ export class AuditViewComponent {
         await this._run_audit_lists_change_with_animation(() => {
             this._render_audit_lists_section();
         });
+
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status(true);
 
         if (this._auditFilterResetRef && document.contains(this._auditFilterResetRef)) {
             try {
@@ -285,32 +456,16 @@ export class AuditViewComponent {
         );
     }
 
-    _ensure_audit_filter_panel_open() {
-        const toggle = this._auditFilterToggleRef;
-        if (!toggle || !document.contains(toggle)) return;
-        if (window.getComputedStyle(toggle).display === 'none') return;
-        if (this.audit_filter_panel_open) return;
-        this.audit_filter_panel_open = true;
-        const wrapper = this.root?.querySelector('.audit-filter-wrapper') ?? null;
-        if (wrapper) {
-            wrapper.classList.add('audit-filter-wrapper--open');
-        }
-        toggle.setAttribute('aria-expanded', 'true');
-    }
-
     handle_skip_to_audit_filter(event) {
         if (event) event.preventDefault();
-        this._ensure_audit_filter_panel_open();
         const input = document.getElementById('audit-filter-input');
-        const region = document.getElementById('audit-filter-region');
-        const target = input || region;
-        if (!target) return;
+        if (!input) return;
         try {
-            target.focus({ preventScroll: false });
+            input.focus({ preventScroll: false });
         } catch {
-            target.focus();
+            input.focus();
         }
-        target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        input.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
 
     async handle_audit_list_group_mode_change(event) {
@@ -325,6 +480,8 @@ export class AuditViewComponent {
             this._reset_all_audit_table_pages();
             this._render_audit_lists_section();
         });
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status();
     }
 
     handle_filter_input(event) {
@@ -334,6 +491,8 @@ export class AuditViewComponent {
         this.audit_filter_query = value;
         this._reset_all_audit_table_pages();
         this._render_audit_lists_section();
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status(true);
     }
 
     async handle_type_filter_change(event) {
@@ -345,6 +504,21 @@ export class AuditViewComponent {
         await this._run_audit_lists_change_with_animation(() => {
             this._render_audit_lists_section();
         });
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status();
+    }
+
+    async handle_granskningstyp_filter_change(event) {
+        const target = event && event.target ? event.target : null;
+        const value = target ? String(target.value || '') : '';
+        if (this.granskningstyp_filter === value || this._audit_list_toggle_animating) return;
+        this.granskningstyp_filter = value;
+        this._reset_all_audit_table_pages();
+        await this._run_audit_lists_change_with_animation(() => {
+            this._render_audit_lists_section();
+        });
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status();
     }
 
     _rule_fingerprint(r) {
@@ -2037,6 +2211,7 @@ export class AuditViewComponent {
             ValidationLogic: this.ValidationLogic,
             router: this.router,
             NotificationComponent: this.NotificationComponent,
+            Helpers: this.Helpers,
             t
         });
     }
@@ -2152,14 +2327,21 @@ export class AuditViewComponent {
         this.root.innerHTML = '';
         const t = this.get_t_func();
 
+        if (this.audit_mode === 'audits' && count_secondary_filters(this._get_audit_filter_context()) > 0) {
+            this.audit_filter_panel_open = true;
+        }
+
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
         this._auditFilterInputRef = null;
         this._auditTypeSelectRef = null;
+        this._granskningstypSelectRef = null;
         this._auditPageSizeSelectRef = null;
         this._auditGroupByCaseSelectRef = null;
         this._auditFilterToggleRef = null;
         this._auditFilterResetRef = null;
+        this._auditFilterPrimaryResetRef = null;
+        this._auditFilterSecondaryRowRef = null;
         this._auditFilterLiveRegionRef = null;
 
         if (this.audit_mode === 'audits') {
@@ -2168,6 +2350,12 @@ export class AuditViewComponent {
 
         const header = render_audit_header(this);
         plate.appendChild(header);
+
+        if (this.audit_mode === 'audits') {
+            this._auditFilterSecondaryRowRef = plate.querySelector('#audit-filter-secondary-row');
+            this._attach_audit_filter_keydown();
+            this._update_audit_filter_ui_state();
+        }
 
         if (!this.api_available) {
             const no_api = this.Helpers.create_element('p', {
@@ -2265,9 +2453,14 @@ export class AuditViewComponent {
             const group_sel = this._auditGroupByCaseSelectRef;
             setTimeout(() => focus_select_restore(group_sel), 0);
         }
+        if (this.audit_mode === 'audits' && this._granskningstypSelectHadFocus && this._granskningstypSelectRef) {
+            const granskningstyp_sel = this._granskningstypSelectRef;
+            setTimeout(() => focus_select_restore(granskningstyp_sel), 0);
+        }
         this._auditTypeSelectHadFocus = false;
         this._auditPageSizeSelectHadFocus = false;
         this._auditGroupByCaseHadFocus = false;
+        this._granskningstypSelectHadFocus = false;
 
         if (this.audit_mode === 'audits' && this.deps.params?.startNew === '1') {
             setTimeout(() => {
@@ -2294,6 +2487,10 @@ export class AuditViewComponent {
     }
 
     destroy() {
+        if (this._auditFilterKeydownHandler) {
+            document.removeEventListener('keydown', this._auditFilterKeydownHandler);
+            this._auditFilterKeydownHandler = null;
+        }
         if (typeof this._unsubscribe_audits === 'function') {
             this._unsubscribe_audits();
             this._unsubscribe_audits = null;

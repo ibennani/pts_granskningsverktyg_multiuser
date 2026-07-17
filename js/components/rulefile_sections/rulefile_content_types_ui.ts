@@ -280,9 +280,9 @@ function render_content_types_table(
                         );
                         const child_id = String(removed?.id ?? row.child_id).trim();
                         if (child_id && options.get_rule_file_content && options.on_rule_file_content_change) {
-                            const current = options.get_rule_file_content();
+                            const current = options.get_rule_file_content() as Record<string, unknown>;
                             const updated = remove_content_type_from_requirements(current, child_id);
-                            options.on_rule_file_content_change(updated);
+                            options.on_rule_file_content_change(updated as Record<string, unknown>);
                         }
                         options.on_change?.();
                         rerender();

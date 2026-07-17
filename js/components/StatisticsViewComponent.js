@@ -6,12 +6,14 @@ import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import {
     append_statistics_sampletype_chart_block,
     append_statistics_score_analysis_block,
-    append_statistics_top_failed_block,
-    build_statistics_summary_list
+        append_statistics_top_failed_block,
+        append_statistics_audit_type_counts_block,
+        build_statistics_summary_list
 } from './statistics_view_sections.js';
 import './statistics_view_component.css';
 
 const MONITORING_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
+const AUDIT_TYPE_FALLBACK_SENTINEL = '__GV_STATS_AUDIT_TYPE_FALLBACK__';
 
 export class StatisticsViewComponent {
     constructor() {
@@ -45,6 +47,11 @@ export class StatisticsViewComponent {
     _monitoring_heading(raw) {
         const t = this.Translation.t;
         return raw === MONITORING_FALLBACK_SENTINEL ? t('statistics_monitoring_fallback_label') : raw;
+    }
+
+    _audit_type_heading(raw) {
+        const t = this.Translation.t;
+        return raw === AUDIT_TYPE_FALLBACK_SENTINEL ? t('statistics_audit_type_fallback_label') : raw;
     }
 
     _completed_strong_text(t, count) {
@@ -329,6 +336,14 @@ export class StatisticsViewComponent {
             Helpers,
             year_data.monitoring_type_top_failed || [],
             (lbl) => this._monitoring_heading(lbl)
+        );
+
+        append_statistics_audit_type_counts_block(
+            plate,
+            t,
+            Helpers,
+            year_raw.audit_type_counts || [],
+            (lbl) => this._audit_type_heading(lbl)
         );
     }
 }

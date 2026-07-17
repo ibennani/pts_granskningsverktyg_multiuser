@@ -3,6 +3,26 @@
  * @fileoverview Export-handlers för Åtgärder-sidan.
  */
 import { open_observation_word_import_modal } from './observation_word_import/observation_word_import_modal.js';
+import { guard_audit_type_for_export } from '../logic/audit_type_export_guard.js';
+import {
+    audit_needs_legacy_type_prompt,
+    show_audit_type_legacy_prompt,
+} from '../logic/audit_type_legacy_prompt.js';
+
+function ensure_audit_type_for_bilage_export(view) {
+    const state = view.getState();
+    const t = view.Translation.t;
+    if (audit_needs_legacy_type_prompt(state)) {
+        show_audit_type_legacy_prompt(state, {
+            Helpers: view.Helpers,
+            t,
+            dispatch: view.dispatch,
+            StoreActionTypes: view.StoreActionTypes,
+        });
+        return false;
+    }
+    return guard_audit_type_for_export(state, view.NotificationComponent, t);
+}
 
 /**
  * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
@@ -17,6 +37,7 @@ export function bind_audit_actions_export_handlers(view) {
 
     view.handle_export_excel = async () => {
         const current_state = view.getState();
+        if (!ensure_audit_type_for_bilage_export(view)) return;
         if (view.ExportLogic?.export_to_excel) {
             await view.ExportLogic.export_to_excel(current_state);
         }
@@ -37,6 +58,7 @@ export function bind_audit_actions_export_handlers(view) {
 
     view.handle_export_pdf_deficiency_types = async () => {
         const current_state = view.getState();
+        if (!ensure_audit_type_for_bilage_export(view)) return;
         if (!view.ExportLogic?.export_to_pdf_deficiency_types) return;
         await view.ExportLogic.export_to_pdf_deficiency_types(current_state);
     };
@@ -49,18 +71,21 @@ export function bind_audit_actions_export_handlers(view) {
 
     view.handle_export_word_deficiency_types = async () => {
         const current_state = view.getState();
+        if (!ensure_audit_type_for_bilage_export(view)) return;
         if (!view.ExportLogic?.export_to_word_deficiency_types) return;
         await view.ExportLogic.export_to_word_deficiency_types(current_state);
     };
 
     view.handle_export_word_screenshots_appendix = async () => {
         const current_state = view.getState();
+        if (!ensure_audit_type_for_bilage_export(view)) return;
         if (!view.ExportLogic?.export_to_word_screenshots_appendix) return;
         await view.ExportLogic.export_to_word_screenshots_appendix(current_state);
     };
 
     view.handle_export_pdf_screenshots_appendix = async () => {
         const current_state = view.getState();
+        if (!ensure_audit_type_for_bilage_export(view)) return;
         if (!view.ExportLogic?.export_to_pdf_screenshots_appendix) return;
         await view.ExportLogic.export_to_pdf_screenshots_appendix(current_state);
     };
@@ -92,6 +117,7 @@ export function bind_audit_actions_export_handlers(view) {
 
     view.handle_export_all_appendices_zip = async () => {
         const current_state = view.getState();
+        if (!ensure_audit_type_for_bilage_export(view)) return;
         if (!view.ExportLogic?.export_audit_appendices_zip) return;
         await view.ExportLogic.export_audit_appendices_zip(current_state);
     };

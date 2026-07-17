@@ -97,6 +97,10 @@ export class AuditInfoComponent {
             info_panel.appendChild(this.create_info_item('case_number', md.caseNumber));
         }
 
+        if (md.auditTypeLabel) {
+            info_panel.appendChild(this.create_info_item('metadata_audit_type_label', md.auditTypeLabel));
+        }
+
         info_panel.appendChild(this.create_info_item('actor_name', md.actorName));
 
         if (md.actorLink) {

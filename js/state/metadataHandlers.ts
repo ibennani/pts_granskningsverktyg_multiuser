@@ -12,6 +12,7 @@ import {
     clamp_audit_activity_to_end_date,
     total_clamp_count
 } from '../logic/audit_clamp_activity_to_end_date.js';
+import { audit_type_editable_for_status } from '../../shared/audit/audit_type_metadata.js';
 
 function resolve_effective_start_iso(state: { startTime?: string | null; auditMetadata?: { startTime?: string } }): string | null {
     const from_meta = state.auditMetadata?.startTime;
@@ -38,6 +39,11 @@ export function reduce_update_metadata(current_state: any, action: any) {
     delete payload.same_user_tab_broadcast;
     delete payload.clear_fresh_new_audit_metadata;
     delete payload.samples_modified;
+
+    if (!audit_type_editable_for_status(current_state.auditStatus)) {
+        delete payload.auditTypeId;
+        delete payload.auditTypeLabel;
+    }
 
     let start_time_update: string | null | undefined;
     if (Object.prototype.hasOwnProperty.call(payload, 'startTime')) {

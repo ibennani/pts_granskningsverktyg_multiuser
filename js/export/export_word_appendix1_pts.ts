@@ -28,7 +28,7 @@ import {
 
     get_appendix1_section_bookmark_id,
 
-    read_rulefile_appendix1_grouping_taxonomy_id,
+    resolve_audit_grouping_taxonomy_id,
 
     resolve_appendix1_sections_list,
 
@@ -360,9 +360,7 @@ export function append_word_appendix1_pts_paragraphs(
 
 
 
-    const rule_file = current_audit.ruleFileContent as Record<string, unknown> | undefined;
-
-    const taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(rule_file);
+    const taxonomy_id = resolve_audit_grouping_taxonomy_id(current_audit);
 
     const deficiency_groups = collect_deficiency_types_grouped_by_taxonomy(current_audit, taxonomy_id, t);
 

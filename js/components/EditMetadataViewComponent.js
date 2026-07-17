@@ -422,6 +422,8 @@ export class EditMetadataViewComponent {
             showStartDate: !is_new_audit,
             showEndDate: is_locked,
             effectiveStartIso: start_time_iso,
+            ruleFileContent: current_state.ruleFileContent,
+            auditStatus: current_state.auditStatus,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
             cancelButtonText: t('return_without_saving_button_text'),
             goToListButtonText: is_new_audit ? t('go_to_audit_list_button') : null

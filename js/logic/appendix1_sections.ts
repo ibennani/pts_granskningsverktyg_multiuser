@@ -3,6 +3,12 @@
  */
 import { DEFAULT_WCAG_TAXONOMY_ID, resolve_taxonomy_concepts } from '../../shared/classification/taxonomy_grouping.js';
 import {
+    merge_appendix1_with_audit_type_override,
+    resolve_grouping_taxonomy_id,
+    read_audit_type_id,
+    type AuditMetadataAuditTypeFields,
+} from '../../shared/audit/audit_type_metadata.js';
+import {
     combine_content_sections_to_body_text,
     parse_body_text_to_content_sections,
     read_appendix1_body_text_by_taxonomy_from_appendix1,
@@ -259,11 +265,37 @@ function read_audit_section_overrides(
     return read_sections_from_appendix1({ sections: audit_metadata.appendix1SectionOverrides });
 }
 
+function resolve_effective_appendix1_for_audit(
+    audit: Appendix1AuditSlice | null | undefined
+): unknown {
+    const base = audit?.ruleFileContent?.appendix1;
+    const type_id = read_audit_type_id(
+        audit?.auditMetadata as AuditMetadataAuditTypeFields | null | undefined
+    );
+    return merge_appendix1_with_audit_type_override(base, type_id) ?? base;
+}
+
+export function resolve_audit_grouping_taxonomy_id(
+    audit: Appendix1AuditSlice | null | undefined
+): string {
+    return resolve_grouping_taxonomy_id(
+        audit?.ruleFileContent ?? null,
+        audit?.auditMetadata as AuditMetadataAuditTypeFields | null | undefined
+    );
+}
+
 export function resolve_appendix1_body_text(
     audit: Appendix1AuditSlice | null | undefined
 ): string {
-    const taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(audit?.ruleFileContent ?? undefined);
-    let body_text = read_rulefile_appendix1_body_text(audit?.ruleFileContent ?? undefined, taxonomy_id);
+    const taxonomy_id = resolve_audit_grouping_taxonomy_id(audit);
+    const effective_appendix1 = resolve_effective_appendix1_for_audit(audit);
+    const rule_slice: Appendix1RulefileSlice | null | undefined = audit?.ruleFileContent
+        ? {
+            ...(audit.ruleFileContent as Appendix1RulefileSlice),
+            appendix1: (effective_appendix1 ?? audit.ruleFileContent.appendix1) as Appendix1RulefileSlice['appendix1'],
+        }
+        : undefined;
+    let body_text = read_rulefile_appendix1_body_text(rule_slice, taxonomy_id);
     const defaults = get_default_appendix1_sections_list();
 
     if (audit?.auditMetadata && Object.prototype.hasOwnProperty.call(audit.auditMetadata, 'appendix1SummaryText')) {
@@ -285,8 +317,15 @@ export function resolve_appendix1_sections_list(
         resolve_appendix1_body_text(audit),
         defaults
     );
-    const taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(audit?.ruleFileContent ?? undefined);
-    let deficiency_sections = read_rulefile_deficiency_sections_list(audit?.ruleFileContent ?? undefined);
+    const taxonomy_id = resolve_audit_grouping_taxonomy_id(audit);
+    const effective_appendix1 = resolve_effective_appendix1_for_audit(audit);
+    const rule_slice: Appendix1RulefileSlice | null | undefined = audit?.ruleFileContent
+        ? {
+            ...(audit.ruleFileContent as Appendix1RulefileSlice),
+            appendix1: (effective_appendix1 ?? audit.ruleFileContent.appendix1) as Appendix1RulefileSlice['appendix1'],
+        }
+        : undefined;
+    let deficiency_sections = read_rulefile_deficiency_sections_list(rule_slice);
 
     if (audit?.auditMetadata && Object.prototype.hasOwnProperty.call(audit.auditMetadata, 'appendix1SectionOverrides')) {
         const overrides = read_audit_section_overrides(audit.auditMetadata);

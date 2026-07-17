@@ -1,7 +1,10 @@
 /**
  * @fileoverview Granskningsinställningar för Bilaga 1-inledningar per princip (kapitel 3.x).
  */
-import { generate_deficiency_sections_from_taxonomy, read_rulefile_appendix1_grouping_taxonomy_id } from '../logic/appendix1_sections.js';
+import {
+    generate_deficiency_sections_from_taxonomy,
+    resolve_audit_grouping_taxonomy_id,
+} from '../logic/appendix1_sections.js';
 import {
     read_audit_principle_intro_overrides,
     resolve_principle_intro_content,
@@ -37,7 +40,10 @@ export function render_audit_settings_principle_intros_section(
     const { state, readonly, return_to, intro_host, on_save, on_back } = options;
     const back_label_key = audit_settings_back_label_key(return_to);
     const rule_file = (state.ruleFileContent || {}) as Record<string, unknown>;
-    const taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(rule_file);
+    const taxonomy_id = resolve_audit_grouping_taxonomy_id({
+        ruleFileContent: rule_file,
+        auditMetadata: state.auditMetadata as Record<string, unknown>,
+    });
     const sections = generate_deficiency_sections_from_taxonomy(rule_file, t);
     const saved_overrides = read_audit_principle_intro_overrides(
         state.auditMetadata as { appendix1PrincipleIntroOverrides?: unknown } | undefined

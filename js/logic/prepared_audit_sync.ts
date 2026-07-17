@@ -8,6 +8,7 @@ import { sync_to_server_now } from '../sync/audit_sync_service.js';
 type AuditMetadataLike = {
     actorName?: string;
     auditorName?: string;
+    auditTypeId?: string;
 };
 
 type PreparedAuditStateLike = {
@@ -29,7 +30,9 @@ function field_has_value(value: unknown): boolean {
  * Obligatoriska metadatafält för att en förberedd granskning ska kunna visas i listan.
  */
 export function has_required_audit_metadata(metadata: AuditMetadataLike | null | undefined): boolean {
-    return field_has_value(metadata?.actorName) && field_has_value(metadata?.auditorName);
+    return field_has_value(metadata?.actorName)
+        && field_has_value(metadata?.auditorName)
+        && field_has_value(metadata?.auditTypeId);
 }
 
 /**

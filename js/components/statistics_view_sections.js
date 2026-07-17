@@ -323,3 +323,51 @@ export function append_statistics_top_failed_block(plate, t, Helpers, sections, 
         plate.appendChild(ol);
     });
 }
+
+/**
+ * @param {HTMLElement} plate
+ * @param {function} t
+ * @param {object} Helpers
+ * @param {Array<{ audit_type_label?: string, audit_count?: number }>} counts
+ * @param {function} audit_type_heading_fn
+ */
+export function append_statistics_audit_type_counts_block(
+    plate,
+    t,
+    Helpers,
+    counts,
+    audit_type_heading_fn
+) {
+    plate.appendChild(
+        Helpers.create_element('h2', {
+            class_name: 'statistics-audit-type__h2',
+            text_content: t('statistics_audit_type_counts_heading')
+        })
+    );
+    plate.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'statistics-audit-type__intro view-intro-text',
+            text_content: t('statistics_audit_type_counts_intro')
+        })
+    );
+    if (!Array.isArray(counts) || counts.length === 0) {
+        plate.appendChild(
+            Helpers.create_element('p', {
+                class_name: 'statistics-audit-type__empty',
+                text_content: t('statistics_audit_type_counts_empty')
+            })
+        );
+        return;
+    }
+    const ul = Helpers.create_element('ul', { class_name: 'statistics-audit-type__list' });
+    counts.forEach((row) => {
+        const label = audit_type_heading_fn(String(row.audit_type_label || '').trim());
+        const li = Helpers.create_element('li', { class_name: 'statistics-audit-type__item' });
+        li.textContent = t('statistics_audit_type_counts_row', {
+            label,
+            count: String(row.audit_count ?? 0)
+        });
+        ul.appendChild(li);
+    });
+    plate.appendChild(ul);
+}

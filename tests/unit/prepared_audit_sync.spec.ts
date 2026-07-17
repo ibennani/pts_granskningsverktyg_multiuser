@@ -8,10 +8,15 @@ import {
 } from '../../js/logic/prepared_audit_sync.js';
 
 describe('prepared_audit_sync', () => {
-    test('has_required_audit_metadata kräver aktör och granskare', () => {
-        expect(has_required_audit_metadata({ actorName: 'A', auditorName: 'G' })).toBe(true);
-        expect(has_required_audit_metadata({ actorName: 'A', auditorName: '' })).toBe(false);
-        expect(has_required_audit_metadata({ actorName: '', auditorName: 'G' })).toBe(false);
+    test('has_required_audit_metadata kräver aktör, granskare och granskningstyp', () => {
+        expect(has_required_audit_metadata({
+            actorName: 'A',
+            auditorName: 'G',
+            auditTypeId: 'tillsyn-lptt',
+        })).toBe(true);
+        expect(has_required_audit_metadata({ actorName: 'A', auditorName: 'G' })).toBe(false);
+        expect(has_required_audit_metadata({ actorName: 'A', auditorName: '', auditTypeId: 't' })).toBe(false);
+        expect(has_required_audit_metadata({ actorName: '', auditorName: 'G', auditTypeId: 't' })).toBe(false);
     });
 
     test('should_sync_prepared_audit_to_list för not_started utan auditId mot start', () => {
@@ -19,7 +24,11 @@ describe('prepared_audit_sync', () => {
             auditStatus: 'not_started',
             auditId: null,
             ruleFileContent: { requirements: [] },
-            auditMetadata: { actorName: 'Aktör', auditorName: 'Granskare' }
+            auditMetadata: {
+                actorName: 'Aktör',
+                auditorName: 'Granskare',
+                auditTypeId: 'tillsyn-lptt',
+            }
         };
         expect(should_sync_prepared_audit_to_list(state, 'start')).toBe(true);
         expect(should_sync_prepared_audit_to_list(state, 'audit')).toBe(true);

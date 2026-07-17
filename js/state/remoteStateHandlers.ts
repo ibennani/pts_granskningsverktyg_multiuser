@@ -14,6 +14,13 @@ import { with_initialized_appendix1_summary_metadata, normalize_rulefile_appendi
 import { normalize_rulefile_appendix2 } from '../logic/appendix2_excel_template.js';
 import { normalize_rulefile_appendix3 } from '../logic/appendix3_screenshots_template.js';
 import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
+import { apply_single_audit_type_if_unique } from '../../shared/audit/audit_type_metadata.js';
+
+function with_audit_type_defaults(state: Record<string, unknown>): Record<string, unknown> {
+    const meta = { ...(state.auditMetadata as Record<string, unknown>) };
+    apply_single_audit_type_if_unique(meta, state.ruleFileContent);
+    return { ...state, auditMetadata: meta };
+}
 
 export function reduce_initialize_new_audit (_current_state: any, action: any) {
     const base = {
@@ -26,13 +33,15 @@ export function reduce_initialize_new_audit (_current_state: any, action: any) {
             actorLink: '',
             auditorName: get_current_user_name() || '',
             caseHandler: '',
-            internalComment: ''
+            internalComment: '',
+            auditTypeId: '',
+            auditTypeLabel: ''
         },
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
         auditStatus: 'not_started',
         freshNewAuditMetadata: true
     };
-    return with_initialized_appendix1_summary_metadata(base);
+    return with_initialized_appendix1_summary_metadata(with_audit_type_defaults(base));
 }
 
 export function reduce_discard_prepared_audit (current_state: any, _action: any) {
@@ -140,7 +149,7 @@ export function reduce_load_audit_from_file (current_state: any, action: any) {
                 loaded_final = { ...loaded_final, auditLastUpdatedAtFrozen: frozen };
             }
         }
-        return with_initialized_appendix1_summary_metadata(loaded_final);
+        return with_initialized_appendix1_summary_metadata(with_audit_type_defaults(loaded_final));
     }
     if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
     return current_state;

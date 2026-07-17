@@ -15,12 +15,43 @@ export const APPENDIX_EXPORT_TYPE_SCREENSHOTS = 'skarmbilder';
 export const APPENDIX_EXPORT_TYPE_ALL_ZIP = 'alla_bilagor';
 
 type AppendixAuditMetadata = {
-    auditMetadata?: { caseNumber?: string; actorName?: string };
+    auditMetadata?: {
+        caseNumber?: string;
+        actorName?: string;
+        auditTypeId?: string;
+        auditTypeLabel?: string;
+    };
     updated_at?: string | null;
 };
 
 function sanitize_case_number_for_filename(case_number: string): string {
     return case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+}
+
+function resolve_audit_type_slug_for_filename(current_audit: AppendixAuditMetadata): string {
+    const label = sanitize_filename_segment(
+        String(current_audit.auditMetadata?.auditTypeLabel ?? '').trim()
+    );
+    if (label) return label;
+    return sanitize_filename_segment(String(current_audit.auditMetadata?.auditTypeId ?? '').trim());
+}
+
+function build_export_name_prefix(
+    current_audit: AppendixAuditMetadata,
+    t: ExportReportFilenameT
+): string {
+    const actor_name = sanitize_filename_segment(
+        current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
+    );
+    const sanitized_case_number = sanitize_case_number_for_filename(
+        (current_audit.auditMetadata?.caseNumber || '').trim()
+    );
+    const audit_type_slug = resolve_audit_type_slug_for_filename(current_audit);
+    const parts = sanitized_case_number ? [sanitized_case_number, actor_name] : [actor_name];
+    if (audit_type_slug) {
+        parts.push(audit_type_slug);
+    }
+    return parts.join('_');
 }
 
 function build_appendix_export_filename(
@@ -30,20 +61,10 @@ function build_appendix_export_filename(
     extension: string,
     t: ExportReportFilenameT
 ): string {
-    const actor_name = sanitize_filename_segment(
-        current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
-    );
-    const sanitized_case_number = sanitize_case_number_for_filename(
-        (current_audit.auditMetadata?.caseNumber || '').trim()
-    );
     const type_slug = sanitize_filename_segment(appendix_type);
     const safe_extension = String(extension || '').replace(/^\./, '');
     const bilaga_part = `bilaga_${appendix_number}_${type_slug}`;
-
-    if (sanitized_case_number) {
-        return `${sanitized_case_number}_${actor_name}_${bilaga_part}.${safe_extension}`;
-    }
-    return `${actor_name}_${bilaga_part}.${safe_extension}`;
+    return `${build_export_name_prefix(current_audit, t)}_${bilaga_part}.${safe_extension}`;
 }
 
 export function build_report_export_filename(
@@ -167,16 +188,6 @@ export function build_all_appendices_zip_filename(
     current_audit: AppendixAuditMetadata,
     t: ExportReportFilenameT
 ): string {
-    const actor_name = sanitize_filename_segment(
-        current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
-    );
-    const sanitized_case_number = sanitize_case_number_for_filename(
-        (current_audit.auditMetadata?.caseNumber || '').trim()
-    );
     const suffix = APPENDIX_EXPORT_TYPE_ALL_ZIP;
-
-    if (sanitized_case_number) {
-        return `${sanitized_case_number}_${actor_name}_${suffix}.zip`;
-    }
-    return `${actor_name}_${suffix}.zip`;
+    return `${build_export_name_prefix(current_audit, t)}_${suffix}.zip`;
 }

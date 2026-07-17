@@ -9,10 +9,14 @@ export type AuditListRow = {
     id?: string | number;
     status?: string;
     audit_type?: string;
+    granskningstyp_id?: string;
+    granskningstyp_label?: string;
     metadata?: {
         caseNumber?: string;
         actorName?: string;
         auditorName?: string;
+        auditTypeId?: string;
+        auditTypeLabel?: string;
     };
 };
 
@@ -28,8 +32,30 @@ export type AuditListFilterContext = {
     audits: AuditListRow[];
     audit_filter_query?: string;
     audit_type_filter?: string;
+    granskningstyp_filter?: string;
     audit_list_group_mode?: AuditListViewMode | string;
+    audit_table_page_size?: string;
 };
+
+export const DEFAULT_AUDIT_TABLE_PAGE_SIZE = 'all';
+export const DEFAULT_AUDIT_LIST_GROUP_MODE = 'all';
+
+/** Antal aktiva sekundära filter (exklusive sök). */
+export function count_secondary_filters(ctx: AuditListFilterContext): number {
+    let count = 0;
+    if (String(ctx.granskningstyp_filter || '').trim()) count += 1;
+    if (String(ctx.audit_type_filter || '').trim()) count += 1;
+    const group_mode = String(ctx.audit_list_group_mode || DEFAULT_AUDIT_LIST_GROUP_MODE).trim();
+    if (group_mode && group_mode !== DEFAULT_AUDIT_LIST_GROUP_MODE) count += 1;
+    const page_size = String(ctx.audit_table_page_size || DEFAULT_AUDIT_TABLE_PAGE_SIZE).trim();
+    if (page_size && page_size !== DEFAULT_AUDIT_TABLE_PAGE_SIZE) count += 1;
+    return count;
+}
+
+/** Sant när listan är avgränsad av sök eller sekundära filter (gruppering, tom-lista, live-region). */
+export function has_list_narrowing_filter(ctx: AuditListFilterContext): boolean {
+    return count_secondary_filters(ctx) > 0 || !!(ctx.audit_filter_query || '').trim();
+}
 
 /** Sant när listan ska grupperas (diarienummer eller granskare). */
 export function is_audit_list_grouped_view_mode(mode: string | undefined): boolean {
@@ -87,18 +113,50 @@ export function filter_audits_by_current_user(list: AuditListRow[]): AuditListRo
     });
 }
 
-/** Filtrerar på granskningstyp (tom sträng = alla typer). */
+/** Samlar unika granskningstyper för filterdropdown. */
+export function collect_granskningstyp_filter_options(
+    audits: AuditListRow[]
+): Array<{ id: string; label: string }> {
+    const map = new Map<string, string>();
+    for (const row of audits) {
+        const id = String(row.granskningstyp_id || row.metadata?.auditTypeId || '').trim();
+        const label = String(row.granskningstyp_label || row.metadata?.auditTypeLabel || id).trim();
+        if (!id) continue;
+        if (!map.has(id)) map.set(id, label || id);
+    }
+    return [...map.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], 'sv'))
+        .map(([id, label]) => ({ id, label }));
+}
+
+/** Filtrerar på media-typ webb/pdf (tom sträng = alla). */
 export function filter_audits_by_type(list: AuditListRow[], audit_type_filter: string): AuditListRow[] {
     const want_type = String(audit_type_filter || '').trim();
     if (!want_type) return list;
     return list.filter((a) => String(a?.audit_type || '').trim() === want_type);
 }
 
-/** Filtrerar och sorterar sektionens granskningar (text + typ). */
+/** Filtrerar på granskningstyp (Tillsyn/Marknadskontroll). */
+export function filter_audits_by_granskningstyp(
+    list: AuditListRow[],
+    granskningstyp_filter: string
+): AuditListRow[] {
+    const want_id = String(granskningstyp_filter || '').trim();
+    if (!want_id) return list;
+    return list.filter((a) => {
+        const row_id = String(a.granskningstyp_id || a.metadata?.auditTypeId || '').trim();
+        return row_id === want_id;
+    });
+}
+
+/** Filtrerar och sorterar sektionens granskningar (text + media + granskningstyp). */
 export function filter_audits_for_section(list: AuditListRow[], ctx: AuditListFilterContext): AuditListRow[] {
     const query_raw = ctx.audit_filter_query || '';
     return sort_audits_by_case_number(
-        filter_audits_by_type(filter_audits_by_text(list, query_raw), ctx.audit_type_filter || '')
+        filter_audits_by_granskningstyp(
+            filter_audits_by_type(filter_audits_by_text(list, query_raw), ctx.audit_type_filter || ''),
+            ctx.granskningstyp_filter || ''
+        )
     );
 }
 
@@ -110,13 +168,19 @@ export function build_audit_list_section_configs(ctx: AuditListFilterContext): {
     query_raw: string;
     has_text_filter: boolean;
     has_type_filter: boolean;
+    has_granskningstyp_filter: boolean;
+    secondary_filter_count: number;
+    has_list_narrowing_filter: boolean;
     has_active_filter: boolean;
     section_configs: AuditListSectionConfig[];
 } {
     const query_raw = ctx.audit_filter_query || '';
     const has_text_filter = !!query_raw.trim();
     const has_type_filter = !!String(ctx.audit_type_filter || '').trim();
-    const has_active_filter = has_text_filter || has_type_filter;
+    const has_granskningstyp_filter = !!String(ctx.granskningstyp_filter || '').trim();
+    const secondary_filter_count = count_secondary_filters(ctx);
+    const list_narrowing = has_list_narrowing_filter(ctx);
+    const has_active_filter = list_narrowing;
 
     const mine_mode = ctx.audit_list_group_mode === 'mine';
 
@@ -134,5 +198,19 @@ export function build_audit_list_section_configs(ctx: AuditListFilterContext): {
         };
     });
 
-    return { query_raw, has_text_filter, has_type_filter, has_active_filter, section_configs };
+    return {
+        query_raw,
+        has_text_filter,
+        has_type_filter,
+        has_granskningstyp_filter,
+        secondary_filter_count,
+        has_list_narrowing_filter: list_narrowing,
+        has_active_filter,
+        section_configs
+    };
+}
+
+/** Antal granskningar efter filter i alla sektioner. */
+export function count_filtered_audits_in_sections(section_configs: AuditListSectionConfig[]): number {
+    return section_configs.reduce((sum, cfg) => sum + (cfg.audits?.length ?? 0), 0);
 }

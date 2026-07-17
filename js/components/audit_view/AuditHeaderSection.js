@@ -1,8 +1,10 @@
 // js/components/audit_view/AuditHeaderSection.js
 // Bygger header: titel, filter (vid audits), filuppladdning, knapp "Starta ny granskning".
 
-import { create_audit_filter_toggle_button } from './audit_filter_toggle_button.js';
 import { create_audit_filter_reset_button } from './audit_filter_reset_button.js';
+import { render_audit_filter_primary_row } from './audit_filter_primary_row.js';
+import { collect_granskningstyp_filter_options } from '../../logic/audit_list_section_filter.js';
+
 function render_audit_page_size_field(ctx) {
     const t = ctx.get_t_func();
     const field = ctx.Helpers.create_element('div', {
@@ -41,6 +43,152 @@ function render_audit_page_size_field(ctx) {
     return field;
 }
 
+function render_granskningstyp_filter_field(ctx, t) {
+    const granskningstyp_options = collect_granskningstyp_filter_options(ctx.audits || []);
+    if (granskningstyp_options.length === 0) {
+        ctx._granskningstypSelectRef = null;
+        return null;
+    }
+
+    const granskningstyp_field = ctx.Helpers.create_element('div', {
+        class_name: ['audit-filter-row__field', 'audit-filter-row__field--granskningstyp']
+    });
+    const granskningstyp_label = ctx.Helpers.create_element('label', {
+        attributes: { for: 'audit-granskningstyp-filter-select' }
+    });
+    granskningstyp_label.appendChild(
+        ctx.Helpers.create_element('strong', { text_content: t('audit_granskningstyp_filter_label') })
+    );
+    granskningstyp_field.appendChild(granskningstyp_label);
+    const granskningstyp_select = ctx.Helpers.create_element('select', {
+        id: 'audit-granskningstyp-filter-select',
+        class_name: [
+            'form-control',
+            'dropdown-select',
+            'audit-filter-select',
+            'audit-granskningstyp-filter-select'
+        ],
+        attributes: { name: 'audit-granskningstyp-filter' }
+    });
+    granskningstyp_select.appendChild(
+        ctx.Helpers.create_element('option', {
+            attributes: { value: '' },
+            text_content: t('audit_granskningstyp_filter_all')
+        })
+    );
+    granskningstyp_options.forEach((option_row) => {
+        granskningstyp_select.appendChild(
+            ctx.Helpers.create_element('option', {
+                attributes: { value: option_row.id },
+                text_content: option_row.label
+            })
+        );
+    });
+    granskningstyp_select.value = ctx.granskningstyp_filter || '';
+    granskningstyp_select.addEventListener('change', ctx.handle_granskningstyp_filter_change);
+    ctx._granskningstypSelectRef = granskningstyp_select;
+    granskningstyp_field.appendChild(granskningstyp_select);
+    return granskningstyp_field;
+}
+
+function render_audit_filter_secondary_row(ctx) {
+    const t = ctx.get_t_func();
+    const panel_open = Boolean(ctx.audit_filter_panel_open);
+    const secondary_row = ctx.Helpers.create_element('div', {
+        class_name: 'audit-filter-secondary-row form-group',
+        attributes: {
+            id: 'audit-filter-secondary-row',
+            role: 'region',
+            'aria-label': t('audit_filter_secondary_region_label')
+        }
+    });
+    if (!panel_open) {
+        secondary_row.hidden = true;
+    }
+
+    const granskningstyp_field = render_granskningstyp_filter_field(ctx, t);
+    if (granskningstyp_field) {
+        secondary_row.appendChild(granskningstyp_field);
+    }
+
+    const type_field = ctx.Helpers.create_element('div', {
+        class_name: ['audit-filter-row__field', 'audit-filter-row__field--type']
+    });
+    const type_label = ctx.Helpers.create_element('label', { attributes: { for: 'audit-type-filter-select' } });
+    type_label.appendChild(
+        ctx.Helpers.create_element('strong', { text_content: t('audit_media_filter_label') })
+    );
+    type_field.appendChild(type_label);
+    const type_select = ctx.Helpers.create_element('select', {
+        id: 'audit-type-filter-select',
+        class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-type-filter-select'],
+        attributes: { name: 'audit-type-filter' }
+    });
+    [
+        { value: '', label: t('audit_type_filter_all') },
+        { value: 'webb', label: t('audit_type_filter_webb') },
+        { value: 'pdf', label: t('audit_type_filter_pdf') }
+    ].forEach((o) => {
+        type_select.appendChild(
+            ctx.Helpers.create_element('option', {
+                attributes: { value: o.value },
+                text_content: o.label
+            })
+        );
+    });
+    type_select.value = ctx.audit_type_filter || '';
+    type_select.addEventListener('change', ctx.handle_type_filter_change);
+    ctx._auditTypeSelectRef = type_select;
+    type_field.appendChild(type_select);
+    secondary_row.appendChild(type_field);
+
+    const group_field = ctx.Helpers.create_element('div', {
+        class_name: ['audit-filter-row__field', 'audit-filter-row__field--list-view', 'audit-list-view-mode-field']
+    });
+    const group_select_id = 'audit-list-view-mode-select';
+    const group_label = ctx.Helpers.create_element('label', { attributes: { for: group_select_id } });
+    group_label.appendChild(
+        ctx.Helpers.create_element('strong', { text_content: t('audit_list_view_mode_label') })
+    );
+    const group_select = ctx.Helpers.create_element('select', {
+        id: group_select_id,
+        class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-list-view-mode-select'],
+        attributes: { name: 'audit-list-view-mode' }
+    });
+    [
+        { value: 'all', label: t('audit_list_view_mode_all') },
+        { value: 'mine', label: t('audit_list_view_mode_mine') },
+        { value: 'case', label: t('audit_list_view_mode_grouped') },
+        { value: 'auditor', label: t('audit_list_view_mode_grouped_auditor') }
+    ].forEach((o) => {
+        group_select.appendChild(
+            ctx.Helpers.create_element('option', {
+                attributes: { value: o.value },
+                text_content: o.label
+            })
+        );
+    });
+    const valid_group_modes = ['all', 'mine', 'case', 'auditor'];
+    group_select.value = valid_group_modes.includes(ctx.audit_list_group_mode)
+        ? ctx.audit_list_group_mode
+        : 'all';
+    group_select.addEventListener('change', ctx.handle_audit_list_group_mode_change);
+    ctx._auditGroupByCaseSelectRef = group_select;
+    group_field.appendChild(group_label);
+    group_field.appendChild(group_select);
+    secondary_row.appendChild(group_field);
+
+    secondary_row.appendChild(render_audit_page_size_field(ctx));
+
+    const reset_field = ctx.Helpers.create_element('div', {
+        class_name: ['audit-filter-row__field', 'audit-filter-row__field--reset']
+    });
+    reset_field.appendChild(create_audit_filter_reset_button(ctx));
+    secondary_row.appendChild(reset_field);
+
+    return secondary_row;
+}
+
 export function render_audit_header(ctx) {
     const t = ctx.get_t_func();
     const header_class_name = ctx.audit_mode === 'audits'
@@ -64,111 +212,16 @@ export function render_audit_header(ctx) {
                 tabindex: '-1'
             }
         });
-        filter_wrapper.appendChild(create_audit_filter_toggle_button(ctx, filter_wrapper));
+        if (ctx.audit_filter_panel_open) {
+            filter_wrapper.classList.add('audit-filter-wrapper--open');
+        }
 
-        const row = ctx.Helpers.create_element('div', {
-            class_name: 'audit-filter-row form-group',
-            attributes: { id: 'audit-filter-row' }
-        });
-
-        const text_field = ctx.Helpers.create_element('div', { class_name: ['audit-filter-row__field', 'audit-filter-row__field--text'] });
-        const filter_label = ctx.Helpers.create_element('label', { attributes: { for: 'audit-filter-input' } });
-        const filter_label_strong = ctx.Helpers.create_element('strong', { text_content: t('audit_filter_label') });
-        filter_label.appendChild(filter_label_strong);
-        const filter_input = ctx.Helpers.create_element('input', {
-            class_name: ['audit-filter-input', 'form-control'],
-            attributes: {
-                id: 'audit-filter-input',
-                type: 'text',
-                name: 'audit-filter',
-                value: ctx.audit_filter_query || ''
-            }
-        });
-        filter_input.addEventListener('input', ctx.handle_filter_input);
-        ctx._auditFilterInputRef = filter_input;
-        text_field.appendChild(filter_label);
-        text_field.appendChild(filter_input);
-
-        const type_field = ctx.Helpers.create_element('div', { class_name: ['audit-filter-row__field', 'audit-filter-row__field--type'] });
-        const type_label = ctx.Helpers.create_element('label', { attributes: { for: 'audit-type-filter-select' } });
-        type_label.appendChild(
-            ctx.Helpers.create_element('strong', { text_content: t('audit_type_filter_label') })
-        );
-        type_field.appendChild(type_label);
-        const type_select = ctx.Helpers.create_element('select', {
-            id: 'audit-type-filter-select',
-            class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-type-filter-select'],
-            attributes: { name: 'audit-type-filter' }
-        });
-        const opts = [
-            { value: '', label: t('audit_type_filter_all') },
-            { value: 'webb', label: t('audit_type_filter_webb') },
-            { value: 'pdf', label: t('audit_type_filter_pdf') }
-        ];
-        opts.forEach((o) => {
-            type_select.appendChild(
-                ctx.Helpers.create_element('option', {
-                    attributes: { value: o.value },
-                    text_content: o.label
-                })
-            );
-        });
-        type_select.value = ctx.audit_type_filter || '';
-        type_select.addEventListener('change', ctx.handle_type_filter_change);
-        ctx._auditTypeSelectRef = type_select;
-        type_field.appendChild(type_select);
-
-        row.appendChild(text_field);
-        row.appendChild(type_field);
-        row.appendChild(render_audit_page_size_field(ctx));
-
-        const group_field = ctx.Helpers.create_element('div', {
-            class_name: ['audit-filter-row__field', 'audit-filter-row__field--list-view', 'audit-list-view-mode-field']
-        });
-        const group_select_id = 'audit-list-view-mode-select';
-        const group_label = ctx.Helpers.create_element('label', { attributes: { for: group_select_id } });
-        group_label.appendChild(
-            ctx.Helpers.create_element('strong', { text_content: t('audit_list_view_mode_label') })
-        );
-        const group_select = ctx.Helpers.create_element('select', {
-            id: group_select_id,
-            class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-list-view-mode-select'],
-            attributes: { name: 'audit-list-view-mode' }
-        });
-        [
-            { value: 'all', label: t('audit_list_view_mode_all') },
-            { value: 'mine', label: t('audit_list_view_mode_mine') },
-            { value: 'case', label: t('audit_list_view_mode_grouped') },
-            { value: 'auditor', label: t('audit_list_view_mode_grouped_auditor') }
-        ].forEach((o) => {
-            group_select.appendChild(
-                ctx.Helpers.create_element('option', {
-                    attributes: { value: o.value },
-                    text_content: o.label
-                })
-            );
-        });
-        const valid_group_modes = ['all', 'mine', 'case', 'auditor'];
-        group_select.value = valid_group_modes.includes(ctx.audit_list_group_mode)
-            ? ctx.audit_list_group_mode
-            : 'all';
-        group_select.addEventListener('change', ctx.handle_audit_list_group_mode_change);
-        ctx._auditGroupByCaseSelectRef = group_select;
-        group_field.appendChild(group_label);
-        group_field.appendChild(group_select);
-        row.appendChild(group_field);
-
-        const reset_field = ctx.Helpers.create_element('div', {
-            class_name: ['audit-filter-row__field', 'audit-filter-row__field--reset']
-        });
-        reset_field.appendChild(create_audit_filter_reset_button(ctx));
-        row.appendChild(reset_field);
-
-        filter_wrapper.appendChild(row);
+        filter_wrapper.appendChild(render_audit_filter_primary_row(ctx, filter_wrapper));
+        filter_wrapper.appendChild(render_audit_filter_secondary_row(ctx));
 
         const live_region = ctx.Helpers.create_element('div', {
             class_name: 'visually-hidden',
-            attributes: { role: 'status' }
+            attributes: { role: 'status', 'aria-live': 'polite' }
         });
         ctx._auditFilterLiveRegionRef = live_region;
         filter_wrapper.appendChild(live_region);

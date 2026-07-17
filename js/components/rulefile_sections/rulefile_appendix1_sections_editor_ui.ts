@@ -10,6 +10,7 @@ import {
     read_rulefile_appendix1_grouping_taxonomy_id,
 } from '../../logic/appendix1_sections.js';
 import { resolve_taxonomies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { resolve_available_audit_types, merge_appendix1_with_audit_type_override } from '../../../shared/audit/audit_type_metadata.js';
 import type { Appendix1SectionDefinition } from '../../logic/appendix1_sections_types.js';
 import { render_deficiency_intro_editor } from './rulefile_appendix1_deficiency_intros_editor_ui.js';
 
@@ -223,13 +224,32 @@ export function render_appendix1_sections_editor(
     get_sections: () => Appendix1SectionDefinition[];
     get_grouping_taxonomy_id: () => string;
     get_concept_intros: () => Record<string, string>;
+    get_editing_audit_type_id: () => string;
 } {
     const { Helpers, Translation } = ctx;
     const t = Translation.t;
     container.innerHTML = '';
     container.classList.add('appendix1-sections-editor-host');
 
-    let grouping_taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(rule_file_content);
+    const audit_types = resolve_available_audit_types(rule_file_content);
+    let editing_audit_type_id =
+        audit_types.length === 1 ? audit_types[0].id : String(audit_types[0]?.id ?? '').trim();
+
+    const resolve_effective_rule_file = (audit_type_id: string): Record<string, unknown> => {
+        if (!audit_type_id) return rule_file_content;
+        const merged_appendix = merge_appendix1_with_audit_type_override(
+            rule_file_content.appendix1,
+            audit_type_id
+        );
+        return {
+            ...rule_file_content,
+            appendix1: merged_appendix ?? rule_file_content.appendix1,
+        };
+    };
+
+    let effective_rule_file = resolve_effective_rule_file(editing_audit_type_id);
+
+    let grouping_taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(effective_rule_file);
     const taxonomies = resolve_taxonomies(rule_file_content.metadata as Record<string, unknown>) as Array<{
         id?: string;
         label?: string;
@@ -239,22 +259,22 @@ export function render_appendix1_sections_editor(
         .filter(Boolean);
 
     const body_text_by_taxonomy = new Map<string, string>(
-        Object.entries(read_rulefile_appendix1_body_text_by_taxonomy(rule_file_content, taxonomy_ids))
+        Object.entries(read_rulefile_appendix1_body_text_by_taxonomy(effective_rule_file, taxonomy_ids))
     );
     const persisted_body_text_by_taxonomy = Object.fromEntries(body_text_by_taxonomy);
 
     let body_text = load_body_text_for_taxonomy(
         body_text_by_taxonomy,
         grouping_taxonomy_id,
-        read_rulefile_appendix1_body_text(rule_file_content, grouping_taxonomy_id)
+        read_rulefile_appendix1_body_text(effective_rule_file, grouping_taxonomy_id)
     );
     persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_text);
 
     let deficiency_sections = generate_deficiency_sections_from_taxonomy(
         {
-            ...rule_file_content,
+            ...effective_rule_file,
             appendix1: {
-                ...(rule_file_content.appendix1 as Record<string, unknown> | undefined),
+                ...(effective_rule_file.appendix1 as Record<string, unknown> | undefined),
                 groupingTaxonomyId: grouping_taxonomy_id,
             },
         },
@@ -303,9 +323,9 @@ export function render_appendix1_sections_editor(
 
     const refresh_deficiency_sections = () => {
         const next_rule_file = {
-            ...rule_file_content,
+            ...effective_rule_file,
             appendix1: {
-                ...(rule_file_content.appendix1 as Record<string, unknown> | undefined),
+                ...(effective_rule_file.appendix1 as Record<string, unknown> | undefined),
                 groupingTaxonomyId: grouping_taxonomy_id,
             },
         };
@@ -317,11 +337,61 @@ export function render_appendix1_sections_editor(
         class_name: 'appendix1-deficiency-sections-panel',
     });
     intro_editor_handles = render_deficiency_intro_editor(ctx, deficiency_panel, {
-        rule_file_content,
+        rule_file_content: effective_rule_file,
         grouping_taxonomy_id,
         deficiency_sections,
         on_change: options.on_change,
     });
+
+    if (audit_types.length > 1) {
+        const audit_type_field = Helpers.create_element('div', {
+            class_name: 'form-group appendix1-audit-type-template-field',
+        });
+        const audit_type_select_id = `appendix1-audit-type-${Math.random().toString(36).slice(2, 8)}`;
+        audit_type_field.appendChild(
+            create_form_field_label(
+                Helpers,
+                audit_type_select_id,
+                t('rulefile_appendix1_audit_type_template_label')
+            )
+        );
+        const audit_type_select = Helpers.create_element('select', {
+            class_name: ['form-control', 'dropdown-select', 'appendix1-audit-type-select'],
+            attributes: { id: audit_type_select_id, name: 'appendix1AuditTypeTemplate' },
+        }) as HTMLSelectElement;
+        audit_types.forEach((row) => {
+            audit_type_select.appendChild(
+                Helpers.create_element('option', {
+                    attributes: { value: row.id },
+                    text_content: row.label,
+                })
+            );
+        });
+        audit_type_select.value = editing_audit_type_id;
+        audit_type_select.addEventListener('change', () => {
+            persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_input.value);
+            editing_audit_type_id = audit_type_select.value.trim();
+            effective_rule_file = resolve_effective_rule_file(editing_audit_type_id);
+            grouping_taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(effective_rule_file);
+            select.value = grouping_taxonomy_id;
+            body_text_by_taxonomy.clear();
+            Object.entries(
+                read_rulefile_appendix1_body_text_by_taxonomy(effective_rule_file, taxonomy_ids)
+            ).forEach(([key, value]) => body_text_by_taxonomy.set(key, value));
+            body_text = load_body_text_for_taxonomy(
+                body_text_by_taxonomy,
+                grouping_taxonomy_id,
+                read_rulefile_appendix1_body_text(effective_rule_file, grouping_taxonomy_id)
+            );
+            persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_text);
+            body_input.value = body_text;
+            Helpers.init_auto_resize_for_textarea?.(body_input);
+            refresh_deficiency_sections();
+            options.on_change?.();
+        });
+        audit_type_field.appendChild(audit_type_select);
+        container.insertBefore(audit_type_field, taxonomy_field);
+    }
 
     select.addEventListener('change', () => {
         persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_input.value);
@@ -329,7 +399,7 @@ export function render_appendix1_sections_editor(
         body_text = load_body_text_for_taxonomy(
             body_text_by_taxonomy,
             grouping_taxonomy_id,
-            read_rulefile_appendix1_body_text(rule_file_content, grouping_taxonomy_id)
+            read_rulefile_appendix1_body_text(effective_rule_file, grouping_taxonomy_id)
         );
         persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_text);
         body_input.value = body_text;
@@ -369,5 +439,6 @@ export function render_appendix1_sections_editor(
         get_sections: () => deficiency_sections.map((section) => ({ ...section })),
         get_grouping_taxonomy_id: () => grouping_taxonomy_id,
         get_concept_intros: () => intro_editor_handles?.get_concept_intros() ?? {},
+        get_editing_audit_type_id: () => editing_audit_type_id,
     };
 }

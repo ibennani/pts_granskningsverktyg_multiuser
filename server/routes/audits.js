@@ -203,6 +203,8 @@ router.get('/', async (req, res) => {
             const lastTs = maxTime || metadata.endTime || (row.status === 'locked' ? row.updated_at : null);
             const endForCalc = lastTs || new Date().toISOString();
             out.business_days = firstTs ? count_business_days(firstTs, endForCalc) : null;
+            out.granskningstyp_id = typeof metadata.auditTypeId === 'string' ? metadata.auditTypeId.trim() : '';
+            out.granskningstyp_label = typeof metadata.auditTypeLabel === 'string' ? metadata.auditTypeLabel.trim() : '';
             if (row.rule_content && row.samples) {
                 try {
                     let rule_content = row.rule_content;

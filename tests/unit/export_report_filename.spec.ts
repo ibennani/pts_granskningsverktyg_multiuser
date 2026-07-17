@@ -42,4 +42,17 @@ describe('export_report_filename bilagor', () => {
             '25-20478_NetOnNet_AB_alla_bilagor.zip'
         );
     });
+
+    test('bilaga 1 PDF inkluderar granskningstyp i filnamn', () => {
+        const audit_with_type = {
+            auditMetadata: {
+                caseNumber: '25-20478',
+                actorName: 'NetOnNet AB',
+                auditTypeLabel: 'Tillsyn LPTT',
+            },
+        };
+        expect(build_appendix1_summary_pdf_filename(audit_with_type, t)).toBe(
+            '25-20478_NetOnNet_AB_Tillsyn_LPTT_bilaga_1_sammanfattning.pdf'
+        );
+    });
 });

@@ -14,6 +14,10 @@ import {
     metadata_form_parse_end_date,
     metadata_form_set_end_date_error_visible
 } from './metadata_form_end_date.js';
+import {
+    metadata_form_apply_audit_type_to_form_data,
+    metadata_form_create_audit_type_field
+} from '../logic/metadata_audit_type_field.js';
 
 export const MetadataFormComponent = {
     init({ root, deps, options = {} }) {
@@ -51,6 +55,8 @@ export const MetadataFormComponent = {
         this.show_end_date_field = false;
         this.effective_start_iso = null;
         this.form_element_ref = null;
+        this.audit_type_field_handles = null;
+        this.rule_file_content_ref = null;
 
         // Load CSS if possible
         const CSS_PATH = './metadata_form_component.css';
@@ -192,6 +198,13 @@ export const MetadataFormComponent = {
             }
         }
 
+        if (this.audit_type_field_handles) {
+            const type_id = this.audit_type_field_handles.get_selected_audit_type_id();
+            if (type_id && this.rule_file_content_ref) {
+                metadata_form_apply_audit_type_to_form_data(form_data, this.rule_file_content_ref, type_id);
+            }
+        }
+
         return form_data;
     },
 
@@ -221,6 +234,17 @@ export const MetadataFormComponent = {
 
         const trim_text_fn = this.AutosaveService?.trim_text_preserve_lines;
         const form_data = this._get_form_data(true, trim_text_fn);
+
+        if (this.audit_type_field_handles && !this.audit_type_field_handles.validate_selection()) {
+            if (this.audit_type_field_handles.select_element) {
+                this.audit_type_field_handles.select_element.focus();
+            }
+            this.NotificationComponent?.show_global_message(
+                this.Translation.t('metadata_audit_type_required'),
+                'error'
+            );
+            return;
+        }
 
         if (this.show_start_date_field && this.start_time_input) {
             const raw = (this.start_time_input.value || '').trim();
@@ -331,8 +355,13 @@ export const MetadataFormComponent = {
             showStartDate = false,
             showEndDate = false,
             effectiveStartIso = null,
-            hide_form_actions = false
+            hide_form_actions = false,
+            ruleFileContent = null,
+            auditStatus = 'not_started'
         } = options;
+
+        this.rule_file_content_ref = ruleFileContent;
+        this.audit_type_field_handles = null;
 
         this.show_start_date_field = showStartDate === true;
         this.show_end_date_field = showEndDate === true;
@@ -352,6 +381,21 @@ export const MetadataFormComponent = {
         const case_field = this.create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
         this.case_number_input = case_field.input_element;
         this.form_element_ref.appendChild(case_field.form_group);
+
+        const audit_type_field = metadata_form_create_audit_type_field(
+            this.Helpers,
+            this.Translation,
+            ruleFileContent,
+            auditStatus,
+            initialData.auditTypeId || ''
+        );
+        if (audit_type_field) {
+            this.audit_type_field_handles = audit_type_field;
+            this.form_element_ref.appendChild(audit_type_field.form_group);
+            if (audit_type_field.select_element) {
+                audit_type_field.select_element.addEventListener('change', this.handle_autosave_input);
+            }
+        }
 
         const actor_field = this.create_form_field('actorName', 'actor_name', 'text', initialData.actorName);
         this.actor_name_input = actor_field.input_element;

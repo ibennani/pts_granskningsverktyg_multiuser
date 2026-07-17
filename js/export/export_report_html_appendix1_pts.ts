@@ -6,7 +6,7 @@ import {
     build_appendix1_placeholder_context,
     build_appendix1_toc_entries,
     get_appendix1_section_dom_id,
-    read_rulefile_appendix1_grouping_taxonomy_id,
+    resolve_audit_grouping_taxonomy_id,
     resolve_appendix1_sections_list,
     strip_leading_duplicate_appendix1_heading,
     type Appendix1SectionDefinition,
@@ -186,8 +186,7 @@ function build_body_sections_html(
 ): string {
     const sections = resolve_appendix1_sections_list(audit);
     const context = build_appendix1_placeholder_context(audit);
-    const rule_file = audit.ruleFileContent as Record<string, unknown> | undefined;
-    const taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(rule_file);
+    const taxonomy_id = resolve_audit_grouping_taxonomy_id(audit);
     const deficiency_groups = collect_deficiency_types_grouped_by_taxonomy(audit, taxonomy_id, t);
     const deficiency_by_concept = new Map(
         deficiency_groups.map((group) => [group.concept_id, group.types])

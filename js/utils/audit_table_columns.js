@@ -60,9 +60,24 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             }
         },
         {
-            headerLabel: t('start_view_col_type'),
+            headerLabel: t('start_view_col_media_type'),
             getSortValue: (row) => (row.audit_type ?? '').toString().trim(),
             getContent: (row) => (row.audit_type ?? '').toString().trim() || EMPTY_PLACEHOLDER
+        },
+        {
+            headerLabel: t('start_view_col_granskningstyp'),
+            getSortValue: (row) => {
+                const label = (row.granskningstyp_label || row.metadata?.auditTypeLabel || '').toString().trim();
+                const id = (row.granskningstyp_id || row.metadata?.auditTypeId || '').toString().trim();
+                if (!label && !id) return t('audit_granskningstyp_missing_label');
+                return label;
+            },
+            getContent: (row) => {
+                const label = (row.granskningstyp_label || row.metadata?.auditTypeLabel || '').toString().trim();
+                const id = (row.granskningstyp_id || row.metadata?.auditTypeId || '').toString().trim();
+                if (!label && !id) return t('audit_granskningstyp_missing_label');
+                return label || EMPTY_PLACEHOLDER;
+            }
         },
         {
             headerLabel: t('start_view_col_status'),

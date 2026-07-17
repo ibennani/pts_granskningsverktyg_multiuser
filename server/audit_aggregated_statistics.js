@@ -16,6 +16,7 @@ export const WCAG_PRINCIPLE_IDS = [...WCAG_PRINCIPLE_FALLBACK_ORDER];
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 /** Klienten ersätter med översatt etikett. */
 export const MONITORING_LABEL_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
+const AUDIT_TYPE_FALLBACK_SENTINEL = '__GV_STATS_AUDIT_TYPE_FALLBACK__';
 
 /** @param {number[]} values */
 function median_sorted(values) {
@@ -180,6 +181,19 @@ export function get_monitoring_type_label(rule_content) {
     if (text) return text;
     if (typ) return typ;
     return MONITORING_LABEL_FALLBACK_SENTINEL;
+}
+
+/**
+ * @param {object} row
+ * @returns {string}
+ */
+export function get_audit_type_label(row) {
+    const meta = row?.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+    const label = typeof meta.auditTypeLabel === 'string' ? meta.auditTypeLabel.trim() : '';
+    if (label) return label;
+    const id = typeof meta.auditTypeId === 'string' ? meta.auditTypeId.trim() : '';
+    if (id) return id;
+    return AUDIT_TYPE_FALLBACK_SENTINEL;
 }
 
 /**
@@ -493,6 +507,14 @@ function stats_payload_for_year(year, bucket, all_rows) {
               }
             : null;
     const monitoring_sampletype_chart = monitoring_sampletype_chart_payload(bucket.by_monitoring_sampletype_scores);
+    const audit_type_counts = bucket.by_audit_type
+        ? [...bucket.by_audit_type.entries()]
+            .map(([label, entry]) => ({
+                audit_type_label: label,
+                audit_count: entry?.audit_count || 0,
+            }))
+            .sort((a, b) => String(a.audit_type_label).localeCompare(String(b.audit_type_label), 'sv'))
+        : [];
     const monitoring_type_labels_ordered = [...bucket.by_monitoring.keys()].sort((a, b) =>
         a.localeCompare(b, 'sv')
     );
@@ -513,7 +535,8 @@ function stats_payload_for_year(year, bucket, all_rows) {
         worst_sample_type,
         monitoring_sampletype_chart,
         per_monitoring_type,
-        monitoring_type_labels_ordered
+        monitoring_type_labels_ordered,
+        audit_type_counts
     };
 }
 
@@ -556,7 +579,8 @@ export function build_statistics_from_audit_rows(rows) {
                 by_sample_type_scores: new Map(),
                 sample_type_labels: new Map(),
                 by_monitoring_sampletype_scores: new Map(),
-                monitoring_detail: new Map()
+                monitoring_detail: new Map(),
+                by_audit_type: new Map()
             });
         }
         const yb = by_year.get(year);
@@ -564,6 +588,7 @@ export function build_statistics_from_audit_rows(rows) {
         const rule = parse_rule_file_content(row);
         const samples = Array.isArray(row.samples) ? row.samples : [];
         const monitoring_label = get_monitoring_type_label(rule);
+        const audit_type_label = get_audit_type_label(row);
         const msub = ensure_monitoring_year_detail(yb, monitoring_label);
 
         const dur = duration_weeks_for_audit(row);
@@ -613,6 +638,11 @@ export function build_statistics_from_audit_rows(rows) {
         }
         const mon = ensure_monitoring_bucket(yb.by_monitoring, monitoring_label);
         mon.audit_count += 1;
+
+        if (!yb.by_audit_type.has(audit_type_label)) {
+            yb.by_audit_type.set(audit_type_label, { audit_count: 0 });
+        }
+        yb.by_audit_type.get(audit_type_label).audit_count += 1;
 
         if (rule && samples.length) {
             const failed_keys = failed_requirement_keys_in_audit(rule, samples);

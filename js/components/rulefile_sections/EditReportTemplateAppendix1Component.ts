@@ -30,6 +30,7 @@ type EditorHandles = {
     get_sections: () => Array<Record<string, unknown>>;
     get_grouping_taxonomy_id: () => string;
     get_concept_intros: () => Record<string, string>;
+    get_editing_audit_type_id: () => string;
 };
 
 export class EditReportTemplateAppendix1Component {
@@ -59,11 +60,24 @@ export class EditReportTemplateAppendix1Component {
         const appendix = (normalized.appendix1 as Record<string, unknown>) || {};
         const grouping_taxonomy_id = editor_handles.get_grouping_taxonomy_id();
         const body_text_by_taxonomy = editor_handles.get_body_text_by_taxonomy();
+        const editing_audit_type_id = editor_handles.get_editing_audit_type_id?.() ?? '';
         appendix.bodyTextByTaxonomy = body_text_by_taxonomy;
         const body_text =
             body_text_by_taxonomy[grouping_taxonomy_id]?.trim()
             ?? editor_handles.get_body_text().trim();
-        appendix.bodyText = body_text;
+        if (editing_audit_type_id) {
+            const by_audit_type =
+                appendix.byAuditType && typeof appendix.byAuditType === 'object'
+                    ? { ...(appendix.byAuditType as Record<string, unknown>) }
+                    : {};
+            by_audit_type[editing_audit_type_id] = {
+                bodyTextByTaxonomy: body_text_by_taxonomy,
+                bodyText: body_text,
+            };
+            appendix.byAuditType = by_audit_type;
+        } else {
+            appendix.bodyText = body_text;
+        }
         appendix.sections = build_rulefile_appendix1_persisted_sections(
             body_text,
             editor_handles.get_sections() as Appendix1SectionDefinition[]

@@ -5,6 +5,7 @@
 import {
     build_audit_list_section_configs,
     filter_audits_by_current_user,
+    filter_audits_by_granskningstyp,
     filter_audits_by_type,
     sort_audits_by_case_number
 } from '../../js/logic/audit_list_section_filter.ts';
@@ -53,6 +54,22 @@ describe('build_audit_list_section_configs', () => {
     });
 
     it('filtrerar rubrik och tabell på granskningstyp', () => {
+        const ctx = {
+            audit_filter_query: '',
+            granskningstyp_filter: 'tillsyn-lptt',
+            audits: [
+                make_audit(1, 'in_progress', { auditTypeId: 'tillsyn-lptt', auditTypeLabel: 'Tillsyn' }),
+                make_audit(2, 'in_progress', { auditTypeId: 'marknadskontroll-lptt', auditTypeLabel: 'MK' }),
+                make_audit(3, 'not_started', { auditTypeId: 'tillsyn-lptt', auditTypeLabel: 'Tillsyn' })
+            ]
+        };
+        const result = build_audit_list_section_configs(ctx);
+        expect(result.has_active_filter).toBe(true);
+        expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1]);
+        expect(result.section_configs[1].audits.map((a) => a.id)).toEqual([3]);
+    });
+
+    it('filtrerar rubrik och tabell på media-typ webb/pdf', () => {
         const ctx = {
             audit_filter_query: '',
             audit_type_filter: 'webb',
@@ -104,6 +121,21 @@ describe('filter_audits_by_current_user', () => {
         sessionStorage.removeItem('gv_current_user_name');
         const list = [make_audit(1, 'in_progress', { auditorName: 'Anna' })];
         expect(filter_audits_by_current_user(list)).toEqual([]);
+    });
+});
+
+describe('filter_audits_by_granskningstyp', () => {
+    it('returnerar ofiltrerad lista när filter saknas', () => {
+        const list = [make_audit(1, 'in_progress', { auditTypeId: 'tillsyn-lptt' })];
+        expect(filter_audits_by_granskningstyp(list, '')).toEqual(list);
+    });
+
+    it('filtrerar på auditTypeId i metadata', () => {
+        const list = [
+            make_audit(1, 'in_progress', { auditTypeId: 'tillsyn-lptt' }),
+            make_audit(2, 'in_progress', { auditTypeId: 'marknadskontroll-lptt' })
+        ];
+        expect(filter_audits_by_granskningstyp(list, 'tillsyn-lptt').map((a) => a.id)).toEqual([1]);
     });
 });
 
