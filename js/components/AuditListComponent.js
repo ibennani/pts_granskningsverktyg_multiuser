@@ -5,7 +5,7 @@ import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import './generic_table_component.css';
 
-export class AuditListComponent {
+export class AuditListComponent {
     constructor() {
         this.root = null;
         this.deps = null;
@@ -40,6 +40,7 @@ export class AuditListComponent {
      * @param {function(string|number)} [opts.onDeleteAudit] - Callback när en granskning raderas.
      * @param {function(string): string} [opts.get_status_label] - Funktion för att mappa status till text.
      * @param {{ current_page?: number, page_size: number|null, on_page_change: function(number): void }} [opts.pagination] - Valfri sidindelning.
+     * @param {string} [opts.sortControlsIdPrefix] - Unikt id-prefix för sorteringsraden.
      */
     render(opts) {
         const root_el = opts.root ?? this.root;
@@ -77,12 +78,14 @@ export class AuditListComponent {
             data: opts.audits || [],
             emptyMessage: opts.emptyMessage,
             ariaLabel: opts.ariaLabel,
-            wrapperClassName: 'generic-table-wrapper',
+            wrapperClassName: 'generic-table-wrapper generic-table-wrapper--audit-list',
             tableClassName: 'generic-table generic-table--audit-list',
             sortState: opts.sortState,
             onSort: opts.onSort,
             t,
-            pagination: opts.pagination
+            pagination: opts.pagination,
+            enableResponsiveSortControls: true,
+            sortControlsIdPrefix: opts.sortControlsIdPrefix || 'audit-list-sort'
         });
     }
 

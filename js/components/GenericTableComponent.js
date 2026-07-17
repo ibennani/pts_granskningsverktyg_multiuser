@@ -3,7 +3,16 @@
 
 import { slice_rows_for_page } from '../logic/table_pagination_logic.js';
 import { create_table_pagination_element } from './table_pagination_bar.js';
+import { create_table_sort_controls } from './table_sort_controls.js';
 import './generic_table_component.css';
+
+function get_column_class_names(col) {
+    const classes = [];
+    if (col?.columnKey) {
+        classes.push(`generic-table-col--${col.columnKey}`);
+    }
+    return classes;
+}
 
 export class GenericTableComponent {
     async init({ root, deps }) {
@@ -27,6 +36,8 @@ export class GenericTableComponent {
      * @param {function(string): string} [opts.t] - Översättningsfunktion för sorteringsknappar (aria-label).
      * @param {function(any): string|number} [opts.getRowId] - Returnerar rad-id för data-row-id (för updateRow). Default: row => row?.id.
      * @param {{ current_page?: number, page_size: number|null, on_page_change: function(number): void }} [opts.pagination] - Sidindelning efter sortering; page_size null = alla rader.
+     * @param {boolean} [opts.enableResponsiveSortControls] - Visar sorteringsrad ovanför tabellen (döljs på bred skärm via CSS).
+     * @param {string} [opts.sortControlsIdPrefix] - Unikt id-prefix för sorteringsradens fält.
      */
     render(opts) {
         const root_el = opts.root ?? this.root;
@@ -98,6 +109,7 @@ export class GenericTableComponent {
                 th_attrs['aria-sort'] = is_active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
             }
             const th = this.Helpers.create_element('th', {
+                class_name: get_column_class_names(col),
                 attributes: th_attrs
             });
 
@@ -157,7 +169,9 @@ export class GenericTableComponent {
                 }
                 columns.forEach((col) => {
                     const content = col.getContent(row);
-                    const td = this.Helpers.create_element('td');
+                    const td = this.Helpers.create_element('td', {
+                        class_name: get_column_class_names(col)
+                    });
                     const is_action = col && col.isAction === true;
                     if (is_action) {
                         td.classList.add('generic-table-col-actions');
@@ -190,6 +204,23 @@ export class GenericTableComponent {
         wrapper.appendChild(table);
 
         const stack = this.Helpers.create_element('div', { class_name: 'generic-table-stack' });
+        if (opts.enableResponsiveSortControls === true && typeof onSort === 'function') {
+            const sort_controls = create_table_sort_controls({
+                columns,
+                sortState,
+                onSort: (column_index, direction) => {
+                    this._pendingSortFocusIndex = column_index;
+                    this._pendingSortFocusFromControls = true;
+                    onSort(column_index, direction);
+                },
+                t,
+                create_element: this.Helpers.create_element.bind(this.Helpers),
+                id_prefix: opts.sortControlsIdPrefix || 'table-sort'
+            });
+            if (sort_controls) {
+                stack.appendChild(sort_controls);
+            }
+        }
         stack.appendChild(wrapper);
         if (pag && typeof pag.on_page_change === 'function' && page_size !== null && page_size > 0) {
             const pag_el = create_table_pagination_element(this.Helpers.create_element, {
@@ -245,7 +276,10 @@ export class GenericTableComponent {
                     live_region.textContent = '';
                 }, clear_after_ms);
                 const header_buttons = wrapper.querySelectorAll('thead .generic-table-header-sort-btn');
-                const target = header_buttons[focus_index];
+                const target = this._pendingSortFocusFromControls
+                    ? stack.querySelector('.audit-table-sort-controls__select')
+                    : header_buttons[focus_index];
+                this._pendingSortFocusFromControls = undefined;
                 apply_restore_focus(target);
             }
         } else if (focus_restore) {

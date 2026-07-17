@@ -151,6 +151,130 @@
 .generic-table--audit-list th:nth-child(6),
 .generic-table--audit-list td:nth-child(6) { min-width: 6rem; }
 
+/* Responsiv granskningslista utan horisontell scroll (Hantera granskningar) */
+.generic-table-stack:has(> .generic-table-wrapper--audit-list) {
+    container-type: inline-size;
+    container-name: audit-table;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.generic-table-wrapper.generic-table-wrapper--audit-list {
+    overflow-x: visible;
+    max-width: 100%;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list th:nth-child(n),
+.generic-table-wrapper--audit-list .generic-table--audit-list td:nth-child(n) {
+    min-width: 0;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list thead th {
+    vertical-align: bottom;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-header-sort-btn {
+    display: block;
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-align: left;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-header-sort-btn::after {
+    vertical-align: baseline;
+    margin-left: 0.15rem;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-col--actor,
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-col--granskningstyp,
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-col--auditor,
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-col--last_updated,
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-col--case_number {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.generic-table-wrapper--audit-list .generic-table--audit-list .generic-table-col--actor {
+    font-weight: 500;
+}
+
+.audit-table-sort-controls {
+    display: none;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+    width: 100%;
+    margin: 0;
+}
+
+.audit-table-sort-controls__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1 1 12rem;
+    min-width: min(100%, 12rem);
+}
+
+.audit-table-sort-controls__select {
+    width: 100%;
+    min-width: 0;
+}
+
+.generic-table-wrapper--audit-list .generic-table-col--case_number,
+.generic-table-wrapper--audit-list .generic-table-col--progress,
+.generic-table-wrapper--audit-list .generic-table-col--last_updated,
+.generic-table-wrapper--audit-list .generic-table-col--deficiency,
+.generic-table-wrapper--audit-list .generic-table-col--media_type,
+.generic-table-wrapper--audit-list .generic-table-col--granskningstyp,
+.generic-table-wrapper--audit-list .generic-table-col--auditor {
+    display: none;
+}
+
+@container audit-table (min-width: 36rem) {
+    .generic-table-wrapper--audit-list .generic-table-col--case_number,
+    .generic-table-wrapper--audit-list .generic-table-col--progress {
+        display: table-cell;
+    }
+}
+
+@container audit-table (min-width: 48rem) {
+    .generic-table-wrapper--audit-list .generic-table-col--last_updated,
+    .generic-table-wrapper--audit-list .generic-table-col--deficiency {
+        display: table-cell;
+    }
+}
+
+@container audit-table (min-width: 64rem) {
+    .generic-table-wrapper--audit-list .generic-table-col--media_type,
+    .generic-table-wrapper--audit-list .generic-table-col--granskningstyp,
+    .generic-table-wrapper--audit-list .generic-table-col--auditor {
+        display: table-cell;
+    }
+
+    .audit-table-sort-controls {
+        display: none !important;
+    }
+}
+
+@container audit-table (max-width: 63.99rem) {
+    .audit-table-sort-controls {
+        display: flex;
+    }
+}
+
 .generic-table--audit-list td:nth-child(2) {
     font-weight: 500;
 }

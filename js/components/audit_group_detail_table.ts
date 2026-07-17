@@ -10,6 +10,7 @@ import {
 
 export type DetailColumnDef = {
     headerLabel: string;
+    columnKey?: string;
     getContent: (row: AuditRowForGrouping) => string | HTMLElement;
     isAction?: boolean;
 };
@@ -18,6 +19,14 @@ type DetailTableContext = {
     Helpers: { create_element: (...args: unknown[]) => HTMLElement };
 };
 
+function get_detail_column_class(col: DetailColumnDef): string[] {
+    const classes: string[] = [];
+    if (col.columnKey) {
+        classes.push(`generic-table-col--${col.columnKey}`);
+    }
+    return classes;
+}
+
 function append_detail_cell(
     Helpers: DetailTableContext['Helpers'],
     tr: HTMLElement,
@@ -25,7 +34,7 @@ function append_detail_cell(
     row: AuditRowForGrouping
 ): void {
     const content = col.getContent(row);
-    const td = Helpers.create_element('td', {});
+    const td = Helpers.create_element('td', { class_name: get_detail_column_class(col) });
     if (col.isAction) td.classList.add('generic-table-col-actions');
     if (typeof content === 'string') {
         td.textContent = content;
@@ -63,6 +72,7 @@ export function build_group_detail_table(
     for (const col of detail_columns) {
         const th = Helpers.create_element('th', {
             attributes: { scope: 'col' },
+            class_name: get_detail_column_class(col),
             text_content: col.headerLabel
         });
         header_row.appendChild(th);
