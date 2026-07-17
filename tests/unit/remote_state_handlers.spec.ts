@@ -37,6 +37,7 @@ describe('reduce_initialize_new_audit', () => {
             caseHandler: '',
             internalComment: '',
             appendix1SectionOverrides: {},
+            appendix1PrincipleIntroOverrides: {},
         });
         expect(typeof next.auditMetadata.appendix1SummaryText).toBe('string');
         expect(next.auditMetadata.appendix1SummaryText.length).toBeGreaterThan(0);
@@ -53,6 +54,7 @@ describe('reduce_initialize_new_audit', () => {
         });
         expect(next.auditMetadata.appendix1SummaryText).toBe('Regelfilens inledning {{actorName}}');
         expect(next.auditMetadata.appendix1SectionOverrides).toEqual({});
+        expect(next.auditMetadata.appendix1PrincipleIntroOverrides).toEqual({});
     });
 });
 

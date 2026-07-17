@@ -66,8 +66,8 @@ body.view-login .app-main-view-root {
 
 .login-plate select {
     display: block;
-    width: 100%;
-    min-width: 12rem;
+    width: fit-content;
+    max-width: 100%;
     margin-bottom: 1rem;
 }
 

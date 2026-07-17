@@ -1,7 +1,13 @@
 /**
  * @fileoverview Bilaga 1 brödtext: kombinera, tolka och ersätta inledning i markdown.
  */
+import { DEFAULT_WCAG_TAXONOMY_ID } from '../../shared/classification/taxonomy_grouping.js';
 import type { Appendix1SectionDefinition } from './appendix1_sections_types.js';
+
+/** Endast WCAG-taxonomin får ärvd standardtext från legacy bodyText vid saknad per-taxonomi-post. */
+export function taxonomy_uses_legacy_appendix1_body_text_fallback(taxonomy_id: string): boolean {
+    return String(taxonomy_id ?? '').trim() === DEFAULT_WCAG_TAXONOMY_ID;
+}
 
 /** Legacy innehållssektioner i exportordning. */
 export const APPENDIX1_CONTENT_SECTION_IDS = [
@@ -220,17 +226,36 @@ export function read_appendix1_body_text_from_appendix1(
     legacy_sections: Appendix1SectionDefinition[],
     taxonomy_id?: string
 ): string {
+    const resolved_taxonomy_id =
+        appendix1 && typeof appendix1 === 'object'
+            ? String(
+                taxonomy_id ?? (appendix1 as Record<string, unknown>).groupingTaxonomyId ?? ''
+            ).trim()
+            : String(taxonomy_id ?? '').trim();
+
     if (appendix1 && typeof appendix1 === 'object') {
         const appendix_obj = appendix1 as Record<string, unknown>;
         const by_taxonomy = read_body_text_by_taxonomy_map(appendix_obj.bodyTextByTaxonomy);
-        const resolved_taxonomy_id = String(taxonomy_id ?? appendix_obj.groupingTaxonomyId ?? '').trim();
         if (resolved_taxonomy_id && by_taxonomy[resolved_taxonomy_id]) {
             return by_taxonomy[resolved_taxonomy_id];
+        }
+        if (
+            resolved_taxonomy_id
+            && !taxonomy_uses_legacy_appendix1_body_text_fallback(resolved_taxonomy_id)
+        ) {
+            return '';
         }
         const raw = appendix_obj.bodyText;
         if (typeof raw === 'string' && raw.trim()) {
             return raw.trim();
         }
+    }
+
+    if (
+        resolved_taxonomy_id
+        && !taxonomy_uses_legacy_appendix1_body_text_fallback(resolved_taxonomy_id)
+    ) {
+        return '';
     }
 
     const content_sections = legacy_sections.filter((section) => section.kind !== 'deficiency_group');
@@ -263,7 +288,9 @@ export function read_appendix1_body_text_by_taxonomy_from_appendix1(
     for (const taxonomy_id of taxonomy_ids) {
         const id = String(taxonomy_id).trim();
         if (!id || result[id]) continue;
-        result[id] = fallback;
+        if (taxonomy_uses_legacy_appendix1_body_text_fallback(id)) {
+            result[id] = fallback;
+        }
     }
     return result;
 }

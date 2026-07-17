@@ -1,8 +1,11 @@
 import {
     combine_content_sections_to_body_text,
     parse_body_text_to_content_sections,
+    read_appendix1_body_text_by_taxonomy_from_appendix1,
+    read_appendix1_body_text_from_appendix1,
     replace_introduction_in_body_text,
     sanitize_appendix1_body_text,
+    taxonomy_uses_legacy_appendix1_body_text_fallback,
 } from '../../js/logic/appendix1_body_text.ts';
 import { get_default_appendix1_sections_list } from '../../js/logic/appendix1_sections.ts';
 
@@ -61,5 +64,37 @@ describe('appendix1_body_text', () => {
         const cleaned = sanitize_appendix1_body_text(dirty, defaults);
         expect(cleaned).toBe('# 1. Inledning\n\nBrödtext.');
         expect(cleaned.match(/# 1\. Inledning/g)).toHaveLength(1);
+    });
+
+    test('read_appendix1_body_text_from_appendix1 returnerar tom sträng för icke-WCAG utan sparad post', () => {
+        const body_text = read_appendix1_body_text_from_appendix1(
+            {
+                groupingTaxonomyId: 'wcag22-pour',
+                bodyText: '# 1. Inledning\n\nWCAG-text.',
+            },
+            'Standard',
+            [],
+            'fptt-bilaga-2'
+        );
+        expect(body_text).toBe('');
+    });
+
+    test('read_appendix1_body_text_by_taxonomy_from_appendix1 fyller bara WCAG med fallback', () => {
+        const by_taxonomy = read_appendix1_body_text_by_taxonomy_from_appendix1(
+            {
+                groupingTaxonomyId: 'wcag22-pour',
+                bodyText: '# 1. Inledning\n\nWCAG-text.',
+            },
+            'Standard',
+            [],
+            ['wcag22-pour', 'fptt-bilaga-2']
+        );
+        expect(by_taxonomy['wcag22-pour']).toContain('WCAG-text.');
+        expect(by_taxonomy['fptt-bilaga-2']).toBeUndefined();
+    });
+
+    test('taxonomy_uses_legacy_appendix1_body_text_fallback gäller endast wcag22-pour', () => {
+        expect(taxonomy_uses_legacy_appendix1_body_text_fallback('wcag22-pour')).toBe(true);
+        expect(taxonomy_uses_legacy_appendix1_body_text_fallback('fptt-bilaga-2')).toBe(false);
     });
 });

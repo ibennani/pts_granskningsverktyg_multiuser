@@ -13,7 +13,7 @@ function render_audit_page_size_field(ctx) {
     field.appendChild(label);
     const sel = ctx.Helpers.create_element('select', {
         id: 'audit-table-page-size-select',
-        class_name: ['form-control', 'audit-filter-select', 'audit-page-size-select']
+        class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-page-size-select']
     });
     [
         { value: '5', label: t('audit_table_page_size_5') },
@@ -97,7 +97,7 @@ export function render_audit_header(ctx) {
         type_field.appendChild(type_label);
         const type_select = ctx.Helpers.create_element('select', {
             id: 'audit-type-filter-select',
-            class_name: ['form-control', 'audit-filter-select', 'audit-type-filter-select'],
+            class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-type-filter-select'],
             attributes: { name: 'audit-type-filter' }
         });
         const opts = [
@@ -132,7 +132,7 @@ export function render_audit_header(ctx) {
         );
         const group_select = ctx.Helpers.create_element('select', {
             id: group_select_id,
-            class_name: ['form-control', 'audit-filter-select', 'audit-list-view-mode-select'],
+            class_name: ['form-control', 'dropdown-select', 'audit-filter-select', 'audit-list-view-mode-select'],
             attributes: { name: 'audit-list-view-mode' }
         });
         [

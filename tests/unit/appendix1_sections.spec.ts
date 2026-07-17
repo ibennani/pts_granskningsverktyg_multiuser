@@ -336,7 +336,7 @@ describe('appendix1_sections', () => {
         expect(appendix1.bodyText.match(/# 1\. Inledning/g)).toHaveLength(1);
     });
 
-    test('read_rulefile_appendix1_body_text_by_taxonomy fyller saknade taxonomier med fallback', () => {
+    test('read_rulefile_appendix1_body_text_by_taxonomy fyller endast WCAG med fallback', () => {
         const by_taxonomy = read_rulefile_appendix1_body_text_by_taxonomy(
             {
                 appendix1: {
@@ -344,9 +344,23 @@ describe('appendix1_sections', () => {
                     bodyText: '# 1. Inledning\n\nGemensam text.',
                 },
             },
-            ['wcag22-pour', 'other-taxonomy']
+            ['wcag22-pour', 'other-taxonomy', 'fptt-bilaga-2']
         );
         expect(by_taxonomy['wcag22-pour']).toContain('Gemensam text.');
-        expect(by_taxonomy['other-taxonomy']).toContain('Gemensam text.');
+        expect(by_taxonomy['other-taxonomy']).toBeUndefined();
+        expect(by_taxonomy['fptt-bilaga-2']).toBeUndefined();
+    });
+
+    test('read_rulefile_appendix1_body_text returnerar tom sträng för FPTT utan sparad text', () => {
+        const body_text = read_rulefile_appendix1_body_text(
+            {
+                appendix1: {
+                    groupingTaxonomyId: 'wcag22-pour',
+                    bodyText: get_default_appendix1_body_text(),
+                },
+            },
+            'fptt-bilaga-2'
+        );
+        expect(body_text).toBe('');
     });
 });

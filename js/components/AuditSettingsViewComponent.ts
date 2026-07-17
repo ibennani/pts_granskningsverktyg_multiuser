@@ -13,6 +13,10 @@ import {
     render_audit_settings_information_section,
     render_audit_settings_summary_section,
 } from './audit_settings_render.js';
+import {
+    create_principle_intro_host,
+    render_audit_settings_principle_intros_section,
+} from '../utils/audit_appendix1_principle_intros_render.js';
 import './audit_settings_view_component.css';
 
 type Deps = Record<string, unknown> & {
@@ -38,6 +42,7 @@ export class AuditSettingsViewComponent {
         textarea_ref: null,
         preview_container_ref: null,
     };
+    private principle_intro_host = create_principle_intro_host();
     private readonly RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
 
     init({ root, deps }: { root: HTMLElement; deps: Deps }): void {
@@ -137,6 +142,26 @@ export class AuditSettingsViewComponent {
         );
     }
 
+    private async save_principle_intros(overrides: Record<string, string>): Promise<void> {
+        if (!this.deps) return;
+        await this.deps.dispatch({
+            type: this.deps.StoreActionTypes.UPDATE_METADATA,
+            payload: {
+                appendix1PrincipleIntroOverrides: overrides,
+                skip_render: true,
+            },
+        });
+        try {
+            await sync_to_server_now(this.deps.getState, this.deps.dispatch);
+        } catch {
+            // Fel visas av sync
+        }
+        this.deps.NotificationComponent.show_global_message(
+            this.deps.Translation.t('audit_settings_principle_intros_saved'),
+            'success'
+        );
+    }
+
     render(): void {
         if (!this.root || !this.deps) return;
         this.root.innerHTML = '';
@@ -187,6 +212,16 @@ export class AuditSettingsViewComponent {
                 }
             );
             this.metadata_container = metadata_ref.current;
+        } else if (section === 'principle_intros') {
+            this.metadata_container = null;
+            render_audit_settings_principle_intros_section(render_deps, plate, {
+                state,
+                readonly,
+                return_to,
+                intro_host: this.principle_intro_host,
+                on_save: (overrides) => this.save_principle_intros(overrides),
+                on_back: () => this.handle_back(),
+            });
         } else if (section === 'summary') {
             this.metadata_container = null;
             render_audit_settings_summary_section(render_deps, plate, {

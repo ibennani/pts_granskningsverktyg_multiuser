@@ -6,7 +6,7 @@ import { type MarkdownPreviewEditorHost } from '../utils/markdown_preview_editor
 import { resolve_appendix1_sections } from '../logic/appendix1_summary_text.js';
 import { render_appendix1_summary_editor_page } from '../utils/appendix1_summary_editor_render.js';
 
-export type AuditSettingsSection = '' | 'information' | 'summary';
+export type AuditSettingsSection = '' | 'information' | 'summary' | 'principle_intros';
 
 /** Var användaren ska återvända från en inställningsundersida. */
 export type AuditSettingsReturnTo = 'overview' | 'settings';
@@ -15,7 +15,7 @@ export type AuditSettingsRenderDeps = {
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
     };
-    Translation: { t: (key: string) => string };
+    Translation: { t: (key: string, opts?: Record<string, unknown>) => string };
     router: (view: string, params?: Record<string, string>) => void;
 };
 
@@ -81,7 +81,7 @@ export function render_audit_settings_hub(
     );
 
     const list = helpers.create_element('ul', { class_name: 'audit-settings__hub-list' });
-    const add_hub_link = (section: 'information' | 'summary', label_key: string, desc_key: string) => {
+    const add_hub_link = (section: 'information' | 'summary' | 'principle_intros', label_key: string, desc_key: string) => {
         const item = helpers.create_element('li', { class_name: 'audit-settings__hub-item' });
         const link = helpers.create_element('a', {
             class_name: 'audit-settings__hub-link',
@@ -104,6 +104,7 @@ export function render_audit_settings_hub(
 
     add_hub_link('information', 'audit_settings_nav_information', 'audit_settings_hub_information_desc');
     add_hub_link('summary', 'audit_settings_nav_summary', 'audit_settings_hub_summary_desc');
+    add_hub_link('principle_intros', 'audit_settings_nav_principle_intros', 'audit_settings_hub_principle_intros_desc');
     nav.appendChild(list);
     plate.appendChild(nav);
 
@@ -226,6 +227,6 @@ export function render_audit_settings_summary_section(
 }
 
 export function normalize_audit_settings_section(raw: unknown): AuditSettingsSection {
-    if (raw === 'information' || raw === 'summary') return raw;
+    if (raw === 'information' || raw === 'summary' || raw === 'principle_intros') return raw;
     return '';
 }

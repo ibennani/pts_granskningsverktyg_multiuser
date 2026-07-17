@@ -48,46 +48,22 @@ export function get_done_message() {
 }
 
 /**
- * @param {import('../../scripts/nabu_work_state.mjs').FlushResult} result
+ * Anropar samma flush-skript som notify_done.cmd (en enda sändväg).
+ * @param {string} [message]
  */
-export function handle_flush_result(result) {
-    if (result.sent) {
-        send_webhook(get_done_message());
-        return;
-    }
-    if (result.schedule_delayed_flush) {
-        schedule_delayed_flush();
-    }
-}
-
-/**
- * @param {string} message
- */
-export function send_webhook(message) {
-    const script = path.join(REPO_ROOT, 'scripts', 'nabu_send_webhook.ps1');
-    spawn('powershell.exe', [
+export function invoke_try_flush(message = '') {
+    const script = path.join(REPO_ROOT, 'scripts', 'nabu_try_flush.ps1');
+    /** @type {string[]} */
+    const args = [
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
         '-File', script,
-        '-Message', message,
-    ], {
-        cwd: REPO_ROOT,
-        stdio: 'ignore',
-        detached: true,
-    }).unref();
-}
-
-export function schedule_delayed_flush() {
-    const message = get_done_message();
-    const message_path = path.join(REPO_ROOT, '.cursor', 'nabu_flush_message.txt');
-    fs.mkdirSync(path.dirname(message_path), { recursive: true });
-    fs.writeFileSync(message_path, message, 'utf8');
-    const script = path.join(REPO_ROOT, 'scripts', 'nabu_delayed_flush.ps1');
-    spawn('powershell.exe', [
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', script,
-    ], {
+    ];
+    const resolved_message = message.length > 0 ? message : get_done_message();
+    if (resolved_message.length > 0) {
+        args.push('-Message', resolved_message);
+    }
+    spawn('powershell.exe', args, {
         cwd: REPO_ROOT,
         stdio: 'ignore',
         detached: true,

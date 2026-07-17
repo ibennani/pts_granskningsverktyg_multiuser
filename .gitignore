@@ -30,6 +30,7 @@ build/
 .cursor/nabu_work_state.json
 .cursor/nabu_work_state.json.lock
 .cursor/nabu_flush_message.txt
+.cursor/nabu_notify_debug.log
 
 # Parallella agenter: vilka filer vilken agent rört (för Pusha-urval)
 .cursor/agent_touched_files.json

@@ -180,15 +180,7 @@
 
 .audit-filter-row select.audit-filter-select,
 select.form-control.audit-filter-select {
-    appearance: auto;
-    -webkit-appearance: menulist;
-    width: auto;
     min-width: 0;
-    cursor: pointer;
-}
-
-.audit-type-filter-select {
-    width: auto;
 }
 
 @container audit-filter (min-width: 1024px) {
@@ -387,8 +379,7 @@ select.form-control.audit-filter-select {
 }
 
 .audit-page-size-select {
-    width: auto;
-    min-width: max(5rem, 5.5ch);
+    min-width: 0;
 }
 
 .audit-header-page-size-row {

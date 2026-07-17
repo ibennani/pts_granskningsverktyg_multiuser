@@ -3,12 +3,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { jest } from '@jest/globals';
 import {
+    FLUSH_RETRY_BUFFER_MS,
+    MAX_CONCURRENT_SUBAGENTS,
     MIN_IDLE_MS,
     STALE_RESET_MS,
+    SUBAGENT_HARD_LEAK_MS,
     SUBAGENT_LEAK_MS,
+    compute_flush_retry_delay_ms,
     count_open_todos,
     create_default_state,
     maybe_reset_leaked_subagents,
+    maybe_reset_leaked_todos,
     maybe_reset_stale,
     normalize_state,
     read_state,
@@ -124,6 +129,43 @@ describe('nabu_work_state', () => {
         expect(blocked.sent).toBe(true);
     });
 
+    test('orimligt högt underagent-antal nollställs efter SUBAGENT_LEAK_MS', () => {
+        request_notify();
+        const state = read_state();
+        state.pending_subagents = MAX_CONCURRENT_SUBAGENTS + 1;
+        state.notify_requested_at = Date.now() - SUBAGENT_LEAK_MS - 1;
+        state.last_subagent_activity_at = Date.now();
+        write_state(state);
+
+        const result = try_flush();
+        expect(result.sent).toBe(true);
+        expect(read_state().pending_subagents).toBe(0);
+    });
+
+    test('läckta todos nollställs efter SUBAGENT_LEAK_MS', () => {
+        request_notify();
+        const state = read_state();
+        state.open_todo_count = 2;
+        state.notify_requested_at = Date.now() - SUBAGENT_LEAK_MS - 1;
+        write_state(state);
+
+        const flushed = try_flush();
+        expect(flushed.sent).toBe(true);
+        expect(read_state().open_todo_count).toBe(0);
+    });
+
+    test('hård timeout nollställer kvarvarande underagenter', () => {
+        const state = create_default_state();
+        state.notify_requested = true;
+        state.notify_requested_at = Date.now() - SUBAGENT_HARD_LEAK_MS - 1;
+        state.pending_subagents = 2;
+        state.last_subagent_activity_at = Date.now();
+
+        const reset = maybe_reset_leaked_subagents(state);
+        expect(reset).toBe(true);
+        expect(state.pending_subagents).toBe(0);
+    });
+
     test('pending_subagents kan schemalägga delayed flush', () => {
         request_notify();
         subagent_start();
@@ -131,6 +173,7 @@ describe('nabu_work_state', () => {
         expect(result.sent).toBe(false);
         expect(result.reason).toBe('pending_subagents');
         expect(result.schedule_delayed_flush).toBe(true);
+        expect(result.retry_delay_ms).toBe(SUBAGENT_LEAK_MS + FLUSH_RETRY_BUFFER_MS);
     });
 
     test('debounce blockeras och kan schemalägga delayed flush', () => {
@@ -139,6 +182,16 @@ describe('nabu_work_state', () => {
         expect(result.sent).toBe(false);
         expect(result.reason).toBe('debounce');
         expect(result.schedule_delayed_flush).toBe(true);
+        expect(result.retry_delay_ms).toBeGreaterThan(0);
+    });
+
+    test('compute_flush_retry_delay_ms returnerar väntetid per orsak', () => {
+        expect(compute_flush_retry_delay_ms({ reason: 'debounce', wait_ms: 1200 }))
+            .toBe(1200 + FLUSH_RETRY_BUFFER_MS);
+        expect(compute_flush_retry_delay_ms({ reason: 'pending_subagents' }))
+            .toBe(SUBAGENT_LEAK_MS + FLUSH_RETRY_BUFFER_MS);
+        expect(compute_flush_retry_delay_ms({ reason: 'open_todos' }))
+            .toBe(SUBAGENT_LEAK_MS + FLUSH_RETRY_BUFFER_MS);
     });
 
     test('maybe_reset_stale nollställer fastnade räknare efter timeout', () => {
@@ -162,6 +215,17 @@ describe('nabu_work_state', () => {
         const reset = maybe_reset_leaked_subagents(state);
         expect(reset).toBe(true);
         expect(state.pending_subagents).toBe(0);
+    });
+
+    test('maybe_reset_leaked_todos nollställer när klar-notis väntat tillräckligt', () => {
+        const state = create_default_state();
+        state.notify_requested = true;
+        state.notify_requested_at = Date.now() - SUBAGENT_LEAK_MS - 1;
+        state.open_todo_count = 1;
+
+        const reset = maybe_reset_leaked_todos(state);
+        expect(reset).toBe(true);
+        expect(state.open_todo_count).toBe(0);
     });
 
     test('normalize_state skyddar mot ogiltig indata', () => {

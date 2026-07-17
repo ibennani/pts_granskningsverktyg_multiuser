@@ -29,13 +29,30 @@ function Read-FlushMessage {
     return [System.IO.File]::ReadAllText($message_path, [System.Text.UTF8Encoding]::new($false)).Trim()
 }
 
+function Get-RetryDelaySeconds {
+    param($Result)
+    if ($Result.retry_delay_ms -and [int]$Result.retry_delay_ms -gt 0) {
+        $seconds = [Math]::Ceiling([int]$Result.retry_delay_ms / 1000.0)
+        if ($seconds -lt 1) {
+            return 1
+        }
+        return $seconds
+    }
+    return 10
+}
+
 function Schedule-DelayedFlush {
-    Save-FlushMessage -Text (Read-FlushMessage)
+    param(
+        [string] $Text,
+        [int] $DelaySeconds = 10
+    )
+    Save-FlushMessage -Text $Text
     $delayed = Join-Path $PSScriptRoot 'nabu_delayed_flush.ps1'
     Start-Process -FilePath 'powershell.exe' -ArgumentList @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
-        '-File', $delayed
+        '-File', $delayed,
+        '-DelaySeconds', $DelaySeconds
     ) -WindowStyle Hidden | Out-Null
 }
 
@@ -80,6 +97,7 @@ switch ($result.reason) {
 }
 
 if ($result.schedule_delayed_flush -eq $true) {
-    Schedule-DelayedFlush
+    $delay_seconds = Get-RetryDelaySeconds -Result $result
+    Schedule-DelayedFlush -Text $resolved_message -DelaySeconds $delay_seconds
 }
 exit 0

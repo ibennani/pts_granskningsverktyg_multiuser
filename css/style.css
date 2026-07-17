@@ -648,6 +648,19 @@ select {
     transition: border-color 0.15s ease-in-out;
 }
 
+/* Native dropdown-utseende (pil) — referens: granskningslistans filter ovanför alla granskningar */
+select,
+select.form-control,
+.dropdown-select {
+    appearance: auto;
+    -webkit-appearance: menulist;
+    cursor: pointer;
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
+    box-sizing: border-box;
+}
+
 
 .form-control:focus,
 input[type="text"]:focus,

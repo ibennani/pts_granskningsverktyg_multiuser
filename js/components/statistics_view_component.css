@@ -41,13 +41,7 @@
 
 .statistics-year-select,
 .statistics-monitoring-select {
-    width: max-content;
-    max-width: 100%;
-    min-width: 4.5rem;
-}
-
-.statistics-monitoring-select {
-    min-width: 12rem;
+    min-width: 0;
 }
 
 .statistics-summary {

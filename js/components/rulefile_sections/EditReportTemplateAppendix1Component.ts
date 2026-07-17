@@ -106,12 +106,6 @@ export class EditReportTemplateAppendix1Component {
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
         const normalized = normalize_rulefile_appendix1(rule_file);
 
-        const heading = this.deps.Helpers.create_element('h2', {
-            attributes: { id: 'rulefile-appendix1-sections-heading' },
-            text_content: this.deps.Translation.t('rulefile_appendix1_sections_edit_heading'),
-        });
-        this.root.appendChild(heading);
-
         const editor_host = this.deps.Helpers.create_element('div', {
             class_name: 'appendix1-sections-editor-host',
         });

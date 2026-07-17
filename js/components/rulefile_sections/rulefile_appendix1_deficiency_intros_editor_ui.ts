@@ -49,20 +49,26 @@ export function render_deficiency_intro_editor(
     sync_from_sections(options.deficiency_sections);
 
     const panel = Helpers.create_element('section', {
-        class_name: 'appendix1-deficiency-intros-panel',
+        class_name: 'appendix1-deficiency-intros-panel appendix1-section-panel',
     });
-    const hint_id = `appendix1-deficiency-intros-hint-${Math.random().toString(36).slice(2, 8)}`;
+    const heading_id = `appendix1-deficiency-intros-heading-${Math.random().toString(36).slice(2, 8)}`;
+    panel.appendChild(
+        Helpers.create_element('h2', {
+            class_name: 'appendix1-section-panel__heading appendix1-deficiency-intros-panel__heading',
+            attributes: { id: heading_id },
+            text_content: t('rulefile_appendix1_deficiency_intros_heading'),
+        })
+    );
     panel.appendChild(
         Helpers.create_element('p', {
-            class_name: 'field-hint appendix1-deficiency-intros-panel__hint',
-            attributes: { id: hint_id },
+            class_name: 'field-hint appendix1-section-panel__hint appendix1-deficiency-intros-panel__hint',
             text_content: t('rulefile_appendix1_deficiency_intros_hint'),
         })
     );
 
     const list = Helpers.create_element('div', {
         class_name: 'appendix1-deficiency-intros-list',
-        attributes: { 'aria-labelledby': hint_id },
+        attributes: { 'aria-labelledby': heading_id },
     });
     panel.appendChild(list);
     container.appendChild(panel);

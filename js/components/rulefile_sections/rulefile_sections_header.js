@@ -253,6 +253,16 @@ export function create_rulefile_section_header(
         });
     }
 
+    if (section_config.id === 'report_template' && appendix === '1') {
+        const intro_key = is_editing
+            ? 'rulefile_appendix1_edit_header_intro'
+            : 'rulefile_appendix1_view_header_intro';
+        header_wrapper.appendChild(Helpers.create_element('p', {
+            class_name: 'field-hint rulefile-sections-header-intro',
+            text_content: t(intro_key)
+        }));
+    }
+
     if (can_edit && section_config.id === 'page_types' && is_editing) {
         const add_button_wrapper = Helpers.create_element('div', { class_name: 'rulefile-sections-add-button-wrapper' });
         const add_button = Helpers.create_element('button', {

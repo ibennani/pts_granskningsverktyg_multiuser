@@ -157,8 +157,6 @@
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     background-color: var(--input-background-color);
-    width: auto;
-    max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
 }

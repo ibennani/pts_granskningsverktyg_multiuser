@@ -36,7 +36,7 @@ Klar-notis skickas **inte direkt** till webhook. `notify_done.cmd` sätter en be
 
 - inga underagenter (`Task`) kör
 - inga todos har status `pending` eller `in_progress`
-- debounce-tiden (8 sekunder) passerat sedan senaste aktivitet
+- debounce-tiden (3 sekunder) passerat sedan klar-notis begärdes
 
 **Cursor hooks** (`.cursor/hooks.json`) uppdaterar registret automatiskt vid sessionstart, underagenter och `TodoWrite`.
 

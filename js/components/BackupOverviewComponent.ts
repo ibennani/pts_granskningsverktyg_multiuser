@@ -4,7 +4,8 @@ import { BackupRulefileController, type RulefileKind } from './backup/backup_rul
 import { load_backup_mode_from_storage, save_backup_mode_to_storage, type BackupMode } from './backup/backup_mode_storage.js';
 import { measure_backup_select_min_width_px } from '../utils/backup_filter_select_width.js';
 
-export class BackupOverviewComponent {    root: HTMLElement | null = null;
+export class BackupOverviewComponent {
+    root: HTMLElement | null = null;
     deps: any = null;
     router: any = null;
     view_name: string | null = null;
@@ -255,7 +256,10 @@ export class BackupOverviewComponent {    root: HTMLElement | null = null;
 
             const mode_wrapper = this.Helpers.create_element('div', { class_name: 'backup-filter-mode' });
             mode_wrapper.appendChild(this.Helpers.create_element('label', { text_content: t('backup_filter_mode_label'), attributes: { for: 'backup-filter-mode-select' } }));
-            const mode_select = this.Helpers.create_element('select', { attributes: { id: 'backup-filter-mode-select', name: 'backup-mode-filter' } });
+            const mode_select = this.Helpers.create_element('select', {
+                class_name: 'dropdown-select',
+                attributes: { id: 'backup-filter-mode-select', name: 'backup-mode-filter' },
+            });
             const add_mode_opt = (value: BackupMode, label: string) => {
                 const opt = this.Helpers.create_element('option', { text_content: label, attributes: { value } });
                 if (this.mode === value) opt.selected = true;
@@ -295,7 +299,10 @@ export class BackupOverviewComponent {    root: HTMLElement | null = null;
                 text_content: this.mode === 'audits' ? t('backup_filter_status_label') : t('backup_rulefile_filter_kind_label'),
                 attributes: { for: 'backup-filter-status-select' }
             }));
-            const status_select = this.Helpers.create_element('select', { attributes: { id: 'backup-filter-status-select', name: 'backup-status-filter' } });
+            const status_select = this.Helpers.create_element('select', {
+                class_name: 'dropdown-select',
+                attributes: { id: 'backup-filter-status-select', name: 'backup-status-filter' },
+            });
             const add_opt = (value: string, label: string) => {
                 const opt = this.Helpers.create_element('option', { text_content: label, attributes: { value } });
                 const current_val = this.mode === 'audits' ? this.audits.status_filter : this.rulefiles.rulefile_kind;
