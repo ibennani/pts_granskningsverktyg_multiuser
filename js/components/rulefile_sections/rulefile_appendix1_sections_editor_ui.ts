@@ -344,9 +344,9 @@ export function render_appendix1_sections_editor(
 
   container.appendChild(taxonomy_panel);
 
-    const deficiency_intros_host = Helpers.create_element('div', {
-        class_name: 'appendix1-deficiency-intros-host',
-    });
+  const deficiency_intros_host = Helpers.create_element('div', {
+    class_name: 'appendix1-deficiency-intros-host',
+  });
 
   let intro_editor_handles: ReturnType<
     typeof render_deficiency_intro_editor
@@ -381,15 +381,19 @@ export function render_appendix1_sections_editor(
     );
   };
 
-  intro_editor_handles = render_deficiency_intro_editor(ctx, deficiency_intros_host, {
-    rule_file_content,
+  intro_editor_handles = render_deficiency_intro_editor(
+    ctx,
+    deficiency_intros_host,
+    {
+      rule_file_content,
 
-    grouping_taxonomy_id,
+      grouping_taxonomy_id,
 
-    deficiency_sections,
+      deficiency_sections,
 
-    on_change: options.on_change,
-  });
+      on_change: options.on_change,
+    }
+  );
 
   container.appendChild(deficiency_intros_host);
 
