@@ -2,7 +2,7 @@
 // Bygger header: titel, filter (vid audits), filuppladdning, knapp "Starta ny granskning".
 
 import { create_audit_filter_reset_button } from './audit_filter_reset_button.js';
-import { render_audit_filter_primary_row } from './audit_filter_primary_row.js';
+import { render_audit_filter_search_and_accordion } from './audit_filter_accordion.js';
 import { collect_granskningstyp_filter_options } from '../../logic/audit_list_section_filter.js';
 
 function render_audit_page_size_field(ctx) {
@@ -45,10 +45,6 @@ function render_audit_page_size_field(ctx) {
 
 function render_granskningstyp_filter_field(ctx, t) {
     const granskningstyp_options = collect_granskningstyp_filter_options(ctx.audits || []);
-    if (granskningstyp_options.length === 0) {
-        ctx._granskningstypSelectRef = null;
-        return null;
-    }
 
     const granskningstyp_field = ctx.Helpers.create_element('div', {
         class_name: ['audit-filter-row__field', 'audit-filter-row__field--granskningstyp']
@@ -91,25 +87,14 @@ function render_granskningstyp_filter_field(ctx, t) {
     return granskningstyp_field;
 }
 
-function render_audit_filter_secondary_row(ctx) {
+export function mount_audit_filter_secondary_fields(ctx, panel_inner) {
+    if (!panel_inner || panel_inner.childElementCount > 0) return;
     const t = ctx.get_t_func();
-    const panel_open = Boolean(ctx.audit_filter_panel_open);
-    const secondary_row = ctx.Helpers.create_element('div', {
-        class_name: 'audit-filter-secondary-row form-group',
-        attributes: {
-            id: 'audit-filter-secondary-row',
-            role: 'region',
-            'aria-label': t('audit_filter_secondary_region_label')
-        }
+    const fields_row = ctx.Helpers.create_element('div', {
+        class_name: ['audit-filter-secondary-row', 'form-group']
     });
-    if (!panel_open) {
-        secondary_row.hidden = true;
-    }
 
-    const granskningstyp_field = render_granskningstyp_filter_field(ctx, t);
-    if (granskningstyp_field) {
-        secondary_row.appendChild(granskningstyp_field);
-    }
+    fields_row.appendChild(render_granskningstyp_filter_field(ctx, t));
 
     const type_field = ctx.Helpers.create_element('div', {
         class_name: ['audit-filter-row__field', 'audit-filter-row__field--type']
@@ -140,7 +125,7 @@ function render_audit_filter_secondary_row(ctx) {
     type_select.addEventListener('change', ctx.handle_type_filter_change);
     ctx._auditTypeSelectRef = type_select;
     type_field.appendChild(type_select);
-    secondary_row.appendChild(type_field);
+    fields_row.appendChild(type_field);
 
     const group_field = ctx.Helpers.create_element('div', {
         class_name: ['audit-filter-row__field', 'audit-filter-row__field--list-view', 'audit-list-view-mode-field']
@@ -176,17 +161,17 @@ function render_audit_filter_secondary_row(ctx) {
     ctx._auditGroupByCaseSelectRef = group_select;
     group_field.appendChild(group_label);
     group_field.appendChild(group_select);
-    secondary_row.appendChild(group_field);
+    fields_row.appendChild(group_field);
 
-    secondary_row.appendChild(render_audit_page_size_field(ctx));
+    fields_row.appendChild(render_audit_page_size_field(ctx));
 
     const reset_field = ctx.Helpers.create_element('div', {
         class_name: ['audit-filter-row__field', 'audit-filter-row__field--reset']
     });
     reset_field.appendChild(create_audit_filter_reset_button(ctx));
-    secondary_row.appendChild(reset_field);
+    fields_row.appendChild(reset_field);
 
-    return secondary_row;
+    panel_inner.appendChild(fields_row);
 }
 
 export function render_audit_header(ctx) {
@@ -216,8 +201,11 @@ export function render_audit_header(ctx) {
             filter_wrapper.classList.add('audit-filter-wrapper--open');
         }
 
-        filter_wrapper.appendChild(render_audit_filter_primary_row(ctx, filter_wrapper));
-        filter_wrapper.appendChild(render_audit_filter_secondary_row(ctx));
+        filter_wrapper.appendChild(
+            render_audit_filter_search_and_accordion(ctx, filter_wrapper, (panel_inner) => {
+                mount_audit_filter_secondary_fields(ctx, panel_inner);
+            })
+        );
 
         const live_region = ctx.Helpers.create_element('div', {
             class_name: 'visually-hidden',

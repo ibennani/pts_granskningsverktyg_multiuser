@@ -33,11 +33,13 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
 
     const columns = [
         {
+            columnKey: 'case_number',
             headerLabel: t('start_view_col_case_number'),
             getSortValue: (row) => (row.metadata?.caseNumber ?? '').toString().trim(),
             getContent: (row) => (row.metadata?.caseNumber ?? '').toString().trim() || EMPTY_PLACEHOLDER
         },
         {
+            columnKey: 'actor',
             headerLabel: t('start_view_col_actor'),
             getSortValue: (row) => (row.metadata?.actorName ?? row.metadata?.caseNumber ?? '').toString().trim(),
             getContent: (row) => {
@@ -60,11 +62,13 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             }
         },
         {
+            columnKey: 'media_type',
             headerLabel: t('start_view_col_media_type'),
             getSortValue: (row) => (row.audit_type ?? '').toString().trim(),
             getContent: (row) => (row.audit_type ?? '').toString().trim() || EMPTY_PLACEHOLDER
         },
         {
+            columnKey: 'granskningstyp',
             headerLabel: t('start_view_col_granskningstyp'),
             getSortValue: (row) => {
                 const label = (row.granskningstyp_label || row.metadata?.auditTypeLabel || '').toString().trim();
@@ -80,27 +84,32 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             }
         },
         {
+            columnKey: 'status',
             headerLabel: t('start_view_col_status'),
             getSortValue: (row) => (row.status ?? '').toString(),
             getContent: (row) => (row.status ? get_status_label(row.status) : EMPTY_PLACEHOLDER)
         },
         {
+            columnKey: 'progress',
             headerLabel: t('start_view_col_progress'),
             getSortValue: (row) => (row.progress !== null && row.progress !== undefined) ? Number(row.progress) : -1,
             getContent: (row) => (row.progress !== null && row.progress !== undefined ? `${row.progress}%` : EMPTY_PLACEHOLDER)
         },
         {
+            columnKey: 'deficiency',
             headerLabel: t('start_view_col_deficiency'),
             getSortValue: (row) => (row.deficiency_index !== null && row.deficiency_index !== undefined ? Number(row.deficiency_index) : -Infinity),
             getContent: (row) =>
                 (row.deficiency_index !== null && row.deficiency_index !== undefined) ? format_num(row.deficiency_index) : EMPTY_PLACEHOLDER
         },
         {
+            columnKey: 'auditor',
             headerLabel: t('start_view_col_auditor'),
             getSortValue: (row) => (row.metadata?.auditorName ?? '').toString().trim(),
             getContent: (row) => (row.metadata?.auditorName ?? '').toString().trim() || EMPTY_PLACEHOLDER
         },
         {
+            columnKey: 'last_updated',
             headerLabel: t('start_view_col_last_updated'),
             getSortValue: (row) => (row.updated_at ? String(row.updated_at) : ''),
             getContent: (row) => {
@@ -109,6 +118,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             }
         },
         {
+            columnKey: 'download',
             headerLabel: t('start_view_col_download'),
             isAction: true,
             getContent: (row) => {
@@ -135,13 +145,12 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         result = result.slice(1);
     }
     if (omit_auditor) {
-        result = result.filter(
-            (col) => col.headerLabel !== t('start_view_col_auditor')
-        );
+        result = result.filter((col) => col.columnKey !== 'auditor');
     }
 
     if (include_delete && typeof onDeleteAudit === 'function') {
         result.push({
+            columnKey: 'delete',
             headerLabel: t('delete'),
             isAction: true,
             getContent: (row) => {

@@ -2,6 +2,7 @@
  * @fileoverview Delad filter- och sorteringslogik för granskningslistans sektioner i AuditSamplesSection.
  */
 
+import { DEFAULT_AUDIT_TYPES } from '../../shared/rulefile/rulefile_audit_types.js';
 import { get_current_user_name } from '../user/current_user.js';
 import { filter_text_matches } from '../utils/string_filter_normalize.js';
 
@@ -113,16 +114,19 @@ export function filter_audits_by_current_user(list: AuditListRow[]): AuditListRo
     });
 }
 
-/** Samlar unika granskningstyper för filterdropdown. */
+/** Samlar unika granskningstyper för filterdropdown (alltid minst standardtyperna). */
 export function collect_granskningstyp_filter_options(
     audits: AuditListRow[]
 ): Array<{ id: string; label: string }> {
     const map = new Map<string, string>();
+    for (const row of DEFAULT_AUDIT_TYPES) {
+        map.set(row.id, row.label);
+    }
     for (const row of audits) {
         const id = String(row.granskningstyp_id || row.metadata?.auditTypeId || '').trim();
-        const label = String(row.granskningstyp_label || row.metadata?.auditTypeLabel || id).trim();
+        const label = String(row.granskningstyp_label || row.metadata?.auditTypeLabel || '').trim();
         if (!id) continue;
-        if (!map.has(id)) map.set(id, label || id);
+        map.set(id, label || map.get(id) || id);
     }
     return [...map.entries()]
         .sort((a, b) => a[1].localeCompare(b[1], 'sv'))

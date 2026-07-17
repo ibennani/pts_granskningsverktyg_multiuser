@@ -44,14 +44,15 @@ function next_animation_frame(): Promise<void> {
 }
 
 /**
- * Animerar expandering eller kollaps av en panel (0,5 s).
+ * Animerar expandering eller kollaps av en panel (standard 0,5 s, valfri duration_ms).
  * visibility_host döljs efter kollaps (t.ex. panel-wrapper eller tabellrad).
  */
 export async function animate_expandable_panel(
     panel: HTMLElement,
     visibility_host: HTMLElement,
     expand: boolean,
-    expanded_class_name: string = EXPANDABLE_PANEL_EXPANDED_CLASS
+    expanded_class_name: string = EXPANDABLE_PANEL_EXPANDED_CLASS,
+    duration_ms: number = EXPANDABLE_PANEL_TRANSITION_MS
 ): Promise<void> {
     if (prefers_reduced_motion()) {
         panel.classList.toggle(expanded_class_name, expand);
@@ -64,12 +65,12 @@ export async function animate_expandable_panel(
         panel.classList.remove(EXPANDABLE_PANEL_INSTANT_CLASS);
         await next_animation_frame();
         panel.classList.add(expanded_class_name);
-        await wait_element_transition(panel, EXPANDABLE_PANEL_TRANSITION_MS);
+        await wait_element_transition(panel, duration_ms);
         return;
     }
 
     panel.classList.remove(expanded_class_name);
-    await wait_element_transition(panel, EXPANDABLE_PANEL_TRANSITION_MS);
+    await wait_element_transition(panel, duration_ms);
     visibility_host.hidden = true;
 }
 

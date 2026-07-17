@@ -44,8 +44,8 @@ function get_audit_section_table_keys(heading_key) {
 }
 
 function get_audit_list_group_options(ctx) {
-    const has_active_filter = ctx._audit_list_has_active_filter === true;
-    return { min_group_size: resolve_audit_list_min_group_size(has_active_filter) };
+    const has_narrowing = ctx._audit_list_has_narrowing_filter === true;
+    return { min_group_size: resolve_audit_list_min_group_size(has_narrowing) };
 }
 
 /** Antal rader som faktiskt visas i sektionens tabell (grupper eller enskilda granskningar). */
@@ -62,8 +62,8 @@ function get_audit_section_display_count(audits, ctx) {
 /** Antal för sektionsrubrik (kan skilja från tabellrader vid gruppering per granskare). */
 function get_audit_section_heading_count(audits, ctx) {
     const list = audits || [];
-    const has_active_filter = ctx._audit_list_has_active_filter === true;
-    if (has_active_filter) {
+    const has_narrowing = ctx._audit_list_has_narrowing_filter === true;
+    if (has_narrowing) {
         return list.length;
     }
     if (ctx.audit_list_group_mode === 'auditor') {
@@ -104,7 +104,7 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
         audits: config.audits,
         emptyMessage: t(empty_key),
         emptyMessageNoGroups: t(no_groups_key),
-        minGroupSize: resolve_audit_list_min_group_size(ctx._audit_list_has_active_filter === true),
+        minGroupSize: resolve_audit_list_min_group_size(ctx._audit_list_has_narrowing_filter === true),
         ariaLabel: section_heading_text,
         includeDelete: true,
         sortState: is_grouped ? ctx[grouped_sort_state_key] : ctx[sort_state_key],
@@ -122,7 +122,8 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
         onDeleteAudit: (id, displayName, deleteButton) =>
             ctx.handle_delete_audit_click(id, displayName, deleteButton),
         get_status_label: ctx.get_status_label.bind(ctx),
-        pagination
+        pagination,
+        sortControlsIdPrefix: `audit-list-sort-${config.heading_key}`
     };
     if (is_grouped) {
         ctx._auditGroupedListComponent.render({ ...list_render_opts, groupMode: group_mode });
@@ -139,8 +140,9 @@ export function render_audit_audits_sections(ctx, container) {
     container.innerHTML = '';
     container.classList.add('audit-audits-sections-container');
 
-    const { section_configs, has_active_filter } = build_audit_list_section_configs(ctx);
-    ctx._audit_list_has_active_filter = has_active_filter;
+    const { section_configs, has_list_narrowing_filter } = build_audit_list_section_configs(ctx);
+    ctx._audit_list_has_narrowing_filter = has_list_narrowing_filter;
+    ctx._audit_list_has_active_filter = has_list_narrowing_filter;
     section_configs.forEach((config, index) => {
         const section = ctx.Helpers.create_element('section', {
             class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following',

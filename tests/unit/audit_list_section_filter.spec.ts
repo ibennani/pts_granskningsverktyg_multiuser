@@ -4,9 +4,12 @@
 
 import {
     build_audit_list_section_configs,
+    collect_granskningstyp_filter_options,
+    count_secondary_filters,
     filter_audits_by_current_user,
     filter_audits_by_granskningstyp,
     filter_audits_by_type,
+    has_list_narrowing_filter,
     sort_audits_by_case_number
 } from '../../js/logic/audit_list_section_filter.ts';
 
@@ -124,6 +127,24 @@ describe('filter_audits_by_current_user', () => {
     });
 });
 
+describe('collect_granskningstyp_filter_options', () => {
+    it('returnerar standardtyper även utan granskningar', () => {
+        const options = collect_granskningstyp_filter_options([]);
+        expect(options.map((o) => o.id)).toEqual([
+            'marknadskontroll-lptt',
+            'tillsyn-lptt'
+        ]);
+    });
+
+    it('slår ihop dynamiska typer från granskningar med standard', () => {
+        const options = collect_granskningstyp_filter_options([
+            make_audit(1, 'in_progress', { auditTypeId: 'custom-type', auditTypeLabel: 'Anpassad' })
+        ]);
+        expect(options.map((o) => o.id)).toContain('custom-type');
+        expect(options.map((o) => o.id)).toContain('tillsyn-lptt');
+    });
+});
+
 describe('filter_audits_by_granskningstyp', () => {
     it('returnerar ofiltrerad lista när filter saknas', () => {
         const list = [make_audit(1, 'in_progress', { auditTypeId: 'tillsyn-lptt' })];
@@ -153,5 +174,88 @@ describe('sort_audits_by_case_number', () => {
             make_audit(1, 'in_progress', { caseNumber: '2' })
         ]);
         expect(sorted.map((a) => a.id)).toEqual([1, 2]);
+    });
+});
+
+describe('count_secondary_filters', () => {
+    it('returnerar 0 när alla sekundära filter är standard', () => {
+        expect(
+            count_secondary_filters({
+                audits: [],
+                granskningstyp_filter: '',
+                audit_type_filter: '',
+                audit_list_group_mode: 'all',
+                audit_table_page_size: 'all'
+            })
+        ).toBe(0);
+    });
+
+    it('räknar granskningstyp, medium, visningsläge och sidstorlek', () => {
+        expect(
+            count_secondary_filters({
+                audits: [],
+                granskningstyp_filter: 'tillsyn-lptt',
+                audit_type_filter: 'webb',
+                audit_list_group_mode: 'mine',
+                audit_table_page_size: '10'
+            })
+        ).toBe(4);
+    });
+
+    it('räknar inte söktext', () => {
+        expect(
+            count_secondary_filters({
+                audits: [],
+                audit_filter_query: 'alfa',
+                audit_type_filter: ''
+            })
+        ).toBe(0);
+    });
+});
+
+describe('has_list_narrowing_filter', () => {
+    it('är sant vid söktext', () => {
+        expect(
+            has_list_narrowing_filter({
+                audits: [],
+                audit_filter_query: 'test'
+            })
+        ).toBe(true);
+    });
+
+    it('är sant vid visningsläge mine', () => {
+        expect(
+            has_list_narrowing_filter({
+                audits: [],
+                audit_list_group_mode: 'mine'
+            })
+        ).toBe(true);
+    });
+
+    it('är falskt utan avgränsande filter', () => {
+        expect(
+            has_list_narrowing_filter({
+                audits: [],
+                audit_filter_query: '',
+                audit_type_filter: '',
+                granskningstyp_filter: '',
+                audit_list_group_mode: 'all',
+                audit_table_page_size: 'all'
+            })
+        ).toBe(false);
+    });
+});
+
+describe('build_audit_list_section_configs filter counts', () => {
+    it('returnerar secondary_filter_count och has_list_narrowing_filter', () => {
+        const result = build_audit_list_section_configs({
+            audit_filter_query: 'alfa',
+            audit_type_filter: 'webb',
+            audit_list_group_mode: 'all',
+            audits: [make_audit(1, 'in_progress', { caseNumber: '1', actorName: 'Alfa AB' }, 'webb')]
+        });
+        expect(result.secondary_filter_count).toBe(1);
+        expect(result.has_list_narrowing_filter).toBe(true);
+        expect(result.has_active_filter).toBe(true);
     });
 });
