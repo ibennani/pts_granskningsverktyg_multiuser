@@ -126,9 +126,6 @@
 .side-menu__link.active,
 .side-menu__link[aria-current="page"] {
     font-weight: 700;
-    text-decoration: none;
-    color: var(--text-color);
-    cursor: default;
 }
 
 /* I bred layout: wrapper påverkar inte boxmodellen (animation endast i smalare lägen). */

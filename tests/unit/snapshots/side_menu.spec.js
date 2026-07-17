@@ -103,10 +103,10 @@ describe('SideMenuComponent snapshot', () => {
         expect(texts.some((t) => t.includes('Inställningar'))).toBe(true);
         expect(texts.some((t) => t.includes('Logga ut'))).toBe(true);
 
-        const active_overview = [...root.querySelectorAll('.side-menu__link')].find((el) =>
+        const active_overview = [...root.querySelectorAll('a.side-menu__link')].find((el) =>
             el.textContent.trim().includes('Översikt')
         );
-        expect(active_overview?.tagName).toBe('SPAN');
+        expect(active_overview?.tagName).toBe('A');
         expect(active_overview?.getAttribute('aria-current')).toBe('page');
         expect(root.querySelectorAll('a.side-menu__link').length).toBeGreaterThan(0);
 
@@ -154,12 +154,13 @@ describe('SideMenuComponent snapshot', () => {
         expect(texts.some((t) => t.includes('Granskningsöversikten'))).toBe(false);
         expect(texts.some((t) => t.includes('Sammanfattningen'))).toBe(false);
 
-        const settings_item = [...root.querySelectorAll('.side-menu__link')].find((el) =>
+        const settings_item = [...root.querySelectorAll('a.side-menu__link')].find((el) =>
             el.textContent.trim().includes('Inställningar')
         );
-        expect(settings_item?.tagName).toBe('SPAN');
+        expect(settings_item?.tagName).toBe('A');
         expect(settings_item?.classList.contains('active')).toBe(true);
-        expect(settings_item?.getAttribute('aria-current')).toBe('page');
+        expect(settings_item?.getAttribute('aria-current')).toBeNull();
+        expect(settings_item?.getAttribute('href')).toContain('view=audit_settings');
     });
 
     test('Inställningar är aktiv på audit_settings hub utan section', async () => {
@@ -197,10 +198,10 @@ describe('SideMenuComponent snapshot', () => {
         menu.set_current_view('audit_settings', {});
         menu.render();
 
-        const settings_item = [...root.querySelectorAll('.side-menu__link')].find((el) =>
+        const settings_item = [...root.querySelectorAll('a.side-menu__link')].find((el) =>
             el.textContent.trim().includes('Inställningar')
         );
-        expect(settings_item?.tagName).toBe('SPAN');
+        expect(settings_item?.tagName).toBe('A');
         expect(settings_item?.classList.contains('active')).toBe(true);
         expect(settings_item?.getAttribute('aria-current')).toBe('page');
     });

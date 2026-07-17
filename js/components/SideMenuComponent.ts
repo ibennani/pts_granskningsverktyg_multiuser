@@ -2,7 +2,7 @@
 import '../../css/components/side_menu_component.css';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
+import { merge_audit_id_from_state_into_params } from '../logic/router.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
 
@@ -235,6 +235,67 @@ export class SideMenuComponent {
         }
     }
 
+    flatten_menu_params(params = {}) {
+        const flat_params = {};
+        for (const [key, value] of Object.entries(params && typeof params === 'object' ? params : {})) {
+            if (value === undefined || value === null) continue;
+            flat_params[key] = String(value);
+        }
+        return flat_params;
+    }
+
+    build_legacy_menu_href(view_name, params = {}) {
+        // Query-baserad href skiljer sig från hash i adressfältet så JAWS inte säger «länk till samma sida».
+        // Navigering sker via router() vid klick, inte via full sidladdning.
+        const base_path = window.location && window.location.pathname
+            ? window.location.pathname.split('?')[0].split('#')[0]
+            : '/';
+        const search_params = new URLSearchParams({ view: view_name, ...this.flatten_menu_params(params) });
+        return `${base_path}?${search_params.toString()}`;
+    }
+
+    build_menu_hash_fragment(view_name, params = {}) {
+        const flat_params = this.flatten_menu_params(params);
+        const merged = typeof this.getState === 'function'
+            ? merge_audit_id_from_state_into_params(view_name, flat_params, this.getState)
+            : flat_params;
+        return build_compact_hash_fragment(view_name, merged);
+    }
+
+    is_menu_item_visually_active(view_name, params = {}) {
+        const view_from_hash = this.get_view_name_from_location_hash();
+        let active_view_name = view_from_hash || this.current_view_name;
+        if (active_view_name === 'backup_detail' || active_view_name === 'backup_rulefile_detail' || active_view_name === 'backup_settings') {
+            active_view_name = 'backup';
+        }
+        const current_params = this.get_params_from_location_hash();
+        let is_active = active_view_name === view_name;
+        if (view_name === 'start' && (active_view_name === 'start' || active_view_name === 'audit_audits')) {
+            is_active = true;
+        }
+        if (is_active && view_name === 'rulefile_sections' && params.section) {
+            is_active = current_params.section === params.section;
+        }
+        if (is_active && view_name === 'audit_settings' && params.section) {
+            is_active = current_params.section === params.section;
+        }
+        return is_active;
+    }
+
+    is_menu_item_exact_match(view_name, params = {}) {
+        if (!this.is_menu_item_visually_active(view_name, params)) {
+            return false;
+        }
+        const current_view = this.get_view_name_from_location_hash();
+        if (!current_view) {
+            return false;
+        }
+        const current_params = this.get_params_from_location_hash();
+        const target_fragment = this.build_menu_hash_fragment(view_name, params);
+        const current_fragment = this.build_menu_hash_fragment(current_view, current_params);
+        return target_fragment === current_fragment;
+    }
+
     get_view_heading_i18n_key(view_name) {
         switch (view_name) {
             case 'start':
@@ -280,46 +341,17 @@ export class SideMenuComponent {
     }
 
     create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
-        const view_from_hash = this.get_view_name_from_location_hash();
-        let active_view_name = view_from_hash || this.current_view_name;
-        if (active_view_name === 'backup_detail' || active_view_name === 'backup_rulefile_detail' || active_view_name === 'backup_settings') {
-            active_view_name = 'backup';
+        const is_visually_active = this.is_menu_item_visually_active(view_name, params);
+        const is_exact_match = this.is_menu_item_exact_match(view_name, params);
+        const href = this.build_legacy_menu_href(view_name, params);
+        const class_names = ['side-menu__link', ...(is_visually_active ? ['active'] : [])];
+        const link_attrs = { href };
+        if (is_exact_match) {
+            link_attrs['aria-current'] = 'page';
         }
-        const current_params = this.get_params_from_location_hash();
-        let is_active = active_view_name === view_name;
-        if (view_name === 'start' && (active_view_name === 'start' || active_view_name === 'audit_audits')) {
-            is_active = true;
-        }
-        if (is_active && view_name === 'rulefile_sections' && params.section) {
-            is_active = current_params.section === params.section;
-        }
-        if (is_active && view_name === 'audit_settings' && params.section) {
-            is_active = current_params.section === params.section;
-        }
-
-        const class_names = ['side-menu__link', ...(is_active ? ['active'] : [])];
-
-        if (is_active) {
-            const current_item = this.Helpers.create_element('span', {
-                attributes: { 'aria-current': 'page' },
-                class_name: class_names
-            });
-            this.populate_menu_link_content(current_item, { label, count_id, count_value });
-            return current_item;
-        }
-
-        const flat_params = {};
-        for (const [key, value] of Object.entries(params && typeof params === 'object' ? params : {})) {
-            if (value === undefined || value === null) continue;
-            flat_params[key] = String(value);
-        }
-        const href = build_app_location_href_for_view(view_name, flat_params, this.getState);
 
         const link = this.Helpers.create_element('a', {
-            attributes: {
-                href,
-                'aria-label': label
-            },
+            attributes: link_attrs,
             class_name: class_names
         });
         this.populate_menu_link_content(link, { label, count_id, count_value });
