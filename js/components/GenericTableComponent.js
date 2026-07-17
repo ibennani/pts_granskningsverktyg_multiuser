@@ -102,15 +102,18 @@ export class GenericTableComponent {
             });
 
             if (is_sortable) {
+                const btn_attrs = { type: 'button' };
+                if (is_active) {
+                    btn_attrs['aria-label'] = t('generic_table_sort_aria_active', {
+                        label: col.headerLabel,
+                        direction: direction === 'asc' ? t('generic_table_sort_asc') : t('generic_table_sort_desc')
+                    });
+                }
                 const btn = this.Helpers.create_element('button', {
                     type: 'button',
                     class_name: 'generic-table-header-sort-btn',
                     text_content: col.headerLabel,
-                    attributes: {
-                        'aria-label': is_active
-                            ? t('generic_table_sort_aria_active', { label: col.headerLabel, direction: direction === 'asc' ? t('generic_table_sort_asc') : t('generic_table_sort_desc') })
-                            : t('generic_table_sort_aria', { label: col.headerLabel })
-                    }
+                    attributes: btn_attrs
                 });
                 btn.addEventListener('click', () => {
                     const next_dir = is_active && direction === 'asc' ? 'desc' : 'asc';

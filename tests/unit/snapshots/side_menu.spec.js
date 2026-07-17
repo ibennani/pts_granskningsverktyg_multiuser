@@ -97,11 +97,18 @@ describe('SideMenuComponent snapshot', () => {
 
         const nav = root.querySelector('#side-menu-nav');
         expect(nav).toBeTruthy();
-        const texts = [...root.querySelectorAll('a.side-menu__link')].map((a) => a.textContent.trim());
+        const texts = [...root.querySelectorAll('.side-menu__link')].map((el) => el.textContent.trim());
         expect(texts.some((t) => t.includes('Översikt'))).toBe(true);
         expect(texts.some((t) => t.includes('Granskningsdelar'))).toBe(true);
         expect(texts.some((t) => t.includes('Inställningar'))).toBe(true);
         expect(texts.some((t) => t.includes('Logga ut'))).toBe(true);
+
+        const active_overview = [...root.querySelectorAll('.side-menu__link')].find((el) =>
+            el.textContent.trim().includes('Översikt')
+        );
+        expect(active_overview?.tagName).toBe('SPAN');
+        expect(active_overview?.getAttribute('aria-current')).toBe('page');
+        expect(root.querySelectorAll('a.side-menu__link').length).toBeGreaterThan(0);
 
         expect(root.innerHTML).toMatchSnapshot();
     });
@@ -141,17 +148,18 @@ describe('SideMenuComponent snapshot', () => {
         menu.set_current_view('audit_settings', { section: 'information' });
         menu.render();
 
-        const texts = [...root.querySelectorAll('a.side-menu__link')].map((a) => a.textContent.trim());
+        const texts = [...root.querySelectorAll('.side-menu__link')].map((el) => el.textContent.trim());
         expect(texts.some((t) => t.includes('Översikt'))).toBe(true);
         expect(texts.some((t) => t.includes('Inställningar'))).toBe(true);
         expect(texts.some((t) => t.includes('Granskningsöversikten'))).toBe(false);
         expect(texts.some((t) => t.includes('Sammanfattningen'))).toBe(false);
 
-        const settings_link = [...root.querySelectorAll('a.side-menu__link')].find((a) =>
-            a.textContent.trim().includes('Inställningar')
+        const settings_item = [...root.querySelectorAll('.side-menu__link')].find((el) =>
+            el.textContent.trim().includes('Inställningar')
         );
-        expect(settings_link?.classList.contains('active')).toBe(true);
-        expect(settings_link?.getAttribute('aria-current')).toBe('page');
+        expect(settings_item?.tagName).toBe('SPAN');
+        expect(settings_item?.classList.contains('active')).toBe(true);
+        expect(settings_item?.getAttribute('aria-current')).toBe('page');
     });
 
     test('Inställningar är aktiv på audit_settings hub utan section', async () => {
@@ -189,10 +197,11 @@ describe('SideMenuComponent snapshot', () => {
         menu.set_current_view('audit_settings', {});
         menu.render();
 
-        const settings_link = [...root.querySelectorAll('a.side-menu__link')].find((a) =>
-            a.textContent.trim().includes('Inställningar')
+        const settings_item = [...root.querySelectorAll('.side-menu__link')].find((el) =>
+            el.textContent.trim().includes('Inställningar')
         );
-        expect(settings_link?.classList.contains('active')).toBe(true);
-        expect(settings_link?.getAttribute('aria-current')).toBe('page');
+        expect(settings_item?.tagName).toBe('SPAN');
+        expect(settings_item?.classList.contains('active')).toBe(true);
+        expect(settings_item?.getAttribute('aria-current')).toBe('page');
     });
 });

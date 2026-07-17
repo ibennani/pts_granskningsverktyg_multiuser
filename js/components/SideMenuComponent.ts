@@ -2,6 +2,7 @@
 import '../../css/components/side_menu_component.css';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
 
@@ -259,6 +260,25 @@ export class SideMenuComponent {
         return key ? this.Translation.t(key) : view_name;
     }
 
+    populate_menu_link_content(element, { label, count_id, count_value }) {
+        if (count_id !== null && count_id !== undefined && count_value !== null && count_value !== undefined) {
+            const count_str = String(count_value);
+            const parts = label.split(count_str);
+            if (parts.length === 2) {
+                element.appendChild(document.createTextNode(parts[0]));
+                const count_span = this.Helpers.create_element('span', {
+                    class_name: 'side-menu__count',
+                    attributes: { 'data-count-id': count_id },
+                    text_content: count_str
+                });
+                element.appendChild(count_span);
+                element.appendChild(document.createTextNode(parts[1]));
+                return;
+            }
+        }
+        element.textContent = label;
+    }
+
     create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
         const view_from_hash = this.get_view_name_from_location_hash();
         let active_view_name = view_from_hash || this.current_view_name;
@@ -277,39 +297,32 @@ export class SideMenuComponent {
             is_active = current_params.section === params.section;
         }
 
-        const base_path = (window.location && window.location.pathname)
-            ? window.location.pathname.split('?')[0].split('#')[0]
-            : '/';
-        const search_params = new URLSearchParams({ view: view_name, ...params });
-        const href = `${base_path}?${search_params.toString()}`;
+        const class_names = ['side-menu__link', ...(is_active ? ['active'] : [])];
+
+        if (is_active) {
+            const current_item = this.Helpers.create_element('span', {
+                attributes: { 'aria-current': 'page' },
+                class_name: class_names
+            });
+            this.populate_menu_link_content(current_item, { label, count_id, count_value });
+            return current_item;
+        }
+
+        const flat_params = {};
+        for (const [key, value] of Object.entries(params && typeof params === 'object' ? params : {})) {
+            if (value === undefined || value === null) continue;
+            flat_params[key] = String(value);
+        }
+        const href = build_app_location_href_for_view(view_name, flat_params, this.getState);
 
         const link = this.Helpers.create_element('a', {
             attributes: {
                 href,
-                'aria-label': label,
-                ...(is_active ? { 'aria-current': 'page' } : {})
+                'aria-label': label
             },
-            class_name: ['side-menu__link', ...(is_active ? ['active'] : [])]
+            class_name: class_names
         });
-
-        if (count_id !== null && count_id !== undefined && count_value !== null && count_value !== undefined) {
-            const count_str = String(count_value);
-            const parts = label.split(count_str);
-            if (parts.length === 2) {
-                link.appendChild(document.createTextNode(parts[0]));
-                const count_span = this.Helpers.create_element('span', {
-                    class_name: 'side-menu__count',
-                    attributes: { 'data-count-id': count_id },
-                    text_content: count_str
-                });
-                link.appendChild(count_span);
-                link.appendChild(document.createTextNode(parts[1]));
-            } else {
-                link.textContent = label;
-            }
-        } else {
-            link.textContent = label;
-        }
+        this.populate_menu_link_content(link, { label, count_id, count_value });
 
         link.addEventListener('click', (event) => {
             if (is_debug_nav()) {

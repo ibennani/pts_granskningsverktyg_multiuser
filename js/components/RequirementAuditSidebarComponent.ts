@@ -253,6 +253,38 @@ export class RequirementAuditSidebarComponent {
         }
     }
 
+    create_sidebar_nav_entry({ is_active, heading_text, aria_label, sample_id, requirement_id }) {
+        const class_names = ['requirement-audit-sidebar__link', ...(is_active ? ['is-active'] : [])];
+        const link_heading = this.Helpers.create_element('h3', {});
+        link_heading.textContent = heading_text;
+
+        if (is_active) {
+            const current = this.Helpers.create_element('span', {
+                class_name: class_names,
+                attributes: {
+                    'aria-current': 'page',
+                    'aria-label': aria_label
+                }
+            });
+            current.appendChild(link_heading);
+            return current;
+        }
+
+        const link = this.Helpers.create_element('a', {
+            class_name: class_names,
+            text_content: '',
+            attributes: {
+                href: this.build_non_anchor_href('requirement_audit', { sampleId: sample_id, requirementId: requirement_id }),
+                'data-requirement-sidebar-link': 'true',
+                'data-sample-id': sample_id,
+                'data-requirement-id': requirement_id,
+                'aria-label': aria_label
+            }
+        });
+        link.appendChild(link_heading);
+        return link;
+    }
+
     async render(options) {
         if (!this.root || !options) return;
         await this.ensure_dom_initialized();
@@ -433,35 +465,27 @@ export class RequirementAuditSidebarComponent {
 
             // Länken överst: div.wrapper > länk > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
-            const link_heading = this.Helpers.create_element('h3', {});
-            const link = this.Helpers.create_element('a', {
-                class_name: 'requirement-audit-sidebar__link',
-                text_content: '',
-                attributes: {
-                    href: this.build_non_anchor_href('requirement_audit', { sampleId: current_sample.id, requirementId: public_key }),
-                    'data-requirement-sidebar-link': 'true',
-                    'data-sample-id': current_sample.id,
-                    'data-requirement-id': public_key
-                }
-            });
-            link_heading.textContent = requirement.title || this.Translation.t('unknown_value', { val: req_key });
+            const is_current = String(public_key) === String(requirement_id);
 
-            const aria_label_parts = [link_heading.textContent, base_text];
+            const aria_label_parts = [requirement.title || this.Translation.t('unknown_value', { val: req_key }), base_text];
             if (is_updated) {
                 aria_label_parts.push(t('status_updated_tooltip'));
             }
             if (needs_help) {
                 aria_label_parts.push(t('filter_option_needs_help'));
             }
-            link.setAttribute('aria-label', aria_label_parts.join(', '));
 
-            link.appendChild(link_heading);
+            const link = this.create_sidebar_nav_entry({
+                is_active: is_current,
+                heading_text: requirement.title || this.Translation.t('unknown_value', { val: req_key }),
+                aria_label: aria_label_parts.join(', '),
+                sample_id: current_sample.id,
+                requirement_id: public_key
+            });
             link_wrapper.appendChild(link);
             li.appendChild(link_wrapper);
 
-            if (String(public_key) === String(requirement_id)) {
-                link.setAttribute('aria-current', 'page');
-                link.classList.add('is-active');
+            if (is_current) {
                 li.classList.add('is-active');
             }
 
@@ -555,35 +579,28 @@ export class RequirementAuditSidebarComponent {
 
             // Länken överst: div.wrapper > länk > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
-            const link_heading = this.Helpers.create_element('h3', {});
-            const link = this.Helpers.create_element('a', {
-                class_name: 'requirement-audit-sidebar__link',
-                text_content: '',
-                attributes: {
-                    href: this.build_non_anchor_href('requirement_audit', { sampleId: sample.id, requirementId: requirement_key }),
-                    'data-requirement-sidebar-link': 'true',
-                    'data-sample-id': sample.id,
-                    'data-requirement-id': requirement_key
-                }
-            });
-            link_heading.textContent = sample?.description || this.Translation.t('undefined_description');
+            const is_current = String(sample?.id) === String(current_sample_id);
+            const heading_text = sample?.description || this.Translation.t('undefined_description');
 
-            const aria_label_parts = [link_heading.textContent, base_text];
+            const aria_label_parts = [heading_text, base_text];
             if (is_updated) {
                 aria_label_parts.push(t('status_updated_tooltip'));
             }
             if (needs_help) {
                 aria_label_parts.push(t('filter_option_needs_help'));
             }
-            link.setAttribute('aria-label', aria_label_parts.join(', '));
 
-            link.appendChild(link_heading);
+            const link = this.create_sidebar_nav_entry({
+                is_active: is_current,
+                heading_text,
+                aria_label: aria_label_parts.join(', '),
+                sample_id: sample.id,
+                requirement_id: requirement_key
+            });
             link_wrapper.appendChild(link);
             li.appendChild(link_wrapper);
 
-            if (String(sample?.id) === String(current_sample_id)) {
-                link.setAttribute('aria-current', 'page');
-                link.classList.add('is-active');
+            if (is_current) {
                 li.classList.add('is-active');
             }
 

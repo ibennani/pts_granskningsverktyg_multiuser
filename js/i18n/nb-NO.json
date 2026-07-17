@@ -916,7 +916,6 @@
   "general_info": "Generell informasjon",
   "generic_ok": "Ok",
   "generic_table_sort_announced": "Tabellen er sortert etter {label}, {direction}.",
-  "generic_table_sort_aria": "Sorter etter {label}",
   "generic_table_sort_aria_active": "{label}, {direction}",
   "generic_table_sort_asc": "stigende",
   "generic_table_sort_desc": "synkende",

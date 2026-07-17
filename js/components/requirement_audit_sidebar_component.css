@@ -164,6 +164,9 @@
 
 .requirement-audit-sidebar__link.is-active {
     font-weight: 700;
+    text-decoration: none;
+    color: var(--text-color);
+    cursor: default;
 }
 
 [data-theme="dark"] .requirement-audit-sidebar__item.is-active {

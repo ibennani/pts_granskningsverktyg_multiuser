@@ -841,7 +841,6 @@
   "general_info": "General Information",
   "generic_ok": "Ok",
   "generic_table_sort_announced": "Table sorted by {label}, {direction}.",
-  "generic_table_sort_aria": "Sort by {label}",
   "generic_table_sort_aria_active": "{label}, {direction}",
   "generic_table_sort_asc": "ascending",
   "generic_table_sort_desc": "descending",

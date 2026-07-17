@@ -891,7 +891,6 @@
   "general_info": "Allmän information",
   "generic_ok": "Ok",
   "generic_table_sort_announced": "Tabellen är sorterad efter {label}, {direction}.",
-  "generic_table_sort_aria": "Sortera efter {label}",
   "generic_table_sort_aria_active": "{label}, {direction}",
   "generic_table_sort_asc": "stigande",
   "generic_table_sort_desc": "fallande",
