@@ -835,89 +835,62 @@
     margin-bottom: 0;
 }
 
-/* Bilaga 1 brödtextredigerare och visning */
-.appendix1-sections-editor-host,
-.appendix1-sections-view-host {
+/* Bilaga 1 brödtextredigerare */
+.appendix1-sections-editor-host {
     display: flex;
     flex-direction: column;
     gap: 0;
 }
 
-.appendix1-sections-editor-host .appendix1-section-panel,
-.appendix1-sections-view-host .appendix1-section-panel {
+.appendix1-sections-editor-host .appendix1-how-it-works,
+.appendix1-sections-editor-host .appendix1-placeholders-section {
     margin-top: 1.5rem;
 }
 
-.appendix1-sections-editor-host .appendix1-section-panel:first-child,
-.appendix1-sections-view-host .appendix1-section-panel:first-child {
+.appendix1-sections-editor-host .appendix1-how-it-works:first-child {
     margin-top: 0;
 }
 
-.appendix1-sections-editor-host .appendix1-section-panel__heading,
-.appendix1-sections-view-host .appendix1-section-panel__heading {
+.appendix1-sections-editor-host .appendix1-how-it-works__heading {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.appendix1-sections-editor-host .appendix1-placeholders-section__heading,
+.appendix1-sections-editor-host .appendix1-deficiency-intros-panel__heading {
     margin: 0 0 0.5rem;
     font-size: 1.25rem;
     font-weight: 600;
     line-height: 1.35;
 }
 
-.appendix1-sections-editor-host .appendix1-section-panel__hint,
-.appendix1-sections-view-host .appendix1-section-panel__hint {
+.appendix1-sections-editor-host .appendix1-how-it-works__list {
+    margin: 0;
+    padding-left: 1.5rem;
+    line-height: 1.35;
+}
+
+.appendix1-sections-editor-host .appendix1-how-it-works__item {
+    margin: 0;
+}
+
+.appendix1-sections-editor-host .appendix1-placeholders-section__hint {
     margin: 0 0 0.75rem;
 }
 
-.appendix1-sections-view-host .appendix1-body-text-preview {
-    margin-top: 0.25rem;
-}
-
-.appendix1-sections-view-host .appendix1-view-taxonomy-value {
-    margin: 0 0 0.75rem;
-}
-
-.appendix1-sections-view-host .appendix1-deficiency-intros-view-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.appendix1-sections-view-host .appendix1-deficiency-intro-view-field__title {
-    margin: 0 0 0.35rem;
-    font-size: 1.05rem;
-    font-weight: 600;
-}
-
-.appendix1-sections-editor-host .appendix1-generate-sections-button {
-    margin-top: 0.75rem;
-}
-
-.appendix1-sections-editor-host .appendix1-editor-intro {
-    margin-bottom: 1rem;
-}
-
-.appendix1-sections-editor-host .appendix1-editor-intro__lead {
-    margin-bottom: 0.75rem;
-}
-
-.appendix1-sections-editor-host .appendix1-editor-intro__subheading {
-    margin-bottom: 0.35rem;
-    font-weight: 600;
-}
-
-.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-list,
-.appendix1-sections-view-host .appendix1-editor-intro__placeholder-list {
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-list {
     margin: 0 0 0.75rem 1.5rem;
     line-height: 1.35;
 }
 
 .appendix1-sections-editor-host .appendix1-editor-intro__placeholder-list li,
-.appendix1-sections-view-host .appendix1-editor-intro__placeholder-list li,
-.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-item,
-.appendix1-sections-view-host .appendix1-editor-intro__placeholder-item {
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-item {
     margin-bottom: 0.15rem;
 }
 
-.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-item,
-.appendix1-sections-view-host .appendix1-editor-intro__placeholder-item {
+.appendix1-sections-editor-host .appendix1-editor-intro__placeholder-item {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -939,12 +912,13 @@
     font-weight: normal;
 }
 
-.appendix1-sections-editor-host .appendix1-editor-intro__note {
-    margin-bottom: 0;
-}
-
 .appendix1-sections-editor-host .appendix1-grouping-taxonomy-select {
     min-width: 0;
+}
+
+.appendix1-sections-editor-host .appendix1-grouping-taxonomy-field,
+.appendix1-sections-editor-host .appendix1-body-text-editor {
+    margin-top: 1.25rem;
 }
 
 .appendix1-sections-editor-host .appendix1-deficiency-sections-panel {
@@ -958,13 +932,6 @@
     gap: 0.75rem;
 }
 
-.appendix1-sections-editor-host .appendix1-deficiency-intros-panel__heading {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    line-height: 1.35;
-}
-
 .appendix1-sections-editor-host .appendix1-deficiency-intros-panel__hint {
     margin: 0.35rem 0 0.75rem;
 }
@@ -972,45 +939,6 @@
 .appendix1-sections-editor-host .appendix1-deficiency-intro-field label,
 .appendix1-sections-editor-host .appendix1-deficiency-intros-list label {
     font-weight: 600;
-}
-
-.appendix1-sections-editor-host .appendix1-deficiency-sections-preview,
-.appendix1-sections-view-host .appendix1-deficiency-sections-preview {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.appendix1-sections-editor-host .appendix1-deficiency-sections-preview__item,
-.appendix1-sections-view-host .appendix1-deficiency-sections-preview__item {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-    padding: 0.6rem 0.85rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--plate-background-color);
-    line-height: 1.45;
-}
-
-.appendix1-sections-editor-host .appendix1-deficiency-sections-preview__number,
-.appendix1-sections-view-host .appendix1-deficiency-sections-preview__number {
-    flex-shrink: 0;
-    min-width: 2.25rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--primary-color);
-}
-
-.appendix1-sections-editor-host .appendix1-deficiency-sections-preview__title,
-.appendix1-sections-view-host .appendix1-deficiency-sections-preview__title {
-    flex: 1;
-    min-width: 0;
-    font-weight: 500;
-    color: var(--text-color);
 }
 
 /* Hub-sidor (Klassificeringar, Bilagornas malltexter): samma h1→intro-avstånd som .content-plate h1 */

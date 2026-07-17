@@ -8,9 +8,10 @@ import {
     resolve_page_types,
     resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { read_rulefile_appendix1_body_text } from '../../logic/appendix1_sections.js';
 import { read_rulefile_appendix2_labels } from '../../logic/appendix2_excel_template.js';
 import { read_rulefile_appendix3_template } from '../../logic/appendix3_screenshots_template.js';
-import { render_appendix1_sections_view } from './rulefile_appendix1_sections_view_ui.js';
+import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
 import { render_rulefile_appendix_templates_hub } from './rulefile_appendix_templates_render.js';
 import { render_markdown_to_html } from '../../export/export_html_build_primitives.js';
 import '../../components/markdown_preview_editor.css';
@@ -236,11 +237,27 @@ export function render_rulefile_appendix_templates_hub_section(ctx) {
 export function render_rulefile_appendix1_template_section(ctx, ruleFileContent) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+    const body_text = read_rulefile_appendix1_body_text(ruleFileContent);
 
-    render_appendix1_sections_view(
+    render_appendix1_summary_editor_page(
         { Helpers: ctx.Helpers, Translation: ctx.Translation },
         section,
-        ruleFileContent
+        {
+            heading_id: 'rulefile-appendix1-summary-heading',
+            heading_key: 'rulefile_appendix1_summary_heading',
+            intro_key: 'rulefile_appendix1_summary_intro',
+            label_key: 'rulefile_appendix1_summary_label',
+            textarea_id: 'rulefile-appendix1-summary-text-view',
+            initial_text: body_text,
+            readonly: true,
+            summary_host: {
+                is_editing: false,
+                working_text: body_text,
+                textarea_ref: null,
+                preview_container_ref: null,
+            },
+            on_save: () => {},
+        }
     );
 
     return section;

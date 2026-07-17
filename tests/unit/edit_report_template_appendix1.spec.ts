@@ -80,7 +80,7 @@ const sample_rule_file = {
 };
 
 describe('rulefile_appendix1_sections_editor_ui', () => {
-    test('visar bristgrupper och generera-knapp vid laddning', () => {
+    test('visar bristgrupper vid laddning utan separat generera-knapp', () => {
         const container = document.createElement('div');
 
         const handles = render_appendix1_sections_editor(
@@ -98,13 +98,13 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
         expect(preview_items.length).toBe(2);
         expect(
             container.querySelector('.appendix1-generate-sections-button')
-        ).toBeTruthy();
+        ).toBeNull();
 
         const sections = handles.get_sections();
         expect(sections.every((section) => section.kind === 'deficiency_group')).toBe(true);
     });
 
-    test('visar h2-avsnitt för brödtext, taxonomi och platshållare', () => {
+    test('visar hjälptext och platshållarsektion före formulärfälten', () => {
         const container = document.createElement('div');
 
         render_appendix1_sections_editor(
@@ -116,14 +116,30 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
             sample_rule_file
         );
 
-        const headings = Array.from(
-            container.querySelectorAll('.appendix1-section-panel__heading')
-        ).map((heading) => heading.textContent);
+        const how_it_works = container.querySelector('.appendix1-how-it-works__heading');
+        const placeholders = container.querySelector('.appendix1-placeholders-section__heading');
+        const taxonomy_field = container.querySelector('.appendix1-grouping-taxonomy-field');
 
-        expect(headings).toContain('rulefile_appendix1_body_text_heading');
-        expect(headings).toContain('rulefile_appendix1_taxonomy_groups_heading');
-        expect(headings).toContain('rulefile_appendix1_deficiency_intros_heading');
-        expect(headings).toContain('rulefile_appendix1_body_text_placeholders_heading');
+        expect(how_it_works?.textContent).toBe('rulefile_appendix1_how_it_works_heading');
+        const how_it_works_list = container.querySelector('.appendix1-how-it-works__list');
+        expect(how_it_works_list?.tagName).toBe('UL');
+        expect(container.querySelectorAll('.appendix1-how-it-works__list li').length).toBe(5);
+        expect(placeholders?.textContent).toBe('rulefile_appendix1_body_text_placeholders_heading');
+        expect(
+            how_it_works?.compareDocumentPosition(taxonomy_field as Node)
+                & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+        expect(
+            placeholders?.compareDocumentPosition(taxonomy_field as Node)
+                & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+        expect(
+            Array.from(container.querySelectorAll('h2')).map((heading) => heading.textContent)
+        ).not.toContain('rulefile_appendix1_body_text_heading');
+        expect(
+            Array.from(container.querySelectorAll('h2')).map((heading) => heading.textContent)
+        ).not.toContain('rulefile_appendix1_taxonomy_groups_heading');
+        expect(container.querySelector('.appendix1-deficiency-intros-panel__heading')).toBeTruthy();
     });
 
     test('visar kort rubrik och hjälptext för bristinledningar', () => {
@@ -152,31 +168,6 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
         expect(
             container.querySelector('.appendix1-deficiency-intros-list')?.getAttribute('aria-labelledby')
         ).toBe(heading?.id);
-    });
-
-    test('generera-knappen anropar on_generate vid klick', () => {
-        const container = document.createElement('div');
-        const on_generate = jest.fn();
-
-        render_appendix1_sections_editor(
-            {
-                Helpers: create_helpers(),
-                Translation: { t: (key: string) => key },
-            },
-            container,
-            sample_rule_file,
-            { on_generate }
-        );
-
-        const generate_btn = container.querySelector(
-            '.appendix1-generate-sections-button'
-        ) as HTMLButtonElement;
-        generate_btn.click();
-
-        expect(on_generate).toHaveBeenCalledTimes(1);
-        expect(on_generate.mock.calls[0]?.[0]?.every((section) => section.kind === 'deficiency_group')).toBe(
-            true
-        );
     });
 
     test('uppdaterar bristgruppsförhandsvisning när taxonomi byts', () => {
@@ -301,49 +292,4 @@ describe('EditReportTemplateAppendix1Component', () => {
         ]);
     });
 
-    test('generera-knappen visar toast även om komponenten förstörs under serversynk', async () => {
-        const messages: Array<{ msg: string; type: string }> = [];
-        const comp = new EditReportTemplateAppendix1Component();
-        const root = document.createElement('div');
-
-        flush_mock.mockImplementation(async () => {
-            comp.destroy();
-        });
-
-        await comp.init({
-            root,
-            deps: {
-                router: () => {},
-                getState: () => ({
-                    auditStatus: 'rulefile_editing',
-                    ruleSetId: 'rule-1',
-                    ruleFileContent: sample_rule_file,
-                }),
-                dispatch: async () => {},
-                StoreActionTypes: { UPDATE_RULEFILE_CONTENT: 'UPDATE_RULEFILE_CONTENT' },
-                Translation: { t: (key: string) => key },
-                Helpers: create_helpers(),
-                NotificationComponent: {
-                    show_global_message: (msg: string, type: string) => {
-                        messages.push({ msg, type });
-                    },
-                },
-            },
-        });
-
-        comp.render();
-
-        const generate_btn = root.querySelector(
-            '.appendix1-generate-sections-button'
-        ) as HTMLButtonElement | null;
-        expect(generate_btn).toBeTruthy();
-        generate_btn?.click();
-
-        await new Promise((resolve) => setTimeout(resolve, 0));
-
-        expect(flush_mock).toHaveBeenCalledTimes(1);
-        expect(messages).toEqual([
-            { msg: 'rulefile_appendix1_sections_generated', type: 'success' },
-        ]);
-    });
 });

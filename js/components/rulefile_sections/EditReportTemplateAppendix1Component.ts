@@ -46,10 +46,6 @@ export class EditReportTemplateAppendix1Component {
         this.deps?.router('rulefile_sections', { section: 'report_template', appendix: '1' });
     }
 
-    private handle_generate_sections(): void {
-        void this.save_sections('rulefile_appendix1_sections_generated');
-    }
-
     private async save_sections(
         success_message_key = 'rulefile_appendix1_section_saved'
     ): Promise<void> {
@@ -116,10 +112,7 @@ export class EditReportTemplateAppendix1Component {
                 NotificationComponent: this.deps.NotificationComponent,
             },
             editor_host,
-            normalized,
-            {
-                on_generate: () => this.handle_generate_sections(),
-            }
+            normalized
         );
         this.root.appendChild(editor_host);
 
