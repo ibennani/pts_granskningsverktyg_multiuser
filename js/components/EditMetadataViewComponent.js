@@ -1,12 +1,26 @@
 import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { get_current_user_name } from '../utils/helpers.js';
+import { load_metadata_auditor_options } from '../logic/metadata_auditor_name_field.js';
+import { load_metadata_case_handler_options } from '../logic/metadata_case_handler_field.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { get_show_empty_metadata_form, clear_show_empty_metadata_form } from '../app/browser_globals.js';
 import {
     count_timestamps_after_end_date,
     total_clamp_count
 } from '../logic/audit_clamp_activity_to_end_date.js';
+import { get_rules, get_rule } from '../api/client.js';
+import { version_greater_than } from '../utils/version_utils.js';
+import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
+import {
+    build_published_monitoring_rule_options,
+    find_monitoring_option_by_key,
+    resolve_selected_monitoring_key
+} from '../logic/published_monitoring_rule_options.js';
+import { load_published_rule_content } from '../logic/new_audit_rule_loader.js';
+import {
+    build_empty_new_audit_metadata_form_data,
+    new_audit_metadata_differs_from_empty_form
+} from '../logic/new_audit_empty_metadata.js';
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -36,6 +50,12 @@ export class EditMetadataViewComponent {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
+        this.ValidationLogic = deps.ValidationLogic || (typeof window !== 'undefined' ? window.ValidationLogic : null);
+        this.monitoring_type_options = [];
+        this._monitoring_type_change_in_progress = false;
+        this._monitoring_type_confirmed_by_user = false;
+        /** Avbryter inaktuella async render()-anrop (samma mönster som RulefileSectionsViewComponent). */
+        this._render_generation = 0;
         
         this.metadata_form_container_element = null;
 
@@ -43,7 +63,106 @@ export class EditMetadataViewComponent {
         this.handle_cancel = this.handle_cancel.bind(this);
         this.handle_cancel_new_audit = this.handle_cancel_new_audit.bind(this);
         this.handle_go_to_list = this.handle_go_to_list.bind(this);
+        this.handle_monitoring_type_change = this.handle_monitoring_type_change.bind(this);
+    }
 
+    _get_validation_logic() {
+        return this.ValidationLogic || (typeof window !== 'undefined' ? window.ValidationLogic : null);
+    }
+
+    async _build_monitoring_type_options() {
+        if (this.monitoring_type_options.length > 0) {
+            return this.monitoring_type_options;
+        }
+        const t = this.Translation.t;
+        try {
+            const rules = await get_rules();
+            this.monitoring_type_options = build_published_monitoring_rule_options(
+                rules,
+                version_greater_than,
+                t
+            );
+        } catch {
+            this.monitoring_type_options = [];
+        }
+        return this.monitoring_type_options;
+    }
+
+    async _ensure_new_audit_has_rule_file() {
+        const options = await this._build_monitoring_type_options();
+        if (options.length === 0) {
+            this.NotificationComponent?.show_global_message(this.Translation.t('server_no_rules'), 'error');
+            this.router('start', { allow_new_audit_exit: '1' });
+            return false;
+        }
+        return true;
+    }
+
+    async handle_monitoring_type_change(monitoring_key) {
+        if (this._monitoring_type_change_in_progress) return;
+        const monitoring_key_trimmed = String(monitoring_key ?? '').trim();
+        if (!monitoring_key_trimmed) return;
+        const option = find_monitoring_option_by_key(this.monitoring_type_options, monitoring_key_trimmed);
+        if (!option) return;
+
+        this._monitoring_type_change_in_progress = true;
+        try {
+            this._monitoring_type_confirmed_by_user = true;
+            this.metadata_form_component_instance.autosave_session?.flush({
+                should_trim: true,
+                skip_render: true
+            });
+            const form_data = this.metadata_form_component_instance.collect_current_form_data(true);
+            await this.dispatch({
+                type: this.StoreActionTypes.UPDATE_METADATA,
+                payload: {
+                    ...form_data,
+                    auditTypeId: '',
+                    auditTypeLabel: '',
+                    skip_render: true
+                }
+            });
+
+            const loaded = await load_published_rule_content(option.rule_id, {
+                get_rule,
+                migrate: migrate_rulefile_to_new_structure,
+                validate: (content) => this._get_validation_logic()?.validate_rule_file_json?.(content) ?? { isValid: false },
+                Translation: this.Translation
+            });
+            if (!loaded.ok) {
+                this.NotificationComponent?.show_global_message(loaded.error, 'error');
+                return;
+            }
+
+            const current_state = this.getState();
+            const rule_action_type = current_state.ruleFileContent
+                ? this.StoreActionTypes.UPDATE_NEW_AUDIT_RULEFILE
+                : this.StoreActionTypes.INITIALIZE_NEW_AUDIT;
+
+            await this.dispatch({
+                type: rule_action_type,
+                payload: {
+                    ruleFileContent: loaded.content,
+                    ruleSetId: loaded.rule_id,
+                    skip_render: true
+                }
+            });
+
+            const next_state = this.getState();
+            this.metadata_form_component_instance.refresh_monitoring_type_field(
+                next_state.ruleFileContent,
+                true,
+                monitoring_key_trimmed,
+                this.monitoring_type_options
+            );
+            this.metadata_form_component_instance.refresh_rule_dependent_fields(
+                next_state.ruleFileContent,
+                next_state.auditMetadata?.auditTypeId ?? '',
+                true
+            );
+        } finally {
+            this._monitoring_type_change_in_progress = false;
+        }
     }
 
     _request_focus_on_audit_info_h2() {
@@ -301,6 +420,7 @@ export class EditMetadataViewComponent {
 
     async render() {
         if (!this.root) return;
+        const render_generation = ++this._render_generation;
         this.root.innerHTML = '';
         
         const t = this.Translation.t;
@@ -312,10 +432,17 @@ export class EditMetadataViewComponent {
             return;
         }
 
+        const has_rule = await this._ensure_new_audit_has_rule_file();
+        if (!has_rule || render_generation !== this._render_generation) return;
+
+        await this._build_monitoring_type_options();
+        if (render_generation !== this._render_generation) return;
+        let state_after_rule = this.getState();
+
         // För nya granskningar ska vi aldrig automatiskt kasta användaren tillbaka till översikten
         // om något är inkonsekvent – metadata-vyn är själva startpunkten.
         // För pågående/avslutade granskningar utan regelfil-innehåll skickar vi fortfarande tillbaka till start.
-        if (!current_state.ruleFileContent && !is_new_audit) {
+        if (!state_after_rule.ruleFileContent && !is_new_audit) {
             this.router('start');
             return;
         }
@@ -352,39 +479,79 @@ export class EditMetadataViewComponent {
             }
         });
 
-        const metadata = (() => {
-            const show_empty = is_new_audit && typeof window !== 'undefined' && get_show_empty_metadata_form();
-            if (show_empty) {
-                clear_show_empty_metadata_form();
-                return {
-                    caseNumber: '',
-                    actorName: '',
-                    actorLink: '',
-                    auditorName: get_current_user_name() || '',
-                    caseHandler: '',
-                    internalComment: ''
-                };
-            }
-            const from = current_state.auditMetadata || {};
+        const metadata = await (async () => {
+            const use_empty_form = is_new_audit && state_after_rule.freshNewAuditMetadata === true;
+            const from = state_after_rule.auditMetadata || {};
             const str = (v) => (v !== null && v !== undefined && String(v).trim() !== '' ? String(v).trim() : '');
+            if (use_empty_form) {
+                const empty = build_empty_new_audit_metadata_form_data(get_current_user_name() || '');
+                if (new_audit_metadata_differs_from_empty_form(from, get_current_user_name() || '')) {
+                    await this.dispatch({
+                        type: this.StoreActionTypes.UPDATE_METADATA,
+                        payload: {
+                            ...empty,
+                            skip_render: true,
+                            skip_server_sync: true,
+                            preserve_fresh_new_audit_metadata: true
+                        }
+                    });
+                }
+                return empty;
+            }
             const cleaned = {
                 caseNumber: str(from.caseNumber),
                 actorName: str(from.actorName),
                 actorLink: str(from.actorLink),
                 auditorName: str(from.auditorName) || get_current_user_name() || '',
                 caseHandler: str(from.caseHandler),
-                internalComment: (from.internalComment !== null && from.internalComment !== undefined ? String(from.internalComment) : '').trim()
+                internalComment: (from.internalComment !== null && from.internalComment !== undefined ? String(from.internalComment) : '').trim(),
+                auditTypeId: str(from.auditTypeId),
+                auditTypeLabel: str(from.auditTypeLabel)
             };
             if (is_new_audit) {
-                const keys = ['caseNumber', 'actorName', 'actorLink', 'auditorName', 'caseHandler', 'internalComment'];
+                const keys = [
+                    'caseNumber',
+                    'actorName',
+                    'actorLink',
+                    'auditorName',
+                    'caseHandler',
+                    'internalComment',
+                    'auditTypeId',
+                    'auditTypeLabel'
+                ];
                 const state_matches = keys.every(k => (from[k] === cleaned[k] || (str(from[k]) === cleaned[k])));
-                const no_extra_keys = Object.keys(from).every(k => keys.includes(k));
+                const allowed_keys = new Set([
+                    ...keys,
+                    'appendix1SummaryText',
+                    'appendix1SectionOverrides',
+                    'appendix1PrincipleIntroOverrides',
+                    'lastInProgressActivityAt'
+                ]);
+                const no_extra_keys = Object.keys(from).every(k => allowed_keys.has(k));
                 if (!state_matches || !no_extra_keys) {
-                    this.dispatch({ type: this.StoreActionTypes.UPDATE_METADATA, payload: cleaned });
+                    await this.dispatch({
+                        type: this.StoreActionTypes.UPDATE_METADATA,
+                        payload: {
+                            ...cleaned,
+                            skip_render: true
+                        }
+                    });
                 }
             }
             return cleaned;
         })();
+
+        state_after_rule = this.getState();
+        const is_fresh_new_audit_metadata = state_after_rule.freshNewAuditMetadata === true;
+        if (
+            !this._monitoring_type_confirmed_by_user
+            && !is_fresh_new_audit_metadata
+            && state_after_rule.ruleFileContent
+            && state_after_rule.ruleSetId
+        ) {
+            this._monitoring_type_confirmed_by_user = true;
+        }
+
         const start_time_iso = (() => {
             if (is_new_audit) return null;
             const state_for_times = this.AuditLogic?.recalculateAuditTimes
@@ -413,6 +580,15 @@ export class EditMetadataViewComponent {
         const end_date_input_value = end_time_iso && this.Helpers?.format_iso_for_locale_date_input
             ? this.Helpers.format_iso_for_locale_date_input(end_time_iso, lang_code)
             : '';
+        const monitoring_type_confirmed = this._monitoring_type_confirmed_by_user;
+        const selected_monitoring_key = monitoring_type_confirmed
+            ? resolve_selected_monitoring_key(this.monitoring_type_options, state_after_rule.ruleSetId)
+            : '';
+        const auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
+        const case_handler_options = await load_metadata_case_handler_options(
+            metadata.caseHandler || ''
+        );
+        if (render_generation !== this._render_generation) return;
         const form_options = {
             initialData: {
                 ...metadata,
@@ -422,8 +598,15 @@ export class EditMetadataViewComponent {
             showStartDate: !is_new_audit,
             showEndDate: is_locked,
             effectiveStartIso: start_time_iso,
-            ruleFileContent: current_state.ruleFileContent,
-            auditStatus: current_state.auditStatus,
+            ruleFileContent: state_after_rule.ruleFileContent,
+            auditStatus: state_after_rule.auditStatus,
+            showMonitoringTypeSelection: is_new_audit && this.monitoring_type_options.length > 0,
+            monitoringTypeOptions: this.monitoring_type_options,
+            selectedMonitoringKey: selected_monitoring_key,
+            monitoringTypeConfirmed: monitoring_type_confirmed,
+            onMonitoringTypeChange: is_new_audit ? this.handle_monitoring_type_change : null,
+            auditorNameOptions: auditor_name_options,
+            caseHandlerOptions: case_handler_options,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
             cancelButtonText: t('return_without_saving_button_text'),
             goToListButtonText: is_new_audit ? t('go_to_audit_list_button') : null
@@ -445,5 +628,9 @@ export class EditMetadataViewComponent {
         this.root = null;
         this.deps = null;
         this.AuditLogic = null;
+        this.ValidationLogic = null;
+        this.monitoring_type_options = [];
+        this._monitoring_type_confirmed_by_user = false;
+        this._render_generation += 1;
     }
 }

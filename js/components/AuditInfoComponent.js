@@ -97,9 +97,16 @@ export class AuditInfoComponent {
             info_panel.appendChild(this.create_info_item('case_number', md.caseNumber));
         }
 
-        if (md.auditTypeLabel) {
-            info_panel.appendChild(this.create_info_item('metadata_audit_type_label', md.auditTypeLabel));
-        }
+        const monitoring_type_label = rf_meta.monitoringType?.text || rf_meta.monitoringType?.label || '';
+        info_panel.appendChild(
+            this.create_info_item('rulefile_metadata_field_monitoring_type_label', monitoring_type_label)
+        );
+
+        const audit_type_display = String(md.auditTypeLabel ?? '').trim()
+            || t('metadata_audit_type_not_selected');
+        info_panel.appendChild(
+            this.create_info_item('metadata_audit_type_question_label', audit_type_display)
+        );
 
         info_panel.appendChild(this.create_info_item('actor_name', md.actorName));
 

@@ -33,6 +33,8 @@ function build_translation() {
         audit_status_not_audited: 'Ej granskat',
         result_summary_and_deficiency_analysis: 'Resultat och bristindex',
         audit_info_title: 'Granskningsinformation',
+        rulefile_metadata_field_monitoring_type_label: 'Vad ska granskas?',
+        metadata_audit_type_question_label: 'Vilken typ av granskning är detta?',
         case_number: 'Mål / ID',
         actor_name: 'Aktör',
         auditor_name: 'Granskare',
@@ -98,8 +100,15 @@ describe('AuditOverviewComponent snapshot', () => {
                 auditorName: 'Snap Granskare',
                 caseHandler: '',
                 internalComment: '',
+                auditTypeLabel: 'Tillsyn, LPTT',
             },
-            ruleFileContent: fixture_rule,
+            ruleFileContent: {
+                ...fixture_rule,
+                metadata: {
+                    ...fixture_rule.metadata,
+                    monitoringType: { text: 'Webb' },
+                },
+            },
             samples: [
                 {
                     id: 'sample-1',

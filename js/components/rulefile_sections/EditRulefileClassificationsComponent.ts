@@ -10,7 +10,11 @@ import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.j
 
 import { normalize_rulefile_metadata_vocabularies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
-import { normalize_audit_types_for_persist } from '../../../shared/rulefile/rulefile_audit_types.js';
+import {
+    ensure_audit_types_for_edit,
+    normalize_audit_types_for_persist,
+    resolve_audit_types,
+} from '../../../shared/rulefile/rulefile_audit_types.js';
 
 import { finalize_taxonomy_ids_for_persist } from '../../logic/taxonomy_persist.js';
 
@@ -100,6 +104,10 @@ export class EditRulefileClassificationsComponent {
 
     private draft_taxonomy: TaxonomyEntryPersist | null = null;
 
+    private form_actions_ref: HTMLElement | null = null;
+
+    private audit_types_structure_snapshot = '';
+
     skip_autosave_on_destroy = false;
 
 
@@ -118,6 +126,10 @@ export class EditRulefileClassificationsComponent {
 
         this.taxonomy_id = String(deps.params?.taxonomyId ?? '').trim();
 
+        if (this.part === 'audit_types') {
+            this.capture_persisted_audit_type_structure_baseline();
+        }
+
         this.panel_container = null;
 
         this.mapping_apply = null;
@@ -127,6 +139,10 @@ export class EditRulefileClassificationsComponent {
         this.autosave_session = null;
 
         this.draft_taxonomy = null;
+
+        this.form_actions_ref = null;
+
+        this.audit_types_structure_snapshot = '';
 
         this.skip_autosave_on_destroy = false;
 
@@ -187,6 +203,53 @@ export class EditRulefileClassificationsComponent {
             }) ?? null
         );
     }
+
+    private normalized_audit_type_id_snapshot(metadata: Record<string, unknown>): string {
+        const scratch = clone_metadata(metadata) as Record<string, unknown>;
+        ensure_audit_types_for_edit(scratch);
+        return JSON.stringify(
+            resolve_audit_types(scratch)
+                .map((row) => row.id)
+                .sort()
+        );
+    }
+
+    private capture_persisted_audit_type_structure_baseline(): void {
+        if (!this.deps) {
+            this.audit_types_structure_snapshot = '[]';
+            return;
+        }
+        const state = this.deps.getState();
+        const metadata = (state.ruleFileContent as Record<string, unknown> | undefined)?.metadata;
+        if (!metadata || typeof metadata !== 'object') {
+            this.audit_types_structure_snapshot = '[]';
+            return;
+        }
+        this.audit_types_structure_snapshot = this.normalized_audit_type_id_snapshot(
+            metadata as Record<string, unknown>
+        );
+    }
+
+    private audit_types_structure_is_dirty(): boolean {
+        if (!this.working_metadata) return false;
+        return (
+            this.normalized_audit_type_id_snapshot(this.working_metadata) !==
+            this.audit_types_structure_snapshot
+        );
+    }
+
+    private update_audit_types_form_actions_visibility(): void {
+        if (this.part !== 'audit_types' || !this.form_actions_ref || !this.working_metadata) return;
+        this.form_actions_ref.classList.toggle('is-visible', this.audit_types_structure_is_dirty());
+    }
+
+    private handle_audit_type_edit_saved = (): void => {
+        this.perform_save(true);
+    };
+
+    private handle_audit_type_structure_change = (): void => {
+        this.update_audit_types_form_actions_visibility();
+    };
 
     private dispatch_save(rule_file_content: Record<string, unknown>, skip_render: boolean): void {
 
@@ -327,7 +390,9 @@ export class EditRulefileClassificationsComponent {
 
             render_audit_types_editor(ctx, this.panel_container, this.ensure_working_metadata(), {
 
-                on_change: this.handle_autosave_input,
+                on_edit_saved: this.handle_audit_type_edit_saved,
+
+                on_structure_change: this.handle_audit_type_structure_change,
 
             });
 
@@ -390,6 +455,10 @@ export class EditRulefileClassificationsComponent {
 
 
     private navigate_back_to_part_view(): void {
+        if (this.part === 'audit_types') {
+            this.deps?.router('rulefile_sections', { section: 'classifications' });
+            return;
+        }
 
         const params: Record<string, string> = { section: 'classifications', part: this.part };
 
@@ -422,6 +491,13 @@ export class EditRulefileClassificationsComponent {
         }
 
         this.build_updated_rulefile(true);
+
+        if (this.part === 'audit_types') {
+            this.audit_types_structure_snapshot = this.normalized_audit_type_id_snapshot(
+                this.ensure_working_metadata()
+            );
+            this.update_audit_types_form_actions_visibility();
+        }
 
         try {
 
@@ -474,6 +550,10 @@ export class EditRulefileClassificationsComponent {
 
         this.taxonomy_id = String(this.deps.params?.taxonomyId ?? '').trim();
 
+        if (this.part === 'audit_types') {
+            this.capture_persisted_audit_type_structure_baseline();
+        }
+
         this.mapping_apply = null;
 
         this.deficiency_apply = null;
@@ -524,13 +604,23 @@ export class EditRulefileClassificationsComponent {
 
         });
 
-        back_button.addEventListener('click', () => this.navigate_back_to_part_view());
+        back_button.addEventListener('click', () => {
+            if (this.part === 'audit_types' && this.audit_types_structure_is_dirty()) {
+                this.skip_autosave_on_destroy = true;
+                this.working_metadata = null;
+            }
+            this.navigate_back_to_part_view();
+        });
 
         actions.append(save_button, back_button);
 
         form.appendChild(actions);
 
+        this.form_actions_ref = actions;
 
+        if (this.part === 'audit_types') {
+            actions.classList.add('audit-types-structural-actions');
+        }
 
         form.addEventListener('submit', (event) => {
 
@@ -546,10 +636,15 @@ export class EditRulefileClassificationsComponent {
 
         this.render_panel();
 
+        if (this.part === 'audit_types') {
+            this.update_audit_types_form_actions_visibility();
+        }
+
 
 
         if (this.deps.AutosaveService?.create_session) {
-            const skip_create_autosave = this.part === 'taxonomy' && !this.taxonomy_id;
+            const skip_create_autosave =
+                (this.part === 'taxonomy' && !this.taxonomy_id) || this.part === 'audit_types';
             if (!skip_create_autosave) {
                 this.autosave_session = this.deps.AutosaveService.create_session({
                     save: () => this.perform_save(true),
@@ -563,7 +658,7 @@ export class EditRulefileClassificationsComponent {
 
     destroy(): void {
 
-        if (!this.skip_autosave_on_destroy) {
+        if (!this.skip_autosave_on_destroy && this.part !== 'audit_types') {
 
             this.perform_save(true);
 
@@ -588,6 +683,10 @@ export class EditRulefileClassificationsComponent {
         this.autosave_session = null;
 
         this.draft_taxonomy = null;
+
+        this.form_actions_ref = null;
+
+        this.audit_types_structure_snapshot = '';
 
     }
 

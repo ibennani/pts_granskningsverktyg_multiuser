@@ -81,6 +81,16 @@ async function setupAuditFlowApiMocks(page) {
                 })
             });
         }
+        if (url.includes('/users') && method === 'GET' && !url.includes('/users/me')) {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([
+                    { id: 'u1', name: 'Testgranskare', username: 'testgranskare' },
+                    { id: 'u2', name: 'E2E-användare', username: 'e2e' }
+                ])
+            });
+        }
         if (url.includes('/auth/admin-contacts')) {
             return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
         }
@@ -144,17 +154,18 @@ test.describe('Granskningsflöde (mockat API)', () => {
 
         await page.waitForSelector('button.audit-start-new-audit-btn', { timeout: 25000 });
         await page.locator('button.audit-start-new-audit-btn').first().click();
-        await page.locator('.audit-rules-picker-list button').first().click();
         await expect(page.getByRole('heading', { name: 'Granskningens metadata' })).toBeVisible({ timeout: 20000 });
+        await expect(page.locator('#monitoringTypeKey')).toBeVisible();
+        await expect(page.locator('#auditTypeId')).toBeVisible();
 
         const meta_form = page.locator('#metadata-form-container-in-view form');
         await meta_form.waitFor({ state: 'visible' });
+        await page.locator('#auditorName').selectOption('Testgranskare');
         await meta_form.evaluate((form) => {
             const fire_input = (el) => {
                 el.dispatchEvent(new Event('input', { bubbles: true }));
             };
             const pairs = [
-                ['#auditorName', 'Testgranskare'],
                 ['#actorLink', 'https://example.test/e2e'],
                 ['#caseNumber', 'E2E-123'],
                 ['#actorName', 'Testaktör']

@@ -4,7 +4,7 @@
 import {
     apply_audit_type_selection,
     apply_single_audit_type_if_unique,
-    audit_type_editable_for_status,
+    audit_type_field_editable,
     merge_appendix1_with_audit_type_override,
     resolve_grouping_taxonomy_id,
 } from '../../shared/audit/audit_type_metadata.js';
@@ -34,6 +34,27 @@ describe('audit_type_metadata', () => {
         );
     });
 
+    test('resolve_grouping_taxonomy_id kan använda overlay från publicerad regelfil', () => {
+        const published = {
+            metadata: {
+                auditTypes: [
+                    {
+                        id: 'marknadskontroll-lptt',
+                        label: 'Marknadskontroll LPTT',
+                        taxonomyId: 'fptt-bilaga-2',
+                    },
+                ],
+            },
+        };
+        expect(
+            resolve_grouping_taxonomy_id(
+                { metadata: { title: 'Legacy' } },
+                { auditTypeId: 'marknadskontroll-lptt' },
+                published
+            )
+        ).toBe('fptt-bilaga-2');
+    });
+
     test('apply_single_audit_type_if_unique sätter enda typen', () => {
         const meta: Record<string, unknown> = {};
         expect(apply_single_audit_type_if_unique(meta, RULE_WITH_TYPES)).toBe(false);
@@ -52,10 +73,13 @@ describe('audit_type_metadata', () => {
         expect(apply_audit_type_selection(meta, RULE_WITH_TYPES, 'finns-inte')).toBe(false);
     });
 
-    test('audit_type_editable_for_status endast not_started', () => {
-        expect(audit_type_editable_for_status('not_started')).toBe(true);
-        expect(audit_type_editable_for_status('in_progress')).toBe(false);
-        expect(audit_type_editable_for_status('locked')).toBe(false);
+    test('audit_type_field_editable styrs av auditTypeId och arkivstatus', () => {
+        expect(audit_type_field_editable({}, 'not_started')).toBe(true);
+        expect(audit_type_field_editable({ auditTypeId: '' }, 'in_progress')).toBe(true);
+        expect(audit_type_field_editable({ auditTypeId: 'tillsyn-lptt' }, 'not_started')).toBe(false);
+        expect(audit_type_field_editable({ auditTypeId: 'tillsyn-lptt' }, 'in_progress')).toBe(false);
+        expect(audit_type_field_editable({}, 'archived')).toBe(false);
+        expect(audit_type_field_editable({ auditTypeId: '' }, 'archived')).toBe(false);
     });
 
     test('merge_appendix1_with_audit_type_override slår ihop bodyText', () => {

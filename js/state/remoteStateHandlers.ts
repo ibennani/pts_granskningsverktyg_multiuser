@@ -14,7 +14,23 @@ import { with_initialized_appendix1_summary_metadata, normalize_rulefile_appendi
 import { normalize_rulefile_appendix2 } from '../logic/appendix2_excel_template.js';
 import { normalize_rulefile_appendix3 } from '../logic/appendix3_screenshots_template.js';
 import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
-import { apply_single_audit_type_if_unique } from '../../shared/audit/audit_type_metadata.js';
+import {
+    apply_single_audit_type_if_unique,
+    resolve_available_audit_types
+} from '../../shared/audit/audit_type_metadata.js';
+
+function build_fresh_new_audit_metadata() {
+    return {
+        caseNumber: '',
+        actorName: '',
+        actorLink: '',
+        auditorName: get_current_user_name() || '',
+        caseHandler: '',
+        internalComment: '',
+        auditTypeId: '',
+        auditTypeLabel: ''
+    };
+}
 
 function with_audit_type_defaults(state: Record<string, unknown>): Record<string, unknown> {
     const meta = { ...(state.auditMetadata as Record<string, unknown>) };
@@ -27,21 +43,34 @@ export function reduce_initialize_new_audit (_current_state: any, action: any) {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
         ruleFileContent: action.payload.ruleFileContent,
-        auditMetadata: {
-            caseNumber: '',
-            actorName: '',
-            actorLink: '',
-            auditorName: get_current_user_name() || '',
-            caseHandler: '',
-            internalComment: '',
-            auditTypeId: '',
-            auditTypeLabel: ''
-        },
+        ruleSetId: action.payload.ruleSetId ?? null,
+        auditMetadata: build_fresh_new_audit_metadata(),
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
         auditStatus: 'not_started',
         freshNewAuditMetadata: true
     };
-    return with_initialized_appendix1_summary_metadata(with_audit_type_defaults(base));
+    return with_initialized_appendix1_summary_metadata(base);
+}
+
+export function reduce_update_new_audit_rulefile (current_state: any, action: any) {
+    if (current_state.auditStatus !== 'not_started') return current_state;
+    const rule_file_content = action.payload?.ruleFileContent;
+    if (!rule_file_content || typeof rule_file_content !== 'object') return current_state;
+
+    const meta = { ...(current_state.auditMetadata || {}) };
+    const types = resolve_available_audit_types(rule_file_content);
+    const current_id = String(meta.auditTypeId ?? '').trim();
+    if (!current_id || !types.some((row) => row.id === current_id)) {
+        meta.auditTypeId = '';
+        meta.auditTypeLabel = '';
+    }
+
+    return with_initialized_appendix1_summary_metadata({
+        ...current_state,
+        ruleFileContent: rule_file_content,
+        ruleSetId: action.payload?.ruleSetId ?? current_state.ruleSetId ?? null,
+        auditMetadata: meta
+    });
 }
 
 export function reduce_discard_prepared_audit (current_state: any, _action: any) {
@@ -49,7 +78,9 @@ export function reduce_discard_prepared_audit (current_state: any, _action: any)
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-        manageUsersText: current_state.manageUsersText ?? ''
+        manageUsersText: current_state.manageUsersText ?? '',
+        auditMetadata: build_fresh_new_audit_metadata(),
+        freshNewAuditMetadata: true
     };
 }
 

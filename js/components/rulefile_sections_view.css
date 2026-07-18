@@ -1010,6 +1010,14 @@
     margin-top: 0.75rem;
 }
 
+.rulefile-classifications-edit-form > .form-actions.audit-types-structural-actions {
+    display: none;
+}
+
+.rulefile-classifications-edit-form > .form-actions.audit-types-structural-actions.is-visible {
+    display: flex;
+}
+
 @media (max-width: 767px) {
     .rulefile-classifications-edit-form:has(.rulefile-classifications-table-layout) .requirement-mapping-cards {
         overflow: auto;

@@ -147,7 +147,11 @@ function render_audit_types_table(
     ctx: ViewCtx,
     container: HTMLElement,
     working_metadata: Record<string, unknown>,
-    options: { read_only?: boolean; on_change?: () => void } = {}
+    options: {
+        read_only?: boolean;
+        on_edit_saved?: () => void;
+        on_structure_change?: () => void;
+    } = {}
 ): void {
     const { Helpers, Translation: { t } } = ctx;
     container.innerHTML = '';
@@ -197,13 +201,13 @@ function render_audit_types_table(
                         taxonomies,
                         (saved_row) => {
                             upsert_audit_type_row(working_metadata, row.id, saved_row);
-                            options.on_change?.();
+                            options.on_edit_saved?.();
                             rerender();
                         },
                         (delete_button) => {
                             confirm_delete_audit_type(ctx, row, delete_button, () => {
                                 remove_audit_type_row(working_metadata, row.id);
-                                options.on_change?.();
+                                options.on_structure_change?.();
                                 rerender();
                             });
                         }
@@ -262,7 +266,7 @@ export function render_audit_types_editor(
     ctx: ViewCtx,
     container: HTMLElement,
     working_metadata: Record<string, unknown>,
-    options: { on_change?: () => void } = {}
+    options: { on_edit_saved?: () => void; on_structure_change?: () => void } = {}
 ): void {
     const { Helpers, Translation: { t } } = ctx;
 
@@ -298,7 +302,7 @@ export function render_audit_types_editor(
             add_btn,
             (saved_row) => {
                 upsert_audit_type_row(working_metadata, '', saved_row);
-                options.on_change?.();
+                options.on_structure_change?.();
                 rerender_table();
             }
         );
@@ -307,7 +311,8 @@ export function render_audit_types_editor(
     const rerender_table = () => {
         render_audit_types_table(ctx, table_host, working_metadata, {
             read_only: false,
-            on_change: options.on_change,
+            on_edit_saved: options.on_edit_saved,
+            on_structure_change: options.on_structure_change,
         });
         table_host.appendChild(add_btn);
     };

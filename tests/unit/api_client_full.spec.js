@@ -700,14 +700,22 @@ describe('api/client – regler och granskningar', () => {
         expect(merged.ruleFileContent).toEqual({ metadata: { v: 1 }, requirements: {} });
     });
 
-    test('load_audit_with_rule_file: returnerar direkt om ruleFileContent redan finns', async () => {
+    test('load_audit_with_rule_file: enrichar ruleFileContent med standardtyper när auditTypes saknas', async () => {
         fetch.mockResolvedValueOnce({
             ok: true,
             status: 200,
             json: async () => ({ id: 'a1', ruleFileContent: { k: 1 } })
         });
         const out = await load_audit_with_rule_file('a1');
-        expect(out.ruleFileContent).toEqual({ k: 1 });
+        expect(out.ruleFileContent).toMatchObject({
+            k: 1,
+            metadata: {
+                auditTypes: expect.arrayContaining([
+                    expect.objectContaining({ id: 'tillsyn-lptt' }),
+                    expect.objectContaining({ id: 'marknadskontroll-lptt' }),
+                ]),
+            },
+        });
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 

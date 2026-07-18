@@ -12,7 +12,7 @@ import {
     clamp_audit_activity_to_end_date,
     total_clamp_count
 } from '../logic/audit_clamp_activity_to_end_date.js';
-import { audit_type_editable_for_status } from '../../shared/audit/audit_type_metadata.js';
+import { has_audit_type_id } from '../../shared/audit/audit_type_metadata.js';
 
 function resolve_effective_start_iso(state: { startTime?: string | null; auditMetadata?: { startTime?: string } }): string | null {
     const from_meta = state.auditMetadata?.startTime;
@@ -34,13 +34,18 @@ export function reduce_update_metadata(current_state: any, action: any) {
     const payload = { ...(action.payload || {}) };
     const skip_internal_sync = action.payload?.skip_server_sync === true;
     const clear_fresh_new_audit_metadata = action.payload?.clear_fresh_new_audit_metadata === true;
+    const preserve_fresh_new_audit_metadata = action.payload?.preserve_fresh_new_audit_metadata === true;
     delete payload.skip_server_sync;
     delete payload.skip_render;
     delete payload.same_user_tab_broadcast;
     delete payload.clear_fresh_new_audit_metadata;
+    delete payload.preserve_fresh_new_audit_metadata;
     delete payload.samples_modified;
 
-    if (!audit_type_editable_for_status(current_state.auditStatus)) {
+    if (
+        current_state.auditStatus === 'archived'
+        || has_audit_type_id(current_state.auditMetadata)
+    ) {
         delete payload.auditTypeId;
         delete payload.auditTypeLabel;
     }
@@ -108,7 +113,12 @@ export function reduce_update_metadata(current_state: any, action: any) {
         auditMetadata: audit_metadata,
         ...(start_time_update !== undefined ? { startTime: start_time_update } : {}),
         ...(end_time_update !== undefined ? { endTime: end_time_update } : {}),
-        ...(clear_fresh_new_audit_metadata ? { freshNewAuditMetadata: false } : {})
+        ...(
+            clear_fresh_new_audit_metadata
+            || (current_state.freshNewAuditMetadata === true && !preserve_fresh_new_audit_metadata)
+                ? { freshNewAuditMetadata: false }
+                : {}
+        )
     };
 
     if (end_time_update !== undefined && end_time_update !== null && current_state.auditStatus === 'locked') {

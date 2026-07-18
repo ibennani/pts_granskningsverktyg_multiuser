@@ -2,6 +2,15 @@
  * @fileoverview Vy «Inställningar» – hub och undersidor för granskning.
  */
 import { MetadataFormComponent } from './MetadataFormComponent.js';
+import { get_current_user_name } from '../utils/helpers.js';
+import {
+    load_metadata_auditor_options,
+    type MetadataAuditorOption,
+} from '../logic/metadata_auditor_name_field.js';
+import {
+    load_metadata_case_handler_options,
+    type MetadataCaseHandlerOption,
+} from '../logic/metadata_case_handler_field.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { audit_status_allows_metadata_edit, audit_status_is_fully_readonly } from '../utils/audit_status_helpers.js';
 import { type MarkdownPreviewEditorHost } from '../utils/markdown_preview_editor_ui.js';
@@ -18,6 +27,7 @@ import {
     render_audit_settings_principle_intros_section,
 } from '../utils/audit_appendix1_principle_intros_render.js';
 import './audit_settings_view_component.css';
+import { enrich_audit_state_with_audit_type_overlay } from '../logic/audit_type_rule_overlay.js';
 
 type Deps = Record<string, unknown> & {
     router: (view: string, params?: Record<string, string>) => void;
@@ -43,13 +53,21 @@ export class AuditSettingsViewComponent {
         preview_container_ref: null,
     };
     private principle_intro_host = create_principle_intro_host();
+    private auditor_name_options: MetadataAuditorOption[] = [];
+    private case_handler_options: MetadataCaseHandlerOption[] = [];
     private readonly RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
 
-    init({ root, deps }: { root: HTMLElement; deps: Deps }): void {
+    async init({ root, deps }: { root: HTMLElement; deps: Deps }): Promise<void> {
         this.root = root;
         this.deps = deps;
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_back = this.handle_back.bind(this);
+        this.auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
+        const state = this.deps?.getState?.() ?? {};
+        const current_case_handler = String(
+            (state.auditMetadata as { caseHandler?: string } | undefined)?.caseHandler ?? ''
+        ).trim();
+        this.case_handler_options = await load_metadata_case_handler_options(current_case_handler);
     }
 
     private request_focus_on_audit_info_h2(): void {
@@ -162,11 +180,11 @@ export class AuditSettingsViewComponent {
         );
     }
 
-    render(): void {
+    async render(): Promise<void> {
         if (!this.root || !this.deps) return;
         this.root.innerHTML = '';
 
-        const state = this.ensure_initialized_state();
+        let state = this.ensure_initialized_state();
         const status = String(state.auditStatus ?? '');
         if (status === 'not_started') {
             this.deps.router('metadata');
@@ -176,6 +194,8 @@ export class AuditSettingsViewComponent {
             this.deps.router('start');
             return;
         }
+
+        state = await enrich_audit_state_with_audit_type_overlay(state);
 
         const section = normalize_audit_settings_section(this.deps.params?.section);
         const return_to = normalize_audit_settings_return_to(this.deps.params?.returnTo);
@@ -209,6 +229,8 @@ export class AuditSettingsViewComponent {
                         on_back: () => this.handle_back(),
                         on_summary_save: (text) => this.save_summary_text(text),
                     },
+                    auditorNameOptions: this.auditor_name_options,
+                    caseHandlerOptions: this.case_handler_options,
                 }
             );
             this.metadata_container = metadata_ref.current;

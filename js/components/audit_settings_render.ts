@@ -125,10 +125,22 @@ export function render_audit_settings_information_section(
         full_deps: Record<string, unknown>;
         return_to: AuditSettingsReturnTo;
         handlers: AuditSettingsFormHandlers;
+        auditorNameOptions?: Array<{ value: string; label: string }>;
+        caseHandlerOptions?: Array<{ value: string; label: string }>;
     }
 ): void {
     const { Helpers: helpers, Translation: { t } } = deps;
-    const { state, readonly, status, metadata_container_ref, full_deps, return_to, handlers } = options;
+    const {
+        state,
+        readonly,
+        status,
+        metadata_container_ref,
+        full_deps,
+        return_to,
+        handlers,
+        auditorNameOptions = [],
+        caseHandlerOptions = [],
+    } = options;
     const back_label_key = audit_settings_back_label_key(return_to);
 
     plate.appendChild(
@@ -147,6 +159,10 @@ export function render_audit_settings_information_section(
 
     if (readonly) {
         const md = (state.auditMetadata || {}) as Record<string, string>;
+        const rf_meta = (
+            (state.ruleFileContent as { metadata?: { monitoringType?: { text?: string; label?: string } } } | null)
+                ?.metadata || {}
+        );
         const readonly_list = helpers.create_element('dl', {
             class_name: 'audit-settings__readonly-metadata',
         });
@@ -155,6 +171,11 @@ export function render_audit_settings_information_section(
             readonly_list.appendChild(helpers.create_element('dt', { text_content: t(label_key) }));
             readonly_list.appendChild(helpers.create_element('dd', { text_content: value }));
         };
+        add_row(
+            'rulefile_metadata_field_monitoring_type_label',
+            rf_meta.monitoringType?.text || rf_meta.monitoringType?.label || ''
+        );
+        add_row('metadata_audit_type_question_label', md.auditTypeLabel || '');
         add_row('case_number', md.caseNumber || '');
         add_row('actor_name', md.actorName || '');
         add_row('actor_link', md.actorLink || '');
@@ -184,6 +205,11 @@ export function render_audit_settings_information_section(
             showStartDate: status === 'in_progress' || status === 'locked' || status === 'archived',
             showEndDate: status === 'locked' || status === 'archived',
             effectiveStartIso: (state.startTime as string) || md.startTime || null,
+            ruleFileContent: state.ruleFileContent,
+            auditStatus: status,
+            monitoringTypeConfirmed: true,
+            auditorNameOptions,
+            caseHandlerOptions,
         });
     }
 

@@ -190,4 +190,62 @@ describe('rulefile_audit_types_ui', () => {
             'rulefile_classifications_audit_types_filter_label'
         );
     });
+
+    test('Redigering anropar on_edit_saved men inte on_structure_change', () => {
+        let edit_saved_count = 0;
+        let structure_change_count = 0;
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: { t: (key: string) => key },
+        };
+        render_audit_types_editor(ctx, container, { ...sample_metadata }, {
+            on_edit_saved: () => {
+                edit_saved_count += 1;
+            },
+            on_structure_change: () => {
+                structure_change_count += 1;
+            },
+        });
+
+        const edit_button = container.querySelector('.audit-types-row-edit-button') as HTMLButtonElement;
+        edit_button.click();
+        const dialog = document.querySelector('.audit-type-edit-dialog') as HTMLDialogElement;
+        const name_input = dialog.querySelector('input[type="text"]') as HTMLInputElement;
+        name_input.value = 'Uppdaterat namn';
+        dialog.querySelector('button[type="submit"]')?.dispatchEvent(
+            new Event('submit', { bubbles: true, cancelable: true })
+        );
+
+        expect(edit_saved_count).toBe(1);
+        expect(structure_change_count).toBe(0);
+    });
+
+    test('Lägg till anropar on_structure_change men inte on_edit_saved', () => {
+        let edit_saved_count = 0;
+        let structure_change_count = 0;
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: { t: (key: string) => key },
+        };
+        render_audit_types_editor(ctx, container, { ...sample_metadata }, {
+            on_edit_saved: () => {
+                edit_saved_count += 1;
+            },
+            on_structure_change: () => {
+                structure_change_count += 1;
+            },
+        });
+
+        const add_button = container.querySelector('.audit-types-add-button') as HTMLButtonElement;
+        add_button.click();
+        const dialog = document.querySelector('.audit-type-edit-dialog') as HTMLDialogElement;
+        const name_input = dialog.querySelector('input[type="text"]') as HTMLInputElement;
+        name_input.value = 'Ny typ';
+        dialog.querySelector('button[type="submit"]')?.dispatchEvent(
+            new Event('submit', { bubbles: true, cancelable: true })
+        );
+
+        expect(structure_change_count).toBe(1);
+        expect(edit_saved_count).toBe(0);
+    });
 });

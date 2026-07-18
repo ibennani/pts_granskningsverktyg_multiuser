@@ -37,6 +37,12 @@
     font-size: 0.9rem;
 }
 
+.metadata-form-container .metadata-field-value {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
 .metadata-form-container .form-control {
     border-width: 1px;
     border-color: var(--border-color);
@@ -44,6 +50,15 @@
     background-color: var(--input-background-color);
     color: var(--text-color);
     font-size: 0.9rem;
+}
+
+/* Synlig platshållartext i dropdown tills användaren väljer värde */
+.metadata-form-container select.form-control.dropdown-select:required:invalid {
+    color: var(--text-color-muted);
+}
+
+.metadata-form-container select.form-control.dropdown-select option {
+    color: var(--text-color);
 }
 
 .metadata-form-container .form-help-text {
@@ -80,4 +95,58 @@
 .metadata-form-container .form-actions .button {
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
+}
+
+.metadata-form-container .metadata-case-number-input {
+    max-width: 20ch;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.metadata-form-container .metadata-case-handler-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.metadata-form-container .metadata-case-handler-select-group,
+.metadata-form-container .metadata-case-handler-add-new-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.metadata-form-container .metadata-case-handler-select-group {
+    flex: 0 1 auto;
+}
+
+.metadata-form-container .metadata-case-handler-select {
+    width: fit-content;
+    min-width: 12rem;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.metadata-form-container .metadata-case-handler-add-new-group {
+    flex: 1 1 16rem;
+    min-width: 16rem;
+    max-width: 100%;
+}
+
+.metadata-form-container .metadata-case-handler-add-new-group[hidden] {
+    display: none;
+}
+
+.metadata-form-container .metadata-case-handler-select-group label,
+.metadata-form-container .metadata-case-handler-add-new-group label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.1rem;
+    font-size: 0.9rem;
+}
+
+.metadata-form-container .metadata-case-handler-new-name-input {
+    max-width: 50ch;
+    width: 100%;
+    box-sizing: border-box;
 }

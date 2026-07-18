@@ -1,5 +1,9 @@
 import { get_api_base_url, clear_current_user_name_window } from '../app/browser_globals.js';
 import { get_ws_base_path } from '../utils/app_base_path.js';
+import {
+    enrich_audit_state_with_audit_type_overlay,
+    fetch_published_rule_content_for_audit,
+} from '../logic/audit_type_rule_overlay.js';
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
@@ -665,18 +669,19 @@ export async function get_audit_version(id) {
  */
 export async function load_audit_with_rule_file(id) {
     const audit_data = await get_audit(id);
-    if (audit_data.ruleFileContent) {
-        return audit_data;
-    }
     const rule_set_id = audit_data.ruleSetId ?? audit_data.rule_set_id;
+    if (audit_data.ruleFileContent) {
+        return enrich_audit_state_with_audit_type_overlay(audit_data);
+    }
     if (!rule_set_id) {
         return audit_data;
     }
-    const rule = await get_rule(rule_set_id);
-    // Använd alltid publicerad regelfil som källa för granskningar.
-    const rule_content = rule?.published_content ?? rule?.content;
-    if (rule_content) {
-        return { ...audit_data, ruleFileContent: rule_content };
+    const published_rule_content = await fetch_published_rule_content_for_audit(rule_set_id);
+    if (published_rule_content) {
+        return {
+            ...audit_data,
+            ruleFileContent: published_rule_content,
+        };
     }
     return audit_data;
 }

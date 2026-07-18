@@ -3,6 +3,12 @@
  */
 
 import { type AuditRow, type RuleSetRow } from '../schemas/audit_db_rows.js';
+import {
+    apply_audit_type_overlay_to_rule_content,
+    read_published_rule_content_from_rule_set_row,
+    snapshot_lacks_audit_types,
+} from '../../shared/audit/audit_type_catalog.js';
+import { build_default_published_audit_types_content } from '../../shared/audit/audit_type_rule_set_resolve.js';
 
 export type { AuditRow, RuleSetRow };
 
@@ -15,6 +21,19 @@ export function build_full_state(audit_row: AuditRow, rule_set_row: RuleSetRow |
         } catch {
             console.warn('[audits] build_full_state: Kunde inte parsa rule content för audit', audit_row?.id);
             ruleFileContent = null;
+        }
+    }
+    if (ruleFileContent) {
+        const published_rule_content = read_published_rule_content_from_rule_set_row(rule_set_row);
+        ruleFileContent = apply_audit_type_overlay_to_rule_content(
+            ruleFileContent,
+            published_rule_content
+        );
+        if (snapshot_lacks_audit_types(ruleFileContent)) {
+            ruleFileContent = apply_audit_type_overlay_to_rule_content(
+                ruleFileContent,
+                build_default_published_audit_types_content()
+            );
         }
     }
     const samples = audit_row.samples || [];

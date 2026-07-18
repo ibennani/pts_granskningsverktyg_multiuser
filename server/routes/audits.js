@@ -18,6 +18,12 @@ import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
 import { broadcast } from '../ws.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import {
+    apply_audit_type_overlay_to_rule_content,
+    read_published_rule_content_from_rule_set_row,
+    snapshot_lacks_audit_types,
+} from '../../shared/audit/audit_type_catalog.js';
+import { build_default_published_audit_types_content } from '../../shared/audit/audit_type_rule_set_resolve.js';
+import {
     fetch_audits_index_rows,
     fetch_statistics_audits_locked_archived,
     select_audit_id_exists,
@@ -25,6 +31,7 @@ import {
     fetch_audit_summary_for_import_conflict
 } from '../repositories/audit_repository.js';
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
+import { resolve_rule_set_row_for_audit_overlay } from '../utils/audit_rule_set_overlay_resolve.js';
 import { generate_pdf_from_html, generate_pdf_from_html_chunks } from '../services/pdf_generation_service.ts';
 import { PDF_EXPORT_HTML_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
 
@@ -132,6 +139,19 @@ export function build_full_state(audit_row, rule_set_row) {
         } catch (e) {
             console.warn('[audits] build_full_state: Kunde inte parsa rule content för audit', audit_row?.id);
             ruleFileContent = null;
+        }
+    }
+    if (ruleFileContent) {
+        const published_rule_content = read_published_rule_content_from_rule_set_row(rule_set_row);
+        ruleFileContent = apply_audit_type_overlay_to_rule_content(
+            ruleFileContent,
+            published_rule_content
+        );
+        if (snapshot_lacks_audit_types(ruleFileContent)) {
+            ruleFileContent = apply_audit_type_overlay_to_rule_content(
+                ruleFileContent,
+                build_default_published_audit_types_content()
+            );
         }
     }
     const samples = audit_row.samples || [];
@@ -418,20 +438,22 @@ router.get('/:id', async (req, res) => {
         const audit = auditResult.rows[0];
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
+        let ruleSet = null;
         if (audit.rule_set_id) {
-            const state = build_audit_state_without_rule_file(audit);
-            if (process.env.GV_DEBUG_STUCK_SYNC) {
-                console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(state.samples));
-            }
-            res.json(state);
-        } else {
-            const ruleSet = null;
-            const fullState = build_full_state(audit, ruleSet);
-            if (process.env.GV_DEBUG_STUCK_SYNC) {
-                console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(fullState.samples));
-            }
-            res.json(fullState);
+            const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);
+            ruleSet = ruleResult.rows[0] || null;
         }
+        if (!ruleSet && audit.rule_file_content) {
+            ruleSet = await resolve_rule_set_row_for_audit_overlay(
+                audit.rule_file_content,
+                audit.rule_set_id
+            );
+        }
+        const fullState = build_full_state(audit, ruleSet);
+        if (process.env.GV_DEBUG_STUCK_SYNC) {
+            console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(fullState.samples));
+        }
+        res.json(fullState);
     } catch (err) {
         console.error('[audits] GET one error:', err);
         res.status(500).json({ error: 'Kunde inte hämta granskning' });

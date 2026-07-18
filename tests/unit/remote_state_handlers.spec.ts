@@ -6,7 +6,8 @@ import { describe, expect, test } from '@jest/globals';
 import {
     reduce_discard_prepared_audit,
     reduce_initialize_new_audit,
-    reduce_set_remote_audit_id
+    reduce_set_remote_audit_id,
+    reduce_update_new_audit_rulefile
 } from '../../js/state/remoteStateHandlers.ts';
 import { get_default_appendix1_sections } from '../../js/logic/appendix1_sections.ts';
 
@@ -36,6 +37,8 @@ describe('reduce_initialize_new_audit', () => {
             auditorName: 'Anna Granskare',
             caseHandler: '',
             internalComment: '',
+            auditTypeId: '',
+            auditTypeLabel: '',
             appendix1SectionOverrides: {},
             appendix1PrincipleIntroOverrides: {},
         });
@@ -70,7 +73,32 @@ describe('reduce_discard_prepared_audit', () => {
         expect(next.auditStatus).toBe('not_started');
         expect(next.ruleFileContent).toBeNull();
         expect(next.auditMetadata?.actorName).toBe('');
+        expect(next.auditMetadata?.auditorName).toBe('');
+        expect(next.freshNewAuditMetadata).toBe(true);
         expect(next.manageUsersText).toBe('adminlista');
+    });
+});
+
+describe('reduce_update_new_audit_rulefile', () => {
+    test('sätter inte granskningstyp automatiskt även om regelfilen bara har en typ', () => {
+        const rule = {
+            metadata: {
+                auditTypes: [{ id: 'tillsyn', label: 'Tillsyn' }],
+            },
+        };
+        const next = reduce_update_new_audit_rulefile(
+            {
+                auditStatus: 'not_started',
+                freshNewAuditMetadata: false,
+                auditMetadata: { auditorName: 'Anna', auditTypeId: '', auditTypeLabel: '' },
+                ruleFileContent: null,
+                ruleSetId: null,
+            },
+            { payload: { ruleFileContent: rule, ruleSetId: 'rs-1' } }
+        );
+        expect(next.auditMetadata.auditTypeId).toBe('');
+        expect(next.auditMetadata.auditTypeLabel).toBe('');
+        expect(next.ruleSetId).toBe('rs-1');
     });
 });
 
