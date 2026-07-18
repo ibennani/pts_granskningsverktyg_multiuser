@@ -9,9 +9,16 @@ import {
     requirement_stats_display_name,
     collapse_bilingual_requirement_title,
     get_monitoring_type_label,
+    get_audit_type_label,
     requirement_number_sort_key_for_stats,
-    MONITORING_LABEL_FALLBACK_SENTINEL
+    MONITORING_LABEL_FALLBACK_SENTINEL,
+    AUDIT_TYPE_FALLBACK_SENTINEL
 } from '../../server/audit_aggregated_statistics.js';
+
+function stats_slice_for(out, year, monitoring, audit_type) {
+    const year_data = out.per_year[String(year)];
+    return year_data?.per_monitoring_type?.[monitoring]?.per_audit_type?.[audit_type];
+}
 
 describe('audit_aggregated_statistics', () => {
     test('calendar_year_completed använder metadata.endTime', () => {
@@ -124,6 +131,29 @@ describe('audit_aggregated_statistics', () => {
         expect(get_monitoring_type_label({})).toBe(MONITORING_LABEL_FALLBACK_SENTINEL);
     });
 
+    test('get_audit_type_label löser etikett från regelfil när auditTypeLabel saknas', () => {
+        const rule = {
+            metadata: {
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' }]
+            }
+        };
+        expect(get_audit_type_label({ metadata: { auditTypeId: 'tillsyn-lptt' } }, rule)).toBe('Tillsyn, LPTT');
+    });
+
+    test('get_audit_type_label använder sparad auditTypeLabel före regelfil', () => {
+        const rule = {
+            metadata: {
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' }]
+            }
+        };
+        expect(
+            get_audit_type_label(
+                { metadata: { auditTypeId: 'tillsyn-lptt', auditTypeLabel: 'Tillsyn LPTT sparad' } },
+                rule
+            )
+        ).toBe('Tillsyn LPTT sparad');
+    });
+
     test('requirement_number_sort_key_for_stats använder standardReference före nyckel', () => {
         expect(
             requirement_number_sort_key_for_stats(
@@ -142,7 +172,7 @@ describe('audit_aggregated_statistics', () => {
         ).toBe('9.2.1.1');
     });
 
-    test('build_statistics_from_audit_rows grupperar per år och per regelfilstyp', () => {
+    test('build_statistics_from_audit_rows grupperar per monitoring och granskningstyp', () => {
         const rule_web = {
             metadata: { monitoringType: { text: 'Webbsida' } },
             requirements: {
@@ -180,30 +210,121 @@ describe('audit_aggregated_statistics', () => {
         const out = build_statistics_from_audit_rows(rows);
         expect(out.available_years).toEqual([2024]);
         const y2024 = out.per_year['2024'];
-        expect(y2024.completed_count).toBe(2);
-        expect(y2024.median_duration_weeks).toBeGreaterThan(0);
-        expect(Array.isArray(y2024.monitoring_type_top_failed)).toBe(true);
-        const web = y2024.monitoring_type_top_failed.find((s) => s.monitoring_type_label === 'Webbsida');
-        expect(web).toBeTruthy();
-        expect(web.audits_in_type).toBe(2);
-        expect(web.top_requirements[0].requirement_name).toBe('9.2.2.1 Tillräckligt med tid');
-        expect(web.top_requirements[0].audit_fail_rate_percent).toBe(100);
-
-        const pmd = y2024.principle_median_deficiency;
-        expect(pmd).toBeDefined();
-        expect(pmd.perceivable).toBe(0);
-        expect(pmd.operable).toBe(0);
-        expect(pmd.understandable).toBe(0);
-        expect(pmd.robust).toBe(0);
-        expect(y2024.total_median_deficiency).toBe(0);
-        expect(y2024.median_sample_count).toBe(1);
-        expect(y2024.worst_sample_type).toBeNull();
-        expect(Array.isArray(y2024.monitoring_type_labels_ordered)).toBe(true);
         expect(y2024.monitoring_type_labels_ordered).toContain('Webbsida');
-        const web_slice = y2024.per_monitoring_type?.Webbsida;
-        expect(web_slice).toBeTruthy();
-        expect(web_slice.completed_count).toBe(2);
-        expect(web_slice.median_duration_weeks).toBe(y2024.median_duration_weeks);
+        const monitoring_entry = y2024.per_monitoring_type.Webbsida;
+        expect(monitoring_entry.audit_type_labels_ordered).toContain(AUDIT_TYPE_FALLBACK_SENTINEL);
+        const slice = stats_slice_for(out, 2024, 'Webbsida', AUDIT_TYPE_FALLBACK_SENTINEL);
+        expect(slice.completed_count).toBe(2);
+        expect(slice.median_duration_weeks).toBeGreaterThan(0);
+        expect(slice.monitoring_type_top_failed[0].top_requirements[0].requirement_name).toBe(
+            '9.2.2.1 Tillräckligt med tid'
+        );
+        expect(slice.monitoring_type_top_failed[0].top_requirements[0].audit_fail_rate_percent).toBe(100);
+        expect(slice.principle_median_deficiency.perceivable).toBe(0);
+        expect(slice.total_median_deficiency).toBe(0);
+        expect(slice.median_sample_count).toBe(1);
+        expect(slice.worst_sample_type).toBeNull();
+        expect(slice.grouping_taxonomy_id).toBeTruthy();
+        expect(slice.principle_labels).toBeDefined();
+    });
+
+    test('build_statistics_from_audit_rows separerar granskningstyper under samma monitoring', () => {
+        const rule_web = {
+            metadata: {
+                monitoringType: { text: 'Webbsida' },
+                auditTypes: [
+                    { id: 'tillsyn', label: 'Tillsyn', taxonomyId: 'wcag22-pour' },
+                    { id: 'marknad', label: 'Marknadskontroll', taxonomyId: 'fptt' }
+                ],
+                taxonomies: [
+                    {
+                        id: 'wcag22-pour',
+                        label: 'WCAG 2.2 POUR',
+                        concepts: [{ id: 'perceivable', label: 'Märkbart' }]
+                    },
+                    {
+                        id: 'fptt',
+                        label: 'FPTT',
+                        concepts: [{ id: 'info', label: 'Information' }]
+                    }
+                ]
+            },
+            requirements: {
+                a: { key: 'k1', title: 'Krav', checks: [] }
+            }
+        };
+        const sample = {
+            id: 's1',
+            selectedContentTypes: [],
+            requirementResults: { k1: { checkResults: {} } }
+        };
+        const out = build_statistics_from_audit_rows([
+            {
+                metadata: {
+                    endTime: '2024-06-01T00:00:00.000Z',
+                    auditTypeId: 'tillsyn',
+                    auditTypeLabel: 'Tillsyn'
+                },
+                samples: [sample],
+                rule_file_content: rule_web,
+                updated_at: new Date('2024-06-02')
+            },
+            {
+                metadata: {
+                    endTime: '2024-06-02T00:00:00.000Z',
+                    auditTypeId: 'marknad',
+                    auditTypeLabel: 'Marknadskontroll'
+                },
+                samples: [sample, sample],
+                rule_file_content: rule_web,
+                updated_at: new Date('2024-06-03')
+            }
+        ]);
+        const tillsyn = stats_slice_for(out, 2024, 'Webbsida', 'Tillsyn');
+        const marknad = stats_slice_for(out, 2024, 'Webbsida', 'Marknadskontroll');
+        expect(tillsyn.completed_count).toBe(1);
+        expect(marknad.completed_count).toBe(1);
+        expect(marknad.median_sample_count).toBe(2);
+        expect(tillsyn.grouping_taxonomy_id).toBe('wcag22-pour');
+        expect(marknad.grouping_taxonomy_id).toBe('fptt');
+        expect(tillsyn.principle_labels.perceivable).toBe('Märkbart');
+        expect(marknad.principle_labels.info).toBe('Information');
+    });
+
+    test('build_statistics_from_audit_rows tar med pågående granskningar i dropdown-data', () => {
+        const rule_web = {
+            metadata: {
+                monitoringType: { text: 'Webbplats' },
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' }]
+            },
+            requirements: {
+                a: { key: 'k1', title: 'Krav', checks: [] }
+            }
+        };
+        const sample = {
+            id: 's1',
+            selectedContentTypes: [],
+            requirementResults: { k1: { checkResults: {} } }
+        };
+        const out = build_statistics_from_audit_rows([
+            {
+                status: 'in_progress',
+                metadata: {
+                    startTime: '2026-01-01T00:00:00.000Z',
+                    auditTypeId: 'tillsyn-lptt',
+                    auditTypeLabel: 'Tillsyn, LPTT'
+                },
+                samples: [sample],
+                rule_file_content: rule_web,
+                created_at: new Date('2026-01-01'),
+                updated_at: new Date('2026-07-01')
+            }
+        ]);
+        expect(out.available_years).toEqual([2026]);
+        const year = out.per_year['2026'];
+        expect(year.monitoring_type_labels_ordered).toContain('Webbplats');
+        expect(year.per_monitoring_type.Webbplats.audit_type_labels_ordered).toContain('Tillsyn, LPTT');
+        expect(stats_slice_for(out, 2026, 'Webbplats', 'Tillsyn, LPTT').completed_count).toBe(1);
     });
 
     test('build_statistics_from_audit_rows hittar granskningsdelstyp med högst bristindex', () => {
@@ -255,16 +376,16 @@ describe('audit_aggregated_statistics', () => {
                 updated_at: new Date('2024-01-02')
             }
         ]);
-        const y2024 = out.per_year['2024'];
-        expect(y2024.median_sample_count).toBe(2);
-        expect(y2024.worst_sample_type).toEqual({
+        const slice = stats_slice_for(out, 2024, 'Webbsida', AUDIT_TYPE_FALLBACK_SENTINEL);
+        expect(slice.median_sample_count).toBe(2);
+        expect(slice.worst_sample_type).toEqual({
             sample_type: 'type_bad',
             sample_type_label: 'type_bad',
             median_deficiency: 100
         });
     });
 
-    test('sampleType-id mappas till text i worst_sample_type och diagram per regelfilstyp', () => {
+    test('sampleType-id mappas till text i worst_sample_type och diagram per slice', () => {
         const rule_web = {
             metadata: {
                 monitoringType: { text: 'Webbsida' },
@@ -309,11 +430,10 @@ describe('audit_aggregated_statistics', () => {
             rule_file_content: rule_web,
             updated_at: new Date('2024-01-02')
         }]);
-        const y2024 = out.per_year['2024'];
-        expect(y2024.worst_sample_type.sample_type_label).toBe('Sökresultat');
-        expect(Array.isArray(y2024.monitoring_sampletype_chart)).toBe(true);
-        expect(y2024.monitoring_sampletype_chart[0].monitoring_type_label).toBe('Webbsida');
-        expect(y2024.monitoring_sampletype_chart[0].sample_types[0]).toMatchObject({
+        const slice = stats_slice_for(out, 2024, 'Webbsida', AUDIT_TYPE_FALLBACK_SENTINEL);
+        expect(slice.worst_sample_type.sample_type_label).toBe('Sökresultat');
+        expect(Array.isArray(slice.monitoring_sampletype_chart)).toBe(true);
+        expect(slice.monitoring_sampletype_chart[0].sample_types[0]).toMatchObject({
             sample_type_id: 'sokresultatsida',
             sample_type_label: 'Sökresultat',
             median_deficiency: 100

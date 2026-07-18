@@ -6,14 +6,14 @@ import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import {
     append_statistics_sampletype_chart_block,
     append_statistics_score_analysis_block,
-        append_statistics_top_failed_block,
-        append_statistics_audit_type_counts_block,
-        build_statistics_summary_list
+    append_statistics_top_failed_block,
+    build_statistics_summary_list
 } from './statistics_view_sections.js';
 import './statistics_view_component.css';
 
 const MONITORING_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
 const AUDIT_TYPE_FALLBACK_SENTINEL = '__GV_STATS_AUDIT_TYPE_FALLBACK__';
+const STATISTICS_FILTER_EMPTY_VALUE = '';
 
 export class StatisticsViewComponent {
     constructor() {
@@ -24,6 +24,7 @@ export class StatisticsViewComponent {
         this.router = null;
         this.year_select_ref = null;
         this.monitoring_type_select_ref = null;
+        this.audit_type_select_ref = null;
         this._fetch_error = null;
     }
 
@@ -34,12 +35,13 @@ export class StatisticsViewComponent {
         this.Helpers = deps.Helpers;
         this.router = deps.router;
         this._fetch_error = null;
-            }
+    }
 
     destroy() {
         ScoreAnalysisComponent.destroy();
         this.year_select_ref = null;
         this.monitoring_type_select_ref = null;
+        this.audit_type_select_ref = null;
         this.root = null;
         this.deps = null;
     }
@@ -59,12 +61,15 @@ export class StatisticsViewComponent {
         return t('statistics_summary_completed_plural', { count: String(count) });
     }
 
-    _empty_year_payload() {
+    _empty_slice_payload() {
         return {
             completed_count: 0,
             median_duration_weeks: null,
             monitoring_type_top_failed: [],
             principle_median_deficiency: {},
+            principle_labels: {},
+            grouping_taxonomy_id: '',
+            grouping_taxonomy_label: '',
             total_median_deficiency: null,
             median_sample_count: null,
             worst_sample_type: null,
@@ -72,10 +77,15 @@ export class StatisticsViewComponent {
         };
     }
 
+    _empty_year_payload() {
+        return {
+            monitoring_type_labels_ordered: [],
+            per_monitoring_type: {}
+        };
+    }
+
     /**
-     * All visad statistik ska komma från per_monitoring_type för vald nyckel
-     * (samma år som year_raw). Endast nycklar som har ett slice-objekt används.
-     * @returns {{ year_data: object, selected_monitoring_key: string, should_sync_url: boolean, labels_with_data: string[] }}
+     * @returns {{ monitoring_entry: object|null, selected_monitoring_key: string, labels_with_data: string[] }}
      */
     _resolve_monitoring_slice(year_raw, params) {
         const ordered = Array.isArray(year_raw.monitoring_type_labels_ordered)
@@ -85,14 +95,20 @@ export class StatisticsViewComponent {
             year_raw.per_monitoring_type && typeof year_raw.per_monitoring_type === 'object'
                 ? year_raw.per_monitoring_type
                 : {};
-        const labels_with_data = ordered.filter(
-            (k) => pm[k] !== undefined && pm[k] !== null && typeof pm[k] === 'object'
-        );
+        const labels_with_data = ordered.filter((k) => {
+            const entry = pm[k];
+            return (
+                entry &&
+                typeof entry === 'object' &&
+                entry.per_audit_type &&
+                typeof entry.per_audit_type === 'object' &&
+                Object.keys(entry.per_audit_type).length > 0
+            );
+        });
         if (labels_with_data.length === 0) {
             return {
-                year_data: this._empty_year_payload(),
+                monitoring_entry: null,
                 selected_monitoring_key: '',
-                should_sync_url: false,
                 labels_with_data: []
             };
         }
@@ -100,21 +116,62 @@ export class StatisticsViewComponent {
             params.monitoringType !== undefined && params.monitoringType !== null
                 ? String(params.monitoringType).trim()
                 : '';
-        const want =
-            raw && labels_with_data.includes(raw) ? raw : labels_with_data[0];
-        const year_data = pm[want];
-        const should_sync_url = String(params.monitoringType || '') !== String(want);
+        const selected_monitoring_key =
+            raw && labels_with_data.includes(raw) ? raw : STATISTICS_FILTER_EMPTY_VALUE;
+        const monitoring_entry = selected_monitoring_key ? pm[selected_monitoring_key] || null : null;
         return {
-            year_data,
-            selected_monitoring_key: want,
-            should_sync_url,
+            monitoring_entry,
+            selected_monitoring_key,
             labels_with_data
         };
     }
 
-    _statistics_nav_params(year_num, monitoring_key) {
+    /**
+     * @returns {{ year_data: object|null, selected_audit_type_key: string, labels_with_data: string[] }}
+     */
+    _resolve_audit_type_slice(monitoring_entry, params) {
+        if (!monitoring_entry) {
+            return {
+                year_data: null,
+                selected_audit_type_key: STATISTICS_FILTER_EMPTY_VALUE,
+                labels_with_data: []
+            };
+        }
+        const ordered = Array.isArray(monitoring_entry.audit_type_labels_ordered)
+            ? monitoring_entry.audit_type_labels_ordered
+            : [];
+        const pa =
+            monitoring_entry.per_audit_type && typeof monitoring_entry.per_audit_type === 'object'
+                ? monitoring_entry.per_audit_type
+                : {};
+        const labels_with_data = ordered.filter(
+            (k) => pa[k] !== undefined && pa[k] !== null && typeof pa[k] === 'object'
+        );
+        if (labels_with_data.length === 0) {
+            return {
+                year_data: null,
+                selected_audit_type_key: STATISTICS_FILTER_EMPTY_VALUE,
+                labels_with_data: []
+            };
+        }
+        const raw =
+            params.auditType !== undefined && params.auditType !== null
+                ? String(params.auditType).trim()
+                : '';
+        const selected_audit_type_key =
+            raw && labels_with_data.includes(raw) ? raw : STATISTICS_FILTER_EMPTY_VALUE;
+        const year_data = selected_audit_type_key ? pa[selected_audit_type_key] || null : null;
+        return {
+            year_data,
+            selected_audit_type_key,
+            labels_with_data
+        };
+    }
+
+    _statistics_nav_params(year_num, monitoring_key, audit_type_key) {
         const out = { year: String(year_num) };
         if (monitoring_key) out.monitoringType = monitoring_key;
+        if (audit_type_key) out.auditType = audit_type_key;
         return out;
     }
 
@@ -149,19 +206,37 @@ export class StatisticsViewComponent {
         return year_field;
     }
 
+    _append_filter_placeholder_option(select_el, Helpers, t, selected) {
+        select_el.appendChild(
+            Helpers.create_element('option', {
+                attributes: {
+                    value: STATISTICS_FILTER_EMPTY_VALUE,
+                    ...(selected ? { selected: 'selected' } : {})
+                },
+                text_content: t('statistics_filter_select_prompt')
+            })
+        );
+    }
+
     _wire_statistics_monitoring_select(Helpers, t, years, monitoring_labels, selected_monitoring_key) {
         const type_field = Helpers.create_element('div', { class_name: 'statistics-filter-row__field' });
         type_field.appendChild(
             Helpers.create_element('label', {
                 class_name: 'statistics-filter-row__label',
-                attributes: { for: 'statistics-rulefile-type-select' },
+                attributes: { for: 'statistics-monitoring-select' },
                 text_content: t('statistics_rulefile_type_label')
             })
         );
         this.monitoring_type_select_ref = Helpers.create_element('select', {
-            id: 'statistics-rulefile-type-select',
+            id: 'statistics-monitoring-select',
             class_name: ['form-control', 'statistics-monitoring-select']
         });
+        this._append_filter_placeholder_option(
+            this.monitoring_type_select_ref,
+            Helpers,
+            t,
+            !selected_monitoring_key
+        );
         monitoring_labels.forEach((key) => {
             this.monitoring_type_select_ref.appendChild(
                 Helpers.create_element('option', {
@@ -170,19 +245,86 @@ export class StatisticsViewComponent {
                 })
             );
         });
-        this.monitoring_type_select_ref.value = selected_monitoring_key;
+        this.monitoring_type_select_ref.value = selected_monitoring_key || STATISTICS_FILTER_EMPTY_VALUE;
         this.monitoring_type_select_ref.addEventListener('change', () => {
             const y = parseInt(this.year_select_ref?.value || '', 10);
             if (!years.includes(y)) return;
             const mk = this.monitoring_type_select_ref.value || '';
-            if (!mk) return;
+            if (!mk) {
+                this.router('statistics', { year: String(y) });
+                return;
+            }
             this.router('statistics', this._statistics_nav_params(y, mk));
         });
         type_field.appendChild(this.monitoring_type_select_ref);
         return type_field;
     }
 
-    _append_filters_section(plate, t, Helpers, years, selected_year, monitoring_labels, selected_monitoring_key) {
+    _wire_statistics_audit_type_select(
+        Helpers,
+        t,
+        years,
+        monitoring_key,
+        audit_labels,
+        selected_audit_type_key,
+        monitoring_selected
+    ) {
+        const type_field = Helpers.create_element('div', { class_name: 'statistics-filter-row__field' });
+        type_field.appendChild(
+            Helpers.create_element('label', {
+                class_name: 'statistics-filter-row__label',
+                attributes: { for: 'statistics-audit-type-select' },
+                text_content: t('statistics_audit_type_label')
+            })
+        );
+        this.audit_type_select_ref = Helpers.create_element('select', {
+            id: 'statistics-audit-type-select',
+            class_name: ['form-control', 'statistics-audit-type-select']
+        });
+        this._append_filter_placeholder_option(
+            this.audit_type_select_ref,
+            Helpers,
+            t,
+            !selected_audit_type_key
+        );
+        if (monitoring_selected) {
+            audit_labels.forEach((key) => {
+                this.audit_type_select_ref.appendChild(
+                    Helpers.create_element('option', {
+                        attributes: { value: key },
+                        text_content: this._audit_type_heading(key)
+                    })
+                );
+            });
+        }
+        this.audit_type_select_ref.value = selected_audit_type_key || STATISTICS_FILTER_EMPTY_VALUE;
+        this.audit_type_select_ref.addEventListener('change', () => {
+            const y = parseInt(this.year_select_ref?.value || '', 10);
+            if (!years.includes(y)) return;
+            const mk = this.monitoring_type_select_ref?.value || monitoring_key || '';
+            const ak = this.audit_type_select_ref.value || '';
+            if (!mk) return;
+            if (!ak) {
+                this.router('statistics', this._statistics_nav_params(y, mk));
+                return;
+            }
+            this.router('statistics', this._statistics_nav_params(y, mk, ak));
+        });
+        type_field.appendChild(this.audit_type_select_ref);
+        return type_field;
+    }
+
+    _append_filters_section(
+        plate,
+        t,
+        Helpers,
+        years,
+        selected_year,
+        monitoring_labels,
+        selected_monitoring_key,
+        audit_labels,
+        selected_audit_type_key
+    ) {
         const section = Helpers.create_element('div', {
             class_name: 'statistics-filters-section'
         });
@@ -201,9 +343,31 @@ export class StatisticsViewComponent {
         );
         const row = Helpers.create_element('div', { class_name: 'statistics-filter-row form-group' });
         row.appendChild(this._wire_statistics_year_select(Helpers, t, years, selected_year));
-        row.appendChild(this._wire_statistics_monitoring_select(Helpers, t, years, monitoring_labels, selected_monitoring_key));
+        row.appendChild(
+            this._wire_statistics_monitoring_select(Helpers, t, years, monitoring_labels, selected_monitoring_key)
+        );
+        row.appendChild(
+            this._wire_statistics_audit_type_select(
+                Helpers,
+                t,
+                years,
+                selected_monitoring_key,
+                audit_labels,
+                selected_audit_type_key,
+                Boolean(selected_monitoring_key)
+            )
+        );
         section.appendChild(row);
         plate.appendChild(section);
+    }
+
+    _append_await_selection_message(plate, t, Helpers) {
+        plate.appendChild(
+            Helpers.create_element('p', {
+                class_name: 'statistics-filters-await view-intro-text',
+                text_content: t('statistics_filters_await_selection')
+            })
+        );
     }
 
     _create_initial_plate(t, Helpers) {
@@ -272,17 +436,9 @@ export class StatisticsViewComponent {
         const per = data.per_year || {};
         const year_raw = per[String(selected)] || this._empty_year_payload();
 
-        const resolved = this._resolve_monitoring_slice(year_raw, params);
-        if (resolved.should_sync_url && typeof this.router === 'function') {
-            this.router(
-                'statistics',
-                this._statistics_nav_params(selected, resolved.selected_monitoring_key)
-            );
-            return;
-        }
-
-        const { year_data, selected_monitoring_key } = resolved;
-        const monitoring_labels = resolved.labels_with_data;
+        const monitoring_resolved = this._resolve_monitoring_slice(year_raw, params);
+        const monitoring_labels = monitoring_resolved.labels_with_data;
+        const selected_monitoring_key = monitoring_resolved.selected_monitoring_key;
 
         if (monitoring_labels.length === 0) {
             plate.appendChild(
@@ -294,6 +450,13 @@ export class StatisticsViewComponent {
             return;
         }
 
+        const audit_resolved = this._resolve_audit_type_slice(
+            monitoring_resolved.monitoring_entry,
+            params
+        );
+        const audit_labels = audit_resolved.labels_with_data;
+        const selected_audit_type_key = audit_resolved.selected_audit_type_key;
+
         this._append_filters_section(
             plate,
             t,
@@ -301,8 +464,22 @@ export class StatisticsViewComponent {
             years,
             selected,
             monitoring_labels,
-            selected_monitoring_key
+            selected_monitoring_key,
+            audit_labels,
+            selected_audit_type_key
         );
+
+        const slice_ready =
+            Boolean(selected_monitoring_key) &&
+            Boolean(selected_audit_type_key) &&
+            audit_resolved.year_data;
+
+        if (!slice_ready) {
+            this._append_await_selection_message(plate, t, Helpers);
+            return;
+        }
+
+        const year_data = audit_resolved.year_data;
 
         const summary_wrap = Helpers.create_element('div', {
             class_name: 'statistics-summary'
@@ -336,14 +513,6 @@ export class StatisticsViewComponent {
             Helpers,
             year_data.monitoring_type_top_failed || [],
             (lbl) => this._monitoring_heading(lbl)
-        );
-
-        append_statistics_audit_type_counts_block(
-            plate,
-            t,
-            Helpers,
-            year_raw.audit_type_counts || [],
-            (lbl) => this._audit_type_heading(lbl)
         );
     }
 }

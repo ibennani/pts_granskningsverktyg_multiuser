@@ -8,11 +8,23 @@ import {
     WCAG_PRINCIPLE_FALLBACK_ORDER,
 } from '../../shared/classification/taxonomy_grouping.js';
 
-/** Sorterar begrepps-id:n för statistikvy (fallback om metadata saknas). */
-function sort_principle_ids_for_statistics(principle_ids) {
+/** Sorterar begrepps-id:n för statistikvy utifrån taxonomi eller fallback. */
+function sort_principle_ids_for_statistics(principle_ids, principle_labels) {
+    const labels = principle_labels && typeof principle_labels === 'object' ? principle_labels : {};
+    const ids = [...new Set(principle_ids)];
+    if (Object.keys(labels).length > 0) {
+        const label_order = Object.keys(labels);
+        const order_index = new Map(label_order.map((id, index) => [id, index]));
+        return ids.sort((a, b) => {
+            const index_a = order_index.get(a) ?? 9999;
+            const index_b = order_index.get(b) ?? 9999;
+            if (index_a !== index_b) return index_a - index_b;
+            return String(a).localeCompare(String(b), 'sv');
+        });
+    }
     const fallback_order = [...WCAG_PRINCIPLE_FALLBACK_ORDER];
     const fallback_index = new Map(fallback_order.map((id, index) => [id, index]));
-    return [...new Set(principle_ids)].sort((a, b) => {
+    return ids.sort((a, b) => {
         const index_a = fallback_index.get(a) ?? 9999;
         const index_b = fallback_index.get(b) ?? 9999;
         if (index_a !== index_b) return index_a - index_b;
@@ -166,7 +178,12 @@ export function append_statistics_sampletype_chart_block(plate, t, Helpers, char
  */
 export function append_statistics_score_analysis_block(plate, t, Helpers, Translation, year_data) {
     const pmd = year_data.principle_median_deficiency || {};
-    const principle_order = sort_principle_ids_for_statistics(Object.keys(pmd));
+    const principle_labels =
+        year_data.principle_labels && typeof year_data.principle_labels === 'object'
+            ? year_data.principle_labels
+            : {};
+    const taxonomy_label = String(year_data.grouping_taxonomy_label || '').trim();
+    const principle_order = sort_principle_ids_for_statistics(Object.keys(pmd), principle_labels);
     const has_median_data = principle_order.some((id) => {
         const v = pmd[id];
         return v !== null && v !== undefined && !Number.isNaN(Number(v));
@@ -179,7 +196,9 @@ export function append_statistics_score_analysis_block(plate, t, Helpers, Transl
         Helpers.create_element('h2', {
             id: 'statistics-score-analysis-heading',
             class_name: 'statistics-score-analysis-section__h2',
-            text_content: t('statistics_principles_chart_heading')
+            text_content: taxonomy_label
+                ? t('statistics_principles_chart_heading_with_taxonomy', { taxonomy: taxonomy_label })
+                : t('statistics_principles_chart_heading')
         })
     );
     section.appendChild(
@@ -214,7 +233,8 @@ export function append_statistics_score_analysis_block(plate, t, Helpers, Transl
             const raw = pmd[id];
             const n =
                 raw !== null && raw !== undefined && !Number.isNaN(Number(raw)) ? Number(raw) : 0;
-            principles[id] = { labelKey: id, score: n };
+            const label = principle_labels[id] || id;
+            principles[id] = { label, score: n };
         }
         const tot = year_data.total_median_deficiency;
         const totalScore =

@@ -47,7 +47,7 @@ export async function fetch_statistics_audits_locked_archived() {
     return query(
         `SELECT status, metadata, samples, rule_file_content, created_at, updated_at
          FROM audits
-         WHERE status IN ('locked', 'archived')
+         WHERE status IN ('locked', 'archived', 'in_progress')
          ORDER BY updated_at DESC`
     );
 }

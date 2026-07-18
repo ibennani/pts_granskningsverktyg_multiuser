@@ -25,6 +25,8 @@ type AuditStateLike = {
         requirementResults?: Record<string, unknown>;
     }>;
     ruleFileContent?: RuleFileContentLike;
+    /** Taxonomi för gruppering; annars primär taxonomi från regelfilen. */
+    groupingTaxonomyId?: string;
 };
 
 type RequirementDefLike = {
@@ -37,12 +39,23 @@ function identity_translation(key: string): string {
     return key;
 }
 
-function build_empty_principles_report(
-    rule_file_content: RuleFileContentLike | null | undefined
-): Record<string, { labelKey?: string; label: string; score: number }> {
-    const taxonomy_id = get_primary_grouping_taxonomy_id(
-        rule_file_content as Record<string, unknown> | null | undefined
+function resolve_grouping_taxonomy_id_for_score(
+    audit_state: AuditStateLike | null | undefined
+): string {
+    const override = String(audit_state?.groupingTaxonomyId ?? '').trim();
+    if (override) return override;
+    return get_primary_grouping_taxonomy_id(
+        audit_state?.ruleFileContent as Record<string, unknown> | null | undefined
     );
+}
+
+function build_empty_principles_report(
+    rule_file_content: RuleFileContentLike | null | undefined,
+    grouping_taxonomy_id?: string
+): Record<string, { labelKey?: string; label: string; score: number }> {
+    const taxonomy_id =
+        String(grouping_taxonomy_id ?? '').trim() ||
+        get_primary_grouping_taxonomy_id(rule_file_content as Record<string, unknown> | null | undefined);
     const concepts = resolve_taxonomy_concepts(
         rule_file_content?.metadata,
         taxonomy_id,
@@ -112,14 +125,15 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
         consoleManager.log('[ScoreCalculator] Missing requirements in ruleFileContent');
         return {
             totalScore: 0,
-            principles: build_empty_principles_report(audit_state.ruleFileContent),
+            principles: build_empty_principles_report(
+                audit_state.ruleFileContent,
+                audit_state.groupingTaxonomyId
+            ),
             sampleCount: safe_sample_count
         };
     }
 
-    const taxonomy_id = get_primary_grouping_taxonomy_id(
-        audit_state.ruleFileContent as Record<string, unknown>
-    );
+    const taxonomy_id = resolve_grouping_taxonomy_id_for_score(audit_state);
     const concepts: TaxonomyConcept[] = resolve_taxonomy_concepts(
         audit_state.ruleFileContent.metadata,
         taxonomy_id,
