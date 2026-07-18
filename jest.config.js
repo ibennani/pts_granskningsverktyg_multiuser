@@ -23,6 +23,7 @@ export default {
     '^.+/score_calculator_passed_check_failures\\.js$': '<rootDir>/js/logic/score_calculator_passed_check_failures.ts',
     '^.+/export_logic\\.js$': '<rootDir>/js/export_logic.ts',
     '^.+[\\\\/]export_format_helpers\\.js$': '<rootDir>/js/export/export_format_helpers.ts',
+    '^.+[\\\\/]export_taxonomy_mapping\\.js$': '<rootDir>/js/export/export_taxonomy_mapping.ts',
     '^.+[\\\\/]deficiency_id_display\\.js$': '<rootDir>/js/utils/deficiency_id_display.ts',
     '^.+[\\\\/]export_bootstrap\\.js$': '<rootDir>/js/export/export_bootstrap.ts',
     '^.+[\\\\/]export_csv\\.js$': '<rootDir>/js/export/export_csv.ts',

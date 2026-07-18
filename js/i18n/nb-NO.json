@@ -1502,7 +1502,7 @@
   "rulefile_appendix2_field_actor_link": "Lenke til tjeneste",
   "rulefile_appendix2_field_auditor_name": "Ansvarlig revisor",
   "rulefile_appendix2_field_start_time": "Starttid",
-  "rulefile_appendix2_field_audit_last_updated": "Sist oppdatert",
+  "rulefile_appendix2_field_audit_ended": "Tilsyn avsluttet",
   "rulefile_appendix2_field_id": "Avvik-ID",
   "rulefile_appendix2_field_reqTitle": "Kravtittel",
   "rulefile_appendix2_field_reference": "Referanse",

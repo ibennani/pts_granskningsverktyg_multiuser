@@ -1004,7 +1004,7 @@
   "rulefile_appendix2_field_actor_link": "Länk till tjänst",
   "rulefile_appendix2_field_auditor_name": "Ansvarig granskare",
   "rulefile_appendix2_field_start_time": "Starttid",
-  "rulefile_appendix2_field_audit_last_updated": "Senast uppdaterad",
+  "rulefile_appendix2_field_audit_ended": "Granskning avslutad",
   "rulefile_appendix2_field_id": "Brist-ID",
   "rulefile_appendix2_field_reqTitle": "Kravets titel",
   "rulefile_appendix2_field_reference": "Referens",

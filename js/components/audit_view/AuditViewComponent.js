@@ -21,7 +21,8 @@ import {
     get_admin_contacts,
     is_current_user_admin
 } from '../../api/client.js';
-import { set_show_empty_metadata_form } from '../../app/browser_globals.js';
+import { build_published_monitoring_rule_options } from '../../logic/published_monitoring_rule_options.js';
+import { load_published_rule_content } from '../../logic/new_audit_rule_loader.js';
 import { subscribe_audits, subscribe_rules } from '../../logic/list_push_service.js';
 import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
@@ -971,7 +972,37 @@ export class AuditViewComponent {
     }
 
     handle_start_new_audit() {
-        this._show_rule_picker_for_new_audit();
+        void this._start_new_audit_with_first_published_rule();
+    }
+
+    async _start_new_audit_with_first_published_rule() {
+        const t = this.get_t_func();
+        await this.ensure_api_data();
+        const available_rules = (this.published_rules && this.published_rules.length > 0)
+            ? this.published_rules
+            : this.rules;
+        if (!available_rules || available_rules.length === 0) {
+            this.NotificationComponent?.show_global_message(t('server_no_rules'), 'error');
+            return;
+        }
+        const options = build_published_monitoring_rule_options(
+            available_rules,
+            version_greater_than,
+            t
+        );
+        if (options.length === 0) {
+            this.NotificationComponent?.show_global_message(t('server_no_rules'), 'error');
+            return;
+        }
+        try {
+            await this.dispatch({
+                type: this.StoreActionTypes.DISCARD_PREPARED_AUDIT,
+                payload: { skip_render: true }
+            });
+        } catch {
+            // Ignoreras medvetet
+        }
+        this.router('metadata');
     }
 
     async _show_rule_picker_for_new_audit() {
@@ -1032,39 +1063,27 @@ export class AuditViewComponent {
 
     async _load_rule_and_start_new_audit(rule_id) {
         const t = this.get_t_func();
+        const loaded = await load_published_rule_content(rule_id, {
+            get_rule,
+            migrate: migrate_rulefile_to_new_structure,
+            validate: (content) => this.ValidationLogic?.validate_rule_file_json?.(content) ?? { isValid: false },
+            Translation: this.Translation
+        });
+        if (!loaded.ok) {
+            this.NotificationComponent?.show_global_message(
+                loaded.error || t('audit_load_rule_error'),
+                'error'
+            );
+            return;
+        }
         try {
-            const rule_row = await get_rule(rule_id);
-            // Nya granskningar ska alltid utgå från publicerad version av regelfilen.
-            let content = rule_row?.published_content ?? rule_row?.content;
-            if (typeof content === 'string') {
-                try {
-                    content = JSON.parse(content);
-                } catch {
-                    content = null;
-                }
-            }
-            if (!content || typeof content !== 'object') {
-                this.NotificationComponent?.show_global_message(t('rule_file_invalid_json'), 'error');
-                return;
-            }
-            const migrated_content = migrate_rulefile_to_new_structure(content, {
-                Translation: this.Translation
-            });
-            const validation_result = this.ValidationLogic?.validate_rule_file_json?.(migrated_content);
-            if (!validation_result?.isValid) {
-                this.NotificationComponent?.show_global_message(
-                    validation_result?.message || t('rule_file_invalid_json'),
-                    'error'
-                );
-                return;
-            }
             await this.dispatch({
                 type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
-                payload: { ruleFileContent: migrated_content }
+                payload: {
+                    ruleFileContent: loaded.content,
+                    ruleSetId: loaded.rule_id
+                }
             });
-            if (typeof window !== 'undefined') {
-                set_show_empty_metadata_form(true);
-            }
             this.router('metadata');
         } catch (error) {
             this.NotificationComponent?.show_global_message(

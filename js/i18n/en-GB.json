@@ -1469,7 +1469,7 @@
   "rulefile_appendix2_field_actor_link": "Link to service",
   "rulefile_appendix2_field_auditor_name": "Responsible auditor",
   "rulefile_appendix2_field_start_time": "Start time",
-  "rulefile_appendix2_field_audit_last_updated": "Last updated",
+  "rulefile_appendix2_field_audit_ended": "Audit ended",
   "rulefile_appendix2_field_id": "Deficiency ID",
   "rulefile_appendix2_field_reqTitle": "Requirement title",
   "rulefile_appendix2_field_reference": "Reference",

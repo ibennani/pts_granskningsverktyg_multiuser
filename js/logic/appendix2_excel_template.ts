@@ -12,9 +12,10 @@ export const APPENDIX2_GENERAL_INFO_KEYS = [
     'case_number',
     'actor_name',
     'actor_link',
+    'case_handler',
     'auditor_name',
     'start_time',
-    'audit_last_updated',
+    'audit_ended',
 ] as const;
 
 export const APPENDIX2_DEFICIENCY_COLUMN_KEYS = [
@@ -66,9 +67,10 @@ export const APPENDIX2_GENERAL_INFO_I18N_KEYS: Record<Appendix2GeneralInfoKey, s
     case_number: 'case_number',
     actor_name: 'actor_name',
     actor_link: 'excel_general_service_link',
+    case_handler: 'case_handler',
     auditor_name: 'auditor_name',
     start_time: 'start_time',
-    audit_last_updated: 'audit_last_updated',
+    audit_ended: 'export_appendix1_audit_ended_label',
 };
 
 /** i18n-nycklar för Brister-kolumner (samma texter som Excel-exporten använt tidigare). */
@@ -161,7 +163,8 @@ function normalize_label_entries(
     if (Array.isArray(entries)) {
         for (const raw of entries) {
             if (!raw || typeof raw !== 'object') continue;
-            const key = String((raw as { key?: unknown }).key ?? '').trim();
+            const key_raw = String((raw as { key?: unknown }).key ?? '').trim();
+            let key = key_raw === 'audit_last_updated' ? 'audit_ended' : key_raw;
             const label = String((raw as { label?: unknown }).label ?? '').trim();
             if (!key || !allowed_keys.includes(key)) continue;
             by_key.set(key, label || default_map.get(key) || key);

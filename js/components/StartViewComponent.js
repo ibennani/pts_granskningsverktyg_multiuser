@@ -32,7 +32,7 @@ function write_cached_audits_list(audits) {
 
 const START_VIEW_SECTION_COUNT = 4;
 
-export class StartViewComponent {
+export class StartViewComponent {
     constructor() {
         this.root = null;
         this.deps = null;
@@ -171,6 +171,7 @@ export class StartViewComponent {
             ValidationLogic: this.ValidationLogic,
             router: this.router,
             NotificationComponent: this.NotificationComponent,
+            Helpers: this.Helpers,
             t
         });
     }

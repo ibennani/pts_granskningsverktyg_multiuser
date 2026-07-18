@@ -317,6 +317,53 @@ describe('export_deficiency_rows', () => {
         expect(rows[0].deficiencyType).toBe(primary_text);
     });
 
+    test('build_deficiencies_data skriver bara Ja i taxonomikolumner, tomma celler i stället för Nej', () => {
+        const audit = {
+            ruleFileContent: {
+                metadata: {
+                    primaryGroupingTaxonomyId: 'wcag22-pour',
+                    taxonomies: [{
+                        id: 'wcag22-pour',
+                        concepts: [
+                            { id: 'perceivable', label: 'Möjlig att uppfatta' },
+                            { id: 'operable', label: 'Möjlig att hantera' },
+                        ],
+                    }],
+                },
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Krav 1',
+                        classifications: [{ taxonomyId: 'wcag22-pour', conceptId: 'perceivable' }],
+                        checks: [{
+                            id: 'chk1',
+                            passCriteria: [{ id: 'pc1', requirement: 'Kravtext', failureStatementTemplate: '' }],
+                        }],
+                    },
+                },
+            },
+            samples: [{
+                id: 's1',
+                requirementResults: {
+                    req1: {
+                        checkResults: {
+                            chk1: {
+                                passCriteria: {
+                                    pc1: { status: 'failed', deficiencyId: 'B001' },
+                                },
+                            },
+                        },
+                    },
+                },
+            }],
+        };
+
+        const rows = build_deficiencies_data(audit, t);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].taxonomy_perceivable).toBe('Ja');
+        expect(rows[0].taxonomy_operable).toBe('');
+    });
+
     test('build_deficiencies_data lämnar deficiencyType tom utan DeficiencyType-nod', () => {
         const audit = {
             ruleFileContent: {

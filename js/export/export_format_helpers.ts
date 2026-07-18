@@ -5,10 +5,12 @@
 import { Paragraph, TextRun } from 'docx';
 import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from '../audit_logic.js';
 import {
-    get_concept_ids_for_requirement,
-    get_primary_grouping_taxonomy_id,
     resolve_taxonomy_concepts,
 } from '../../shared/classification/taxonomy_grouping.js';
+import {
+    get_export_concept_ids_for_requirement,
+    get_export_grouping_taxonomy_id,
+} from './export_taxonomy_mapping.js';
 
 export function create_paragraphs_with_line_breaks(text: unknown, options: Record<string, unknown> = {}): Paragraph[] {
     if (!text) {
@@ -108,6 +110,32 @@ export function get_effective_display_times_for_audit(audit: unknown): {
     };
 }
 
+/** Slutdatum/-tid för export (samma logik som Bilaga 1 {{endDate}}). */
+export function get_audit_ended_iso_for_export(audit: unknown): string | null {
+    if (!audit) return null;
+    const audit_record = audit as Record<string, unknown>;
+    const meta = (audit_record.auditMetadata ?? {}) as Record<string, unknown>;
+    const display_times = get_effective_display_times_for_audit(audit);
+    const end_candidate =
+        display_times.endTime
+        ?? audit_record.endTime
+        ?? meta.endTime
+        ?? null;
+
+    if (typeof end_candidate === 'string' && end_candidate.trim()) {
+        return end_candidate.trim();
+    }
+
+    const status = audit_record.auditStatus;
+    if (status === 'locked' || status === 'archived') {
+        const updated_at = audit_record.updated_at;
+        if (typeof updated_at === 'string' && updated_at.trim()) {
+            return updated_at.trim();
+        }
+    }
+    return null;
+}
+
 /** Samma tidsstämpel som granskningsöversikten (AuditInfo), inte bara updated_at. */
 export function get_audit_last_updated_iso_for_export(audit: unknown): string | null {
     if (!audit) return null;
@@ -146,14 +174,17 @@ function taxonomy_export_column_key(concept_id: string): string {
 }
 
 /**
- * Kolumndefinitioner för primär grupperingstaxonomi i CSV/Excel-bristexport.
+ * Taxonomi för Bilaga 2/Excel. Se export_taxonomy_mapping.ts.
  */
+export { get_export_grouping_taxonomy_id } from './export_taxonomy_mapping.js';
+
+/** Kolumndefinitioner för grupperingstaxonomi i CSV/Excel-bristexport. */
 export function get_primary_taxonomy_export_columns(
     current_audit: Record<string, unknown> | null | undefined,
     t: TExport
 ): TaxonomyExportColumnDef[] {
     const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
-    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+    const taxonomy_id = get_export_grouping_taxonomy_id(current_audit);
     const concepts = resolve_taxonomy_concepts(rule_content?.metadata, taxonomy_id, t);
     return concepts.map((concept) => ({
         header: concept.label,
@@ -163,7 +194,7 @@ export function get_primary_taxonomy_export_columns(
 }
 
 /**
- * Ja/nej-värden per begrepp i primär grupperingstaxonomi för bristexport.
+ * Ja/nej-värden per begrepp i grupperingstaxonomi för bristexport (Ja skrivs, Nej blir tom cell).
  */
 export function get_primary_taxonomy_export_values_for_requirement(
     req_definition: Record<string, unknown> | null | undefined,
@@ -171,10 +202,15 @@ export function get_primary_taxonomy_export_values_for_requirement(
     t: TExport
 ): Record<string, string> {
     const rule_content = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
-    const taxonomy_id = get_primary_grouping_taxonomy_id(rule_content);
+    const taxonomy_id = get_export_grouping_taxonomy_id(current_audit);
     const concepts = resolve_taxonomy_concepts(rule_content?.metadata, taxonomy_id, t);
     const concept_ids = new Set(
-        get_concept_ids_for_requirement(req_definition ?? {}, taxonomy_id)
+        get_export_concept_ids_for_requirement(
+            req_definition ?? {},
+            rule_content?.metadata,
+            taxonomy_id,
+            t
+        )
     );
     const yes = t('yes');
     const no = t('no');

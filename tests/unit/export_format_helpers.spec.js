@@ -1,4 +1,29 @@
-import { get_audit_last_updated_iso_for_export, strip_markdown_for_excel } from '../../js/export/export_format_helpers.ts';
+import { get_audit_ended_iso_for_export, get_audit_last_updated_iso_for_export, strip_markdown_for_excel } from '../../js/export/export_format_helpers.ts';
+
+describe('get_audit_ended_iso_for_export', () => {
+    test('använder sluttid från granskningen', () => {
+        const end_ts = '2026-06-20T15:00:00.000Z';
+        const audit = {
+            endTime: end_ts,
+            updated_at: '2020-01-01T00:00:00.000Z',
+            samples: [],
+        };
+        expect(get_audit_ended_iso_for_export(audit)).toBe(end_ts);
+    });
+
+    test('faller tillbaka till updated_at för avslutad granskning utan sluttid', () => {
+        const audit = {
+            auditStatus: 'locked',
+            updated_at: '2026-06-20T15:00:00.000Z',
+            samples: [],
+        };
+        expect(get_audit_ended_iso_for_export(audit)).toBe('2026-06-20T15:00:00.000Z');
+    });
+
+    test('returnerar null utan audit', () => {
+        expect(get_audit_ended_iso_for_export(null)).toBeNull();
+    });
+});
 
 describe('get_audit_last_updated_iso_for_export', () => {
     test('använder aktivitetstidsstämpel i stället för updated_at', () => {

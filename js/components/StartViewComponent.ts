@@ -69,7 +69,7 @@ type StartViewDeps = {
     ValidationLogic?: unknown;
 };
 
-export class StartViewComponent {
+export class StartViewComponent {
     root: HTMLElement | null;
 
     deps: StartViewDeps | null;
@@ -249,6 +249,7 @@ export class StartViewComponent {
             ValidationLogic: this.ValidationLogic as object,
             router: this.router,
             NotificationComponent: this.NotificationComponent as object | undefined,
+            Helpers: this.Helpers ?? undefined,
             t
         });
     }

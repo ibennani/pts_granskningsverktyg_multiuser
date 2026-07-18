@@ -63,3 +63,75 @@
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
 }
+
+.metadata-form-container .metadata-case-number-input {
+    max-width: 20ch;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.metadata-form-container .form-help-text {
+    margin-top: 0.15rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+}
+
+.metadata-form-container .form-error-text {
+    margin-top: 0.35rem;
+    margin-bottom: 0;
+    font-size: 0.85rem;
+    color: var(--error-text-color, #b00020);
+}
+
+.metadata-form-container .form-error-text[hidden] {
+    display: none;
+}
+
+.metadata-form-container .metadata-case-handler-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.metadata-form-container .metadata-case-handler-select-group,
+.metadata-form-container .metadata-case-handler-add-new-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.metadata-form-container .metadata-case-handler-select-group {
+    flex: 0 1 auto;
+}
+
+.metadata-form-container .metadata-case-handler-select {
+    width: fit-content;
+    min-width: 12rem;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.metadata-form-container .metadata-case-handler-add-new-group {
+    flex: 1 1 16rem;
+    min-width: 16rem;
+    max-width: 100%;
+}
+
+.metadata-form-container .metadata-case-handler-add-new-group[hidden] {
+    display: none;
+}
+
+.metadata-form-container .metadata-case-handler-select-group label,
+.metadata-form-container .metadata-case-handler-add-new-group label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.1rem;
+    font-size: 0.9rem;
+}
+
+.metadata-form-container .metadata-case-handler-new-name-input {
+    max-width: 50ch;
+    width: 100%;
+    box-sizing: border-box;
+}

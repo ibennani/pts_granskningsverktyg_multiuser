@@ -7,7 +7,7 @@ import * as Helpers from '../utils/helpers.js';
 import { get_current_language_code_from_registry } from '../utils/translation_access.js';
 import {
     apply_excel_cell_alignment_top_left_wrap,
-    get_audit_last_updated_iso_for_export,
+    get_audit_ended_iso_for_export,
     get_effective_display_times_for_audit,
     strip_markdown_for_excel
 } from './export_format_helpers.js';
@@ -30,6 +30,7 @@ type ExcelAudit = {
         caseNumber?: string;
         actorName?: string;
         actorLink?: string;
+        caseHandler?: string;
         auditorName?: string;
     };
     ruleFileContent?: unknown;
@@ -57,16 +58,17 @@ export async function build_excel_export_blob(
     const generalSheet = workbook.addWorksheet(sheet_names.general_info);
 
     const display_times = get_effective_display_times_for_audit(current_audit);
-    const last_updated_ts = get_audit_last_updated_iso_for_export(current_audit);
+    const audit_ended_ts = get_audit_ended_iso_for_export(current_audit);
     const general_info_data = [
         [general_info_labels.case_number, strip_markdown_for_excel(String(audit.auditMetadata.caseNumber || ''))],
         [general_info_labels.actor_name, strip_markdown_for_excel(String(audit.auditMetadata.actorName || ''))],
         [general_info_labels.actor_link, strip_markdown_for_excel(String(audit.auditMetadata.actorLink || ''))],
+        [general_info_labels.case_handler, strip_markdown_for_excel(String(audit.auditMetadata.caseHandler || ''))],
         [general_info_labels.auditor_name, strip_markdown_for_excel(String(audit.auditMetadata.auditorName || ''))],
         [general_info_labels.start_time, display_times.startTime ? Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
         [
-            general_info_labels.audit_last_updated,
-            last_updated_ts ? Helpers.format_iso_to_local_date(last_updated_ts, lang_code) : '',
+            general_info_labels.audit_ended,
+            audit_ended_ts ? Helpers.format_iso_to_local_date(audit_ended_ts, lang_code) : '',
         ],
     ];
 
