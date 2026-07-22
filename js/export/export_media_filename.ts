@@ -3,6 +3,7 @@
  */
 
 import { sanitize_media_filename } from '../../shared/media/sanitize_media_filename.js';
+import { is_upload_video_file } from '../../shared/media/image_png_upload.js';
 import { format_zero_id_part_for_sample } from './export_deficiency_traversal.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
 
@@ -43,13 +44,16 @@ export function sanitize_case_number_for_export_filename(case_number: unknown): 
         .replace(/[<>:"/\\|?*]/g, '_');
 }
 
-/** Hämtar filändelse utan punkt, lowercase. */
+/** Hämtar filändelse utan punkt, lowercase. Bilder blir alltid png i export. */
 export function get_media_export_file_extension(original_filename: string): string {
     const sanitized = sanitize_media_filename(original_filename);
     if (!sanitized) return 'png';
-    const dot = sanitized.lastIndexOf('.');
-    if (dot <= 0 || dot === sanitized.length - 1) return 'png';
-    return sanitized.slice(dot + 1).toLowerCase();
+    if (is_upload_video_file(null, sanitized)) {
+        const dot = sanitized.lastIndexOf('.');
+        if (dot <= 0 || dot === sanitized.length - 1) return 'mp4';
+        return sanitized.slice(dot + 1).toLowerCase();
+    }
+    return 'png';
 }
 
 /**

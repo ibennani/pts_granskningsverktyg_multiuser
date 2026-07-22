@@ -2,7 +2,7 @@
  * @fileoverview Håller reda på vilka bifogade filnamn som faktiskt finns på servern.
  */
 
-import { list_audit_media } from '../api/audit_media_api.js';
+import { list_audit_media, type AuditMediaFilenameMigration } from '../api/audit_media_api.js';
 
 /**
  * Normaliserar filnamn för jämförelse (trim, NFC, gemener).
@@ -138,7 +138,7 @@ export function filenames_existing_on_server(
 }
 
 export type AuditMediaServerIndex = {
-    load: () => Promise<void>;
+    load: () => Promise<AuditMediaFilenameMigration[]>;
     get_server_filenames: () => Set<string> | null;
     mark_on_server: (filename: string) => void;
     mark_removed_from_server: (filename: string) => void;
@@ -153,20 +153,22 @@ export function create_audit_media_server_index(
     let server_filenames: Set<string> | null = null;
     const id = String(audit_id || '').trim();
 
-    const load = async (): Promise<void> => {
+    const load = async (): Promise<AuditMediaFilenameMigration[]> => {
         if (!id) {
             server_filenames = new Set();
-            return;
+            return [];
         }
         try {
-            const files = await list_audit_media(id);
-            const loaded = new Set(files.map((entry) => entry.filename));
+            const result = await list_audit_media(id);
+            const loaded = new Set(result.files.map((entry) => entry.filename));
             if (server_filenames) {
                 server_filenames.forEach((name) => loaded.add(name));
             }
             server_filenames = loaded;
+            return result.filename_migrations;
         } catch {
             server_filenames = server_filenames ?? new Set();
+            return [];
         }
     };
 

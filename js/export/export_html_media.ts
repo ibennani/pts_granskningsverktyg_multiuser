@@ -3,7 +3,11 @@
  */
 
 import JSZip from 'jszip';
-import { fetch_audit_media_bytes } from '../api/audit_media_api.js';
+import { fetch_audit_media_bytes, list_audit_media } from '../api/audit_media_api.js';
+import {
+    build_audit_media_filename_migration_map,
+    resolve_migrated_media_filename
+} from '../logic/audit_media_filename_migrations.js';
 import { resolve_effective_sample_attached_filenames } from '../logic/sample_attached_media_normalize.js';
 import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
 import type { ExportMediaFilenameContext } from './export_media_filename_context.js';
@@ -166,13 +170,22 @@ async function add_media_entries_to_zip(
     const missing_filenames: string[] = [];
     const trimmed_audit_id = String(audit_id || '').trim();
     const bytes_cache = new Map<string, ArrayBuffer | null>();
+    let migration_map = new Map<string, string>();
 
     if (!trimmed_audit_id) {
         return missing_filenames;
     }
 
+    try {
+        const list_result = await list_audit_media(trimmed_audit_id);
+        migration_map = build_audit_media_filename_migration_map(list_result.filename_migrations);
+    } catch {
+        migration_map = new Map();
+    }
+
     for (const entry of entries) {
-        const bytes = await fetch_unique_media_bytes(trimmed_audit_id, entry.original_filename, bytes_cache);
+        const resolved_filename = resolve_migrated_media_filename(entry.original_filename, migration_map);
+        const bytes = await fetch_unique_media_bytes(trimmed_audit_id, resolved_filename, bytes_cache);
         if (!bytes) {
             if (!missing_filenames.includes(entry.original_filename)) {
                 missing_filenames.push(entry.original_filename);

@@ -2,7 +2,9 @@
  * @fileoverview Hämtning, dimensioner och skalning av bilder för bilaga 3 (Word/PDF).
  */
 
-import { fetch_audit_media_bytes } from '../api/audit_media_api.js';
+import { fetch_audit_media_bytes, list_audit_media } from '../api/audit_media_api.js';
+import { build_audit_media_filename_migration_map, resolve_migrated_media_filename } from '../logic/audit_media_filename_migrations.js';
+import { is_upload_video_file } from '../../shared/media/image_png_upload.js';
 import { get_media_export_file_extension } from './export_media_filename.js';
 import {
     collect_screenshots_appendix_entries,
@@ -96,19 +98,22 @@ export function compute_screenshots_appendix_display_size(
     };
 }
 
-function mime_type_from_filename(filename: string): string {
-    const ext = get_media_export_file_extension(filename);
-    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
-    if (ext === 'gif') return 'image/gif';
-    if (ext === 'webp') return 'image/webp';
+function mime_type_for_audit_media(filename: string): string {
+    if (is_upload_video_file(null, filename)) {
+        const ext = get_media_export_file_extension(filename);
+        if (ext === 'webm') return 'video/webm';
+        if (ext === 'mp4') return 'video/mp4';
+    }
     return 'image/png';
 }
 
-function docx_image_type_from_filename(filename: string): 'png' | 'jpg' | 'gif' | 'bmp' {
-    const ext = get_media_export_file_extension(filename);
-    if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
-    if (ext === 'gif') return 'gif';
-    if (ext === 'bmp') return 'bmp';
+function docx_image_type_for_audit_media(filename: string): 'png' | 'jpg' | 'gif' | 'bmp' {
+    if (is_upload_video_file(null, filename)) {
+        const ext = get_media_export_file_extension(filename);
+        if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+        if (ext === 'gif') return 'gif';
+        if (ext === 'bmp') return 'bmp';
+    }
     return 'png';
 }
 
@@ -153,7 +158,7 @@ async function prepare_single_screenshot_item(
     entry: ScreenshotsAppendixEntry,
     bytes: ArrayBuffer
 ): Promise<PreparedScreenshotsAppendixItem | null> {
-    const mime_type = mime_type_from_filename(entry.original_filename);
+    const mime_type = mime_type_for_audit_media(entry.original_filename);
     try {
         const dims = await read_image_dimensions(bytes, mime_type);
         const display = compute_screenshots_appendix_display_size(dims.width, dims.height);
@@ -162,7 +167,7 @@ async function prepare_single_screenshot_item(
             original_filename: entry.original_filename,
             bytes,
             mime_type,
-            docx_image_type: docx_image_type_from_filename(entry.original_filename),
+            docx_image_type: docx_image_type_for_audit_media(entry.original_filename),
             display_width_px: display.width_px,
             display_height_px: display.height_px,
             max_height_cm: display.max_height_cm,
@@ -194,13 +199,22 @@ export async function prepare_screenshots_appendix_media(
     const items: PreparedScreenshotsAppendixItem[] = [];
     const missing_filenames: string[] = [];
     const bytes_cache = new Map<string, ArrayBuffer | null>();
+    let migration_map = new Map<string, string>();
 
     if (!audit_id) {
         return { items, missing_filenames: entries.map((entry) => entry.original_filename) };
     }
 
+    try {
+        const list_result = await list_audit_media(audit_id);
+        migration_map = build_audit_media_filename_migration_map(list_result.filename_migrations);
+    } catch {
+        migration_map = new Map();
+    }
+
     for (const entry of entries) {
-        const bytes = await fetch_cached_media_bytes(audit_id, entry.original_filename, bytes_cache);
+        const resolved_filename = resolve_migrated_media_filename(entry.original_filename, migration_map);
+        const bytes = await fetch_cached_media_bytes(audit_id, resolved_filename, bytes_cache);
         if (!bytes) {
             if (!missing_filenames.includes(entry.original_filename)) {
                 missing_filenames.push(entry.original_filename);

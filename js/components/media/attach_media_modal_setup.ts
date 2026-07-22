@@ -10,6 +10,7 @@ import { create_attach_media_modal_persist, parse_attach_media_filenames_from_te
 import type { AuditMediaObservationEditOptions } from './audit_media_preview_observation.js';
 import { refresh_filename_list_container } from './attach_media_modal_list.js';
 import { create_audit_media_server_index, find_server_media_filename_match } from '../../logic/audit_media_server_index.js';
+import { apply_audit_media_filename_migrations } from '../../logic/audit_media_filename_migrations.js';
 import {
     partition_files_by_existing_filenames,
     build_attach_media_local_files_added_message
@@ -398,7 +399,20 @@ export function setup_attach_media_modal_content(
     append_file_list_section();
 
     if (server_index) {
-        void server_index.load().then(() => {
+        void server_index.load().then((migrations) => {
+            if (migrations.length > 0) {
+                working_filenames = apply_audit_media_filename_migrations(working_filenames, migrations);
+                const textarea = container.querySelector(`#${CSS.escape(textarea_id)}`) as HTMLTextAreaElement | null;
+                if (textarea) {
+                    textarea.value = working_filenames.join('\n');
+                    if (Helpers.init_auto_resize_for_textarea) {
+                        Helpers.init_auto_resize_for_textarea(textarea);
+                    }
+                }
+                refresh_list();
+                void persist_media_changes(false);
+                return;
+            }
             refresh_list();
         });
     }

@@ -5,6 +5,10 @@
 import exifr from 'exifr';
 import { format_local_date_for_filename } from '../utils/filename_utils.js';
 import { fetch_audit_media_blob_url, list_audit_media } from '../api/audit_media_api.js';
+import {
+    build_audit_media_filename_migration_map,
+    resolve_migrated_media_filename
+} from './audit_media_filename_migrations.js';
 
 const DEFAULT_CONCURRENCY = 4;
 
@@ -122,18 +126,21 @@ export async function resolve_media_capture_dates(
     }
 
     let uploaded_map = new Map<string, string | null>();
+    let migration_map = new Map<string, string>();
     try {
-        const files = await list_audit_media(safe_audit_id);
-        uploaded_map = new Map(files.map((entry) => [entry.filename, entry.uploadedAt ?? null]));
+        const list_result = await list_audit_media(safe_audit_id);
+        uploaded_map = new Map(list_result.files.map((entry) => [entry.filename, entry.uploadedAt ?? null]));
+        migration_map = build_audit_media_filename_migration_map(list_result.filename_migrations);
     } catch {
         return result;
     }
 
     await map_with_concurrency(unique, DEFAULT_CONCURRENCY, async (filename) => {
+        const resolved_filename = resolve_migrated_media_filename(filename, migration_map);
         const capture_date = await resolve_single_media_capture_date(
             safe_audit_id,
-            filename,
-            uploaded_map.get(filename),
+            resolved_filename,
+            uploaded_map.get(resolved_filename) ?? uploaded_map.get(filename),
             export_fallback
         );
         result.set(filename, capture_date);

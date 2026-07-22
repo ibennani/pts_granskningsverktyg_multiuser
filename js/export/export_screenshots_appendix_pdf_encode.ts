@@ -1,5 +1,6 @@
 /**
- * @fileoverview Omkodar skärmbilder till PDF-exportdimensioner (JPEG) för mindre HTML-payload.
+ * @fileoverview Omkodar serverlagrade PNG-bilder till PDF-exportdimensioner (JPEG) för mindre HTML-payload.
+ * JPEG här är ett exportderivat, inte originaluppladdningen.
  */
 
 import {

@@ -21,8 +21,8 @@ import {
 } from './attach_media_duplicate_filename_status.js';
 import {
     is_upload_image_file,
-    normalize_image_filename_to_png,
-    should_convert_image_to_png
+    is_upload_image_requiring_server_bytes,
+    normalize_image_filename_to_png
 } from '../../../shared/media/image_png_upload.js';
 import type { AuditMediaServerIndex } from '../../logic/audit_media_server_index.js';
 
@@ -33,10 +33,10 @@ function prepare_upload_file(file: File): File {
         return file;
     }
     const png_name = normalize_image_filename_to_png(file.name);
-    if (png_name === file.name) {
+    if (png_name === file.name && file.type === 'image/png') {
         return file;
     }
-    return new File([file], png_name, { type: file.type, lastModified: file.lastModified });
+    return new File([file], png_name, { type: 'image/png', lastModified: file.lastModified });
 }
 
 async function apply_upload_preview_from_server(
@@ -121,7 +121,7 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
         }
 
         const upload_file = prepare_upload_file(file);
-        const needs_server_preview = should_convert_image_to_png(file.type, file.name);
+        const use_server_image_preview = is_upload_image_requiring_server_bytes(file.type, file.name);
         const local_name = String(upload_file.name || '').trim();
         if (!local_name) return { filename: null, renamed_due_to_conflict: false };
 
@@ -169,7 +169,7 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
             deps.refresh_list();
             deps.server_index?.mark_on_server(server_name);
             await deps.persist_changes();
-            if (needs_server_preview) {
+            if (use_server_image_preview) {
                 await apply_upload_preview_from_server(deps.audit_id, server_name, local_preview_url);
             } else {
                 apply_upload_preview(server_name, local_preview_url);

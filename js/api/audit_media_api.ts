@@ -11,6 +11,16 @@ export type AuditMediaFileInfo = {
     uploadedAt?: string | null;
 };
 
+export type AuditMediaFilenameMigration = {
+    from: string;
+    to: string;
+};
+
+export type ListAuditMediaResult = {
+    files: AuditMediaFileInfo[];
+    filename_migrations: AuditMediaFilenameMigration[];
+};
+
 type UploadResponse = {
     filename: string;
     size: number;
@@ -93,15 +103,21 @@ export function get_audit_media_list_url(audit_id: string): string {
     return `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/media`;
 }
 
-export async function list_audit_media(audit_id: string): Promise<AuditMediaFileInfo[]> {
+export async function list_audit_media(audit_id: string): Promise<ListAuditMediaResult> {
     const url = get_audit_media_list_url(audit_id);
     const res = await fetch_with_auth_retry(url, { method: 'GET', cache: 'no-store' });
     if (!res.ok) {
         const err = await parse_error_payload(res);
         throw new Error(err.error || `HTTP ${res.status}`);
     }
-    const data = (await res.json()) as { files?: AuditMediaFileInfo[] };
-    return Array.isArray(data.files) ? data.files : [];
+    const data = (await res.json()) as {
+        files?: AuditMediaFileInfo[];
+        filenameMigrations?: AuditMediaFilenameMigration[];
+    };
+    return {
+        files: Array.isArray(data.files) ? data.files : [],
+        filename_migrations: Array.isArray(data.filenameMigrations) ? data.filenameMigrations : []
+    };
 }
 
 export async function upload_audit_media(audit_id: string, file: File): Promise<UploadResponse> {

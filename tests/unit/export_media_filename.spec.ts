@@ -32,14 +32,14 @@ describe('export_media_filename', () => {
             original_filename: 'a.jpg'
         };
         expect(build_requirement_media_export_filename({ ...base, image_index: 1 })).toBe(
-            '047_1_WEBB_1_2026-04-11_26-11111.jpg'
+            '047_1_WEBB_1_2026-04-11_26-11111.png'
         );
         expect(build_requirement_media_export_filename({ ...base, image_index: 2 })).toBe(
-            '047_2_WEBB_1_2026-04-11_26-11111.jpg'
+            '047_2_WEBB_1_2026-04-11_26-11111.png'
         );
     });
 
-    test('PDF-etikett och pdf-filändelse', () => {
+    test('PDF-etikett ger png-filändelse för lagrade bilder', () => {
         expect(
             build_requirement_media_export_filename({
                 deficiency_id: 'B7',
@@ -50,7 +50,7 @@ describe('export_media_filename', () => {
                 case_number: '2024-99',
                 original_filename: 'scan.PDF'
             })
-        ).toBe('7_1_PDF_2_2026-03-01_2024-99.pdf');
+        ).toBe('7_1_PDF_2_2026-03-01_2024-99.png');
     });
 
     test('WEB-förkortning för engelsk regelfil', () => {

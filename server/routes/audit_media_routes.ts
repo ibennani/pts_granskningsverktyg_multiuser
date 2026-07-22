@@ -16,9 +16,9 @@ import {
 } from '../../shared/media/sanitize_media_filename.js';
 import {
     is_upload_image_file,
-    normalize_image_filename_to_png,
-    should_convert_image_to_png
+    normalize_image_filename_to_png
 } from '../../shared/media/image_png_upload.js';
+import { ensure_audit_media_files_png } from '../services/ensure_audit_media_png.js';
 import {
     convert_image_file_to_png,
     ImagePngConversionError
@@ -26,7 +26,6 @@ import {
 import {
     delete_audit_media_file,
     ensure_audit_media_dir,
-    list_audit_media_files,
     pick_upload_media_filename,
     resolve_audit_media_file_path
 } from '../media/audit_media_storage.js';
@@ -106,8 +105,12 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             if (!(await audit_exists(id))) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }
-            const files = await list_audit_media_files(id);
-            res.json({ files });
+            const { files, migrations } = await ensure_audit_media_files_png(id);
+            const payload: Record<string, unknown> = { files };
+            if (migrations.length > 0) {
+                payload.filenameMigrations = migrations;
+            }
+            res.json(payload);
         } catch (err) {
             console.error('[audit_media] GET list error:', err);
             res.status(500).json({ error: 'Kunde inte lista mediefiler' });
@@ -273,7 +276,7 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             const pick = (req as AuthedRequest).media_upload_pick;
             let stored_size = file.size;
             let stored_mime = mime;
-            if (should_convert_image_to_png(mime, file.filename)) {
+            if (is_upload_image_file(mime, file.filename)) {
                 try {
                     const convert_result = await convert_image_file_to_png(file.path);
                     stored_size = convert_result.size;

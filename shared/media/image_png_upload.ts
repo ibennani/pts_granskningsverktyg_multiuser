@@ -43,18 +43,15 @@ export function is_upload_image_file(mime: unknown, filename: unknown): boolean 
 }
 
 /**
- * Returnerar true om bilden ska konverteras till PNG (ej redan PNG).
+ * Returnerar true om filen är en bild som ska hanteras som serverlagrad PNG efter upload.
  */
+export function is_upload_image_requiring_server_bytes(mime: unknown, filename: unknown): boolean {
+    return is_upload_image_file(mime, filename);
+}
+
+/** @deprecated Använd is_upload_image_requiring_server_bytes */
 export function should_convert_image_to_png(mime: unknown, filename: unknown): boolean {
-    if (!is_upload_image_file(mime, filename)) {
-        return false;
-    }
-    const normalized_mime = typeof mime === 'string' ? mime.toLowerCase().trim() : '';
-    const ext = file_extension_lower(String(filename || ''));
-    if (normalized_mime === 'image/png' && ext === '.png') {
-        return false;
-    }
-    return true;
+    return is_upload_image_requiring_server_bytes(mime, filename);
 }
 
 /**
