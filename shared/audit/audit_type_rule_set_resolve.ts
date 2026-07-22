@@ -88,7 +88,7 @@ export function build_default_published_audit_types_content(): { metadata: { aud
     return {
         metadata: {
             auditTypes: [
-                { id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' },
+                { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' },
                 {
                     id: 'marknadskontroll-lptt',
                     label: 'Marknadskontroll LPTT',

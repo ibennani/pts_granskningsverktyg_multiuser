@@ -10,7 +10,7 @@ import { resolve_available_audit_types_for_audit } from '../../shared/audit/audi
 const PUBLISHED = {
     metadata: {
         auditTypes: [
-            { id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' },
+            { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' },
             { id: 'marknadskontroll-lptt', label: 'Marknadskontroll LPTT', taxonomyId: 'fptt-bilaga-2' },
         ],
     },

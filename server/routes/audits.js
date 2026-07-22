@@ -22,6 +22,7 @@ import {
     read_published_rule_content_from_rule_set_row,
     snapshot_lacks_audit_types,
 } from '../../shared/audit/audit_type_catalog.js';
+import { resolve_audit_type_display_label } from '../../shared/audit/audit_type_metadata.js';
 import { build_default_published_audit_types_content } from '../../shared/audit/audit_type_rule_set_resolve.js';
 import {
     fetch_audits_index_rows,
@@ -224,7 +225,18 @@ router.get('/', async (req, res) => {
             const endForCalc = lastTs || new Date().toISOString();
             out.business_days = firstTs ? count_business_days(firstTs, endForCalc) : null;
             out.granskningstyp_id = typeof metadata.auditTypeId === 'string' ? metadata.auditTypeId.trim() : '';
-            out.granskningstyp_label = typeof metadata.auditTypeLabel === 'string' ? metadata.auditTypeLabel.trim() : '';
+            let rule_content_for_type = null;
+            if (row.rule_content) {
+                try {
+                    rule_content_for_type =
+                        typeof row.rule_content === 'string'
+                            ? JSON.parse(row.rule_content)
+                            : row.rule_content;
+                } catch {
+                    rule_content_for_type = null;
+                }
+            }
+            out.granskningstyp_label = resolve_audit_type_display_label(metadata, rule_content_for_type);
             if (row.rule_content && row.samples) {
                 try {
                     let rule_content = row.rule_content;

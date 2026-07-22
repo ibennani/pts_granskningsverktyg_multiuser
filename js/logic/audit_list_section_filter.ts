@@ -3,6 +3,7 @@
  */
 
 import { DEFAULT_AUDIT_TYPES } from '../../shared/rulefile/rulefile_audit_types.js';
+import { audit_row_granskningstyp_display_label } from '../utils/audit_type_display_label.js';
 import { get_current_user_name } from '../user/current_user.js';
 import { filter_text_matches } from '../utils/string_filter_normalize.js';
 
@@ -124,9 +125,10 @@ export function collect_granskningstyp_filter_options(
     }
     for (const row of audits) {
         const id = String(row.granskningstyp_id || row.metadata?.auditTypeId || '').trim();
-        const label = String(row.granskningstyp_label || row.metadata?.auditTypeLabel || '').trim();
         if (!id) continue;
-        map.set(id, label || map.get(id) || id);
+        if (map.has(id)) continue;
+        const label = audit_row_granskningstyp_display_label(row);
+        map.set(id, label || id);
     }
     return [...map.entries()]
         .sort((a, b) => a[1].localeCompare(b[1], 'sv'))

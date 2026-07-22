@@ -33,7 +33,7 @@ const RULE_WITH_TAXONOMIES = {
             },
         ],
         auditTypes: [
-            { id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' },
+            { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' },
             { id: 'marknadskontroll-lptt', label: 'Marknadskontroll LPTT', taxonomyId: 'fptt-bilaga-2' },
         ],
     },

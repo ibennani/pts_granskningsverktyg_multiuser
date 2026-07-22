@@ -6,6 +6,7 @@ import {
     apply_audit_type_selection,
     audit_type_field_editable,
     resolve_available_audit_types,
+    resolve_audit_type_display_label,
 } from '../../shared/audit/audit_type_metadata.js';
 
 type HelpersLike = {
@@ -117,11 +118,13 @@ export function metadata_form_create_audit_type_field(
     }
 
     if (!editable) {
-        const selected = types.find((row) => row.id === String(initial_audit_type_id ?? '').trim());
-        const stored_label = String(initial_audit_type_label ?? '').trim();
         const readonly_text = Helpers.create_element('p', {
             class_name: 'metadata-field-value',
-            text_content: selected?.label || stored_label || initial_audit_type_id || '',
+            text_content:
+                resolve_audit_type_display_label(
+                    { auditTypeId: initial_audit_type_id, auditTypeLabel: initial_audit_type_label },
+                    rule_file_content
+                ) || initial_audit_type_id || '',
         });
         form_group.appendChild(readonly_text);
         return {

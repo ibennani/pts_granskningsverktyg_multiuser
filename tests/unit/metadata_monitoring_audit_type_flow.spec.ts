@@ -97,7 +97,7 @@ describe('metadata monitoring and audit type flow', () => {
         );
         const labels = Array.from(field.select_element?.options ?? []).map((opt) => opt.textContent);
         expect(labels).toContain('Välj typ');
-        expect(labels).toContain('Tillsyn, LPTT');
+        expect(labels).toContain('Tillsyn LPTT');
         expect(labels).toContain('Marknadskontroll LPTT');
         field.select_element!.value = 'tillsyn-lptt';
         expect(field.validate_selection()).toBe(true);

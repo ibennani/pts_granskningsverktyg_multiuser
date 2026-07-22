@@ -20,7 +20,7 @@ function slug_from_label(label: string): string {
 }
 
 export const DEFAULT_AUDIT_TYPES: RulefileAuditType[] = [
-    { id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' },
+    { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' },
     { id: 'marknadskontroll-lptt', label: 'Marknadskontroll LPTT', taxonomyId: 'wcag22-pour' },
 ];
 

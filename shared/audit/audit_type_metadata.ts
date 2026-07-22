@@ -145,6 +145,30 @@ export function read_audit_type_id(
     return String(audit_metadata?.auditTypeId ?? '').trim();
 }
 
+/**
+ * Visningsetikett för granskningstyp: regelfil (via auditTypeId) före sparad auditTypeLabel.
+ */
+export function resolve_audit_type_display_label(
+    audit_metadata: AuditMetadataAuditTypeFields | null | undefined,
+    rule_file_content?: unknown | null,
+    published_rule_content?: unknown | null
+): string {
+    const id = read_audit_type_id(audit_metadata);
+    if (id && rule_file_content) {
+        const entry = resolve_audit_type_entry(
+            rule_file_content,
+            audit_metadata,
+            published_rule_content
+        );
+        const from_rule = typeof entry?.label === 'string' ? entry.label.trim() : '';
+        if (from_rule) return from_rule;
+    }
+    const stored = read_audit_type_label(audit_metadata);
+    if (stored) return stored;
+    if (id) return id;
+    return '';
+}
+
 export function read_appendix1_by_audit_type(
     appendix1: unknown,
     audit_type_id: string | null | undefined

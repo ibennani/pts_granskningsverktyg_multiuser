@@ -11,7 +11,7 @@ import {
 import { resolve_grouping_taxonomy_id } from '../../shared/audit/audit_type_metadata.js';
 
 const PUBLISHED_TYPES = [
-    { id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' },
+    { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' },
     {
         id: 'marknadskontroll-lptt',
         label: 'Marknadskontroll LPTT',

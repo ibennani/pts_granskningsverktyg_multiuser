@@ -5,6 +5,7 @@ import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { type MarkdownPreviewEditorHost } from '../utils/markdown_preview_editor_ui.js';
 import { resolve_appendix1_sections } from '../logic/appendix1_summary_text.js';
 import { render_appendix1_summary_editor_page } from '../utils/appendix1_summary_editor_render.js';
+import { audit_metadata_granskningstyp_display_label } from '../utils/audit_type_display_label.js';
 
 export type AuditSettingsSection = '' | 'information' | 'summary' | 'principle_intros';
 
@@ -175,7 +176,10 @@ export function render_audit_settings_information_section(
             'rulefile_metadata_field_monitoring_type_label',
             rf_meta.monitoringType?.text || rf_meta.monitoringType?.label || ''
         );
-        add_row('metadata_audit_type_question_label', md.auditTypeLabel || '');
+        add_row(
+            'metadata_audit_type_question_label',
+            audit_metadata_granskningstyp_display_label(md, state.ruleFileContent)
+        );
         add_row('case_number', md.caseNumber || '');
         add_row('actor_name', md.actorName || '');
         add_row('actor_link', md.actorLink || '');

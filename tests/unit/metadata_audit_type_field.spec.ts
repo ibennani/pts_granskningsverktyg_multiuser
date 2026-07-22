@@ -116,10 +116,10 @@ describe('metadata_form_create_audit_type_field', () => {
             RULE_WITH_TYPES,
             'in_progress',
             'tillsyn-lptt',
-            'Tillsyn, LPTT'
+            'Tillsyn LPTT'
         );
         expect(field.select_element).toBeNull();
-        expect(field.form_group.querySelector('p')?.textContent).toBe('Tillsyn, LPTT');
+        expect(field.form_group.querySelector('p')?.textContent).toBe('Tillsyn LPTT');
         expect(field.form_group.querySelector('p')?.classList.contains('metadata-field-value')).toBe(true);
         expect(field.form_group.querySelector('p')?.classList.contains('form-control')).toBe(false);
     });

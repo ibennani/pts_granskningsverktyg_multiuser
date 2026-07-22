@@ -1,5 +1,6 @@
 import { marked } from '../utils/markdown.js';
 import { audit_status_allows_metadata_edit } from '../utils/audit_status_helpers.js';
+import { audit_metadata_granskningstyp_display_label } from '../utils/audit_type_display_label.js';
 import "./audit_info_component.css";
 
 export class AuditInfoComponent {
@@ -102,8 +103,10 @@ export class AuditInfoComponent {
             this.create_info_item('rulefile_metadata_field_monitoring_type_label', monitoring_type_label)
         );
 
-        const audit_type_display = String(md.auditTypeLabel ?? '').trim()
-            || t('metadata_audit_type_not_selected');
+        const audit_type_display = audit_metadata_granskningstyp_display_label(
+            md,
+            current_state.ruleFileContent
+        ) || t('metadata_audit_type_not_selected');
         info_panel.appendChild(
             this.create_info_item('metadata_audit_type_question_label', audit_type_display)
         );

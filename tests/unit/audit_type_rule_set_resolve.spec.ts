@@ -57,7 +57,7 @@ describe('audit_type_rule_set_resolve', () => {
         const published = {
             metadata: {
                 auditTypes: [
-                    { id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' },
+                    { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' },
                     {
                         id: 'marknadskontroll-lptt',
                         label: 'Marknadskontroll LPTT',

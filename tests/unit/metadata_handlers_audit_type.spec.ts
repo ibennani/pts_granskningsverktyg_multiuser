@@ -18,11 +18,11 @@ describe('reduce_update_metadata auditTypeId', () => {
         const next = reduce_update_metadata(base_state, {
             payload: {
                 auditTypeId: 'tillsyn-lptt',
-                auditTypeLabel: 'Tillsyn, LPTT',
+                auditTypeLabel: 'Tillsyn LPTT',
             },
         });
         expect(next.auditMetadata.auditTypeId).toBe('tillsyn-lptt');
-        expect(next.auditMetadata.auditTypeLabel).toBe('Tillsyn, LPTT');
+        expect(next.auditMetadata.auditTypeLabel).toBe('Tillsyn LPTT');
     });
 
     test('blockerar ändring när granskningstyp redan är satt', () => {
@@ -31,7 +31,7 @@ describe('reduce_update_metadata auditTypeId', () => {
             auditMetadata: {
                 ...base_state.auditMetadata,
                 auditTypeId: 'tillsyn-lptt',
-                auditTypeLabel: 'Tillsyn, LPTT',
+                auditTypeLabel: 'Tillsyn LPTT',
             },
         };
         const next = reduce_update_metadata(with_type, {
@@ -41,7 +41,7 @@ describe('reduce_update_metadata auditTypeId', () => {
             },
         });
         expect(next.auditMetadata.auditTypeId).toBe('tillsyn-lptt');
-        expect(next.auditMetadata.auditTypeLabel).toBe('Tillsyn, LPTT');
+        expect(next.auditMetadata.auditTypeLabel).toBe('Tillsyn LPTT');
     });
 
     test('blockerar granskningstyp i arkiverat läge även om typ saknas', () => {
@@ -49,7 +49,7 @@ describe('reduce_update_metadata auditTypeId', () => {
         const next = reduce_update_metadata(archived, {
             payload: {
                 auditTypeId: 'tillsyn-lptt',
-                auditTypeLabel: 'Tillsyn, LPTT',
+                auditTypeLabel: 'Tillsyn LPTT',
             },
         });
         expect(next.auditMetadata.auditTypeId).toBe('');

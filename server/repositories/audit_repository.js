@@ -44,11 +44,19 @@ export async function fetch_audits_index_rows(status) {
  * @returns {Promise<import('pg').QueryResult>}
  */
 export async function fetch_statistics_audits_locked_archived() {
+    const has_published = await has_rule_sets_published_content_column();
+    const published_select = has_published
+        ? 'r.published_content AS rule_set_published_content'
+        : 'NULL::jsonb AS rule_set_published_content';
     return query(
-        `SELECT status, metadata, samples, rule_file_content, created_at, updated_at
-         FROM audits
-         WHERE status IN ('locked', 'archived', 'in_progress')
-         ORDER BY updated_at DESC`
+        `SELECT a.status, a.metadata, a.samples, a.rule_file_content,
+                r.content AS rule_set_content,
+                ${published_select},
+                a.created_at, a.updated_at
+         FROM audits a
+         LEFT JOIN rule_sets r ON a.rule_set_id = r.id
+         WHERE a.status IN ('locked', 'archived', 'in_progress')
+         ORDER BY a.updated_at DESC`
     );
 }
 

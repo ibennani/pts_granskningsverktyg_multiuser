@@ -117,7 +117,11 @@ export class StatisticsViewComponent {
                 ? String(params.monitoringType).trim()
                 : '';
         const selected_monitoring_key =
-            raw && labels_with_data.includes(raw) ? raw : STATISTICS_FILTER_EMPTY_VALUE;
+            raw && labels_with_data.includes(raw)
+                ? raw
+                : labels_with_data.length === 1
+                  ? labels_with_data[0]
+                  : STATISTICS_FILTER_EMPTY_VALUE;
         const monitoring_entry = selected_monitoring_key ? pm[selected_monitoring_key] || null : null;
         return {
             monitoring_entry,
@@ -159,7 +163,11 @@ export class StatisticsViewComponent {
                 ? String(params.auditType).trim()
                 : '';
         const selected_audit_type_key =
-            raw && labels_with_data.includes(raw) ? raw : STATISTICS_FILTER_EMPTY_VALUE;
+            raw && labels_with_data.includes(raw)
+                ? raw
+                : labels_with_data.length === 1
+                  ? labels_with_data[0]
+                  : STATISTICS_FILTER_EMPTY_VALUE;
         const year_data = selected_audit_type_key ? pa[selected_audit_type_key] || null : null;
         return {
             year_data,
@@ -231,12 +239,14 @@ export class StatisticsViewComponent {
             id: 'statistics-monitoring-select',
             class_name: ['form-control', 'statistics-monitoring-select']
         });
-        this._append_filter_placeholder_option(
-            this.monitoring_type_select_ref,
-            Helpers,
-            t,
-            !selected_monitoring_key
-        );
+        if (monitoring_labels.length > 1) {
+            this._append_filter_placeholder_option(
+                this.monitoring_type_select_ref,
+                Helpers,
+                t,
+                !selected_monitoring_key
+            );
+        }
         monitoring_labels.forEach((key) => {
             this.monitoring_type_select_ref.appendChild(
                 Helpers.create_element('option', {
@@ -281,12 +291,14 @@ export class StatisticsViewComponent {
             id: 'statistics-audit-type-select',
             class_name: ['form-control', 'statistics-audit-type-select']
         });
-        this._append_filter_placeholder_option(
-            this.audit_type_select_ref,
-            Helpers,
-            t,
-            !selected_audit_type_key
-        );
+        if (audit_labels.length > 1) {
+            this._append_filter_placeholder_option(
+                this.audit_type_select_ref,
+                Helpers,
+                t,
+                !selected_audit_type_key
+            );
+        }
         if (monitoring_selected) {
             audit_labels.forEach((key) => {
                 this.audit_type_select_ref.appendChild(

@@ -8,9 +8,15 @@ import {
 } from '../js/audit_logic.ts';
 import { calculateQualityScore } from '../js/logic/ScoreCalculator.js';
 import {
-    resolve_audit_type_entry,
-    resolve_grouping_taxonomy_id
+    resolve_grouping_taxonomy_id,
+    resolve_audit_type_display_label,
+    read_audit_type_id,
 } from '../shared/audit/audit_type_metadata.js';
+import {
+    apply_audit_type_overlay_to_rule_content,
+    snapshot_lacks_audit_types,
+} from '../shared/audit/audit_type_catalog.js';
+import { build_default_published_audit_types_content } from '../shared/audit/audit_type_rule_set_resolve.js';
 import { resolve_sample_vocab } from '../shared/rulefile/rulefile_metadata_vocabularies.js';
 import {
     resolve_taxonomy_by_id,
@@ -198,16 +204,48 @@ export function get_monitoring_type_label(rule_content) {
  */
 export function get_audit_type_label(row, rule_content = null) {
     const meta = row?.metadata && typeof row.metadata === 'object' ? row.metadata : {};
-    const label = typeof meta.auditTypeLabel === 'string' ? meta.auditTypeLabel.trim() : '';
+    const label = resolve_audit_type_display_label(meta, rule_content);
     if (label) return label;
-    const id = typeof meta.auditTypeId === 'string' ? meta.auditTypeId.trim() : '';
-    if (id) {
-        const entry = rule_content ? resolve_audit_type_entry(rule_content, meta) : null;
-        const from_rule = typeof entry?.label === 'string' ? entry.label.trim() : '';
-        if (from_rule) return from_rule;
-        return id;
-    }
     return AUDIT_TYPE_FALLBACK_SENTINEL;
+}
+
+/**
+ * @param {unknown} value
+ * @returns {object|null}
+ */
+function parse_json_value(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'object') return value;
+    if (typeof value === 'string') {
+        try {
+            return JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+    return null;
+}
+
+/**
+ * Effektiv regelfil för statistik: snapshot, rule_set-fallback och granskningstyp-overlay.
+ * @param {object} row
+ * @returns {object|null}
+ */
+export function resolve_rule_for_statistics_row(row) {
+    const snapshot = parse_json_value(row?.rule_file_content);
+    const rule_set_content = parse_json_value(row?.rule_set_content);
+    const published = parse_json_value(row?.rule_set_published_content);
+    let rule = snapshot ?? rule_set_content;
+    if (!rule) return null;
+    const published_for_overlay = published ?? rule_set_content;
+    rule = apply_audit_type_overlay_to_rule_content(rule, published_for_overlay);
+    if (snapshot_lacks_audit_types(rule)) {
+        rule = apply_audit_type_overlay_to_rule_content(
+            rule,
+            build_default_published_audit_types_content()
+        );
+    }
+    return rule;
 }
 
 /**
@@ -247,18 +285,10 @@ function failed_requirement_keys_in_audit(rule_content, samples) {
 /**
  * @param {object} row
  * @returns {object|null}
+ * @deprecated Använd resolve_rule_for_statistics_row
  */
 function parse_rule_file_content(row) {
-    const c = row.rule_file_content;
-    if (c === null || c === undefined) return null;
-    if (typeof c === 'string') {
-        try {
-            return JSON.parse(c);
-        } catch {
-            return null;
-        }
-    }
-    return c;
+    return resolve_rule_for_statistics_row(row);
 }
 
 /**
@@ -383,59 +413,60 @@ function create_empty_monitoring_audit_detail() {
         by_sample_type_scores: new Map(),
         sample_type_labels: new Map(),
         grouping_taxonomy_id: '',
-        sample_rule_content: null
+        sample_rule_content: null,
+        display_label: '',
     };
 }
 
 /**
  * @param {object} yb
  * @param {string} monitoring_label
- * @param {string} audit_type_label
+ * @param {string} audit_type_id
  */
-function ensure_monitoring_audit_detail(yb, monitoring_label, audit_type_label) {
+function ensure_monitoring_audit_detail(yb, monitoring_label, audit_type_id) {
     if (!yb.monitoring_audit_detail) yb.monitoring_audit_detail = new Map();
     if (!yb.monitoring_audit_detail.has(monitoring_label)) {
         yb.monitoring_audit_detail.set(monitoring_label, new Map());
     }
     const by_audit = yb.monitoring_audit_detail.get(monitoring_label);
-    if (!by_audit.has(audit_type_label)) {
-        by_audit.set(audit_type_label, create_empty_monitoring_audit_detail());
+    if (!by_audit.has(audit_type_id)) {
+        by_audit.set(audit_type_id, create_empty_monitoring_audit_detail());
     }
-    return by_audit.get(audit_type_label);
+    return by_audit.get(audit_type_id);
 }
 
 /**
  * @param {object} yb
  * @param {string} monitoring_label
- * @param {string} audit_type_label
+ * @param {string} audit_type_id
  */
-function ensure_monitoring_audit_fail_bucket(yb, monitoring_label, audit_type_label) {
+function ensure_monitoring_audit_fail_bucket(yb, monitoring_label, audit_type_id) {
     if (!yb.by_monitoring_audit_type) yb.by_monitoring_audit_type = new Map();
     if (!yb.by_monitoring_audit_type.has(monitoring_label)) {
         yb.by_monitoring_audit_type.set(monitoring_label, new Map());
     }
     const by_audit = yb.by_monitoring_audit_type.get(monitoring_label);
-    if (!by_audit.has(audit_type_label)) {
-        by_audit.set(audit_type_label, {
+    if (!by_audit.has(audit_type_id)) {
+        by_audit.set(audit_type_id, {
             audit_count: 0,
             fail_counts: new Map(),
             req_defs: new Map()
         });
     }
-    return by_audit.get(audit_type_label);
+    return by_audit.get(audit_type_id);
 }
 
 /**
  * @param {object} yb
  * @param {string} monitoring_label
- * @param {string} audit_type_label
+ * @param {string} audit_type_id
  * @param {string} sample_type_id
  * @param {string} sample_label
  */
 function ensure_monitoring_audit_sampletype_scores(
     yb,
     monitoring_label,
-    audit_type_label,
+    audit_type_id,
     sample_type_id,
     sample_label
 ) {
@@ -446,10 +477,10 @@ function ensure_monitoring_audit_sampletype_scores(
         yb.by_monitoring_audit_sampletype_scores.set(monitoring_label, new Map());
     }
     const by_audit = yb.by_monitoring_audit_sampletype_scores.get(monitoring_label);
-    if (!by_audit.has(audit_type_label)) {
-        by_audit.set(audit_type_label, new Map());
+    if (!by_audit.has(audit_type_id)) {
+        by_audit.set(audit_type_id, new Map());
     }
-    const by_type = by_audit.get(audit_type_label);
+    const by_type = by_audit.get(audit_type_id);
     if (!by_type.has(sample_type_id)) {
         by_type.set(sample_type_id, { label: sample_label, values: [] });
     }
@@ -573,22 +604,27 @@ function stats_payload_for_year(year, bucket) {
     const per_monitoring_type = {};
     for (const monitoring_label of monitoring_type_labels_ordered) {
         const audit_detail_map = bucket.monitoring_audit_detail.get(monitoring_label);
-        const audit_type_labels_ordered = [...audit_detail_map.keys()].sort((a, b) =>
-            a.localeCompare(b, 'sv')
-        );
+        const audit_type_ids_ordered = [...audit_detail_map.keys()].sort((a, b) => {
+            const label_a = audit_detail_map.get(a)?.display_label || a;
+            const label_b = audit_detail_map.get(b)?.display_label || b;
+            return String(label_a).localeCompare(String(label_b), 'sv');
+        });
         /** @type {Record<string, object>} */
         const per_audit_type = {};
-        for (const audit_type_label of audit_type_labels_ordered) {
-            const detail = audit_detail_map.get(audit_type_label);
-            const mon = bucket.by_monitoring_audit_type?.get(monitoring_label)?.get(audit_type_label);
+        for (const audit_type_id of audit_type_ids_ordered) {
+            const detail = audit_detail_map.get(audit_type_id);
+            const audit_type_label = detail?.display_label || audit_type_id;
+            const mon = bucket.by_monitoring_audit_type?.get(monitoring_label)?.get(audit_type_id);
             const sampletype_map = bucket.by_monitoring_audit_sampletype_scores
                 ?.get(monitoring_label)
-                ?.get(audit_type_label);
+                ?.get(audit_type_id);
             const slice = stats_payload_slice_for_monitoring_audit_type(detail, mon, sampletype_map);
             if (slice) per_audit_type[audit_type_label] = slice;
         }
         per_monitoring_type[monitoring_label] = {
-            audit_type_labels_ordered,
+            audit_type_labels_ordered: audit_type_ids_ordered.map(
+                (id) => audit_detail_map.get(id)?.display_label || id
+            ),
             per_audit_type
         };
     }
@@ -622,11 +658,17 @@ export function build_statistics_from_audit_rows(rows) {
 
         const rule = parse_rule_file_content(row);
         const samples = Array.isArray(row.samples) ? row.samples : [];
-        const monitoring_label = get_monitoring_type_label(rule);
-        const audit_type_label = get_audit_type_label(row, rule);
         const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
         const taxonomy_id = resolve_grouping_taxonomy_id(rule, meta);
-        const detail = ensure_monitoring_audit_detail(yb, monitoring_label, audit_type_label);
+        const monitoring_label = get_monitoring_type_label(rule);
+        const audit_type_id = read_audit_type_id(meta) || AUDIT_TYPE_FALLBACK_SENTINEL;
+        const audit_type_label = get_audit_type_label(row, rule);
+        const detail = ensure_monitoring_audit_detail(yb, monitoring_label, audit_type_id);
+        if (audit_type_id === AUDIT_TYPE_FALLBACK_SENTINEL) {
+            detail.display_label = AUDIT_TYPE_FALLBACK_SENTINEL;
+        } else if (audit_type_label && !detail.display_label) {
+            detail.display_label = audit_type_label;
+        }
         if (!detail.grouping_taxonomy_id && taxonomy_id) {
             detail.grouping_taxonomy_id = taxonomy_id;
         }
@@ -661,7 +703,7 @@ export function build_statistics_from_audit_rows(rows) {
                 const sampletype_entry = ensure_monitoring_audit_sampletype_scores(
                     yb,
                     monitoring_label,
-                    audit_type_label,
+                    audit_type_id,
                     st,
                     lbl
                 );
@@ -683,7 +725,7 @@ export function build_statistics_from_audit_rows(rows) {
                 append_principle_scores(detail.principle_scores, qs.principles);
             }
         }
-        const mon = ensure_monitoring_audit_fail_bucket(yb, monitoring_label, audit_type_label);
+        const mon = ensure_monitoring_audit_fail_bucket(yb, monitoring_label, audit_type_id);
         mon.audit_count += 1;
 
         if (rule && samples.length) {

@@ -6,6 +6,7 @@ import {
     apply_single_audit_type_if_unique,
     audit_type_field_editable,
     merge_appendix1_with_audit_type_override,
+    resolve_audit_type_display_label,
     resolve_grouping_taxonomy_id,
 } from '../../shared/audit/audit_type_metadata.js';
 import { DEFAULT_AUDIT_TYPES } from '../../shared/rulefile/rulefile_audit_types.js';
@@ -69,7 +70,7 @@ describe('audit_type_metadata', () => {
     test('apply_audit_type_selection validerar id', () => {
         const meta: Record<string, unknown> = {};
         expect(apply_audit_type_selection(meta, RULE_WITH_TYPES, 'tillsyn-lptt')).toBe(true);
-        expect(meta.auditTypeLabel).toBe('Tillsyn, LPTT');
+        expect(meta.auditTypeLabel).toBe('Tillsyn LPTT');
         expect(apply_audit_type_selection(meta, RULE_WITH_TYPES, 'finns-inte')).toBe(false);
     });
 
@@ -93,5 +94,23 @@ describe('audit_type_metadata', () => {
             'tillsyn-lptt'
         );
         expect(merged?.bodyText).toBe('Tillsynstext');
+    });
+
+    test('resolve_audit_type_display_label prioriterar regelfil före sparad etikett', () => {
+        expect(
+            resolve_audit_type_display_label(
+                { auditTypeId: 'tillsyn-lptt', auditTypeLabel: 'Tillsyn LPTT sparad' },
+                RULE_WITH_TYPES
+            )
+        ).toBe('Tillsyn LPTT');
+    });
+
+    test('resolve_audit_type_display_label faller tillbaka till sparad etikett utan regelfilträff', () => {
+        expect(
+            resolve_audit_type_display_label(
+                { auditTypeId: 'borttagen', auditTypeLabel: 'Gammal etikett' },
+                RULE_WITH_TYPES
+            )
+        ).toBe('Gammal etikett');
     });
 });

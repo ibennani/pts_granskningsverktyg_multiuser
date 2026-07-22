@@ -6,6 +6,7 @@ import {
     resolve_group_actor_display_name
 } from '../logic/audit_list_group_display_names.js';
 import { create_file_download_button } from './file_download_button_ui.js';
+import { audit_row_granskningstyp_display_label } from './audit_type_display_label.js';
 
 const EMPTY_PLACEHOLDER = '—';
 
@@ -71,13 +72,13 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             columnKey: 'granskningstyp',
             headerLabel: t('start_view_col_granskningstyp'),
             getSortValue: (row) => {
-                const label = (row.granskningstyp_label || row.metadata?.auditTypeLabel || '').toString().trim();
+                const label = audit_row_granskningstyp_display_label(row);
                 const id = (row.granskningstyp_id || row.metadata?.auditTypeId || '').toString().trim();
                 if (!label && !id) return t('audit_granskningstyp_missing_label');
                 return label;
             },
             getContent: (row) => {
-                const label = (row.granskningstyp_label || row.metadata?.auditTypeLabel || '').toString().trim();
+                const label = audit_row_granskningstyp_display_label(row);
                 const id = (row.granskningstyp_id || row.metadata?.auditTypeId || '').toString().trim();
                 if (!label && !id) return t('audit_granskningstyp_missing_label');
                 return label || EMPTY_PLACEHOLDER;

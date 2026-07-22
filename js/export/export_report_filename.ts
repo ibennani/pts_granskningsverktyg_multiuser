@@ -5,6 +5,7 @@ import {
     get_download_filename_datetime,
     sanitize_filename_segment,
 } from '../utils/download_filename_utils.js';
+import { resolve_audit_type_display_label } from '../../shared/audit/audit_type_metadata.js';
 
 export type ExportReportFilenameT = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -21,6 +22,7 @@ type AppendixAuditMetadata = {
         auditTypeId?: string;
         auditTypeLabel?: string;
     };
+    ruleFileContent?: unknown;
     updated_at?: string | null;
 };
 
@@ -30,7 +32,10 @@ function sanitize_case_number_for_filename(case_number: string): string {
 
 function resolve_audit_type_slug_for_filename(current_audit: AppendixAuditMetadata): string {
     const label = sanitize_filename_segment(
-        String(current_audit.auditMetadata?.auditTypeLabel ?? '').trim()
+        resolve_audit_type_display_label(
+            current_audit.auditMetadata ?? null,
+            current_audit.ruleFileContent ?? null
+        )
     );
     if (label) return label;
     return sanitize_filename_segment(String(current_audit.auditMetadata?.auditTypeId ?? '').trim());

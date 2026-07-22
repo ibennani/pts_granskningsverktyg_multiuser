@@ -10,6 +10,7 @@ import {
     collapse_bilingual_requirement_title,
     get_monitoring_type_label,
     get_audit_type_label,
+    resolve_rule_for_statistics_row,
     requirement_number_sort_key_for_stats,
     MONITORING_LABEL_FALLBACK_SENTINEL,
     AUDIT_TYPE_FALLBACK_SENTINEL
@@ -134,16 +135,16 @@ describe('audit_aggregated_statistics', () => {
     test('get_audit_type_label löser etikett från regelfil när auditTypeLabel saknas', () => {
         const rule = {
             metadata: {
-                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' }]
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }]
             }
         };
-        expect(get_audit_type_label({ metadata: { auditTypeId: 'tillsyn-lptt' } }, rule)).toBe('Tillsyn, LPTT');
+        expect(get_audit_type_label({ metadata: { auditTypeId: 'tillsyn-lptt' } }, rule)).toBe('Tillsyn LPTT');
     });
 
-    test('get_audit_type_label använder sparad auditTypeLabel före regelfil', () => {
+    test('get_audit_type_label använder regelfil före sparad auditTypeLabel', () => {
         const rule = {
             metadata: {
-                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' }]
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }]
             }
         };
         expect(
@@ -151,7 +152,7 @@ describe('audit_aggregated_statistics', () => {
                 { metadata: { auditTypeId: 'tillsyn-lptt', auditTypeLabel: 'Tillsyn LPTT sparad' } },
                 rule
             )
-        ).toBe('Tillsyn LPTT sparad');
+        ).toBe('Tillsyn LPTT');
     });
 
     test('requirement_number_sort_key_for_stats använder standardReference före nyckel', () => {
@@ -295,7 +296,7 @@ describe('audit_aggregated_statistics', () => {
         const rule_web = {
             metadata: {
                 monitoringType: { text: 'Webbplats' },
-                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn, LPTT', taxonomyId: 'wcag22-pour' }]
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }]
             },
             requirements: {
                 a: { key: 'k1', title: 'Krav', checks: [] }
@@ -312,7 +313,7 @@ describe('audit_aggregated_statistics', () => {
                 metadata: {
                     startTime: '2026-01-01T00:00:00.000Z',
                     auditTypeId: 'tillsyn-lptt',
-                    auditTypeLabel: 'Tillsyn, LPTT'
+                    auditTypeLabel: 'Tillsyn LPTT'
                 },
                 samples: [sample],
                 rule_file_content: rule_web,
@@ -323,8 +324,95 @@ describe('audit_aggregated_statistics', () => {
         expect(out.available_years).toEqual([2026]);
         const year = out.per_year['2026'];
         expect(year.monitoring_type_labels_ordered).toContain('Webbplats');
-        expect(year.per_monitoring_type.Webbplats.audit_type_labels_ordered).toContain('Tillsyn, LPTT');
-        expect(stats_slice_for(out, 2026, 'Webbplats', 'Tillsyn, LPTT').completed_count).toBe(1);
+        expect(year.per_monitoring_type.Webbplats.audit_type_labels_ordered).toContain('Tillsyn LPTT');
+        expect(stats_slice_for(out, 2026, 'Webbplats', 'Tillsyn LPTT').completed_count).toBe(1);
+    });
+
+    test('build_statistics_from_audit_rows använder regelfilsetikett i dropdown före sparad', () => {
+        const rule_web = {
+            metadata: {
+                monitoringType: { text: 'Webbplats' },
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }]
+            },
+            requirements: {
+                a: { key: 'k1', title: 'Krav', checks: [] }
+            }
+        };
+        const sample = {
+            id: 's1',
+            selectedContentTypes: [],
+            requirementResults: { k1: { checkResults: {} } }
+        };
+        const out = build_statistics_from_audit_rows([
+            {
+                metadata: {
+                    endTime: '2024-08-01T00:00:00.000Z',
+                    auditTypeId: 'tillsyn-lptt',
+                    auditTypeLabel: 'Tillsyn LPTT gammal'
+                },
+                samples: [sample],
+                rule_file_content: rule_web,
+                updated_at: new Date('2024-08-02')
+            }
+        ]);
+        const labels = out.per_year['2024'].per_monitoring_type.Webbplats.audit_type_labels_ordered;
+        expect(labels).toContain('Tillsyn LPTT');
+        expect(labels).not.toContain('Tillsyn LPTT gammal');
+        expect(stats_slice_for(out, 2024, 'Webbplats', 'Tillsyn LPTT').completed_count).toBe(1);
+    });
+
+    test('build_statistics_from_audit_rows visar saknad granskningstyp i dropdown under samma monitoring', () => {
+        const rule_web = {
+            metadata: {
+                monitoringType: { text: 'Webbplats' },
+                auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }]
+            },
+            requirements: {
+                a: { key: 'k1', title: 'Krav', checks: [] }
+            }
+        };
+        const sample = {
+            id: 's1',
+            selectedContentTypes: [],
+            requirementResults: { k1: { checkResults: {} } }
+        };
+        const out = build_statistics_from_audit_rows([
+            {
+                metadata: {
+                    endTime: '2024-09-01T00:00:00.000Z',
+                    auditTypeId: 'tillsyn-lptt',
+                    auditTypeLabel: 'Tillsyn LPTT'
+                },
+                samples: [sample],
+                rule_file_content: rule_web,
+                updated_at: new Date('2024-09-02')
+            },
+            {
+                metadata: { endTime: '2024-09-02T00:00:00.000Z' },
+                samples: [sample],
+                rule_file_content: rule_web,
+                updated_at: new Date('2024-09-03')
+            }
+        ]);
+        const labels = out.per_year['2024'].per_monitoring_type.Webbplats.audit_type_labels_ordered;
+        expect(labels).toContain('Tillsyn LPTT');
+        expect(labels).toContain(AUDIT_TYPE_FALLBACK_SENTINEL);
+        expect(stats_slice_for(out, 2024, 'Webbplats', AUDIT_TYPE_FALLBACK_SENTINEL).completed_count).toBe(1);
+    });
+
+    test('resolve_rule_for_statistics_row faller tillbaka till rule_set_content', () => {
+        const rule = {
+            metadata: {
+                monitoringType: { text: 'PDF' },
+                auditTypes: [{ id: 'marknadskontroll-lptt', label: 'Marknadskontroll LPTT', taxonomyId: 'wcag22-pour' }]
+            }
+        };
+        const resolved = resolve_rule_for_statistics_row({
+            rule_file_content: null,
+            rule_set_content: rule,
+            rule_set_published_content: null
+        });
+        expect(resolved?.metadata?.auditTypes?.[0]?.label).toBe('Marknadskontroll LPTT');
     });
 
     test('build_statistics_from_audit_rows hittar granskningsdelstyp med högst bristindex', () => {

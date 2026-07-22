@@ -48,7 +48,32 @@ describe('export_report_filename bilagor', () => {
             auditMetadata: {
                 caseNumber: '25-20478',
                 actorName: 'NetOnNet AB',
+                auditTypeId: 'tillsyn-lptt',
                 auditTypeLabel: 'Tillsyn LPTT',
+            },
+            ruleFileContent: {
+                metadata: {
+                    auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }],
+                },
+            },
+        };
+        expect(build_appendix1_summary_pdf_filename(audit_with_type, t)).toBe(
+            '25-20478_NetOnNet_AB_Tillsyn_LPTT_bilaga_1_sammanfattning.pdf'
+        );
+    });
+
+    test('bilaga 1 PDF använder sparad etikett när typ saknas i regelfil', () => {
+        const audit_with_type = {
+            auditMetadata: {
+                caseNumber: '25-20478',
+                actorName: 'NetOnNet AB',
+                auditTypeId: 'borttagen',
+                auditTypeLabel: 'Tillsyn LPTT',
+            },
+            ruleFileContent: {
+                metadata: {
+                    auditTypes: [{ id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }],
+                },
             },
         };
         expect(build_appendix1_summary_pdf_filename(audit_with_type, t)).toBe(

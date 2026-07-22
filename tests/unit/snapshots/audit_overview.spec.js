@@ -100,7 +100,7 @@ describe('AuditOverviewComponent snapshot', () => {
                 auditorName: 'Snap Granskare',
                 caseHandler: '',
                 internalComment: '',
-                auditTypeLabel: 'Tillsyn, LPTT',
+                auditTypeLabel: 'Tillsyn LPTT',
             },
             ruleFileContent: {
                 ...fixture_rule,
