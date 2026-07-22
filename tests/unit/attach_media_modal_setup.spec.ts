@@ -144,6 +144,7 @@ describe('setup_attach_media_modal_content', () => {
         rename_btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await jest.advanceTimersByTimeAsync(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS + 50);
 
+        expect(document.activeElement).toBe(heading);
         expect(actions_wrapper.hasAttribute('hidden')).toBe(true);
         expect(container.querySelector('.attach-media-rename-panel')).not.toBeNull();
         expect(container.querySelector('.attach-media-rename-panel__intro')).not.toBeNull();

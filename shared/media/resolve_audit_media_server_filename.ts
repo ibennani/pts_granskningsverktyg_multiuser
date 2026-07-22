@@ -92,10 +92,36 @@ export function resolve_audit_media_filename_on_server(
     const migration_map = migrations.length
         ? new Map(migrations.map((entry) => [entry.from, entry.to]))
         : null;
-    const resolved = resolve_server_media_fetch_filename(
+    return resolve_media_rename_source_filename(
         referenced_filename,
         server_filenames,
         migration_map
     );
-    return find_server_media_filename_match(resolved, server_filenames);
+}
+
+/**
+ * Löser källfilnamn för omdöpning mot serverindex och migreringar.
+ * Returnerar null om filen inte finns på servern.
+ */
+export function resolve_media_rename_source_filename(
+    referenced_filename: string,
+    server_filenames: Set<string> | readonly string[] | null | undefined,
+    migration_map?: Map<string, string> | null
+): string | null {
+    if (!server_filenames) {
+        return null;
+    }
+    const names = server_filenames instanceof Set ? server_filenames : new Set(server_filenames);
+    if (names.size === 0) {
+        return null;
+    }
+    const resolved = resolve_server_media_fetch_filename(
+        referenced_filename,
+        names,
+        migration_map
+    );
+    return (
+        find_server_media_filename_match(resolved, names) ??
+        find_server_media_filename_match(referenced_filename, names)
+    );
 }

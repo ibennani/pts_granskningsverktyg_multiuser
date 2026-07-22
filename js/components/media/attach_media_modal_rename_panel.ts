@@ -3,7 +3,6 @@
  */
 
 import { rename_audit_media } from '../../api/audit_media_api.js';
-import { find_server_media_filename_match } from '../../logic/audit_media_server_index.js';
 import type { AuditMediaServerIndex } from '../../logic/audit_media_server_index.js';
 import {
     prepare_media_rename_filename_input,
@@ -59,19 +58,6 @@ function focus_element_safe(element: HTMLElement | null | undefined): void {
         element.focus({ preventScroll: true });
     } catch {
         element.focus();
-    }
-}
-
-function focus_input_at_end(input_el: HTMLInputElement | null | undefined): void {
-    if (!input_el || !document.contains(input_el)) {
-        return;
-    }
-    focus_element_safe(input_el);
-    const length = input_el.value.length;
-    try {
-        input_el.setSelectionRange(length, length);
-    } catch {
-        // Ignorera om setSelectionRange inte stöds.
     }
 }
 
@@ -164,6 +150,13 @@ function map_resolve_error_to_message(t: TranslateFn, error: string): string {
     return t('attach_media_rename_failed', { details: error });
 }
 
+function map_rename_api_error(t: TranslateFn, current_filename: string, error: string): string {
+    if (error === 'Filen hittades inte') {
+        return t('attach_media_rename_not_on_server', { filename: current_filename });
+    }
+    return t('attach_media_rename_failed', { details: error });
+}
+
 /**
  * Skapar inline-panel för omdöpning. Modalens h1 blir «Byt filnamn» medan panelen är öppen.
  */
@@ -183,7 +176,6 @@ export function create_attach_media_modal_rename_panel(
         get_elements_to_hide,
         get_working_filenames,
         set_working_filenames,
-        resolve_fetch_filename,
         server_index,
         persist_media_changes,
         show_status,
@@ -227,6 +219,11 @@ export function create_attach_media_modal_rename_panel(
         heading_el.textContent = is_rename_view
             ? t('attach_media_rename_panel_heading')
             : modal_heading_text;
+        if (is_rename_view) {
+            heading_el.tabIndex = -1;
+        } else {
+            heading_el.removeAttribute('tabindex');
+        }
     };
 
     const apply_list_view = () => {
@@ -322,24 +319,25 @@ export function create_attach_media_modal_rename_panel(
         }
 
         if (server_index) {
-            await server_index.ensure_loaded();
+            await server_index.reload();
         }
 
-        const server_filenames = server_index?.get_server_filenames() ?? null;
-        const fetch_candidate = resolve_fetch_filename?.(current_filename) ?? current_filename;
-        const server_from =
-            find_server_media_filename_match(fetch_candidate, server_filenames)
-            ?? find_server_media_filename_match(current_filename, server_filenames)
-            ?? fetch_candidate;
-
-        if (server_filenames && !find_server_media_filename_match(server_from, server_filenames)) {
+        const server_from = server_index?.resolve_rename_source_filename(current_filename) ?? null;
+        if (!server_from) {
             show_status(t('attach_media_rename_not_on_server', { filename: current_filename }), 'error');
+            if (keep_focus_on_error) {
+                input_el.focus();
+            }
             return;
         }
 
         save_in_flight = true;
         try {
-            const result = await rename_audit_media(audit_id, server_from, prepared_name);
+            const result = await rename_audit_media(
+                audit_id,
+                server_from,
+                resolved.requested_filename
+            );
             const next_name = String(result.filename || resolved.filename || '').trim();
             if (!next_name) {
                 throw new Error(t('attach_media_rename_failed', { details: '' }));
@@ -367,7 +365,7 @@ export function create_attach_media_modal_rename_panel(
             close_rename_panel();
         } catch (err) {
             const details = err instanceof Error ? err.message : String(err);
-            show_status(t('attach_media_rename_failed', { details }), 'error');
+            show_status(map_rename_api_error(t, current_filename, details), 'error');
             input_el?.focus();
         } finally {
             save_in_flight = false;
@@ -390,7 +388,7 @@ export function create_attach_media_modal_rename_panel(
             { transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS }
         ).finally(() => {
             view_switch_in_flight = false;
-            focus_input_at_end(input_el);
+            focus_element_safe(heading_el);
         });
     };
 

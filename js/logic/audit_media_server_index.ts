@@ -7,10 +7,16 @@ import { build_audit_media_filename_migration_map } from './audit_media_filename
 import {
     find_server_media_filename_match,
     normalize_media_filename_key,
+    resolve_media_rename_source_filename,
     resolve_server_media_fetch_filename
 } from '../../shared/media/resolve_audit_media_server_filename.js';
 
-export { find_server_media_filename_match, normalize_media_filename_key, resolve_server_media_fetch_filename };
+export {
+    find_server_media_filename_match,
+    normalize_media_filename_key,
+    resolve_media_rename_source_filename,
+    resolve_server_media_fetch_filename
+};
 
 /**
  * Basnamn utan unikt suffix, t.ex. "bild (2).png" -> "bild.png" (normaliserat).
@@ -118,8 +124,10 @@ export function filenames_existing_on_server(
 export type AuditMediaServerIndex = {
     load: () => Promise<AuditMediaFilenameMigration[]>;
     ensure_loaded: () => Promise<AuditMediaFilenameMigration[]>;
+    reload: () => Promise<AuditMediaFilenameMigration[]>;
     get_server_filenames: () => Set<string> | null;
     resolve_fetch_filename: (filename: string) => string;
+    resolve_rename_source_filename: (filename: string) => string | null;
     mark_on_server: (filename: string) => void;
     mark_removed_from_server: (filename: string) => void;
     mark_renamed_on_server: (from_filename: string, to_filename: string) => void;
@@ -135,6 +143,7 @@ export function create_audit_media_server_index(
     let filename_migration_map = new Map<string, string>();
     let load_promise: Promise<AuditMediaFilenameMigration[]> | null = null;
     let load_completed = false;
+    const session_optimistic_marks = new Set<string>();
     const id = String(audit_id || '').trim();
 
     const merge_filename_migrations = (migrations: AuditMediaFilenameMigration[]): void => {
@@ -147,7 +156,7 @@ export function create_audit_media_server_index(
         });
     };
 
-    const load = async (): Promise<AuditMediaFilenameMigration[]> => {
+    const load = async (merge_session_marks = true): Promise<AuditMediaFilenameMigration[]> => {
         if (!id) {
             server_filenames = new Set();
             load_completed = true;
@@ -156,8 +165,8 @@ export function create_audit_media_server_index(
         try {
             const result = await list_audit_media(id);
             const loaded = new Set(result.files.map((entry) => entry.filename));
-            if (server_filenames) {
-                server_filenames.forEach((name) => loaded.add(name));
+            if (merge_session_marks) {
+                session_optimistic_marks.forEach((name) => loaded.add(name));
             }
             server_filenames = loaded;
             merge_filename_migrations(result.filename_migrations);
@@ -182,12 +191,22 @@ export function create_audit_media_server_index(
         return load_promise;
     };
 
+    const reload = async (): Promise<AuditMediaFilenameMigration[]> => {
+        load_completed = false;
+        load_promise = null;
+        return load(false);
+    };
+
     const resolve_fetch_filename = (filename: string): string =>
         resolve_server_media_fetch_filename(filename, server_filenames, filename_migration_map);
+
+    const resolve_rename_source_filename = (filename: string): string | null =>
+        resolve_media_rename_source_filename(filename, server_filenames, filename_migration_map);
 
     const mark_on_server = (filename: string): void => {
         const trimmed = String(filename || '').trim();
         if (!trimmed) return;
+        session_optimistic_marks.add(trimmed);
         if (!server_filenames) {
             server_filenames = new Set();
         }
@@ -197,6 +216,7 @@ export function create_audit_media_server_index(
     const mark_removed_from_server = (filename: string): void => {
         const trimmed = String(filename || '').trim();
         if (!trimmed) return;
+        session_optimistic_marks.delete(trimmed);
         server_filenames?.delete(trimmed);
     };
 
@@ -208,8 +228,10 @@ export function create_audit_media_server_index(
     return {
         load,
         ensure_loaded,
+        reload,
         get_server_filenames: () => server_filenames,
         resolve_fetch_filename,
+        resolve_rename_source_filename,
         mark_on_server,
         mark_removed_from_server,
         mark_renamed_on_server

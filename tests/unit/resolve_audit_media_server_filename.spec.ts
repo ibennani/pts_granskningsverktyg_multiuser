@@ -6,6 +6,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
     find_server_media_filename_match,
     resolve_audit_media_filename_on_server,
+    resolve_media_rename_source_filename,
     resolve_server_media_fetch_filename
 } from '../../shared/media/resolve_audit_media_server_filename.ts';
 import { build_audit_media_filename_migration_map } from '../../shared/media/audit_media_filename_migrations.ts';
@@ -52,5 +53,28 @@ describe('resolve_audit_media_filename_on_server', () => {
 describe('find_server_media_filename_match', () => {
     it('matchar exakt filnamn i array', () => {
         expect(find_server_media_filename_match('a.png', ['a.png', 'b.png'])).toBe('a.png');
+    });
+});
+
+describe('resolve_media_rename_source_filename', () => {
+    const server = new Set(['foto.png', 'Översikt över menyn.png']);
+    const migration_map = build_audit_media_filename_migration_map([{ from: 'foto.jpg', to: 'foto.png' }]);
+
+    it('löser migrerat listnamn till serverfil', () => {
+        expect(resolve_media_rename_source_filename('foto.jpg', server, migration_map)).toBe('foto.png');
+    });
+
+    it('matchar skiftlägesvariant', () => {
+        expect(resolve_media_rename_source_filename('översikt över menyn.png', server, migration_map)).toBe(
+            'Översikt över menyn.png'
+        );
+    });
+
+    it('returnerar null när fil saknas på servern', () => {
+        expect(resolve_media_rename_source_filename('saknas.png', server, migration_map)).toBeNull();
+    });
+
+    it('returnerar null när serverindex saknas', () => {
+        expect(resolve_media_rename_source_filename('foto.png', null, migration_map)).toBeNull();
     });
 });
