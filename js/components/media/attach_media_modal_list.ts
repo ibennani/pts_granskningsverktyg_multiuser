@@ -18,7 +18,8 @@ function build_filename_list(
     filenames: string[],
     on_remove: (name: string, removed_index: number, trigger: HTMLButtonElement) => void,
     on_image_click?: (filename: string, trigger: HTMLButtonElement) => void,
-    resolve_fetch_filename?: (filename: string) => string
+    resolve_fetch_filename?: (filename: string) => string,
+    on_rename?: (filename: string, trigger: HTMLButtonElement) => void
 ): HTMLElement {
     const list = helpers.create_element('ul', { class_name: 'attach-media-filename-list' });
     if (filenames.length === 0) {
@@ -40,7 +41,8 @@ function build_filename_list(
                 name,
                 (trigger) => on_remove(name, index, trigger),
                 on_image_click,
-                resolve_fetch_filename
+                resolve_fetch_filename,
+                on_rename
             )
         );
     });
@@ -56,7 +58,8 @@ export function refresh_filename_list_container(
     on_remove: (name: string, removed_index: number, trigger: HTMLButtonElement) => void,
     on_image_click?: (filename: string, trigger: HTMLButtonElement) => void,
     focus_after_remove?: { removed_index: number; modal_container: HTMLElement },
-    resolve_fetch_filename?: (filename: string) => string
+    resolve_fetch_filename?: (filename: string) => string,
+    on_rename?: (filename: string, trigger: HTMLButtonElement) => void
 ): void {
     container.replaceChildren(
         build_filename_list(
@@ -66,7 +69,8 @@ export function refresh_filename_list_container(
             filenames,
             on_remove,
             on_image_click,
-            resolve_fetch_filename
+            resolve_fetch_filename,
+            on_rename
         )
     );
     if (focus_after_remove) {

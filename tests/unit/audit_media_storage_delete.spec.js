@@ -9,7 +9,8 @@ import {
     delete_audit_media_file,
     ensure_audit_media_dir,
     list_audit_media_files,
-    pick_upload_media_filename
+    pick_upload_media_filename,
+    rename_audit_media_file
 } from '../../server/media/audit_media_storage.js';
 
 describe('audit_media_storage delete', () => {
@@ -50,5 +51,18 @@ describe('audit_media_storage delete', () => {
         expect(pick.filename).toBe('bild (2).png');
         expect(pick.renamed_due_to_conflict).toBe(true);
         expect(pick.requested_filename).toBe('bild.png');
+    });
+
+    test('rename_audit_media_file byter namn på disk', async () => {
+        const audit_id = 'audit-3';
+        const dir = await ensure_audit_media_dir(audit_id);
+        const old_path = path.join(dir, 'gammal.png');
+        const new_path = path.join(dir, 'ny.png');
+        await fs.writeFile(old_path, 'test');
+
+        await rename_audit_media_file(audit_id, 'gammal.png', 'ny.png');
+
+        await expect(fs.stat(old_path)).rejects.toMatchObject({ code: 'ENOENT' });
+        await expect(fs.readFile(new_path, 'utf8')).resolves.toBe('test');
     });
 });

@@ -11,7 +11,10 @@ import {
     count_audits_in_auditor_groups,
     resolve_audit_list_min_group_size
 } from '../../logic/audit_list_case_grouping.js';
-import { clear_audit_lists_transition_classes } from '../../logic/audit_list_view_transition.js';
+import {
+    clear_audit_lists_transition_classes,
+    wrap_table_page_change_handler
+} from '../../logic/audit_list_view_transition.js';
 import { create_file_download_button } from '../../utils/file_download_button_ui.js';
 
 function get_audit_section_table_keys(heading_key) {
@@ -91,10 +94,14 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
             ? {
                 current_page: ctx[page_state_key],
                 page_size: page_size_num,
-                on_page_change: (p) => {
-                    ctx[page_state_key] = p;
-                    rerender_table();
-                }
+                on_page_change: wrap_table_page_change_handler(
+                    table_wrapper,
+                    (p) => {
+                        ctx[page_state_key] = p;
+                        rerender_table();
+                    },
+                    { is_blocked: () => ctx._audit_list_toggle_animating === true }
+                )
             }
             : undefined;
     const no_groups_key =
@@ -191,7 +198,9 @@ export function render_audit_audits_sections(ctx, container) {
             heading_row.appendChild(start_new_btn);
         }
         section.appendChild(heading_row);
-        const table_wrapper = ctx.Helpers.create_element('div');
+        const table_wrapper = ctx.Helpers.create_element('div', {
+            class_name: 'generic-table-page-layout-host'
+        });
         render_audit_section_table(ctx, config, table_wrapper, section_heading_text, t);
         section.appendChild(table_wrapper);
         container.appendChild(section);

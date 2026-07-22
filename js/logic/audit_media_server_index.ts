@@ -142,6 +142,7 @@ export type AuditMediaServerIndex = {
     get_server_filenames: () => Set<string> | null;
     mark_on_server: (filename: string) => void;
     mark_removed_from_server: (filename: string) => void;
+    mark_renamed_on_server: (from_filename: string, to_filename: string) => void;
 };
 
 /**
@@ -187,10 +188,16 @@ export function create_audit_media_server_index(
         server_filenames?.delete(trimmed);
     };
 
+    const mark_renamed_on_server = (from_filename: string, to_filename: string): void => {
+        mark_removed_from_server(from_filename);
+        mark_on_server(to_filename);
+    };
+
     return {
         load,
         get_server_filenames: () => server_filenames,
         mark_on_server,
-        mark_removed_from_server
+        mark_removed_from_server,
+        mark_renamed_on_server
     };
 }

@@ -44,7 +44,7 @@ export function create_table_pagination_element(create_el, opts) {
         const prev = create_el('button', {
             class_name: ['button', 'button-default', 'table-pagination-btn'],
             text_content: t('table_pagination_prev'),
-            attributes: { type: 'button' }
+            attributes: { type: 'button', 'data-pagination-action': 'prev' }
         });
         prev.addEventListener('click', () => {
             on_page_change(clamped - 1);
@@ -62,7 +62,7 @@ export function create_table_pagination_element(create_el, opts) {
         const next = create_el('button', {
             class_name: ['button', 'button-default', 'table-pagination-btn'],
             text_content: t('table_pagination_next'),
-            attributes: { type: 'button' }
+            attributes: { type: 'button', 'data-pagination-action': 'next' }
         });
         next.addEventListener('click', () => {
             on_page_change(clamped + 1);

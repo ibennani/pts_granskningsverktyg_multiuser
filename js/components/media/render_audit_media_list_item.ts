@@ -223,7 +223,8 @@ export function create_attach_media_filename_list_item(
     filename: string,
     on_remove: (trigger: HTMLButtonElement) => void,
     on_image_click?: (filename: string, trigger: HTMLButtonElement) => void,
-    resolve_fetch_filename?: (filename: string) => string
+    resolve_fetch_filename?: (filename: string) => string,
+    on_rename?: (filename: string, trigger: HTMLButtonElement) => void
 ): HTMLLIElement {
     const li = helpers.create_element('li', {
         class_name: 'attach-media-filename-list__item'
@@ -279,6 +280,20 @@ export function create_attach_media_filename_list_item(
         ? helpers.get_icon_svg('delete', ['currentColor'], 16)
         : '';
     const actions = helpers.create_element('div', { class_name: 'attach-media-filename-list__actions' });
+
+    if (on_rename) {
+        const rename_btn = helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'button-small'],
+            attributes: {
+                type: 'button',
+                'aria-label': t('attach_media_rename_file_aria', { filename })
+            },
+            text_content: t('attach_media_rename_file_short')
+        }) as HTMLButtonElement;
+        rename_btn.addEventListener('click', () => on_rename(filename, rename_btn));
+        actions.appendChild(rename_btn);
+    }
+
     const remove_btn = helpers.create_element('button', {
         class_name: ['button', 'button-danger', 'button-small', 'generic-table-download-btn'],
         html_content: `<span>${t('attach_media_remove_file_short')}</span>${icon_svg}`,

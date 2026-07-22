@@ -62,10 +62,15 @@ function to_filter_count_ctx(ctx: AuditFilterAccordionCtx): AuditListFilterConte
     };
 }
 
-function render_search_field(ctx: AuditFilterAccordionCtx): HTMLElement {
+function render_search_field(
+    ctx: AuditFilterAccordionCtx,
+    wrapper: HTMLElement,
+    secondary_count: number,
+    panel_open: boolean
+): HTMLElement {
     const t = ctx.get_t_func();
     const search_row = ctx.Helpers.create_element('div', {
-        class_name: ['audit-filter-search-row', 'form-group']
+        class_name: ['audit-filter-search-row', 'audit-filter-primary-row', 'form-group']
     });
     const text_field = ctx.Helpers.create_element('div', {
         class_name: ['audit-filter-row__field', 'audit-filter-row__field--text']
@@ -90,22 +95,17 @@ function render_search_field(ctx: AuditFilterAccordionCtx): HTMLElement {
     text_field.appendChild(filter_label);
     text_field.appendChild(filter_input);
     search_row.appendChild(text_field);
+    search_row.appendChild(
+        create_audit_filter_toggle_button(ctx, wrapper, secondary_count, panel_open)
+    );
     return search_row;
 }
 
-function build_accordion_shell(
-    ctx: AuditFilterAccordionCtx,
-    wrapper: HTMLElement,
-    secondary_count: number,
-    panel_open: boolean
-): HTMLElement {
+function build_accordion_shell(ctx: AuditFilterAccordionCtx): HTMLElement {
     const t = ctx.get_t_func();
     const section = ctx.Helpers.create_element('div', {
         class_name: 'audit-filter-accordion'
     });
-    section.appendChild(
-        create_audit_filter_toggle_button(ctx, wrapper, secondary_count, panel_open)
-    );
 
     const panel_host = ctx.Helpers.create_element('div', {
         class_name: 'audit-filter-accordion__panel-host',
@@ -115,7 +115,7 @@ function build_accordion_shell(
             'aria-label': t('audit_filter_secondary_region_label')
         }
     });
-    panel_host.hidden = !panel_open;
+    panel_host.hidden = !Boolean(ctx.audit_filter_panel_open);
 
     const expandable_panel = ctx.Helpers.create_element('div', {
         class_name: ['expandable-panel', 'audit-filter-accordion__panel']
@@ -237,9 +237,9 @@ export function render_audit_filter_search_and_accordion(
     const container = ctx.Helpers.create_element('div', {
         class_name: 'audit-filter-search-accordion'
     });
-    container.appendChild(render_search_field(ctx));
+    container.appendChild(render_search_field(ctx, wrapper, secondary_count, panel_open));
 
-    const accordion = build_accordion_shell(ctx, wrapper, secondary_count, panel_open);
+    const accordion = build_accordion_shell(ctx);
     container.appendChild(accordion);
 
     if (panel_open) {

@@ -135,6 +135,30 @@ export async function upload_audit_media(audit_id: string, file: File): Promise<
     return (await res.json()) as UploadResponse;
 }
 
+export type RenameAuditMediaResponse = {
+    filename: string;
+    renamedDueToConflict?: boolean;
+    requestedFilename?: string;
+};
+
+export async function rename_audit_media(
+    audit_id: string,
+    from_filename: string,
+    new_filename: string
+): Promise<RenameAuditMediaResponse> {
+    const url = get_audit_media_url(audit_id, from_filename);
+    const res = await fetch_with_auth_retry(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ newFilename: new_filename })
+    });
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return (await res.json()) as RenameAuditMediaResponse;
+}
+
 export async function delete_audit_media(audit_id: string, filename: string): Promise<void> {
     const url = get_audit_media_url(audit_id, filename);
     const res = await fetch_with_auth_retry(url, { method: 'DELETE' });

@@ -134,16 +134,31 @@
     max-width: none;
 }
 
+.audit-filter-primary-row .audit-filter-toggle {
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+
 .audit-filter-primary-reset[hidden] {
     display: none !important;
 }
 
 .audit-filter-secondary-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
-    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
     gap: 0.5rem 0.75rem;
     width: 100%;
+}
+
+.audit-filter-secondary-row .audit-filter-row__field {
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.audit-filter-secondary-row .audit-filter-row__field--reset {
+    margin-left: auto;
 }
 
 .audit-filter-row__field--granskningstyp {
@@ -229,7 +244,8 @@
     user-select: none;
 }
 
-.audit-filter-row .button.audit-filter-reset {
+.audit-filter-row .button.audit-filter-reset,
+.audit-filter-secondary-row .button.audit-filter-reset {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -246,13 +262,15 @@
     border-width: 2px;
 }
 
-[data-theme="dark-experimental"] .audit-filter-row .button.audit-filter-reset {
+[data-theme="dark-experimental"] .audit-filter-row .button.audit-filter-reset,
+[data-theme="dark-experimental"] .audit-filter-secondary-row .button.audit-filter-reset {
     padding: 0.625rem 0.875rem;
     font-size: 0.9375rem;
     border-width: var(--de-interactive-border-width);
 }
 
-[data-theme="winter-white"] .audit-filter-row .button.audit-filter-reset {
+[data-theme="winter-white"] .audit-filter-row .button.audit-filter-reset,
+[data-theme="winter-white"] .audit-filter-secondary-row .button.audit-filter-reset {
     padding: 0.625rem 0.875rem;
     font-size: 0.9375rem;
     border-width: var(--ww-interactive-border-width);
@@ -269,10 +287,10 @@
     white-space: nowrap;
 }
 
-.audit-filter-row select.audit-filter-select,
-select.form-control.audit-filter-select {
+.audit-filter-secondary-row select.audit-filter-select,
+.audit-filter-secondary-row select.form-control.audit-filter-select {
+    width: fit-content;
     min-width: 0;
-    width: 100%;
     max-width: 100%;
 }
 

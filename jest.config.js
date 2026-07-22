@@ -233,6 +233,7 @@ export default {
     '^.+/migrate_legacy_query_to_hash\\.js$': '<rootDir>/js/logic/migrate_legacy_query_to_hash.ts',
     '^.+/shareable_app_location\\.js$': '<rootDir>/js/logic/shareable_app_location.ts',
     '^.+[\\\\/]sanitize_media_filename\\.js$': '<rootDir>/shared/media/sanitize_media_filename.ts',
+    '^.+[\\\\/]resolve_media_rename_filename\\.js$': '<rootDir>/shared/media/resolve_media_rename_filename.ts',
     '^.+[\\\\/]client_media_validation\\.js$': '<rootDir>/shared/media/client_media_validation.ts',
     '^.+[\\\\/]image_png_upload\\.js$': '<rootDir>/shared/media/image_png_upload.ts',
     '^.+[\\\\/]clipboard_media_files\\.js$': '<rootDir>/shared/media/clipboard_media_files.ts',
@@ -258,6 +259,8 @@ export default {
     '^.+[\\\\/]audit_group_actor_edit_modal\\.js$': '<rootDir>/js/components/audit_group_actor_edit_modal.ts',
     '^.+[\\\\/]AuditGroupedListComponent\\.js$': '<rootDir>/js/components/AuditGroupedListComponent.ts',
     '^.+[\\\\/]attach_media_modal_remove_flow\\.js$': '<rootDir>/js/components/media/attach_media_modal_remove_flow.ts',
+    '^.+[\\\\/]attach_media_modal_rename_flow\\.js$': '<rootDir>/js/components/media/attach_media_modal_rename_flow.ts',
+    '^.+[\\\\/]attach_media_modal_rename_panel\\.js$': '<rootDir>/js/components/media/attach_media_modal_rename_panel.ts',
     '^.+[\\\\/]attach_media_modal_setup\\.js$': '<rootDir>/js/components/media/attach_media_modal_setup.ts',
     '^.+[\\\\/]attach_media_in_modal_remove_confirm\\.js$':
       '<rootDir>/js/components/media/attach_media_in_modal_remove_confirm.ts',

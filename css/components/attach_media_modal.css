@@ -80,6 +80,31 @@
 .attach-media-filename-list__actions {
     flex-shrink: 0;
     margin-left: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.attach-media-rename-panel {
+    margin: 0 0 1rem 0;
+}
+
+.attach-media-rename-panel__heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+}
+
+.attach-media-rename-panel__intro {
+    margin: 0 0 1rem 0;
+    color: var(--text-color-muted);
+}
+
+.attach-media-rename-panel__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
 }
 
 .attach-media-upload-label {

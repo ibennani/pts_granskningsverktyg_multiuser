@@ -38,6 +38,12 @@ import { detect_page_content_types } from '../services/page_content_type_detecti
 import { build_sample_screenshot_filename } from '../utils/sample_screenshot_filename.js';
 import { UrlContentTypeDetectionBodySchema } from '../schemas/url_content_type_detection.js';
 import { AuditUrlPageTitleBodySchema } from '../schemas/audit_url_page_title.js';
+import { AuditMediaRenameBodySchema } from '../schemas/audit_media_rename.js';
+import { resolve_media_rename_filename } from '../../shared/media/resolve_media_rename_filename.js';
+import {
+    list_audit_media_files,
+    rename_audit_media_file
+} from '../media/audit_media_storage.js';
 
 type AuthedRequest = express.Request & {
     user?: { id: string; name: string };
@@ -333,6 +339,56 @@ export function register_audit_media_routes(router: express.Router, upload_limit
         } catch (err) {
             console.error('[audit_media] GET file error:', err);
             res.status(500).json({ error: 'Kunde inte hämta fil' });
+        }
+    });
+
+    router.patch('/:id/media/:filename', async (req: Request, res: Response) => {
+        try {
+            const id = single_route_param(req.params.id);
+            const raw_filename = single_route_param(req.params.filename);
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+
+            const body = parse_body(AuditMediaRenameBodySchema, req.body, res);
+            if (!body) {
+                return;
+            }
+
+            const decoded = decodeURIComponent(raw_filename);
+            const current_filename = sanitize_media_filename(decoded);
+            if (!current_filename) {
+                return res.status(400).json({ error: 'Ogiltigt filnamn' });
+            }
+
+            const existing_files = await list_audit_media_files(id);
+            const existing_set = new Set(existing_files.map((entry) => entry.filename));
+            if (!existing_set.has(current_filename)) {
+                return res.status(404).json({ error: 'Filen hittades inte' });
+            }
+
+            const resolved = resolve_media_rename_filename(
+                current_filename,
+                body.newFilename,
+                existing_set
+            );
+            if (!resolved.ok) {
+                return res.status(400).json({ error: resolved.error });
+            }
+
+            if (!resolved.unchanged) {
+                await rename_audit_media_file(id, current_filename, resolved.filename);
+            }
+
+            const response: Record<string, unknown> = { filename: resolved.filename };
+            if (resolved.renamed_due_to_conflict) {
+                response.renamedDueToConflict = true;
+                response.requestedFilename = resolved.requested_filename;
+            }
+            res.json(response);
+        } catch (err) {
+            console.error('[audit_media] PATCH rename error:', err);
+            res.status(500).json({ error: 'Kunde inte byta filnamn' });
         }
     });
 

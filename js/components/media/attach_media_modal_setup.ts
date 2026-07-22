@@ -18,6 +18,7 @@ import {
 import type { AttachMediaDuplicateScope } from './attach_media_duplicate_filename_status.js';
 import { create_attach_media_status_handlers } from './attach_media_modal_status.js';
 import { create_online_upload_section } from './attach_media_modal_online_upload.js';
+import { create_attach_media_rename_flow } from './attach_media_modal_rename_flow.js';
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
@@ -113,20 +114,27 @@ export function setup_attach_media_modal_content(
     let destroy_online_upload = () => {};
     let in_modal_preview_destroy = () => {};
     let in_modal_remove_confirm_destroy = () => {};
+    let in_modal_rename_destroy = () => {};
     let preview_open = false;
     let remove_confirm_open = false;
+    let rename_open = false;
     let request_remove_filename: (
         name: string,
         removed_index: number,
         trigger: HTMLButtonElement
     ) => void = () => {};
-    const get_drop_enabled = () => !preview_open && !remove_confirm_open;
+    let request_rename_filename: (
+        name: string,
+        trigger: HTMLButtonElement
+    ) => void = () => {};
+    const get_drop_enabled = () => !preview_open && !remove_confirm_open && !rename_open;
 
     dialog_el?.addEventListener('close', () => {
         destroy_file_drop_zone();
         destroy_online_upload();
         in_modal_preview_destroy();
         in_modal_remove_confirm_destroy();
+        in_modal_rename_destroy();
     }, { once: true });
 
     const list_mode_root = Helpers.create_element('div', {
@@ -184,7 +192,7 @@ export function setup_attach_media_modal_content(
     };
 
     const handle_image_click = (filename: string, trigger: HTMLButtonElement) => {
-        if (!in_modal_preview || !audit_id || remove_confirm_open) return;
+        if (!in_modal_preview || !audit_id || remove_confirm_open || rename_open) return;
         const fetch_name = resolve_fetch_filename(filename);
         in_modal_preview.open_preview(
             filename,
@@ -205,7 +213,8 @@ export function setup_attach_media_modal_content(
             request_remove_filename,
             in_modal_preview ? handle_image_click : undefined,
             undefined,
-            resolve_fetch_filename
+            resolve_fetch_filename,
+            can_upload && audit_id ? request_rename_filename : undefined
         );
     };
 
@@ -238,6 +247,51 @@ export function setup_attach_media_modal_content(
         server_index
     });
 
+    const actions_wrapper = Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
+    let online_upload_mount: HTMLElement | null = null;
+    let offline_form_group: HTMLElement | null = null;
+    let offline_hint_el: HTMLElement | null = null;
+
+    const get_elements_to_hide_for_rename = (): HTMLElement[] => {
+        const elements: HTMLElement[] = [list_heading, list_container, actions_wrapper];
+        if (online_upload_mount) {
+            elements.unshift(online_upload_mount);
+        }
+        if (offline_hint_el) {
+            elements.unshift(offline_hint_el);
+        }
+        if (offline_form_group) {
+            elements.push(offline_form_group);
+        }
+        return elements;
+    };
+
+    if (can_upload && audit_id) {
+        const rename_flow = create_attach_media_rename_flow({
+            t,
+            Helpers,
+            audit_id,
+            list_mode_root,
+            get_elements_to_hide: get_elements_to_hide_for_rename,
+            get_working_filenames: () => working_filenames,
+            set_working_filenames: (filenames) => {
+                working_filenames = filenames;
+            },
+            resolve_fetch_filename,
+            server_index,
+            persist_media_changes,
+            show_status,
+            refresh_list,
+            get_preview_open: () => preview_open,
+            get_remove_confirm_open: () => remove_confirm_open,
+            on_rename_open_change: (is_open) => {
+                rename_open = is_open;
+            }
+        });
+        request_rename_filename = rename_flow.request_rename_filename;
+        in_modal_rename_destroy = () => rename_flow.destroy();
+    }
+
     if (heading_el && message_el) {
         const remove_flow = create_attach_media_remove_flow({
             t,
@@ -255,8 +309,10 @@ export function setup_attach_media_modal_content(
                 working_filenames = filenames;
             },
             get_preview_open: () => preview_open,
+            get_rename_open: () => rename_open,
             handle_image_click: in_modal_preview ? handle_image_click : undefined,
             resolve_fetch_filename,
+            on_rename: can_upload && audit_id ? request_rename_filename : undefined,
             persist_media_changes,
             show_status,
             on_remove_confirm_open_change: (is_open) => {
@@ -322,14 +378,14 @@ export function setup_attach_media_modal_content(
             server_index
         });
         destroy_online_upload = () => online_upload.destroy();
+        online_upload_mount = online_upload.mount_element;
         list_mode_root.appendChild(online_upload.mount_element);
     } else if (!can_upload) {
-        list_mode_root.appendChild(
-            Helpers.create_element('p', {
-                class_name: 'attach-media-offline-hint',
-                text_content: t('attach_media_manual_only_hint')
-            })
-        );
+        offline_hint_el = Helpers.create_element('p', {
+            class_name: 'attach-media-offline-hint',
+            text_content: t('attach_media_manual_only_hint')
+        });
+        list_mode_root.appendChild(offline_hint_el);
 
         const local_label_id = `${textarea_id}-local-upload-label`;
         const { group: local_group, destroy } = create_attach_media_file_drop_zone({
@@ -388,6 +444,7 @@ export function setup_attach_media_modal_content(
             Helpers.init_auto_resize_for_textarea(textarea);
         }
         form_group.appendChild(textarea);
+        offline_form_group = form_group;
         list_mode_root.appendChild(form_group);
 
         textarea.addEventListener('input', () => {
@@ -417,7 +474,6 @@ export function setup_attach_media_modal_content(
         });
     }
 
-    const actions_wrapper = Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
     const save_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-primary'],
         attributes: { type: 'button' },

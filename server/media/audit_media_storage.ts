@@ -109,3 +109,13 @@ export async function delete_audit_media_file(audit_id: string, filename: string
     const full = resolve_audit_media_file_path(audit_id, filename);
     await fs.unlink(full);
 }
+
+export async function rename_audit_media_file(
+    audit_id: string,
+    from_filename: string,
+    to_filename: string
+): Promise<void> {
+    const from_full = resolve_audit_media_file_path(audit_id, from_filename);
+    const to_full = resolve_audit_media_file_path(audit_id, to_filename);
+    await fs.rename(from_full, to_full);
+}

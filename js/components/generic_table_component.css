@@ -14,6 +14,33 @@
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
+    --table-page-transition-duration: 0.25s; /* två faser = 0,5 s totalt vid sidbyte */
+    opacity: 1;
+    transition: opacity var(--table-page-transition-duration) ease;
+}
+
+.generic-table-stack--transition-exit {
+    opacity: 0;
+}
+
+.generic-table-stack--transition-enter-start {
+    opacity: 0;
+}
+
+/* Omslutande tabellområde (wrapper runt stack) – höjd vid sidbyte så sektioner under glider med */
+.generic-table-page-layout-host--animating {
+    overflow: hidden;
+    transition: height var(--table-page-transition-duration) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .generic-table-stack {
+        transition: none;
+    }
+
+    .generic-table-page-layout-host--animating {
+        transition: none;
+    }
 }
 
 .table-pagination-nav {
