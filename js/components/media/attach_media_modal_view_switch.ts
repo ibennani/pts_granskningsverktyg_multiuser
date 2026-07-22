@@ -400,6 +400,18 @@ type TargetSizeResult = {
 
 
 
+function measure_natural_dialog_size_while_locked(
+    dialog_el: HTMLDialogElement,
+    container: HTMLElement,
+    locked_size: DialogSize
+): DialogSize {
+    clear_dialog_size(dialog_el, container);
+    const natural_size = measure_dialog(dialog_el);
+    apply_dialog_size(dialog_el, locked_size);
+    force_reflow(dialog_el);
+    return natural_size;
+}
+
 async function measure_target_size_after_swap(
 
     container: HTMLElement,
@@ -452,21 +464,13 @@ async function measure_target_size_after_swap(
 
         } else {
 
-            clear_dialog_size(dialog_el, container);
-
-            await wait_for_next_frame();
-
-            target_size = measure_dialog(dialog_el);
+            target_size = measure_natural_dialog_size_while_locked(dialog_el, container, start_size);
 
         }
 
     } else {
 
-        clear_dialog_size(dialog_el, container);
-
-        await wait_for_next_frame();
-
-        target_size = measure_dialog(dialog_el);
+        target_size = measure_natural_dialog_size_while_locked(dialog_el, container, start_size);
 
     }
 
@@ -638,15 +642,13 @@ export async function run_attach_media_modal_view_switch(
 
     const start_size = measure_dialog(dialog_el);
 
+    apply_dialog_size(dialog_el, start_size);
 
+    force_reflow(dialog_el);
 
     await fade_out_old_content(fade_el, dialog_el, fade_out_ms);
 
-
-
     apply_change();
-
-    apply_dialog_size(dialog_el, start_size);
 
     await wait_for_layout(container);
 

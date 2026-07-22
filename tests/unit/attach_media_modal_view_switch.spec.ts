@@ -147,6 +147,67 @@ describe('run_attach_media_modal_view_switch', () => {
         expect(shell.style.opacity).toBe('');
     });
 
+    it('håller dialoglåst under uttoning och DOM-byte', async () => {
+        const { dialog, container, list_root } = setup_modal_dom();
+        const measure_height = jest.spyOn(dialog, 'getBoundingClientRect').mockImplementation(() => {
+            const locked_height = Number.parseFloat(dialog.style.height);
+            if (Number.isFinite(locked_height) && locked_height > 0) {
+                return {
+                    width: 400,
+                    height: locked_height,
+                    top: 0,
+                    left: 0,
+                    right: 400,
+                    bottom: locked_height,
+                    x: 0,
+                    y: 0,
+                    toJSON: () => ({})
+                } as DOMRect;
+            }
+            const content_height = list_root.querySelector('.attach-media-rename-panel') ? 360 : 220;
+            return {
+                width: 400,
+                height: content_height,
+                top: 0,
+                left: 0,
+                right: 400,
+                bottom: content_height,
+                x: 0,
+                y: 0,
+                toJSON: () => ({})
+            } as DOMRect;
+        });
+        let swapped = false;
+        const phases = split_transition_phases(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS);
+
+        const switch_promise = run_attach_media_modal_view_switch(
+            container,
+            () => {
+                swapped = true;
+                const panel = document.createElement('div');
+                panel.className = 'attach-media-rename-panel';
+                panel.style.minHeight = '360px';
+                container.appendChild(panel);
+            },
+            { transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS }
+        );
+
+        expect(dialog.style.height).toBe('220px');
+
+        await jest.advanceTimersByTimeAsync(phases.fade_out_ms - 1);
+        expect(swapped).toBe(false);
+        expect(dialog.style.height).toBe('220px');
+
+        await jest.advanceTimersByTimeAsync(1);
+        expect(swapped).toBe(true);
+        expect(dialog.style.height).toBe('220px');
+
+        await jest.advanceTimersByTimeAsync(phases.resize_ms + phases.fade_in_ms + 10);
+        await switch_promise;
+
+        measure_height.mockRestore();
+    });
+
     it('byter vy direkt vid prefers-reduced-motion', async () => {
         window.matchMedia = jest.fn().mockImplementation(() => ({
             matches: true,
