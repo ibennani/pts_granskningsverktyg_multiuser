@@ -2,9 +2,9 @@
 // Returnerar kolumndefinitioner för granskningstabellen, används med GenericTableComponent.
 
 import {
-    format_group_actor_names,
-    get_group_actor_sort_value
-} from '../logic/audit_list_case_grouping.js';
+    get_group_actor_display_sort_value,
+    resolve_group_actor_display_name
+} from '../logic/audit_list_group_display_names.js';
 import { create_file_download_button } from './file_download_button_ui.js';
 
 const EMPTY_PLACEHOLDER = '—';
@@ -206,8 +206,11 @@ export function create_audit_group_table_columns(deps, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_actor'),
-            getSortValue: (row) => get_group_actor_sort_value(row.audits || []),
-            getContent: (row) => format_group_actor_names(row.audits || []) || EMPTY_PLACEHOLDER
+            getSortValue: (row) =>
+                get_group_actor_display_sort_value(row.group_key ?? '', row.audits || []),
+            getContent: (row) =>
+                resolve_group_actor_display_name(row.group_key ?? '', row.audits || []) ||
+                EMPTY_PLACEHOLDER
         },
         {
             headerLabel: t('audit_group_col_count'),

@@ -10,6 +10,7 @@ import {
     type AuditListGroupMode,
     type AuditRowForGrouping
 } from '../logic/audit_list_case_grouping.js';
+import { resolve_group_actor_display_name } from '../logic/audit_list_group_display_names.js';
 import { slice_rows_for_page } from '../logic/table_pagination_logic.js';
 import { create_table_pagination_element } from './table_pagination_bar.js';
 import {
@@ -57,6 +58,7 @@ export type AuditGroupedListRenderOpts = {
     };
     pending_sort_focus_index?: number;
     on_pending_sort_focus_done?: () => void;
+    on_group_display_name_saved?: () => void;
 };
 
 function compare_sort_values(va: unknown, vb: unknown): number {
@@ -127,7 +129,8 @@ function create_group_actor_edit_button(
     Helpers: RenderContext['Helpers'],
     t: (key: string, replacements?: Record<string, unknown>) => string,
     group: AuditListGroup,
-    actor_name: string
+    actor_name: string,
+    on_saved?: () => void
 ): HTMLElement {
     const edit_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-default', 'audit-group-actor-edit-btn'],
@@ -142,7 +145,13 @@ function create_group_actor_edit_button(
     });
     edit_btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        open_audit_group_actor_edit_modal(group, actor_name, { Helpers, t }, edit_btn);
+        open_audit_group_actor_edit_modal(
+            group,
+            actor_name,
+            { Helpers, t },
+            edit_btn,
+            { on_saved }
+        );
     });
     edit_btn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -303,9 +312,17 @@ export function render_audit_grouped_list(
             const content = col.getContent(group);
             const chevron_char = col_index === 0 ? (is_expanded ? '▾' : '▸') : undefined;
             const show_actor_edit = group_mode === 'case' && col_index === 1;
-            const actor_name = show_actor_edit && typeof content === 'string' ? content : '';
+            const actor_name = show_actor_edit
+                ? resolve_group_actor_display_name(group.group_key, group.audits)
+                : '';
             const trailing = show_actor_edit
-                ? create_group_actor_edit_button(Helpers, t, group, actor_name)
+                ? create_group_actor_edit_button(
+                      Helpers,
+                      t,
+                      group,
+                      actor_name,
+                      opts.on_group_display_name_saved
+                  )
                 : undefined;
             if (typeof content === 'string') {
                 append_group_summary_cell(Helpers, td, col_index, content, chevron_char, trailing);

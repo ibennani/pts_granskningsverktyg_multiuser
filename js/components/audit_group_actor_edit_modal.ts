@@ -4,6 +4,7 @@
 
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import type { AuditListGroup } from '../logic/audit_list_case_grouping.js';
+import { set_audit_group_display_name } from '../logic/audit_list_group_display_names.js';
 import { build_save_button_html_content } from '../ui/save_button_html.js';
 
 type ModalDeps = {
@@ -20,6 +21,10 @@ type ModalComponentApi = {
         opts: { h1_text: string; message_text: string },
         content_callback: (container: HTMLElement, modal: ModalInstance) => void
     ) => void;
+};
+
+type OpenGroupActorEditModalOpts = {
+    on_saved?: () => void;
 };
 
 function build_actor_edit_form(
@@ -74,12 +79,13 @@ function build_modal_actions(
     return actions;
 }
 
-/** Öppnar modal för redigering av gruppnamn (sparlogik kommer senare). */
+/** Öppnar modal för gruppens visningsnamn (aktörskolumnen) och sparar lokalt per ärendenummer. */
 export function open_audit_group_actor_edit_modal(
     group: AuditListGroup,
     actor_name: string,
     deps: ModalDeps,
-    trigger_button: HTMLElement
+    trigger_button: HTMLElement,
+    opts: OpenGroupActorEditModalOpts = {}
 ): void {
     const ModalComponent = app_runtime_refs.modal_component as ModalComponentApi | null;
     const { Helpers, t } = deps;
@@ -93,8 +99,15 @@ export function open_audit_group_actor_edit_modal(
         (container, modal) => {
             const { form_group, input } = build_actor_edit_form(Helpers, t, actor_name);
             const close_modal = () => modal.close(trigger_button);
+            const save_group_name = () => {
+                set_audit_group_display_name(group.group_key, input.value);
+                opts.on_saved?.();
+                close_modal();
+            };
             container.appendChild(form_group);
-            container.appendChild(build_modal_actions(Helpers, t, close_modal, close_modal));
+            container.appendChild(
+                build_modal_actions(Helpers, t, save_group_name, close_modal)
+            );
             requestAnimationFrame(() => {
                 try {
                     input.focus({ preventScroll: true });

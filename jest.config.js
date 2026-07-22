@@ -225,6 +225,7 @@ export default {
     '^.+[\\\\/]coerce_audit_for_export\\.js$': '<rootDir>/js/logic/coerce_audit_for_export.ts',
     '^.+[\\\\/]table_pagination_logic\\.js$': '<rootDir>/js/logic/table_pagination_logic.ts',
     '^.+[\\\\/]audit_list_case_grouping\\.js$': '<rootDir>/js/logic/audit_list_case_grouping.ts',
+    '^.+[\\\\/]audit_list_group_display_names\\.js$': '<rootDir>/js/logic/audit_list_group_display_names.ts',
     '^.+[\\\\/]audit_list_view_transition\\.js$': '<rootDir>/js/logic/audit_list_view_transition.ts',
     '^.+[\\\\/]expandable_panel_transition\\.js$': '<rootDir>/js/utils/expandable_panel_transition.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',

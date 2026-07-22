@@ -130,7 +130,8 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
             ctx.handle_delete_audit_click(id, displayName, deleteButton),
         get_status_label: ctx.get_status_label.bind(ctx),
         pagination,
-        sortControlsIdPrefix: `audit-list-sort-${config.heading_key}`
+        sortControlsIdPrefix: `audit-list-sort-${config.heading_key}`,
+        on_group_display_name_saved: is_grouped && group_mode === 'case' ? rerender_table : undefined
     };
     if (is_grouped) {
         ctx._auditGroupedListComponent.render({ ...list_render_opts, groupMode: group_mode });
