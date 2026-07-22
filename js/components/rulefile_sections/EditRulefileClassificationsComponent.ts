@@ -44,6 +44,8 @@ import { render_audit_types_editor } from './rulefile_audit_types_ui.js';
 
 import { render_deficiency_types_editor } from './rulefile_deficiency_types_ui.js';
 
+import { merge_deficiency_types_from_server_if_missing } from '../../logic/rulefile_deficiency_types_server_sync.js';
+
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 import '../edit_rulefile_metadata_view.css';
@@ -324,6 +326,14 @@ export class EditRulefileClassificationsComponent {
 
 
 
+    private handle_deficiency_type_saved = (): void => {
+
+        this.perform_save(true);
+
+    };
+
+
+
     private perform_save(skip_render: boolean): void {
 
         this.build_updated_rulefile(skip_render);
@@ -408,7 +418,7 @@ export class EditRulefileClassificationsComponent {
 
             rule_file,
 
-            { on_change: this.handle_autosave_input }
+            { on_change: () => this.handle_deficiency_type_saved() }
 
         );
 
@@ -560,15 +570,17 @@ export class EditRulefileClassificationsComponent {
 
         this.ensure_working_metadata();
 
+        const is_deficiency_types_part = this.part === 'deficiency_types';
 
+        const shell = this.deps.Helpers.create_element(
 
-        const form = this.deps.Helpers.create_element('form', {
+            is_deficiency_types_part ? 'div' : 'form',
 
-            class_name: 'rulefile-classifications-edit-form',
+            { class_name: 'rulefile-classifications-edit-form' }
 
-        }) as HTMLFormElement;
+        ) as HTMLFormElement;
 
-        this.form_element_ref = form;
+        this.form_element_ref = is_deficiency_types_part ? null : shell;
 
 
 
@@ -578,78 +590,136 @@ export class EditRulefileClassificationsComponent {
 
         });
 
-        form.appendChild(this.panel_container);
+        shell.appendChild(this.panel_container);
 
 
 
-        const actions = this.deps.Helpers.create_element('div', { class_name: 'form-actions' });
+        if (!is_deficiency_types_part) {
 
-        const save_button = this.deps.Helpers.create_element('button', {
+            const actions = this.deps.Helpers.create_element('div', { class_name: 'form-actions' });
 
-            class_name: ['button', 'button-primary'],
+            const save_button = this.deps.Helpers.create_element('button', {
 
-            attributes: { type: 'submit' },
+                class_name: ['button', 'button-primary'],
 
-            html_content: build_save_button_html_content(this.deps.Translation.t('save_changes_button')),
+                attributes: { type: 'submit' },
 
-        });
+                html_content: build_save_button_html_content(this.deps.Translation.t('save_changes_button')),
 
-        const back_button = this.deps.Helpers.create_element('button', {
+            });
 
-            class_name: ['button', 'button-default'],
+            const back_button = this.deps.Helpers.create_element('button', {
 
-            attributes: { type: 'button' },
+                class_name: ['button', 'button-default'],
 
-            text_content: this.deps.Translation.t('rulefile_info_blocks_back_to_view'),
+                attributes: { type: 'button' },
 
-        });
+                text_content: this.deps.Translation.t('rulefile_info_blocks_back_to_view'),
 
-        back_button.addEventListener('click', () => {
-            if (this.part === 'audit_types' && this.audit_types_structure_is_dirty()) {
-                this.skip_autosave_on_destroy = true;
-                this.working_metadata = null;
+            });
+
+            back_button.addEventListener('click', () => {
+                if (this.part === 'audit_types' && this.audit_types_structure_is_dirty()) {
+                    this.skip_autosave_on_destroy = true;
+                    this.working_metadata = null;
+                }
+                this.navigate_back_to_part_view();
+            });
+
+            actions.append(save_button, back_button);
+
+            shell.appendChild(actions);
+
+            this.form_actions_ref = actions;
+
+            if (this.part === 'audit_types') {
+                actions.classList.add('audit-types-structural-actions');
             }
-            this.navigate_back_to_part_view();
-        });
 
-        actions.append(save_button, back_button);
+            shell.addEventListener('submit', (event) => {
 
-        form.appendChild(actions);
+                event.preventDefault();
 
-        this.form_actions_ref = actions;
+                void this.save_and_sync();
 
-        if (this.part === 'audit_types') {
-            actions.classList.add('audit-types-structural-actions');
+            });
+
+        } else {
+
+            this.form_actions_ref = null;
+
         }
 
-        form.addEventListener('submit', (event) => {
-
-            event.preventDefault();
-
-            void this.save_and_sync();
-
-        });
 
 
+        this.root.appendChild(shell);
 
-        this.root.appendChild(form);
+        void this.finish_render_after_optional_deficiency_sync();
+
+    }
+
+
+
+    private async finish_render_after_optional_deficiency_sync(): Promise<void> {
+
+        if (this.part === 'deficiency_types' && this.deps) {
+
+            const state = this.deps.getState();
+
+            const { content, changed } = await merge_deficiency_types_from_server_if_missing(
+
+                state.ruleSetId as string | null | undefined,
+
+                (state.ruleFileContent as Record<string, unknown>) || null
+
+            );
+
+            if (changed) {
+
+                this.deps.dispatch({
+
+                    type: this.deps.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+
+                    payload: { ruleFileContent: content, skip_render: true },
+
+                });
+
+            }
+
+        }
+
+        if (!this.root || !this.deps || !this.panel_container) return;
 
         this.render_panel();
 
         if (this.part === 'audit_types') {
+
             this.update_audit_types_form_actions_visibility();
+
         }
 
 
 
         if (this.deps.AutosaveService?.create_session) {
+
             const skip_create_autosave =
-                (this.part === 'taxonomy' && !this.taxonomy_id) || this.part === 'audit_types';
+
+                this.part === 'deficiency_types'
+
+                || (this.part === 'taxonomy' && !this.taxonomy_id)
+
+                || this.part === 'audit_types';
+
             if (!skip_create_autosave) {
+
                 this.autosave_session = this.deps.AutosaveService.create_session({
+
                     save: () => this.perform_save(true),
+
                 });
+
             }
+
         }
 
     }
@@ -658,7 +728,7 @@ export class EditRulefileClassificationsComponent {
 
     destroy(): void {
 
-        if (!this.skip_autosave_on_destroy && this.part !== 'audit_types') {
+        if (!this.skip_autosave_on_destroy && this.part !== 'audit_types' && this.part !== 'deficiency_types') {
 
             this.perform_save(true);
 

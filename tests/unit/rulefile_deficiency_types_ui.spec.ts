@@ -104,6 +104,32 @@ describe('rulefile_deficiency_types_ui', () => {
         expect(dialog.querySelectorAll('textarea').length).toBe(2);
     });
 
+    test('Redigera-knapp har aria-label med kravnamn från vänster kolumn', () => {
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: {
+                t: (key: string, opts?: Record<string, unknown>) => {
+                    if (key === 'rulefile_classifications_deficiency_types_edit_row_aria') {
+                        return `Redigera bristtyp ${String(opts?.requirementTitle ?? '')}`;
+                    }
+                    return key;
+                },
+            },
+        };
+        render_deficiency_types_editor(ctx, container, {
+            requirements: {
+                req1: {
+                    id: 'req1',
+                    title: 'Krav 1',
+                    DeficiencyType: { PrimaryText: 'Del 1', SecondaryText: 'Del 2' },
+                },
+            },
+        });
+
+        const edit_button = container.querySelector('.deficiency-types-row-edit-button') as HTMLButtonElement;
+        expect(edit_button.getAttribute('aria-label')).toBe('Redigera bristtyp Krav 1');
+    });
+
     test('Stängning av modal återför fokus till Redigera-knappen', () => {
         const ctx = {
             Helpers: create_helpers(),

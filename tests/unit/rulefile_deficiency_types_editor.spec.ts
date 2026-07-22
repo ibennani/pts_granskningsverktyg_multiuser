@@ -172,7 +172,38 @@ describe('rulefile_deficiency_types', () => {
         );
         expect(lines).not.toContain('Primär från passCriteria');
         expect(lines).not.toContain('Sekundär från passCriteria');
-        expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(2);
+        expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(1);
+    });
+
+    test('render_deficiency_types_view_section visar del 1 i strong och del 2 i samma stycke', () => {
+        const section = render_deficiency_types_view_section(
+            {
+                Helpers: create_helpers(),
+                Translation: { t },
+            },
+            {
+                requirements: {
+                    req_level: {
+                        id: 'req_level',
+                        title: 'Krav med DeficiencyType',
+                        DeficiencyType: {
+                            PrimaryText: 'Icke-textuellt bildinnehåll hanteras felaktigt.',
+                            SecondaryText:
+                                'Bilder och grafiska element saknar maskinläsbara beskrivningar.',
+                        },
+                    },
+                },
+            },
+            { show_back: false }
+        );
+
+        const paragraph = section.querySelector('.deficiency-types-part-line');
+        expect(paragraph).not.toBeNull();
+        expect(paragraph?.querySelector('strong')?.textContent).toBe(
+            'Icke-textuellt bildinnehåll hanteras felaktigt.'
+        );
+        expect(paragraph?.textContent).toContain('Bilder och grafiska element saknar maskinläsbara beskrivningar.');
+        expect(section.querySelectorAll('.deficiency-types-part-line')).toHaveLength(1);
     });
 
     test('render_deficiency_types_view_section visar kravnivå DeficiencyType', () => {
@@ -215,7 +246,7 @@ describe('rulefile_deficiency_types', () => {
         expect(lines).toContain('Krav del 2');
         expect(lines).not.toContain('Karta del 1');
         expect(lines).not.toContain('Karta del 2');
-        expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(2);
+        expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(1);
     });
 
     test('render_deficiency_types_view_section ignorerar failureStatementTemplate', () => {
@@ -255,7 +286,7 @@ describe('rulefile_deficiency_types', () => {
             (line) => line.textContent
         );
         expect(lines).not.toContain(template);
-        expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(2);
+        expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(1);
     });
 
     test('render_deficiency_types_view_section visar Ingen information endast när all text saknas', () => {
@@ -284,7 +315,7 @@ describe('rulefile_deficiency_types', () => {
         const lines = Array.from(section.querySelectorAll('.deficiency-types-part-line')).map(
             (line) => line.textContent
         );
-        expect(lines).toEqual(['rulefile_metadata_empty_value', 'rulefile_metadata_empty_value']);
+        expect(lines).toEqual(['rulefile_metadata_empty_value']);
     });
 
     test('redigeringsknapp öppnar synlig dialog-modal', async () => {

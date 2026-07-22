@@ -1,0 +1,75 @@
+Kriterie	Huvudmening bristtyp	Förklaring briststyp
+1.1.1 Icke-textinnehåll (Bilder)	Icke-textuellt bildinnehåll hanteras felaktigt.	Bilder och grafiska element saknar maskinläsbara beskrivningar, har alternativtexter som inte motsvarar innehållets syfte eller exponeras som meningsbärande innehåll när de är dekorativa.
+1.1.1 Icke-textinnehåll (ljud och video)	Icke-textuellt ljud- och videoinnehåll hanteras felaktigt.	Ljud- och videoinnehåll saknar textbaserade alternativ som motsvarar innehållets syfte eller innehåll.
+1.2.1 Textalternativ för förinspelat ljud	Förinspelat ljudinnehåll saknar tillgängligt textalternativ.	Förinspelat ljudinnehåll saknar eller har otillräckliga textalternativ.
+1.2.1 Textalternativ för förinspelad video utan talat ljud	Förinspelat videoinnehåll utan talat ljud saknar tillgänglig textalternativ.	Förinspelat videoinnehåll utan talat ljud saknar eller har otillräckliga textalternativ.
+1.2.2 Undertexter vid förinspelad video	Förinspelat videoinnehåll saknar undertexter.	Förinspelad videoinnehåll med talat innehåll saknar eller har otillräckliga undertexter.
+1.2.3 Syntolkning eller mediaalternativ vid förinspelad video	Förinspelat videoinnehåll saknar tillgängligt stöd för visuellt innehåll.	Förinspelad video saknar syntolkning eller mediaalternativ som återger den visuella information som behövs för att ta del av innehållet.
+1.2.4 Undertexter vid direktsändning	Talat innehåll i direktsänd video saknas i textform.	Direktsänd video med talat innehåll saknar eller har bristfälliga undertexter.
+1.2.5 Syntolkning i förinspelad video	Visuell information i förinspelad video är otillgänglig.	Förinspelad video saknar syntolkning eller har syntolkning som inte återger den visuella information som behövs för att ta del av innehållet.
+1.3.1 Information och relationer för listor	Liststrukturer är otydligt förmedlade.	Listor saknar semantisk uppmärkning eller har bristfällig maskinläsbar information om relationen mellan listelement.
+1.3.1 Information och relationer för rubriker	Rubrikstrukturer är otydligt förmedlade.	Rubriker saknar semantisk uppmärkning eller har bristfällig maskinläsbar information innehållets struktur och relationer.
+1.3.1 Information och relationer för tabeller	Tabellstrukturer är otydligt förmedlade.	Tabeller saknar semantisk uppmärkning eller har bristfällig maskinläsbar information relationen mellan rubriker och data.
+1.3.1 Information och relationer för roller	Roller och funktioner är otydligt förmedlade.	Komponenter saknar semantisk uppmärkning eller har bristfällig maskinläsbar information relationen mellan rubriker och data.
+1.3.1 Information och relationer för etiketter och ledtexter	Etiketter och ledtexter saknar tydlig koppling till innehållet.	Etiketter och ledtexter saknas, är otydligt kopplade eller har otillräcklig information om deras relation till innehållet maskinläsbart.
+1.3.1 Information och relationer för visuell presentation	Visuellt presenterad information saknar maskinläsbar struktur.	Information som förmedlas genom visuell presentation saknar semantisk uppmärkning eller motsvarande presentation av innehållets struktur och relationer maskinläsbart.
+1.3.1 Information och relationer för landmärken	Sidans övergripande struktur saknar tydlig maskinläsbar indelning.	Landmärken saknas eller används på ett sätt som gör att sidans olika områden och deras funktioner inte kan uppfattas maskinläsbart.
+1.3.2 Innehållets ordning	Innehållets ordning förmedlas med bristfällig struktur.	Innehållet presenteras i en ordning som gör att sammanhang, läsordning eller relationer inte blir inkorrekt maskinläsbart.
+1.3.3 Ikon och symbol för knappar eller länkar	Knappar och länkar med ikoner eller symboler saknar tydlig identifiering.	Knappar eller länkar som representeras med ikoner eller symboler saknar tillgängliga namn eller beskrivningar som gör deras funktion begriplig maskinläsbart.
+1.3.3 Sensoriska hänvisningar	Textuella referenser bygger på sensoriska hänvisningar.	Hänvisningarna kräver att användare kan orientera sig visuellt i gränssnittet för att uppfatta informationen.
+1.3.4 Orientering (stående eller liggande)	Innehållet är beroende av en specifik skärmorientering.	Innehållet kräver stående eller liggande visningsläge för att kunna användas eller uppfattas utan att det är nödvändigt för funktionens syfte.
+1.3.5 Identifiera syfte med inmatningsfält	Inmatningsfältens syfte saknar maskinläsbar identifiering.	Inmatningsfältets syfte för användaruppgifter saknar maskinläsbar återgivning vilket försvårar för hjälpmedel och automatiska funktioner.
+1.4.1 Användning av färg generellt	Information förmedlas enbart med färg.	Innehållet använder färg som enda sätt att förmedla information, indikera status eller särskilja innehåll. Det gör informationen otillgänglig för användare som saknar förmåga att uppfatta olika färger.
+1.4.1 Färganvändning för länkar	Länkar särskiljs enbart med färg.	Länkar kan endast urskiljas från omgivande text genom färg och saknar andra visuella markörer. Det gör informationen otillgänglig för användare som inte uppfattar färgskillnader.
+1.4.1 Färganvändning för felmeddelanden	Felmeddelanden förmedlas enbart med färg.	Fel eller valideringsstatus indikeras endast genom färg, utan ytterligare information. Det gör informationen otillgänglig för användare som inte uppfattar färgskillnader.
+1.4.2 Ljudkontroll	Ljudinnehåll saknar användarkontroller.	Ljud som spelas upp automatiskt utan möjlighet för användare att pausa, stoppa eller justera oberoende av systemets ljudinställningar.
+1.4.3 Kontrast (minimum) mellan text och bakgrund	Text har otillräcklig kontrast mot bakgrunden.	Text presenteras med för låg kontrast mot bakgrunden. Innehållet blir svårt att uppfatta för användare med nedsatt syn eller nedsatt kontrastseende.
+1.4.3 Kontrast (minimum) för text i bilder	Text i bilder har otillräcklig kontrast mot bakgrunden.	Text som presenteras som en del av en bild har för låg kontrast mot bildens bakgrund, vilket gör innehållet svårt att uppfatta.
+1.4.3 Kontrast (minimum) när bilden visuellt ersätts av ALT-texten	Alternativtext som ersätter bilder har otillräcklig kontrast mot bakgrunden.	När bilder ersätts visuellt av alternativtext presenteras texten med för låg kontrast mot bakgrunden, vilket gör innehållet svårt att uppfatta.
+1.4.4 Ändra textstorlek	Textförstoring försämrar innehåll eller funktionalitet.	Vid förstoring av textstorleken påverkas innehåll eller funktionalitet negativt för användaren.
+1.4.5 Bilder av text	Text i bilder används för att förmedla information.	Text förmedlas i bildformat vilket hindrar maskinläsbarhet och försvårar för användare att göra textanpassningar.
+1.4.10 Flexibel layout	Bristande responsivitet vid förstoring eller användarspecifika ändringar.	De anpassningar som krävs av layout och textinnehåll är otillräckliga.
+1.4.11 Kontrast i grafik	Grafiska objekt har otillräcklig kontrast.	Informationsbärande grafiska objekt eller delar av grafik har för låg kontrast mot omgivande bakgrund, vilket gör innehållet svårt att uppfatta.
+1.4.11 Kontrast för interaktiva komponenter	Interaktiva komponenter har otillräcklig kontrast.	Knappar, formulärfält eller andra interaktiva komponenter har för låg kontrast mot omgivande bakgrund, vilket gör dem svåra att identifiera och använda.
+1.4.11 Kontrast för fokusmarkering	Grafiska markeringar och fokusindikatorer brister.	Fokusmarkeringar och andra grafiska element som ska särskilja eller markera information har för låg kontrast.
+1.4.12 Textavstånd	Textens presentation anpassas inte efter användarens inställningar.	När textavstånd ökas förloras innehåll eller funktionalitet.
+1.4.13 Uppdykande innehåll vid fokus	Innehåll som uppkommer vid fokus är ohanterbart.	Innehåll som visas när ett element får fokus är tvingande. Användaren saknar möjlighet för användaren att avfärda, behålla eller använda det utan att fokus går förlorat.
+1.4.13 Uppdykande innehåll vid hovring	Innehåll som uppkommer/visas vid hovring är ohanterbart.	Innehåll som visas vid hovring kan inte avfärdas, behållas synligt eller användas utan att hovringen avbryts.
+2.1.1 Hantera enbart med tangentbord	Funktioner är oåtkomliga med tangentbord.	Interaktiva komponenter är oåtkomliga och användare och tangentbordsanvändare hindras från att använda dem fullt ut.
+2.1.2 Ingen tangentbordsfälla	Funktioner blockerar navigering med tangentbord.	Användare som navigerar med tangentbord fastnar i interaktiva komponenter.
+2.1.4 Enknapps snabbtangenter	Enknappskommandon kan aktiveras oavsiktligt.	Snabbtangenter som aktiveras med en enskild tangent kan utlösas oavsiktligt utan möjlighet att stänga av, ändra eller begränsa funktionen.
+2.2.1 Justera tidsgränser	Fasta tidsgränser utan möjlighet till anpassning.	Innehåll eller funktioner med tidsgränser saknar möjlighet att stängas av, justeras eller förlängas när detta krävs för att kunna använda innehållet.
+2.2.1 Automatisk omladdning	Automatisk uppdatering sker utan användarens kontroll.	Innehåll som uppdateras eller laddas om automatiskt utan att ge användaren möjlighet att pausa, stoppa eller kontrollera uppdateringen.
+2.2.2 Pausa eller stäng av rörelser	Otillräcklig styrning av rörligt innehåll.	Rörligt, blinkande eller automatiskt uppdaterat innehåll saknar funktion för att pausas, stoppas eller döljas.
+2.3.1 Tre blinkningar eller under tröskelvärdet	Blinkande innehåll överskrider säkra gränsvärden.	Innehåll blinkar på ett sätt eller med en frekvens innebär risk för anfall eller besvär för användare.
+2.4.1 Hoppa förbi återkommande innehåll	Återkommande innehåll passeras ineffektivt.	Funktion saknas för att hoppa över återkommande innehåll som sidhuvud och huvudnavigation. Tangentbordsanvändare behöver tabba igenom samma innehåll upprepade gånger.
+2.4.2 Sidans titel	Sidans titel identifierar inte innehållet.	Sidans titel saknas, är otydlig eller ger otillräcklig beskrivning av sidans innehåll eller syfte på vilket försvårar för användare att orientera sig.
+2.4.3 Meningsfull fokusordning	Fokusordningen är inkonsekvent och oförutsägbar.	Fokusordningen är inkonsekvent och oförutsägbar i förhållande till den visuella presentationen.
+2.4.4 Syfte för länkar	Länkar saknar tillräcklig syftebeskrivning.	Länktexter ger otillräckliga beskrivningar av länkens destination eller funktion vilket gör syftet svårtolkat för användare.
+2.4.5 Flera sätt att navigera	Begränsade navigeringsvägar till innehåll.	Det finns endast ett sätt att navigera till sidan eller funktionen.
+2.4.6 Beskrivande rubriker	Rubriker är otydliga.	Rubriker är otydliga eller har otillräckliga beskrivningar av innehållet de introducerar.
+2.4.6 Beskrivande ledtexter	Ledtexter ger otillräcklig beskrivning av innehållets syfte.	Ledtexter saknas eller anger inte syftet med det fält eller den funktion de hör till.
+2.4.7 Synlig fokusmarkering	Svåridentifierad fokusmarkering vid navigering.	Fokusindikator saknas eller framträder otydligt vid tangentbordsnavigering.
+2.4.11 Fokus inte dolt	Tangentbordsfokus döljs av innehållet.	Element som har tangentbordsfokus täcks helt eller delvis så att fokusets placering blockeras av innehåll.
+2.5.1 Komplexa fingerrörelser	Funktioner kräver komplexa fingerrörelser.	Innehåll eller funktioner kräver gester med flera kontaktpunkter eller rörelsebanor mer tillgängliga alternativ.
+2.5.2 Ångra klick	Pekaraktiverade funktioner saknar användarkontroller.	Funktioner som aktiveras med pekare utförs direkt utan möjlighet att avbryta före aktivering eller ångra efteråt.
+2.5.3 Etiketter i namn	Maskinläsbara namn skiljer sig från visuella etiketter.	Visuella etiketter saknar motsvarande information i komponenternas maskinläsbara namn.
+2.5.4 Rörelsestyrning	Funktioner är beroende av rörelsestyrning.	Funktioner som styrs med rörelser saknar alternativ användning eller möjlighet att stängas av.
+2.5.7 Dragrörelser	Funktioner är beroende av dragrörelser.	Funktioner som kräver dragande rörelser eller gester saknar ett alternativ som kan utföras med en pekarinteraktion.
+2.5.8 Klickyta	För små klickytor för interaktiva komponenter.	Interaktiva komponenter har begränsade klickytor som försvårar aktivering.
+3.1.1 Sidans språk	Sidans språk saknar maskinläsbar identifiering.	Information om sidans huvudsakliga språk saknas eller förmedlas bristfälligt maskinläsbart.
+3.1.2 Språkförändringar	Språkändringar är inkonsekvent uppmärkta i koden.	Information om när språk ändras saknas maskinläsbart.
+3.1.2 Språk för textalternativ	Språk för alternativtexter saknar maskinläsbar identifiering.	Alternativtexter andra språk än sidans huvudspråk saknar språkangivelse.
+3.2.1 Kontextförändring vid fokus	Fokus orsakar oväntade förändringar i innehållet.	När komponenter fokusmarkeras uppkommer oförutsägbara förändringar av innehåll eller funktion utan att användaren har initierat förändringarna.
+3.2.2 Kontextförändring vid inmatning	Kontext förändras vid inmatning.	När användaren interagerar med komponenter där värdet ändras sker kontextförflyttning utan förvarning.
+3.2.3 Konsekvent navigering	Navigeringsfunktioner presenteras inkonsekvent.	Navigeringsmekanismer som återkommer på flera sidor presenteras i olika ordning eller på olika sätt utan logisk anledning.
+3.2.4 Konsekvent identifiering	Inkonsekvent identifiering av återkommande komponenter.	Återkommande komponenter saknar enhetliga benämningar mellan sidor och vyer.
+3.2.6 Konsekvent hjälp	Inkonsekvent presentation av hjälpfunktioner.	Hjälpmekanismer som återkommer på flera sidor placeras eller presenteras på olika sätt utan logisk anledning.
+3.3.1 Felidentifiering	Felhantering i formulär är otydlig.	Fel kommuniceras på ett otydligt och inkonsekvent sätt.
+3.3.2 Ledtexter, instruktioner	Instruktioner och ledtexter är inkonsekventa.	Texter som ska stödja användaren vid inmatning är otydliga och inkonsekventa.
+3.3.3 Korrigeringsförslag	Stöd vid inmatning saknas eller är inkonsekvent.	När fel uppstår vid inmatning av information uteblir korrigeringsförslag helt eller presenteras på olika sätt.
+3.3.4 Förebyggande av fel (juridiskt, ekonomiskt, data)	Kritiska åtgärder saknar skydd mot felaktig inmatning eller aktivering.	Funktioner saknar möjlighet till kontroll, bekräftelse eller återställning innan kritiska åtgärder genomförs.
+3.3.7 Upprepad inmatning	Användare behöver ange samma information upprepade gånger.	Information som tidigare har angetts i samma process saknar möjlighet för återanvändning.
+3.3.8 Tillgänglig autentisering	Autentisering ställer krav på svåråtergivna kognitiva uppgifter.	Inloggning eller autentisering kräver att användaren måste memorera, lösa eller återge information utan andra tillgängliga alternativ.
+4.1.2 Namn, Roll, Värde	Komponenters namn, roll eller värde saknar maskinläsbar information.	Komponenter saknar eller har bristfällig information om namn, roll, tillstånd, egenskaper eller värden maskinläsbart.
+4.1.3 Statusmeddelanden	Statusmeddelanden saknar maskinläsbar information.	Statusmeddelanden saknar maskinläsbar information om förändringar av innehållet och kräver fokusförflyttning utan att användaren flyttar fokus.

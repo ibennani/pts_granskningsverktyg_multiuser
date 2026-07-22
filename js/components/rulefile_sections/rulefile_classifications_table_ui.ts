@@ -410,7 +410,17 @@ export function attach_classifications_elements_filter(
 
     elements: HTMLElement[],
 
-    options: { key_attribute?: string; title_selector?: string } = {}
+    options: {
+
+        key_attribute?: string;
+
+        title_selector?: string;
+
+        /** Sök i all synlig text i elementet, inte bara titel och nyckel. */
+
+        search_full_row_text?: boolean;
+
+    } = {}
 
 ): void {
 
@@ -418,17 +428,35 @@ export function attach_classifications_elements_filter(
 
     const title_selector = options.title_selector ?? 'th';
 
+    const search_full_row_text = options.search_full_row_text === true;
+
     filter_input.addEventListener('input', () => {
 
         const needle = normalize_filter(filter_input.value);
 
         elements.forEach((element) => {
 
+            if (!needle) {
+
+                element.hidden = false;
+
+                return;
+
+            }
+
+            if (search_full_row_text) {
+
+                element.hidden = !normalize_filter(element.textContent ?? '').includes(needle);
+
+                return;
+
+            }
+
             const title = normalize_filter(element.querySelector(title_selector)?.textContent ?? '');
 
             const key = normalize_filter(element.getAttribute(key_attribute) ?? '');
 
-            element.hidden = Boolean(needle) && !title.includes(needle) && !key.includes(needle);
+            element.hidden = !title.includes(needle) && !key.includes(needle);
 
         });
 
@@ -444,7 +472,7 @@ export function attach_classifications_table_row_filter(
 
     row_elements: HTMLElement[],
 
-    options: { key_attribute?: string } = {}
+    options: { key_attribute?: string; search_full_row_text?: boolean } = {}
 
 ): void {
 

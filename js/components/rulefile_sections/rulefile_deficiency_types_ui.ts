@@ -13,6 +13,7 @@ import {
 } from './rulefile_classifications_table_ui.js';
 import { create_rulefile_classifications_back_row } from './rulefile_classifications_nav.js';
 import { resolve_requirement_deficiency_type_display } from '../../export/export_deficiency_types_collect.js';
+import { render_deficiency_type_paragraph_html } from '../../logic/deficiency_type_display_format.js';
 
 type DeficiencyTypeNode = { PrimaryText?: string; SecondaryText?: string };
 
@@ -21,6 +22,11 @@ type ViewCtx = {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
         escape_html?: (value: string) => string;
         get_icon_svg?: (name: string, colors?: string[], size?: number) => string;
+        safe_set_inner_html?: (
+            element: HTMLElement,
+            html: string,
+            options?: { allow_html?: boolean }
+        ) => void;
     };
     Translation: { t: (key: string, opts?: Record<string, unknown>) => string };
     router?: (view: string, params?: Record<string, string>) => void;
@@ -52,14 +58,16 @@ function build_rows(requirements: unknown): RequirementRow[] {
         .sort((a, b) => a.title.localeCompare(b.title, 'sv'));
 }
 
-function format_deficiency_part_line(
-    t: ViewCtx['Translation']['t'],
-    text: string | undefined,
-    has_any_text: boolean
-): string {
-    const trimmed = text?.trim() ?? '';
-    if (trimmed) return trimmed;
-    return has_any_text ? '' : t('rulefile_metadata_empty_value');
+function set_deficiency_text_cell_html(
+    Helpers: ViewCtx['Helpers'],
+    element: HTMLElement,
+    html: string
+): void {
+    if (typeof Helpers.safe_set_inner_html === 'function') {
+        Helpers.safe_set_inner_html(element, html, { allow_html: true });
+        return;
+    }
+    element.innerHTML = html;
 }
 
 function build_deficiency_text_cell(
@@ -71,18 +79,21 @@ function build_deficiency_text_cell(
     const secondary = deficiency.SecondaryText?.trim() ?? '';
     const has_any_text = Boolean(primary || secondary);
     const text_cell = Helpers.create_element('td', { class_name: 'deficiency-types-text-cell' });
-    text_cell.appendChild(
-        Helpers.create_element('p', {
-            class_name: 'deficiency-types-part-line',
-            text_content: format_deficiency_part_line(t, primary, has_any_text),
-        })
-    );
-    text_cell.appendChild(
-        Helpers.create_element('p', {
-            class_name: 'deficiency-types-part-line',
-            text_content: format_deficiency_part_line(t, secondary, has_any_text),
-        })
-    );
+    const paragraph = Helpers.create_element('p', {
+        class_name: 'deficiency-types-part-line',
+    });
+
+    if (!has_any_text) {
+        paragraph.textContent = t('rulefile_metadata_empty_value');
+    } else {
+        set_deficiency_text_cell_html(
+            Helpers,
+            paragraph,
+            render_deficiency_type_paragraph_html(primary, secondary)
+        );
+    }
+
+    text_cell.appendChild(paragraph);
     return text_cell;
 }
 
@@ -99,9 +110,15 @@ function build_deficiency_actions_cell(
     const edit_icon = Helpers.get_icon_svg
         ? `<span aria-hidden="true">${Helpers.get_icon_svg('edit', ['currentColor'], 16)}</span>`
         : '';
+    const requirement_label = row.title || row.key;
     const edit_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-secondary', 'button-small', 'deficiency-types-row-edit-button'],
-        attributes: { type: 'button' },
+        attributes: {
+            type: 'button',
+            'aria-label': t('rulefile_classifications_deficiency_types_edit_row_aria', {
+                requirementTitle: requirement_label,
+            }),
+        },
         html_content: `<span>${edit_label}</span>${edit_icon}`,
     }) as HTMLButtonElement;
     edit_btn.addEventListener('click', () => {
@@ -169,7 +186,9 @@ function render_deficiency_types_table(
 
     append_classifications_table_scroll_area(container, Helpers, table, 'deficiency-types-scroll-wrapper');
     if (filter_input) {
-        attach_classifications_table_row_filter(filter_input, row_elements);
+        attach_classifications_table_row_filter(filter_input, row_elements, {
+            search_full_row_text: true,
+        });
     }
 }
 

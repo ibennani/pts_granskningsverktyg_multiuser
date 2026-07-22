@@ -535,6 +535,10 @@
     box-sizing: border-box;
 }
 
+.deficiency-types-table-wrapper .rulefile-classifications-table-filter label {
+    font-weight: bold;
+}
+
 .requirement-mapping-layout .rulefile-classifications-table-filter {
     min-width: 0;
     max-width: 100%;
@@ -1130,11 +1134,11 @@
 }
 
 .deficiency-types-part-line {
-    margin: 0 0 0.35rem;
+    margin: 0;
 }
 
-.deficiency-types-part-line:last-child {
-    margin-bottom: 0;
+.deficiency-types-part-line strong {
+    font-weight: 700;
 }
 
 .deficiency-type-edit-dialog {

@@ -247,6 +247,9 @@ test.describe('Regelfil: Klassificeringar hub', () => {
         await expect(main.locator('.deficiency-types-table')).toBeVisible({ timeout: 5000 });
         await expect(main.getByRole('button', { name: /Redigera bristtyper/i })).toHaveCount(0);
         await expect(main.locator('.deficiency-types-row-edit-button').first()).toBeVisible();
+        await expect(main.locator('.rulefile-classifications-edit-form > .form-actions')).toHaveCount(0);
+        await expect(main.getByRole('button', { name: /Spara ändringar/i })).toHaveCount(0);
+        await expect(main.getByRole('button', { name: /Stäng utan att spara/i })).toHaveCount(0);
 
         if (console_errors.length > 0) {
             throw new Error(`Konsolfel: ${console_errors.join(' | ')}`);

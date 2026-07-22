@@ -162,6 +162,30 @@ describe('rulefile_classifications_table_ui', () => {
         expect(card.hidden).toBe(true);
     });
 
+    test('attach_classifications_table_row_filter kan söka i all radtext', () => {
+        const filter_input = document.createElement('input');
+        const row = document.createElement('tr');
+        row.setAttribute('data-requirement-key', 'req_a');
+        const th = document.createElement('th');
+        th.textContent = 'Alfa krav';
+        const td = document.createElement('td');
+        td.textContent = 'Bristtypens förklaring';
+        row.appendChild(th);
+        row.appendChild(td);
+
+        attach_classifications_table_row_filter(filter_input, [row], {
+            search_full_row_text: true,
+        });
+
+        filter_input.value = 'bristtypens';
+        filter_input.dispatchEvent(new Event('input'));
+        expect(row.hidden).toBe(false);
+
+        filter_input.value = 'gamma';
+        filter_input.dispatchEvent(new Event('input'));
+        expect(row.hidden).toBe(true);
+    });
+
     test('create_classifications_table sätter visually-hidden på sr_only-kolumn', () => {
         const ctx = {
             Helpers: create_helpers(),
