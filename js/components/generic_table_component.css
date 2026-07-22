@@ -14,23 +14,28 @@
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
-    --table-page-transition-duration: 0.25s; /* två faser = 0,5 s totalt vid sidbyte */
+    --table-page-fade-out-duration: 125ms;
+    --table-page-fade-in-duration: 500ms;
+    --table-page-opacity-duration: var(--table-page-fade-in-duration);
     opacity: 1;
-    transition: opacity var(--table-page-transition-duration) ease;
+    transition: opacity var(--table-page-opacity-duration) ease;
 }
 
 .generic-table-stack--transition-exit {
     opacity: 0;
 }
 
+/* Hålls dold mellan fas 1 och 3 utan extra toning */
 .generic-table-stack--transition-enter-start {
     opacity: 0;
+    transition-duration: 0ms;
 }
 
-/* Omslutande tabellområde (wrapper runt stack) – höjd vid sidbyte så sektioner under glider med */
-.generic-table-page-layout-host--animating {
+/* Omslutande tabellområde – höjdövergång vid sidbyte så sektioner under glider i layoutflödet */
+.generic-table-page-layout-host--height-transition {
+    --table-page-layout-duration: 500ms;
     overflow: hidden;
-    transition: height var(--table-page-transition-duration) ease;
+    transition: height var(--table-page-layout-duration) ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -38,7 +43,7 @@
         transition: none;
     }
 
-    .generic-table-page-layout-host--animating {
+    .generic-table-page-layout-host--height-transition {
         transition: none;
     }
 }
