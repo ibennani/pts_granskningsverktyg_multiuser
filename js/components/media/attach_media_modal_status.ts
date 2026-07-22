@@ -33,6 +33,7 @@ export type AttachMediaStatusHandlers = {
         type?: 'info' | 'error' | 'success',
         options?: { html?: boolean }
     ) => void;
+    clear_status: () => void;
     show_duplicate_filenames_error: (filenames: string[]) => void;
 };
 
@@ -51,6 +52,13 @@ export function create_attach_media_status_handlers(
         attributes: { role: 'status' }
     });
     status_el.hidden = true;
+
+    const clear_status = () => {
+        status_el.hidden = true;
+        status_el.textContent = '';
+        status_el.className = 'attach-media-status';
+        status_el.removeAttribute('role');
+    };
 
     const show_status = (
         message: string,
@@ -83,5 +91,5 @@ export function create_attach_media_status_handlers(
         show_status(html, 'error', { html: true });
     };
 
-    return { status_el, show_status, show_duplicate_filenames_error };
+    return { status_el, show_status, clear_status, show_duplicate_filenames_error };
 }

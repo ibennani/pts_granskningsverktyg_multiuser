@@ -29,8 +29,45 @@ type UploadResponse = {
     requestedFilename?: string;
 };
 
-async function parse_error_payload(res: Response): Promise<{ error?: string; detail?: string }> {
-    return res.json().catch(() => ({ error: res.statusText || `HTTP ${res.status}` }));
+type ApiErrorPayload = {
+    error?: string;
+    detail?: string;
+    fromFilename?: string;
+    auditId?: string;
+};
+
+async function parse_error_payload(res: Response): Promise<ApiErrorPayload> {
+    const content_type = res.headers.get('content-type') || '';
+    if (content_type.includes('application/json')) {
+        try {
+            return (await res.json()) as ApiErrorPayload;
+        } catch {
+            // fall through
+        }
+    }
+    try {
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (trimmed.startsWith('{')) {
+            return JSON.parse(trimmed) as ApiErrorPayload;
+        }
+    } catch {
+        // ignoreras medvetet
+    }
+    if (res.status === 404) {
+        return { error: 'Filen hittades inte' };
+    }
+    return { error: res.statusText || `HTTP ${res.status}` };
+}
+
+function build_api_error_message(payload: ApiErrorPayload, status: number): string {
+    if (payload.detail) {
+        return payload.detail;
+    }
+    if (payload.error) {
+        return payload.error;
+    }
+    return `HTTP ${status}`;
 }
 
 function build_auth_headers_without_content_type(): Record<string, string> {
@@ -141,20 +178,30 @@ export type RenameAuditMediaResponse = {
     requestedFilename?: string;
 };
 
+export function get_audit_media_rename_url(audit_id: string): string {
+    return `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/media/rename`;
+}
+
 export async function rename_audit_media(
     audit_id: string,
     from_filename: string,
     new_filename: string
 ): Promise<RenameAuditMediaResponse> {
-    const url = get_audit_media_url(audit_id, from_filename);
+    const url = get_audit_media_rename_url(audit_id);
     const res = await fetch_with_auth_retry(url, {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ newFilename: new_filename })
+        body: JSON.stringify({
+            fromFilename: from_filename,
+            newFilename: new_filename
+        })
     });
     if (!res.ok) {
         const err = await parse_error_payload(res);
-        throw new Error(err.error || `HTTP ${res.status}`);
+        if (res.status === 404 && !err.error) {
+            throw new Error('Filen hittades inte');
+        }
+        throw new Error(build_api_error_message(err, res.status));
     }
     return (await res.json()) as RenameAuditMediaResponse;
 }

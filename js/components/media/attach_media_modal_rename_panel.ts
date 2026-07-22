@@ -40,6 +40,7 @@ export type AttachMediaRenamePanelOptions = {
     server_index?: AuditMediaServerIndex | null;
     persist_media_changes: (close_after: boolean) => Promise<boolean>;
     show_status: (message: string, type?: StatusType, options?: { html?: boolean }) => void;
+    clear_status?: () => void;
     refresh_list: () => void;
     on_open_change: (is_open: boolean) => void;
 };
@@ -150,11 +151,28 @@ function map_resolve_error_to_message(t: TranslateFn, error: string): string {
     return t('attach_media_rename_failed', { details: error });
 }
 
-function map_rename_api_error(t: TranslateFn, current_filename: string, error: string): string {
-    if (error === 'Filen hittades inte') {
-        return t('attach_media_rename_not_on_server', { filename: current_filename });
+function map_rename_api_error(
+    t: TranslateFn,
+    current_filename: string,
+    audit_id: string,
+    error: string
+): string {
+    const normalized = String(error || '').trim();
+    if (
+        normalized === 'Filen hittades inte'
+        || normalized.startsWith('Sökte efter «')
+        || normalized === 'Not Found'
+        || normalized === 'HTTP 404'
+    ) {
+        if (normalized.startsWith('Sökte efter «')) {
+            return t('attach_media_rename_failed', { details: normalized });
+        }
+        return t('attach_media_rename_not_on_server', { filename: current_filename, audit_id });
     }
-    return t('attach_media_rename_failed', { details: error });
+    if (normalized === 'Granskning hittades inte' || normalized.startsWith('Granskningen ')) {
+        return t('attach_media_rename_audit_not_found', { audit_id });
+    }
+    return t('attach_media_rename_failed', { details: normalized });
 }
 
 /**
@@ -179,6 +197,7 @@ export function create_attach_media_modal_rename_panel(
         server_index,
         persist_media_changes,
         show_status,
+        clear_status,
         refresh_list,
         on_open_change
     } = options;
@@ -236,6 +255,7 @@ export function create_attach_media_modal_rename_panel(
         set_list_elements_hidden(false);
         set_intro_hidden(false);
         set_rename_heading(false);
+        clear_status?.();
         on_open_change(false);
     };
 
@@ -259,6 +279,7 @@ export function create_attach_media_modal_rename_panel(
     };
 
     const apply_rename_view = (filename: string) => {
+        clear_status?.();
         set_list_elements_hidden(true);
         set_intro_hidden(true);
         set_rename_heading(true);
@@ -319,12 +340,19 @@ export function create_attach_media_modal_rename_panel(
         }
 
         if (server_index) {
-            await server_index.reload();
+            const reload_result = await server_index.reload();
+            if (!reload_result.ok) {
+                show_status(t('attach_media_rename_server_list_failed', { audit_id }), 'error');
+                if (keep_focus_on_error) {
+                    input_el.focus();
+                }
+                return;
+            }
         }
 
         const server_from = server_index?.resolve_rename_source_filename(current_filename) ?? null;
         if (!server_from) {
-            show_status(t('attach_media_rename_not_on_server', { filename: current_filename }), 'error');
+            show_status(t('attach_media_rename_not_on_server', { filename: current_filename, audit_id }), 'error');
             if (keep_focus_on_error) {
                 input_el.focus();
             }
@@ -365,7 +393,7 @@ export function create_attach_media_modal_rename_panel(
             close_rename_panel();
         } catch (err) {
             const details = err instanceof Error ? err.message : String(err);
-            show_status(map_rename_api_error(t, current_filename, details), 'error');
+            show_status(map_rename_api_error(t, current_filename, audit_id, details), 'error');
             input_el?.focus();
         } finally {
             save_in_flight = false;

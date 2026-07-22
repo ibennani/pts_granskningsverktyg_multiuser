@@ -164,7 +164,7 @@ export function setup_attach_media_modal_content(
         in_modal_preview_destroy = () => in_modal_preview?.destroy();
     }
 
-    const { status_el, show_status, show_duplicate_filenames_error } = create_attach_media_status_handlers({
+    const { status_el, show_status, clear_status, show_duplicate_filenames_error } = create_attach_media_status_handlers({
         t,
         Helpers,
         media_scope,
@@ -286,6 +286,7 @@ export function setup_attach_media_modal_content(
             server_index,
             persist_media_changes,
             show_status,
+            clear_status,
             refresh_list,
             get_preview_open: () => preview_open,
             get_remove_confirm_open: () => remove_confirm_open,

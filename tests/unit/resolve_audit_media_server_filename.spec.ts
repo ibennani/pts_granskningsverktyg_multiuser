@@ -77,4 +77,9 @@ describe('resolve_media_rename_source_filename', () => {
     it('returnerar null när serverindex saknas', () => {
         expect(resolve_media_rename_source_filename('foto.png', null, migration_map)).toBeNull();
     });
+
+    it('matchar jpg-listnamn mot png på server utan migrering i svar', () => {
+        const png_only_server = new Set(['bild.png']);
+        expect(resolve_media_rename_source_filename('bild.jpg', png_only_server, null)).toBe('bild.png');
+    });
 });

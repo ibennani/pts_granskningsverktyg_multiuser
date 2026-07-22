@@ -38,13 +38,14 @@ import { detect_page_content_types } from '../services/page_content_type_detecti
 import { build_sample_screenshot_filename } from '../utils/sample_screenshot_filename.js';
 import { UrlContentTypeDetectionBodySchema } from '../schemas/url_content_type_detection.js';
 import { AuditUrlPageTitleBodySchema } from '../schemas/audit_url_page_title.js';
-import { AuditMediaRenameBodySchema } from '../schemas/audit_media_rename.js';
-import { resolve_media_rename_filename } from '../../shared/media/resolve_media_rename_filename.js';
 import {
-    list_audit_media_files,
-    rename_audit_media_file
-} from '../media/audit_media_storage.js';
-import { resolve_audit_media_filename_on_server } from '../../shared/media/resolve_audit_media_server_filename.js';
+    AuditMediaRenameBodySchema,
+    AuditMediaRenameFromBodySchema
+} from '../schemas/audit_media_rename.js';
+import {
+    execute_audit_media_rename,
+    send_audit_media_rename_result
+} from '../media/audit_media_rename_service.js';
 
 type AuthedRequest = express.Request & {
     user?: { id: string; name: string };
@@ -207,6 +208,30 @@ export function register_audit_media_routes(router: express.Router, upload_limit
         }
     });
 
+    router.post('/:id/media/rename', async (req: Request, res: Response) => {
+        try {
+            const id = single_route_param(req.params.id);
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({
+                    error: 'Granskning hittades inte',
+                    detail: `Granskningen ${id} finns inte på servern.`,
+                    auditId: id
+                });
+            }
+
+            const body = parse_body(AuditMediaRenameFromBodySchema, req.body, res);
+            if (!body) {
+                return;
+            }
+
+            const outcome = await execute_audit_media_rename(id, body.fromFilename, body.newFilename);
+            send_audit_media_rename_result(res, outcome);
+        } catch (err) {
+            console.error('[audit_media] POST rename error:', err);
+            res.status(500).json({ error: 'Kunde inte byta filnamn' });
+        }
+    });
+
     router.post('/:id/media/capture-screenshot', upload_limiter, async (req: Request, res: Response) => {
         try {
             const id = single_route_param(req.params.id);
@@ -348,7 +373,11 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             const id = single_route_param(req.params.id);
             const raw_filename = single_route_param(req.params.filename);
             if (!(await audit_exists(id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
+                return res.status(404).json({
+                    error: 'Granskning hittades inte',
+                    detail: `Granskningen ${id} finns inte på servern.`,
+                    auditId: id
+                });
             }
 
             const body = parse_body(AuditMediaRenameBodySchema, req.body, res);
@@ -357,41 +386,8 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             }
 
             const decoded = decodeURIComponent(raw_filename);
-            const current_filename = sanitize_media_filename(decoded);
-            if (!current_filename) {
-                return res.status(400).json({ error: 'Ogiltigt filnamn' });
-            }
-
-            const { files: existing_files, migrations } = await ensure_audit_media_files_png(id);
-            const existing_set = new Set(existing_files.map((entry) => entry.filename));
-            const matched_current_filename = resolve_audit_media_filename_on_server(
-                current_filename,
-                existing_files.map((entry) => entry.filename),
-                migrations
-            );
-            if (!matched_current_filename) {
-                return res.status(404).json({ error: 'Filen hittades inte' });
-            }
-
-            const resolved = resolve_media_rename_filename(
-                matched_current_filename,
-                body.newFilename,
-                existing_set
-            );
-            if (!resolved.ok) {
-                return res.status(400).json({ error: resolved.error });
-            }
-
-            if (!resolved.unchanged) {
-                await rename_audit_media_file(id, matched_current_filename, resolved.filename);
-            }
-
-            const response: Record<string, unknown> = { filename: resolved.filename };
-            if (resolved.renamed_due_to_conflict) {
-                response.renamedDueToConflict = true;
-                response.requestedFilename = resolved.requested_filename;
-            }
-            res.json(response);
+            const outcome = await execute_audit_media_rename(id, decoded, body.newFilename);
+            send_audit_media_rename_result(res, outcome);
         } catch (err) {
             console.error('[audit_media] PATCH rename error:', err);
             res.status(500).json({ error: 'Kunde inte byta filnamn' });

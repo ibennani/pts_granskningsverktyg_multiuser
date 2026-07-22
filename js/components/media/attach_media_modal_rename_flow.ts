@@ -31,6 +31,7 @@ export type AttachMediaRenameFlowOptions = {
     server_index?: AuditMediaServerIndex | null;
     persist_media_changes: (close_after: boolean) => Promise<boolean>;
     show_status: (message: string, type?: StatusType, options?: { html?: boolean }) => void;
+    clear_status?: () => void;
     refresh_list: () => void;
     get_preview_open: () => boolean;
     get_remove_confirm_open: () => boolean;

@@ -34,10 +34,28 @@ describe('create_audit_media_server_index reload', () => {
 
         expect(index.get_server_filenames()?.has('borttagen.png')).toBe(true);
 
-        await index.reload();
+        const reload_result = await index.reload();
 
+        expect(reload_result.ok).toBe(true);
         expect(index.get_server_filenames()?.has('borttagen.png')).toBe(false);
         expect(index.get_server_filenames()?.has('kvar.png')).toBe(true);
+    });
+
+    it('rapporterar misslyckad reload och rensar serverindex', async () => {
+        mocked_list_audit_media
+            .mockResolvedValueOnce({
+                files: [{ filename: 'kvar.png', size: 1, mime: 'image/png' }],
+                filename_migrations: []
+            })
+            .mockRejectedValueOnce(new Error('nätverksfel'));
+
+        const index = create_audit_media_server_index('audit-1');
+        await index.ensure_loaded();
+
+        const reload_result = await index.reload();
+
+        expect(reload_result.ok).toBe(false);
+        expect(index.get_server_filenames()?.size).toBe(0);
     });
 
     it('löser omdöpningskälla efter migrering', async () => {
@@ -47,8 +65,9 @@ describe('create_audit_media_server_index reload', () => {
         });
 
         const index = create_audit_media_server_index('audit-1');
-        await index.reload();
+        const reload_result = await index.reload();
 
+        expect(reload_result.ok).toBe(true);
         expect(index.resolve_rename_source_filename('bild.jpg')).toBe('bild.png');
         expect(index.resolve_rename_source_filename('saknas.png')).toBeNull();
     });

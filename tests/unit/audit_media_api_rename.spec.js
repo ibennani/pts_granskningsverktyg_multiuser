@@ -1,9 +1,9 @@
 /**
- * @fileoverview Enhetstester för PATCH-omdöpning av granskningsmedia via API-klienten.
+ * @fileoverview Enhetstester för omdöpning av granskningsmedia via API-klienten.
  */
 
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
-import { get_audit_media_url, rename_audit_media } from '../../js/api/audit_media_api.js';
+import { get_audit_media_rename_url, rename_audit_media } from '../../js/api/audit_media_api.js';
 
 describe('rename_audit_media', () => {
     beforeEach(() => {
@@ -24,11 +24,11 @@ describe('rename_audit_media', () => {
         });
 
         expect(fetch).toHaveBeenCalledWith(
-            get_audit_media_url('audit-1', 'gammal.png'),
+            get_audit_media_rename_url('audit-1'),
             expect.objectContaining({
-                method: 'PATCH',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json; charset=utf-8' },
-                body: JSON.stringify({ newFilename: 'ny.png' })
+                body: JSON.stringify({ fromFilename: 'gammal.png', newFilename: 'ny.png' })
             })
         );
     });
@@ -51,15 +51,30 @@ describe('rename_audit_media', () => {
         });
     });
 
-    test('kastar vid fel', async () => {
+    test('kastar vid valideringsfel', async () => {
         fetch.mockResolvedValue({
             ok: false,
             status: 400,
+            headers: { get: () => 'application/json' },
             json: async () => ({ error: 'Filtypen stöds inte' })
         });
 
         await expect(rename_audit_media('audit-1', 'bild.png', 'dok.pdf')).rejects.toThrow(
             'Filtypen stöds inte'
+        );
+    });
+
+    test('mappar 404 utan JSON-kropp till Filen hittades inte', async () => {
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            headers: { get: () => 'text/html' },
+            text: async () => '<html>Not Found</html>'
+        });
+
+        await expect(rename_audit_media('audit-1', 'bild.png', 'ny.png')).rejects.toThrow(
+            'Filen hittades inte'
         );
     });
 });

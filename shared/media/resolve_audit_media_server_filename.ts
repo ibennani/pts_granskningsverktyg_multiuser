@@ -6,6 +6,8 @@ import {
     resolve_migrated_media_filename_chain,
     type AuditMediaFilenameMigration
 } from './audit_media_filename_migrations.js';
+import { is_image_filename } from './sanitize_media_filename.js';
+import { normalize_image_filename_to_png } from './image_png_upload.js';
 
 /**
  * Normaliserar filnamn för jämförelse (trim, NFC, gemener).
@@ -115,13 +117,30 @@ export function resolve_media_rename_source_filename(
     if (names.size === 0) {
         return null;
     }
-    const resolved = resolve_server_media_fetch_filename(
-        referenced_filename,
-        names,
-        migration_map
-    );
-    return (
-        find_server_media_filename_match(resolved, names) ??
-        find_server_media_filename_match(referenced_filename, names)
-    );
+
+    const trimmed = String(referenced_filename || '').trim();
+    const candidates: string[] = [];
+    const add_candidate = (name: string) => {
+        const candidate = String(name || '').trim();
+        if (candidate && !candidates.includes(candidate)) {
+            candidates.push(candidate);
+        }
+    };
+
+    add_candidate(trimmed);
+    if (migration_map && migration_map.size > 0) {
+        add_candidate(resolve_migrated_media_filename_chain(trimmed, migration_map));
+    }
+    if (is_image_filename(trimmed)) {
+        add_candidate(normalize_image_filename_to_png(trimmed));
+    }
+
+    for (const candidate of candidates) {
+        const match = find_server_media_filename_match(candidate, names);
+        if (match) {
+            return match;
+        }
+    }
+
+    return null;
 }

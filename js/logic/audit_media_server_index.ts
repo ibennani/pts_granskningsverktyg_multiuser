@@ -121,10 +121,15 @@ export function filenames_existing_on_server(
     });
 }
 
+export type AuditMediaServerReloadResult = {
+    ok: boolean;
+    migrations: AuditMediaFilenameMigration[];
+};
+
 export type AuditMediaServerIndex = {
     load: () => Promise<AuditMediaFilenameMigration[]>;
     ensure_loaded: () => Promise<AuditMediaFilenameMigration[]>;
-    reload: () => Promise<AuditMediaFilenameMigration[]>;
+    reload: () => Promise<AuditMediaServerReloadResult>;
     get_server_filenames: () => Set<string> | null;
     resolve_fetch_filename: (filename: string) => string;
     resolve_rename_source_filename: (filename: string) => string | null;
@@ -143,6 +148,7 @@ export function create_audit_media_server_index(
     let filename_migration_map = new Map<string, string>();
     let load_promise: Promise<AuditMediaFilenameMigration[]> | null = null;
     let load_completed = false;
+    let last_load_ok = true;
     const session_optimistic_marks = new Set<string>();
     const id = String(audit_id || '').trim();
 
@@ -160,6 +166,7 @@ export function create_audit_media_server_index(
         if (!id) {
             server_filenames = new Set();
             load_completed = true;
+            last_load_ok = true;
             return [];
         }
         try {
@@ -171,10 +178,12 @@ export function create_audit_media_server_index(
             server_filenames = loaded;
             merge_filename_migrations(result.filename_migrations);
             load_completed = true;
+            last_load_ok = true;
             return result.filename_migrations;
         } catch {
-            server_filenames = server_filenames ?? new Set();
+            server_filenames = merge_session_marks ? (server_filenames ?? new Set()) : new Set();
             load_completed = true;
+            last_load_ok = false;
             return [];
         }
     };
@@ -191,10 +200,11 @@ export function create_audit_media_server_index(
         return load_promise;
     };
 
-    const reload = async (): Promise<AuditMediaFilenameMigration[]> => {
+    const reload = async (): Promise<AuditMediaServerReloadResult> => {
         load_completed = false;
         load_promise = null;
-        return load(false);
+        const migrations = await load(false);
+        return { ok: last_load_ok, migrations };
     };
 
     const resolve_fetch_filename = (filename: string): string =>

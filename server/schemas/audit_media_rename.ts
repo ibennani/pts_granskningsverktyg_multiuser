@@ -11,4 +11,13 @@ export const AuditMediaRenameBodySchema = z.object({
         .max(200, 'Filnamnet är för långt')
 });
 
+export const AuditMediaRenameFromBodySchema = AuditMediaRenameBodySchema.extend({
+    fromFilename: z
+        .string()
+        .trim()
+        .min(1, 'Nuvarande filnamn krävs')
+        .max(200, 'Filnamnet är för långt')
+});
+
 export type AuditMediaRenameBody = z.infer<typeof AuditMediaRenameBodySchema>;
+export type AuditMediaRenameFromBody = z.infer<typeof AuditMediaRenameFromBodySchema>;
