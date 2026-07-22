@@ -70,6 +70,14 @@ function build_api_error_message(payload: ApiErrorPayload, status: number): stri
     return `HTTP ${status}`;
 }
 
+function is_post_rename_route_missing(res: Response, payload: ApiErrorPayload): boolean {
+    const content_type = res.headers.get('content-type') || '';
+    if (content_type.includes('application/json')) {
+        return false;
+    }
+    return res.status === 404 && !payload.detail;
+}
+
 function build_auth_headers_without_content_type(): Record<string, string> {
     const headers: Record<string, string> = {};
     const token = get_auth_token();
@@ -182,6 +190,24 @@ export function get_audit_media_rename_url(audit_id: string): string {
     return `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/media/rename`;
 }
 
+async function rename_audit_media_via_patch(
+    audit_id: string,
+    from_filename: string,
+    new_filename: string
+): Promise<RenameAuditMediaResponse> {
+    const url = get_audit_media_url(audit_id, from_filename);
+    const res = await fetch_with_auth_retry(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ newFilename: new_filename })
+    });
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        throw new Error(build_api_error_message(err, res.status));
+    }
+    return (await res.json()) as RenameAuditMediaResponse;
+}
+
 export async function rename_audit_media(
     audit_id: string,
     from_filename: string,
@@ -196,14 +222,16 @@ export async function rename_audit_media(
             newFilename: new_filename
         })
     });
-    if (!res.ok) {
-        const err = await parse_error_payload(res);
-        if (res.status === 404 && !err.error) {
-            throw new Error('Filen hittades inte');
-        }
-        throw new Error(build_api_error_message(err, res.status));
+    if (res.ok) {
+        return (await res.json()) as RenameAuditMediaResponse;
     }
-    return (await res.json()) as RenameAuditMediaResponse;
+
+    const err = await parse_error_payload(res);
+    if (is_post_rename_route_missing(res, err)) {
+        return rename_audit_media_via_patch(audit_id, from_filename, new_filename);
+    }
+
+    throw new Error(build_api_error_message(err, res.status));
 }
 
 export async function delete_audit_media(audit_id: string, filename: string): Promise<void> {

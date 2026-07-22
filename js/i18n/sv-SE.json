@@ -92,7 +92,7 @@
   "attach_media_rename_audit_not_found": "Granskningen {audit_id} hittades inte på servern.",
   "attach_media_rename_server_list_failed": "Fillistan kunde inte hämtas från servern för granskning {audit_id}. Försök igen om en stund.",
   "attach_media_rename_panel_heading": "Byt filnamn",
-  "attach_media_rename_panel_intro": "Ange nytt filnamn. Bilder sparas som PNG.",
+  "attach_media_rename_panel_intro": "Ange nytt filnamn. Bilder sparas som PNG, videor behåller sin filändelse.",
   "attach_media_rename_panel_label": "Nytt filnamn",
   "attach_media_rename_renamed_conflict_after": " fick därför namnet ",
   "attach_media_rename_renamed_conflict_before": "En annan fil hade redan namnet ",

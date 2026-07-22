@@ -37,6 +37,21 @@ describe('execute_audit_media_rename', () => {
         await expect(fs.stat(path.join(dir, 'ny.png'))).resolves.toBeDefined();
     });
 
+    test('byter namn på video utan png-normalisering', async () => {
+        const audit_id = 'audit-rename-video';
+        const dir = path.join(temp_root, audit_id);
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(path.join(dir, 'gammal.mp4'), Buffer.from('mp4'));
+
+        const outcome = await execute_audit_media_rename(audit_id, 'gammal.mp4', 'ny.mp4');
+
+        expect(outcome.ok).toBe(true);
+        if (outcome.ok) {
+            expect(outcome.result.filename).toBe('ny.mp4');
+        }
+        await expect(fs.stat(path.join(dir, 'ny.mp4'))).resolves.toBeDefined();
+    });
+
     test('returnerar detaljerat 404 när källfil saknas', async () => {
         const audit_id = 'audit-rename-miss';
         const dir = path.join(temp_root, audit_id);

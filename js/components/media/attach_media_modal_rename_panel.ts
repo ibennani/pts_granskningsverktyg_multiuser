@@ -158,15 +158,14 @@ function map_rename_api_error(
     error: string
 ): string {
     const normalized = String(error || '').trim();
+    if (normalized.startsWith('Sökte efter «')) {
+        return t('attach_media_rename_failed', { details: normalized });
+    }
     if (
         normalized === 'Filen hittades inte'
-        || normalized.startsWith('Sökte efter «')
         || normalized === 'Not Found'
         || normalized === 'HTTP 404'
     ) {
-        if (normalized.startsWith('Sökte efter «')) {
-            return t('attach_media_rename_failed', { details: normalized });
-        }
         return t('attach_media_rename_not_on_server', { filename: current_filename, audit_id });
     }
     if (normalized === 'Granskning hittades inte' || normalized.startsWith('Granskningen ')) {
@@ -307,8 +306,19 @@ export function create_attach_media_modal_rename_panel(
     };
 
     const resolve_rename_source_for_list_filename = (): string => {
-        const reference = list_filename || current_filename;
-        return server_index?.resolve_rename_source_filename(reference) ?? reference;
+        const references = [...new Set([list_filename, current_filename].filter(Boolean))];
+        if (server_index) {
+            for (const reference of references) {
+                const resolved = server_index.resolve_rename_source_filename(reference);
+                if (resolved) {
+                    return resolved;
+                }
+            }
+            if (references.length > 0) {
+                return server_index.resolve_fetch_filename(references[0]!);
+            }
+        }
+        return list_filename || current_filename;
     };
 
     const handle_save = async (keep_focus_on_error = true) => {

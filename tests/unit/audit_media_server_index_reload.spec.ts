@@ -72,6 +72,25 @@ describe('create_audit_media_server_index reload', () => {
         expect(index.resolve_rename_source_filename('saknas.png')).toBeNull();
     });
 
+    it('ger samma serverfilnamn för miniatyr och omdöpning vid lös matchning', async () => {
+        mocked_list_audit_media.mockResolvedValue({
+            files: [{ filename: 'cookiebanner_oversikt.png', size: 1, mime: 'image/png' }],
+            filename_migrations: []
+        });
+
+        const index = create_audit_media_server_index('audit-1');
+        const reload_result = await index.reload();
+
+        expect(reload_result.ok).toBe(true);
+
+        const list_reference = 'cookie-banner_oversikt.png';
+        const fetch_name = index.resolve_fetch_filename(list_reference);
+        const rename_source = index.resolve_rename_source_filename(list_reference);
+
+        expect(rename_source).toBe('cookiebanner_oversikt.png');
+        expect(fetch_name).toBe(rename_source);
+    });
+
     it('ignorerar föråldrad load när reload startar under pågående ensure_loaded', async () => {
         let resolve_first: ((value: unknown) => void) | null = null;
         const first_promise = new Promise((resolve) => {

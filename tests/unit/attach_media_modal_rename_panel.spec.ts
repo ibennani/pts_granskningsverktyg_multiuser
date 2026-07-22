@@ -175,4 +175,95 @@ describe('create_attach_media_modal_rename_panel', () => {
         expect(refresh_list).toHaveBeenCalled();
         expect(persist_media_changes).toHaveBeenCalledWith(false);
     });
+
+    it('använder PATCH-reserv när POST /media/rename saknas på servern', async () => {
+        fetch_mock.mockImplementation(async (url: string, init?: RequestInit) => {
+            if (String(url).includes('/media/rename')) {
+                return {
+                    ok: false,
+                    status: 404,
+                    statusText: 'Not Found',
+                    headers: { get: () => 'text/html' },
+                    text: async () => '<html>Not Found</html>'
+                };
+            }
+            if (String(url).includes('/media/cookiebanner_oversikt.png') && init?.method === 'PATCH') {
+                const body = JSON.parse(String(init?.body));
+                expect(body).toEqual({ newFilename: 'cookiebanner_ny.png' });
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ filename: 'cookiebanner_ny.png' })
+                };
+            }
+            return mock_list_response();
+        });
+
+        const { panel } = create_panel();
+        const trigger = document.createElement('button') as HTMLButtonElement;
+        document.body.appendChild(trigger);
+
+        panel.open_rename_panel('cookie-banner_oversikt.png', trigger);
+        await jest.advanceTimersByTimeAsync(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS + 50);
+
+        const input = document.querySelector('.attach-media-rename-panel input') as HTMLInputElement;
+        input.value = 'cookiebanner_ny';
+
+        const save_btn = document.querySelector(
+            '.attach-media-rename-panel__actions .button-primary'
+        ) as HTMLButtonElement;
+        save_btn.click();
+        await jest.advanceTimersByTimeAsync(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS + 50);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(set_working_filenames).toHaveBeenCalledWith(['cookiebanner_ny.png']);
+        expect(show_status).not.toHaveBeenCalledWith('attach_media_rename_not_on_server', 'error');
+    });
+
+    it('döper om video utan att lägga till .png', async () => {
+        fetch_mock.mockImplementation(async (url: string, init?: RequestInit) => {
+            if (String(url).includes('/media/rename')) {
+                const body = JSON.parse(String(init?.body));
+                expect(body).toEqual({
+                    fromFilename: 'demo.mp4',
+                    newFilename: 'nytt.mp4'
+                });
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ filename: 'nytt.mp4' })
+                };
+            }
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    files: [{ filename: 'demo.mp4', size: 1, mime: 'video/mp4' }],
+                    filenameMigrations: []
+                })
+            };
+        });
+
+        working_filenames = ['demo.mp4'];
+        const { panel } = create_panel();
+        const trigger = document.createElement('button') as HTMLButtonElement;
+        document.body.appendChild(trigger);
+
+        panel.open_rename_panel('demo.mp4', trigger);
+        await jest.advanceTimersByTimeAsync(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS + 50);
+
+        const input = document.querySelector('.attach-media-rename-panel input') as HTMLInputElement;
+        input.value = 'nytt.mp4';
+
+        const save_btn = document.querySelector(
+            '.attach-media-rename-panel__actions .button-primary'
+        ) as HTMLButtonElement;
+        save_btn.click();
+        await jest.advanceTimersByTimeAsync(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS + 50);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(set_working_filenames).toHaveBeenCalledWith(['nytt.mp4']);
+    });
 });

@@ -81,4 +81,12 @@ describe('resolve_media_rename_filename', () => {
         if (result.ok) return;
         expect(result.error).toBe('Filtypen stöds inte');
     });
+
+    test('behåller videoändelse utan png-normalisering', () => {
+        const result = resolve_media_rename_filename('klipp.mp4', 'nytt.mp4', new Set(['klipp.mp4']));
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.requested_filename).toBe('nytt.mp4');
+        expect(result.filename).toBe('nytt.mp4');
+    });
 });

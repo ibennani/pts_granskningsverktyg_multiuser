@@ -93,7 +93,7 @@
   "attach_media_rename_audit_not_found": "Audit {audit_id} was not found on the server.",
   "attach_media_rename_server_list_failed": "The file list could not be loaded from the server for audit {audit_id}. Try again in a moment.",
   "attach_media_rename_panel_heading": "Rename file",
-  "attach_media_rename_panel_intro": "Enter a new filename. Images are stored as PNG.",
+  "attach_media_rename_panel_intro": "Enter a new filename. Images are stored as PNG; videos keep their file extension.",
   "attach_media_rename_panel_label": "New filename",
   "attach_media_rename_renamed_conflict_after": " was therefore named ",
   "attach_media_rename_renamed_conflict_before": "Another file already had the name ",
