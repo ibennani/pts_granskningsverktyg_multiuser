@@ -154,6 +154,33 @@ describe('rulefile_audit_types_ui', () => {
         expect(stack.querySelector(':scope > .audit-types-row-delete-button')).not.toBeNull();
     });
 
+    test('Redigera- och Ta bort-knappar har aria-label med granskningstypens namn', () => {
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: {
+                t: (key: string, opts?: Record<string, unknown>) => {
+                    if (key === 'rulefile_classifications_audit_types_edit_row_aria') {
+                        return `Redigera granskningstyp ${opts?.name}`;
+                    }
+                    if (key === 'rulefile_classifications_audit_types_remove_row_aria') {
+                        return `Ta bort granskningstyp ${opts?.name}`;
+                    }
+                    return key;
+                },
+            },
+        };
+        render_audit_types_editor(ctx, container, { ...sample_metadata });
+
+        const edit_button = container.querySelector('.audit-types-row-edit-button') as HTMLButtonElement;
+        const delete_button = container.querySelector('.audit-types-row-delete-button') as HTMLButtonElement;
+        expect(edit_button.getAttribute('aria-label')).toBe(
+            `Redigera granskningstyp ${DEFAULT_AUDIT_TYPES[0].label}`
+        );
+        expect(delete_button.getAttribute('aria-label')).toBe(
+            `Ta bort granskningstyp ${DEFAULT_AUDIT_TYPES[0].label}`
+        );
+    });
+
     test('Lägg till-knappen ligger i tabellayouten och följer tabellens bredd', () => {
         const ctx = {
             Helpers: create_helpers(),

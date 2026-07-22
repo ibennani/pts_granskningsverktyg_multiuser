@@ -93,6 +93,33 @@ describe('rulefile_content_types_ui', () => {
         expect(html_row?.querySelector('.content-types-row-edit-button')).not.toBeNull();
     });
 
+    test('Redigera- och Radera-knappar har aria-label med innehållstypens namn', () => {
+        const ctx = {
+            Helpers: create_helpers(),
+            Translation: {
+                t: (key: string, opts?: Record<string, unknown>) => {
+                    if (key === 'rulefile_content_types_edit_row_aria') {
+                        return `Redigera ${opts?.name}`;
+                    }
+                    if (key === 'rulefile_content_types_remove_row_aria') {
+                        return `Radera innehållstyp ${opts?.name}`;
+                    }
+                    return key;
+                },
+            },
+        };
+
+        render_content_types_overview(ctx, container, sample_metadata, sample_rule_file);
+
+        const html_row = Array.from(container.querySelectorAll('tbody tr')).find((row) =>
+            row.querySelector('.content-types-row-header')?.textContent === 'HTML'
+        );
+        const edit_button = html_row?.querySelector('.content-types-row-edit-button') as HTMLButtonElement;
+        const delete_button = html_row?.querySelector('.content-types-row-delete-button') as HTMLButtonElement;
+        expect(edit_button.getAttribute('aria-label')).toBe('Redigera HTML');
+        expect(delete_button.getAttribute('aria-label')).toBe('Radera innehållstyp HTML');
+    });
+
     test('tom lista visar tabell med rubriker', () => {
         const ctx = {
             Helpers: create_helpers(),

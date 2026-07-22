@@ -167,9 +167,17 @@ export function build_audit_detail_columns({
             isAction: true,
             getContent: (row: any) => {
                 const wrapper = Helpers.create_element('div', { class_name: 'backup-detail-actions-cell' });
+                const case_number = (overview_row?.caseNumber ?? '').toString().trim() || t('unknown_value');
+                const display_name = (overview_row?.actorName ?? '').toString().trim() || t('unknown_actor');
                 const restore_btn = Helpers.create_element('button', {
                     class_name: ['button', 'button-success', 'button-small', 'generic-table-action-cell', 'backup-btn-with-icon'],
-                    attributes: { type: 'button' }
+                    attributes: {
+                        type: 'button',
+                        'aria-label': t('backup_restore_button_aria', {
+                            caseNumber: case_number,
+                            displayName: display_name
+                        })
+                    }
                 });
                 restore_btn.appendChild(Helpers.create_element('span', { class_name: 'backup-btn-label', text_content: t('backup_restore_button') }));
                 if (Helpers.get_icon_svg) {

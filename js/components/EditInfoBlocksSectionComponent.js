@@ -4,7 +4,7 @@ import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.j
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './rulefile_sections_view.css';
 
-export const EditInfoBlocksSectionComponent = {
+export const EditInfoBlocksSectionComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -58,6 +58,27 @@ export const EditInfoBlocksSectionComponent = {
             }
         }
         return count;
+    },
+
+    _info_block_control_aria_labels(block_name) {
+        const t = this.Translation.t;
+        const name = (block_name || '').trim() || t('rulefile_info_blocks_unnamed_block');
+        return {
+            delete: t('rulefile_info_blocks_delete_row_aria', { name }),
+            move_up: t('rulefile_info_blocks_move_up_row_aria', { name }),
+            move_down: t('rulefile_info_blocks_move_down_row_aria', { name })
+        };
+    },
+
+    _apply_info_block_control_aria_labels(list_item, block_name) {
+        if (!list_item) return;
+        const labels = this._info_block_control_aria_labels(block_name);
+        const up_btn = list_item.querySelector('[data-action="move-info-block-up"]');
+        const down_btn = list_item.querySelector('[data-action="move-info-block-down"]');
+        const delete_btn = list_item.querySelector('.info-blocks-order-controls .button-danger');
+        if (up_btn) up_btn.setAttribute('aria-label', labels.move_up);
+        if (down_btn) down_btn.setAttribute('aria-label', labels.move_down);
+        if (delete_btn) delete_btn.setAttribute('aria-label', labels.delete);
     },
 
     /**
@@ -251,11 +272,16 @@ export const EditInfoBlocksSectionComponent = {
         item_content.appendChild(input_wrapper);
 
         const controls = this.Helpers.create_element('div', { class_name: 'info-blocks-order-controls' });
+        const control_aria = this._info_block_control_aria_labels(block_label);
 
         const up_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
         const up_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-small', 'button-default'],
-            attributes: { type: 'button', 'data-action': 'move-info-block-up', 'aria-label': block_label },
+            attributes: {
+                type: 'button',
+                'data-action': 'move-info-block-up',
+                'aria-label': control_aria.move_up
+            },
             html_content: `<span>${t('rulefile_metadata_move_up_text')}</span>` +
                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
         });
@@ -277,7 +303,7 @@ export const EditInfoBlocksSectionComponent = {
 
         const delete_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-small', 'button-danger'],
-            attributes: { type: 'button', 'aria-label': block_label },
+            attributes: { type: 'button', 'aria-label': control_aria.delete },
             html_content: `<span>${t('rulefile_metadata_delete_button_text')}</span>` +
                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('delete', ['currentColor'], 16)}</span>` : '')
         });
@@ -314,7 +340,11 @@ export const EditInfoBlocksSectionComponent = {
             if (prev_down_slot && prev_down_slot.children.length === 0) {
                 const down_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-small', 'button-default'],
-                    attributes: { type: 'button', 'data-action': 'move-info-block-down', 'aria-label': block_label },
+                    attributes: {
+                        type: 'button',
+                        'data-action': 'move-info-block-down',
+                        'aria-label': this._info_block_control_aria_labels(block_label).move_down
+                    },
                     html_content: `<span>${t('rulefile_metadata_move_down_text')}</span>` +
                                  (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
                 });
@@ -415,32 +445,31 @@ export const EditInfoBlocksSectionComponent = {
                     'data-block-id': blockId
                 }
             });
-            text_input.addEventListener('input', this.handle_autosave_input);
+            text_input.addEventListener('input', (event) => {
+                this.handle_autosave_input(event);
+                const updated_name = (event.currentTarget?.value || '').trim() || t('rulefile_info_blocks_unnamed_block');
+                this._apply_info_block_control_aria_labels(list_item, updated_name);
+            });
             const input_wrapper = this.Helpers.create_element('div', { class_name: 'info-blocks-order-input-wrapper' });
             input_wrapper.appendChild(name_label);
             input_wrapper.appendChild(text_input);
             item_content.appendChild(input_wrapper);
 
             const controls = this.Helpers.create_element('div', { class_name: 'info-blocks-order-controls' });
+            const control_aria = this._info_block_control_aria_labels(block_label);
 
             const is_first = index === 0;
             const is_last = index === total - 1;
 
             const up_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
             if (!is_first) {
-                const up_target_index = index - 1;
-                const up_aria = block_label === t('rulefile_info_blocks_unnamed_block')
-                    ? block_label
-                    : (up_target_index === 0
-                        ? t('rulefile_info_blocks_move_up_to_top')
-                        : t('rulefile_info_blocks_move_up_to_row', { row: up_target_index + 1 }));
                 const up_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-small', 'button-default'],
                     attributes: {
                         type: 'button',
                         'data-action': 'move-info-block-up',
                         'data-index': String(index),
-                        'aria-label': up_aria
+                        'aria-label': control_aria.move_up
                     },
                     html_content: `<span>${t('rulefile_metadata_move_up_text')}</span>` +
                                  (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
@@ -461,19 +490,13 @@ export const EditInfoBlocksSectionComponent = {
 
             const down_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
             if (!is_last) {
-                const down_target_index = index + 1;
-                const down_aria = block_label === t('rulefile_info_blocks_unnamed_block')
-                    ? block_label
-                    : (down_target_index === total - 1
-                        ? t('rulefile_info_blocks_move_down_to_bottom')
-                        : t('rulefile_info_blocks_move_down_to_row', { row: down_target_index + 1 }));
                 const down_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-small', 'button-default'],
                     attributes: {
                         type: 'button',
                         'data-action': 'move-info-block-down',
                         'data-index': String(index),
-                        'aria-label': down_aria
+                        'aria-label': control_aria.move_down
                     },
                     html_content: `<span>${t('rulefile_metadata_move_down_text')}</span>` +
                                  (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
@@ -496,9 +519,7 @@ export const EditInfoBlocksSectionComponent = {
                 class_name: ['button', 'button-small', 'button-danger'],
                 attributes: {
                     type: 'button',
-                    'aria-label': block_label === t('rulefile_info_blocks_unnamed_block')
-                        ? block_label
-                        : t('rulefile_metadata_delete_button_text')
+                    'aria-label': control_aria.delete
                 },
                 html_content: `<span>${t('rulefile_metadata_delete_button_text')}</span>` +
                              (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('delete', ['currentColor'], 16)}</span>` : '')

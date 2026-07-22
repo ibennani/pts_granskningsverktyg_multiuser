@@ -61,12 +61,16 @@ function build_edit_button(
 ): HTMLButtonElement {
     const { Helpers, Translation: { t } } = ctx;
     const edit_label = t('edit_button_label');
+    const display_name = (row.label || row.id || t('rulefile_metadata_untitled_item')).toString();
     const edit_icon = Helpers.get_icon_svg
         ? `<span aria-hidden="true">${Helpers.get_icon_svg('edit', ['currentColor'], 16)}</span>`
         : '';
     const edit_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-secondary', 'button-small', 'audit-types-row-edit-button'],
-        attributes: { type: 'button' },
+        attributes: {
+            type: 'button',
+            'aria-label': t('rulefile_classifications_audit_types_edit_row_aria', { name: display_name }),
+        },
         html_content: `<span>${edit_label}</span>${edit_icon}`,
     }) as HTMLButtonElement;
     edit_btn.addEventListener('click', () => {
@@ -79,12 +83,17 @@ function build_edit_button(
 
 function build_delete_button(
     ctx: ViewCtx,
+    row: RulefileAuditType,
     delete_handler: (delete_button: HTMLButtonElement) => void
 ): HTMLButtonElement {
     const { Helpers, Translation: { t } } = ctx;
+    const display_name = (row.label || row.id || t('rulefile_metadata_untitled_item')).toString();
     const delete_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-danger', 'button-small', 'audit-types-row-delete-button'],
-        attributes: { type: 'button' },
+        attributes: {
+            type: 'button',
+            'aria-label': t('rulefile_classifications_audit_types_remove_row_aria', { name: display_name }),
+        },
         text_content: t('rulefile_classifications_audit_types_remove'),
     }) as HTMLButtonElement;
     delete_btn.addEventListener('click', () => delete_handler(delete_btn));
@@ -102,7 +111,7 @@ function build_actions_cell(
     const actions = Helpers.create_element('td', { class_name: 'audit-types-actions-cell' });
     const stack = Helpers.create_element('div', { class_name: 'audit-types-actions-stack' });
     stack.appendChild(build_edit_button(ctx, row, taxonomies, on_saved));
-    stack.appendChild(build_delete_button(ctx, on_delete));
+    stack.appendChild(build_delete_button(ctx, row, on_delete));
     actions.appendChild(stack);
     return actions;
 }

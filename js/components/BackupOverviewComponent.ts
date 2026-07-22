@@ -211,7 +211,15 @@ export class BackupOverviewComponent {
             const heading_row = this.Helpers.create_element('div', { class_name: 'backup-status-heading-row' });
             const left = this.Helpers.create_element('div', { class_name: 'backup-status-heading-left' });
             left.appendChild(this.Helpers.create_element('h2', { text_content: t('backup_status_heading') }));
-            const run_btn = this.Helpers.create_element('button', { class_name: ['button', 'button-default', 'button-small', 'backup-btn-with-icon'], attributes: { type: 'button' } });
+            const run_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default', 'button-small', 'backup-btn-with-icon'],
+                attributes: {
+                    type: 'button',
+                    'aria-label': this.audits._run_backup_in_progress
+                        ? t('backup_run_in_progress')
+                        : t('backup_run_now_button')
+                }
+            });
             run_btn.appendChild(this.Helpers.create_element('span', { class_name: 'backup-btn-label', text_content: this.audits._run_backup_in_progress ? t('backup_run_in_progress') : t('backup_run_now_button') }));
             if (this.Helpers.get_icon_svg) {
                 const run_icon = this.Helpers.create_element('span', {

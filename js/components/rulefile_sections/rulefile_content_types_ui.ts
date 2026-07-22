@@ -117,12 +117,16 @@ function build_edit_button(
 ): HTMLButtonElement {
     const { Helpers, Translation: { t } } = ctx;
     const edit_label = t('edit_button_label');
+    const display_name = row.type_text || row.child_id || t('rulefile_metadata_untitled_item');
     const edit_icon = Helpers.get_icon_svg
         ? `<span aria-hidden="true">${Helpers.get_icon_svg('edit', ['currentColor'], 16)}</span>`
         : '';
     const edit_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-secondary', 'button-small', 'content-types-row-edit-button'],
-        attributes: { type: 'button' },
+        attributes: {
+            type: 'button',
+            'aria-label': t('rulefile_content_types_edit_row_aria', { name: display_name }),
+        },
         html_content: `<span>${edit_label}</span>${edit_icon}`,
     }) as HTMLButtonElement;
     edit_btn.addEventListener('click', () => on_edit(row));
@@ -131,12 +135,17 @@ function build_edit_button(
 
 function build_delete_button(
     ctx: ViewCtx,
+    row: ContentTypeTableRow,
     delete_handler: (delete_button: HTMLButtonElement) => void
 ): HTMLButtonElement {
     const { Helpers, Translation: { t } } = ctx;
+    const display_name = row.type_text || row.child_id || t('rulefile_metadata_untitled_item');
     const delete_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-danger', 'button-small', 'content-types-row-delete-button'],
-        attributes: { type: 'button' },
+        attributes: {
+            type: 'button',
+            'aria-label': t('rulefile_content_types_remove_row_aria', { name: display_name }),
+        },
         text_content: t('rulefile_content_types_remove'),
     }) as HTMLButtonElement;
     delete_btn.addEventListener('click', () => delete_handler(delete_btn));
@@ -153,7 +162,7 @@ function build_actions_cell(
     const actions = Helpers.create_element('td', { class_name: 'content-types-actions-cell' });
     const stack = Helpers.create_element('div', { class_name: 'content-types-actions-stack' });
     stack.appendChild(build_edit_button(ctx, row, on_edit));
-    stack.appendChild(build_delete_button(ctx, delete_handler));
+    stack.appendChild(build_delete_button(ctx, row, delete_handler));
     actions.appendChild(stack);
     return actions;
 }

@@ -20,7 +20,7 @@ export type MarkdownPreviewEditorDeps = {
         escape_html?: (value: string) => string;
     };
     Translation: {
-        t: (key: string) => string;
+        t: (key: string, replacements?: Record<string, string>) => string;
     };
 };
 
@@ -66,11 +66,13 @@ function create_edit_button(
     wrapper: HTMLElement
 ): HTMLButtonElement {
     const { Helpers, Translation } = deps;
+    const heading_text = (options.heading_text || Translation.t(options.label_key)).trim();
     const edit_btn = Helpers.create_element('button', {
         class_name: ['button', 'button-default', 'button-small', 'markdown-preview-editor__edit-btn'],
         attributes: {
             type: 'button',
             'aria-controls': options.textarea_id,
+            'aria-label': Translation.t('markdown_preview_editor_edit_button_aria', { heading: heading_text }),
         },
         text_content: Translation.t('markdown_preview_editor_edit_button'),
     }) as HTMLButtonElement;

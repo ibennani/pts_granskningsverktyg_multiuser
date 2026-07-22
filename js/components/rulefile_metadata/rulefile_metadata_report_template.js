@@ -5,6 +5,26 @@
 
 import { show_confirm_delete_modal } from '../../logic/confirm_delete_modal_logic.js';
 
+function get_report_section_display_name(section_data, t) {
+    const name = (section_data?.name || '').trim();
+    return name || t('report_section_name_placeholder');
+}
+
+function apply_report_section_button_aria_labels(header, section_name, t) {
+    const move_up = header.querySelector('[data-action="move-section-up"]');
+    const move_down = header.querySelector('[data-action="move-section-down"]');
+    const delete_btn = header.querySelector('[data-action="delete-section"]');
+    if (move_up) {
+        move_up.setAttribute('aria-label', t('rulefile_metadata_report_section_move_up_aria', { name: section_name }));
+    }
+    if (move_down) {
+        move_down.setAttribute('aria-label', t('rulefile_metadata_report_section_move_down_aria', { name: section_name }));
+    }
+    if (delete_btn) {
+        delete_btn.setAttribute('aria-label', t('rulefile_metadata_report_section_delete_aria', { name: section_name }));
+    }
+}
+
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} reportTemplate
@@ -29,6 +49,7 @@ export function create_report_template_section(ctx, reportTemplate, metadata, ho
 
     ordered_section_ids.forEach((section_id, index) => {
         const section_data = sections[section_id] || { name: '', required: false, content: '' };
+        const section_display_name = get_report_section_display_name(section_data, t);
 
         const section_card = Helpers.create_element('div', {
             class_name: 'report-section-card',
@@ -87,6 +108,14 @@ export function create_report_template_section(ctx, reportTemplate, metadata, ho
         });
         name_input.style.width = '200px';
         name_input.style.display = 'inline-block';
+        name_input.addEventListener('input', () => {
+            section_data.name = name_input.value;
+            apply_report_section_button_aria_labels(
+                header,
+                get_report_section_display_name(section_data, t),
+                t
+            );
+        });
         header.appendChild(name_label);
         header.appendChild(name_input);
 
@@ -140,6 +169,8 @@ export function create_report_template_section(ctx, reportTemplate, metadata, ho
             });
             header.appendChild(delete_btn);
         }
+
+        apply_report_section_button_aria_labels(header, section_display_name, t);
 
         section_card.appendChild(header);
 

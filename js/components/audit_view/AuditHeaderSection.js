@@ -229,15 +229,6 @@ export function render_audit_header(ctx) {
         });
         ctx.upload_file_input.addEventListener('change', ctx.handle_file_select);
         header.appendChild(ctx.upload_file_input);
-        if (ctx.audit_mode === 'both') {
-            const start_new_audit_btn = ctx.Helpers.create_element('button', {
-                class_name: ['button', 'button-default', 'audit-start-new-audit-btn'],
-                text_content: t('start_new_audit'),
-                attributes: { type: 'button', 'aria-label': t('start_new_audit') }
-            });
-            start_new_audit_btn.addEventListener('click', ctx.handle_start_new_audit);
-            header.appendChild(start_new_audit_btn);
-        }
     }
     return header;
 }
