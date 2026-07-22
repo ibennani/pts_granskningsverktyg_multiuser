@@ -208,6 +208,7 @@ export function create_attach_media_modal_rename_panel(
     let rename_panel_el: HTMLElement | null = null;
     let rename_open = false;
     let view_switch_in_flight = false;
+    let list_filename = '';
     let current_filename = '';
     let rename_trigger: HTMLButtonElement | null = null;
     let save_in_flight = false;
@@ -249,6 +250,7 @@ export function create_attach_media_modal_rename_panel(
         rename_panel_el?.remove();
         rename_panel_el = null;
         input_el = null;
+        list_filename = '';
         current_filename = '';
         rename_open = false;
         save_in_flight = false;
@@ -304,6 +306,11 @@ export function create_attach_media_modal_rename_panel(
         on_open_change(true);
     };
 
+    const resolve_rename_source_for_list_filename = (): string => {
+        const reference = list_filename || current_filename;
+        return server_index?.resolve_rename_source_filename(reference) ?? reference;
+    };
+
     const handle_save = async (keep_focus_on_error = true) => {
         if (save_in_flight || !input_el || !current_filename) {
             return;
@@ -350,14 +357,7 @@ export function create_attach_media_modal_rename_panel(
             }
         }
 
-        const server_from = server_index?.resolve_rename_source_filename(current_filename) ?? null;
-        if (!server_from) {
-            show_status(t('attach_media_rename_not_on_server', { filename: current_filename, audit_id }), 'error');
-            if (keep_focus_on_error) {
-                input_el.focus();
-            }
-            return;
-        }
+        const server_from = resolve_rename_source_for_list_filename();
 
         save_in_flight = true;
         try {
@@ -371,8 +371,12 @@ export function create_attach_media_modal_rename_panel(
                 throw new Error(t('attach_media_rename_failed', { details: '' }));
             }
 
-            set_working_filenames(replace_filename_in_list(working, current_filename, next_name));
-            move_audit_media_local_preview_blob_url(audit_id, current_filename, next_name);
+            const list_name = list_filename || current_filename;
+            set_working_filenames(replace_filename_in_list(working, list_name, next_name));
+            move_audit_media_local_preview_blob_url(audit_id, list_name, next_name);
+            if (current_filename !== list_name) {
+                move_audit_media_local_preview_blob_url(audit_id, current_filename, next_name);
+            }
             server_index?.mark_renamed_on_server(server_from, next_name);
 
             refresh_list();
@@ -393,7 +397,8 @@ export function create_attach_media_modal_rename_panel(
             close_rename_panel();
         } catch (err) {
             const details = err instanceof Error ? err.message : String(err);
-            show_status(map_rename_api_error(t, current_filename, audit_id, details), 'error');
+            const error_reference = list_filename || current_filename;
+            show_status(map_rename_api_error(t, error_reference, audit_id, details), 'error');
             input_el?.focus();
         } finally {
             save_in_flight = false;
@@ -408,13 +413,27 @@ export function create_attach_media_modal_rename_panel(
         rename_trigger = trigger;
         view_switch_in_flight = true;
 
-        void run_attach_media_modal_view_switch(
-            modal_container,
-            () => {
-                apply_rename_view(filename);
-            },
-            { transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS }
-        ).finally(() => {
+        void (async () => {
+            list_filename = filename;
+            let display_filename = filename;
+            if (server_index) {
+                const reload_result = await server_index.reload();
+                if (reload_result.ok) {
+                    const resolved = server_index.resolve_rename_source_filename(filename);
+                    if (resolved) {
+                        display_filename = resolved;
+                    }
+                }
+            }
+
+            await run_attach_media_modal_view_switch(
+                modal_container,
+                () => {
+                    apply_rename_view(display_filename);
+                },
+                { transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS }
+            );
+        })().finally(() => {
             view_switch_in_flight = false;
             focus_element_safe(heading_el);
         });

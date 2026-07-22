@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from '@jest/globals';
 import {
+    find_server_media_filename_loose_match,
     find_server_media_filename_match,
     resolve_audit_media_filename_on_server,
     resolve_media_rename_source_filename,
@@ -54,6 +55,19 @@ describe('find_server_media_filename_match', () => {
     it('matchar exakt filnamn i array', () => {
         expect(find_server_media_filename_match('a.png', ['a.png', 'b.png'])).toBe('a.png');
     });
+
+    it('matchar listnamn med bindestreck mot servernamn utan bindestreck', () => {
+        const server = new Set(['cookiebanner_oversikt.png']);
+        expect(find_server_media_filename_match('cookie-banner_oversikt.png', server)).toBe(
+            'cookiebanner_oversikt.png'
+        );
+    });
+
+    it('returnerar null vid tvetydig lös matchning', () => {
+        const server = new Set(['a-b.png', 'ab.png']);
+        expect(find_server_media_filename_match('a-b.png', server)).toBe('a-b.png');
+        expect(find_server_media_filename_loose_match('ab.png', server)).toBeNull();
+    });
 });
 
 describe('resolve_media_rename_source_filename', () => {
@@ -81,5 +95,12 @@ describe('resolve_media_rename_source_filename', () => {
     it('matchar jpg-listnamn mot png på server utan migrering i svar', () => {
         const png_only_server = new Set(['bild.png']);
         expect(resolve_media_rename_source_filename('bild.jpg', png_only_server, null)).toBe('bild.png');
+    });
+
+    it('matchar listnamn med bindestreck mot serverfil utan bindestreck', () => {
+        const server = new Set(['cookiebanner_oversikt.png']);
+        expect(resolve_media_rename_source_filename('cookie-banner_oversikt.png', server, migration_map)).toBe(
+            'cookiebanner_oversikt.png'
+        );
     });
 });

@@ -5,15 +5,19 @@
 import { list_audit_media, type AuditMediaFilenameMigration } from '../api/audit_media_api.js';
 import { build_audit_media_filename_migration_map } from './audit_media_filename_migrations.js';
 import {
+    find_server_media_filename_loose_match,
     find_server_media_filename_match,
     normalize_media_filename_key,
+    normalize_media_filename_loose_key,
     resolve_media_rename_source_filename,
     resolve_server_media_fetch_filename
 } from '../../shared/media/resolve_audit_media_server_filename.js';
 
 export {
+    find_server_media_filename_loose_match,
     find_server_media_filename_match,
     normalize_media_filename_key,
+    normalize_media_filename_loose_key,
     resolve_media_rename_source_filename,
     resolve_server_media_fetch_filename
 };
@@ -149,6 +153,7 @@ export function create_audit_media_server_index(
     let load_promise: Promise<AuditMediaFilenameMigration[]> | null = null;
     let load_completed = false;
     let last_load_ok = true;
+    let load_generation = 0;
     const session_optimistic_marks = new Set<string>();
     const id = String(audit_id || '').trim();
 
@@ -163,6 +168,7 @@ export function create_audit_media_server_index(
     };
 
     const load = async (merge_session_marks = true): Promise<AuditMediaFilenameMigration[]> => {
+        const generation = ++load_generation;
         if (!id) {
             server_filenames = new Set();
             load_completed = true;
@@ -171,6 +177,9 @@ export function create_audit_media_server_index(
         }
         try {
             const result = await list_audit_media(id);
+            if (generation !== load_generation) {
+                return [];
+            }
             const loaded = new Set(result.files.map((entry) => entry.filename));
             if (merge_session_marks) {
                 session_optimistic_marks.forEach((name) => loaded.add(name));
@@ -181,6 +190,9 @@ export function create_audit_media_server_index(
             last_load_ok = true;
             return result.filename_migrations;
         } catch {
+            if (generation !== load_generation) {
+                return [];
+            }
             server_filenames = merge_session_marks ? (server_filenames ?? new Set()) : new Set();
             load_completed = true;
             last_load_ok = false;

@@ -17,6 +17,45 @@ export function normalize_media_filename_key(name: string): string {
 }
 
 /**
+ * Normaliserar filnamn för lös matchning (ignorerar bindestreck och understreck).
+ */
+export function normalize_media_filename_loose_key(name: string): string {
+    return normalize_media_filename_key(name).replace(/[-_]/g, '');
+}
+
+/**
+ * Hittar serverfil vid lös matchning när exakt en fil matchar (t.ex. cookie-banner vs cookiebanner).
+ */
+export function find_server_media_filename_loose_match(
+    referenced_filename: string,
+    server_filenames: Set<string> | readonly string[] | null | undefined
+): string | null {
+    const trimmed = String(referenced_filename || '').trim();
+    if (!trimmed || !server_filenames) {
+        return null;
+    }
+    const names = server_filenames instanceof Set ? server_filenames : new Set(server_filenames);
+    if (names.size === 0) {
+        return null;
+    }
+    const ref_loose = normalize_media_filename_loose_key(trimmed);
+    if (!ref_loose) {
+        return null;
+    }
+    let match: string | null = null;
+    for (const server_name of names) {
+        if (normalize_media_filename_loose_key(server_name) !== ref_loose) {
+            continue;
+        }
+        if (match !== null) {
+            return null;
+        }
+        match = server_name;
+    }
+    return match;
+}
+
+/**
  * Hittar motsvarande serverfil vid exakt träff eller skiftläges-/normaliseringsmatch.
  */
 export function find_server_media_filename_match(
@@ -40,7 +79,7 @@ export function find_server_media_filename_match(
             return server_name;
         }
     }
-    return null;
+    return find_server_media_filename_loose_match(trimmed, names);
 }
 
 /**
