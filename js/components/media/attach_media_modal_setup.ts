@@ -9,7 +9,7 @@ import { create_attach_media_remove_flow } from './attach_media_modal_remove_flo
 import { create_attach_media_modal_persist, parse_attach_media_filenames_from_textarea } from './attach_media_modal_persist.js';
 import type { AuditMediaObservationEditOptions } from './audit_media_preview_observation.js';
 import { refresh_filename_list_container } from './attach_media_modal_list.js';
-import { create_audit_media_server_index, find_server_media_filename_match } from '../../logic/audit_media_server_index.js';
+import { create_audit_media_server_index } from '../../logic/audit_media_server_index.js';
 import { apply_audit_media_filename_migrations } from '../../logic/audit_media_filename_migrations.js';
 import {
     partition_files_by_existing_filenames,
@@ -188,7 +188,7 @@ export function setup_attach_media_modal_content(
 
     const resolve_fetch_filename = (filename: string): string => {
         if (!server_index) return filename;
-        return find_server_media_filename_match(filename, server_index.get_server_filenames()) ?? filename;
+        return server_index.resolve_fetch_filename(filename);
     };
 
     const handle_image_click = (filename: string, trigger: HTMLButtonElement) => {
@@ -271,6 +271,11 @@ export function setup_attach_media_modal_content(
             t,
             Helpers,
             audit_id,
+            modal_container: container,
+            heading_el,
+            modal_heading_text,
+            message_el,
+            modal_message_text: modal_message_text,
             list_mode_root,
             get_elements_to_hide: get_elements_to_hide_for_rename,
             get_working_filenames: () => working_filenames,
@@ -456,7 +461,7 @@ export function setup_attach_media_modal_content(
     append_file_list_section();
 
     if (server_index) {
-        void server_index.load().then((migrations) => {
+        void server_index.ensure_loaded().then((migrations) => {
             if (migrations.length > 0) {
                 working_filenames = apply_audit_media_filename_migrations(working_filenames, migrations);
                 const textarea = container.querySelector(`#${CSS.escape(textarea_id)}`) as HTMLTextAreaElement | null;

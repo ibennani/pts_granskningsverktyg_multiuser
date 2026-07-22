@@ -2,8 +2,9 @@
  * @fileoverview Regressionstester: modalen Bifoga media ska kunna byggas utan runtime-fel.
  */
 
-import { jest, describe, it, beforeEach, expect } from '@jest/globals';
+import { jest, describe, it, beforeEach, afterEach, expect } from '@jest/globals';
 import { setup_attach_media_modal_content } from '../../js/components/media/attach_media_modal_setup.ts';
+import { ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS } from '../../shared/constants/modal_layout.ts';
 
 function create_helpers() {
     return {
@@ -73,6 +74,11 @@ describe('setup_attach_media_modal_content', () => {
             addEventListener: jest.fn(),
             removeEventListener: jest.fn()
         }));
+        jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     it('bygger listvy utan att kasta fel (krav-bifogning, online)', () => {
@@ -102,5 +108,55 @@ describe('setup_attach_media_modal_content', () => {
         expect(container.querySelector('.attach-media-list-mode')).not.toBeNull();
         expect(container.querySelector('.modal-attach-media-actions')).not.toBeNull();
         expect(container.querySelector('.attach-media-filename-list')).not.toBeNull();
+    });
+
+    it('döljer Spara och Stäng utan att spara vid filnamnsbyte', async () => {
+        const { dialog, container, shell, header } = setup_modal_dom();
+        const heading = header.querySelector('#modal-dialog-title') as HTMLHeadingElement;
+        const t = (key: string) => key;
+
+        setup_attach_media_modal_content(container, {
+            close: () => {},
+            dialog_element_ref: dialog,
+            shell_container_ref: shell,
+            header_container_ref: header
+        }, {
+            t,
+            Helpers: create_helpers(),
+            audit_id: 'audit-test-1',
+            initial_filenames: ['bild.png'],
+            textarea_id: 'attach-media-filenames-images-view',
+            media_scope: 'requirement',
+            on_save: () => {},
+            can_upload: true,
+            working_filenames: ['bild.png'],
+            persisted_filenames: new Set(['bild.png']),
+            persist_in_flight: false
+        });
+
+        const actions_wrapper = container.querySelector('.modal-attach-media-actions') as HTMLElement;
+        const rename_btn = Array.from(
+            container.querySelectorAll('.attach-media-filename-list__actions button')
+        ).find((button) => button.textContent === 'attach_media_rename_file_short') as HTMLButtonElement;
+        expect(actions_wrapper).not.toBeNull();
+        expect(rename_btn).not.toBeNull();
+
+        rename_btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await jest.advanceTimersByTimeAsync(ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS + 50);
+
+        expect(actions_wrapper.hasAttribute('hidden')).toBe(true);
+        expect(container.querySelector('.attach-media-rename-panel')).not.toBeNull();
+        expect(container.querySelector('.attach-media-rename-panel__intro')).not.toBeNull();
+        expect(heading.textContent).toBe('attach_media_rename_panel_heading');
+
+        const visible_modal_actions = container.querySelectorAll(
+            '.modal-attach-media-actions:not([hidden]) button'
+        );
+        expect(visible_modal_actions.length).toBe(0);
+
+        const rename_actions = container.querySelectorAll(
+            '.attach-media-rename-panel__actions button'
+        );
+        expect(rename_actions.length).toBe(2);
     });
 });

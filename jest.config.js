@@ -247,6 +247,10 @@ export default {
     '^.+[\\\\/]audit_granskning_sequence\\.js$': '<rootDir>/js/logic/audit_granskning_sequence.ts',
     '^.+[\\\\/]media_capture_date\\.js$': '<rootDir>/js/logic/media_capture_date.ts',
     '^.+[\\\\/]audit_attached_media_references\\.js$': '<rootDir>/js/logic/audit_attached_media_references.ts',
+    '^.+[\\\\/]shared/media/audit_media_filename_migrations\\.js$':
+      '<rootDir>/shared/media/audit_media_filename_migrations.ts',
+    '^.+[\\\\/]shared/media/resolve_audit_media_server_filename\\.js$':
+      '<rootDir>/shared/media/resolve_audit_media_server_filename.ts',
     '^.+[\\\\/]audit_media_server_index\\.js$': '<rootDir>/js/logic/audit_media_server_index.ts',
     '^.+[\\\\/]audit_media_filename_migrations\\.js$': '<rootDir>/js/logic/audit_media_filename_migrations.ts',
     '^.+[\\\\/]audit_media_preview_viewport\\.js$': '<rootDir>/js/logic/audit_media_preview_viewport.ts',

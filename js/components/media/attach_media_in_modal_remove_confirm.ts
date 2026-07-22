@@ -2,7 +2,10 @@
  * @fileoverview Bekräftelsevy för borttagning av fil inuti modalen Bifoga media.
  */
 
-import { run_attach_media_modal_view_switch } from './attach_media_modal_view_switch.js';
+import {
+    ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS,
+    run_attach_media_modal_view_switch
+} from './attach_media_modal_view_switch.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -107,7 +110,9 @@ export function create_attach_media_in_modal_remove_confirm(
         const focus_el = focus_target ?? confirm_trigger;
         view_switch_in_flight = true;
 
-        void run_attach_media_modal_view_switch(modal_container, apply_list_view).finally(() => {
+        void run_attach_media_modal_view_switch(modal_container, apply_list_view, {
+            transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS
+        }).finally(() => {
             view_switch_in_flight = false;
             focus_element_safe(focus_el);
             confirm_trigger = null;
@@ -138,7 +143,9 @@ export function create_attach_media_in_modal_remove_confirm(
             confirm_open = false;
             on_open_change?.(false);
             view_switch_in_flight = true;
-            void run_attach_media_modal_view_switch(modal_container, apply_list_view).finally(() => {
+            void run_attach_media_modal_view_switch(modal_container, apply_list_view, {
+                transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS
+            }).finally(() => {
                 view_switch_in_flight = false;
                 confirm_trigger = null;
                 pending_filename = '';
@@ -180,6 +187,8 @@ export function create_attach_media_in_modal_remove_confirm(
 
         void run_attach_media_modal_view_switch(modal_container, () => {
             apply_confirm_view(filename);
+        }, {
+            transition_ms: ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS
         }).finally(() => {
             view_switch_in_flight = false;
             focus_element_safe(heading_el);
@@ -191,10 +200,11 @@ export function create_attach_media_in_modal_remove_confirm(
 
         remove_confirm_actions();
         confirm_open = false;
-        get_modal_shell(modal_container).classList.add('modal-content--attach-media');
-        get_modal_shell(modal_container).classList.remove('modal-content--attach-media-view-switch');
+        const shell_el = get_modal_shell(modal_container);
+        shell_el.classList.add('modal-content--attach-media');
+        shell_el.classList.remove('modal-content--attach-media-view-switch');
+        shell_el.style.opacity = '';
         modal_container.classList.add('modal-body--attach-media');
-        modal_container.style.opacity = '';
 
         heading_el.textContent = modal_heading_text;
         message_el.textContent = modal_message_text;

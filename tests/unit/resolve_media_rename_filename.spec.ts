@@ -5,6 +5,7 @@
 import { describe, expect, test } from '@jest/globals';
 import {
     infer_media_mime_from_filename,
+    prepare_media_rename_filename_input,
     resolve_media_rename_filename
 } from '../../shared/media/resolve_media_rename_filename.js';
 
@@ -19,6 +20,24 @@ describe('infer_media_mime_from_filename', () => {
 
     test('returnerar null för okänd ändelse', () => {
         expect(infer_media_mime_from_filename('fil.txt')).toBeNull();
+    });
+});
+
+describe('prepare_media_rename_filename_input', () => {
+    test('lägger till .png när nytt namn saknar filändelse', () => {
+        expect(prepare_media_rename_filename_input('bild.png', 'cookiebanner_ny')).toBe('cookiebanner_ny.png');
+    });
+
+    test('byter bildändelse till .png', () => {
+        expect(prepare_media_rename_filename_input('bild.png', 'ny.jpg')).toBe('ny.png');
+    });
+
+    test('behåller .png oförändrat', () => {
+        expect(prepare_media_rename_filename_input('bild.png', 'ny.png')).toBe('ny.png');
+    });
+
+    test('lämnar video utan automatisk .png', () => {
+        expect(prepare_media_rename_filename_input('klipp.mp4', 'nytt')).toBe('nytt');
     });
 });
 

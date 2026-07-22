@@ -18,6 +18,11 @@ export type AttachMediaRenameFlowOptions = {
     t: TranslateFn;
     Helpers: HelpersLike;
     audit_id: string;
+    modal_container: HTMLElement;
+    heading_el: HTMLHeadingElement | null;
+    modal_heading_text: string;
+    message_el: HTMLElement | null;
+    modal_message_text: string;
     list_mode_root: HTMLElement;
     get_elements_to_hide: () => HTMLElement[];
     get_working_filenames: () => string[];

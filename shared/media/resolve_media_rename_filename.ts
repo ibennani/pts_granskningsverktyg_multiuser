@@ -4,6 +4,7 @@
 
 import {
     is_allowed_media_mime,
+    is_image_filename,
     resolve_unique_media_filename,
     sanitize_media_filename
 } from './sanitize_media_filename.js';
@@ -43,6 +44,27 @@ export function infer_media_mime_from_filename(filename: unknown): string | null
         return null;
     }
     return EXTENSION_TO_MIME[ext] ?? null;
+}
+
+/**
+ * Förbereder användarens nya filnamn före validering.
+ * Bilder utan .png på slutet får .png (ersätter annan bildändelse eller läggs till utan ändelse).
+ */
+export function prepare_media_rename_filename_input(
+    current_filename: string,
+    new_filename_raw: string
+): string {
+    const trimmed = String(new_filename_raw || '').trim();
+    if (!trimmed || !is_image_filename(current_filename)) {
+        return trimmed;
+    }
+    if (trimmed.toLowerCase().endsWith('.png')) {
+        return trimmed;
+    }
+    if (is_image_filename(trimmed)) {
+        return normalize_image_filename_to_png(trimmed);
+    }
+    return `${trimmed}.png`;
 }
 
 export type ResolveMediaRenameFilenameResult =

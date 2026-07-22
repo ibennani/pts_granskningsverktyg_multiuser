@@ -244,8 +244,8 @@ export function create_attach_media_in_modal_preview(
         const shell_el = get_modal_shell(modal_container);
         shell_el.classList.add('modal-content--attach-media');
         shell_el.classList.remove('modal-content--attach-media-view-switch');
+        shell_el.style.opacity = '';
         modal_container.classList.add('modal-body--attach-media');
-        modal_container.style.opacity = '';
         dialog_el?.classList.remove('modal-dialog--attach-media-view-switch');
         if (dialog_el) {
             dialog_el.style.width = '';

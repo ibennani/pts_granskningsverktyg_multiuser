@@ -44,6 +44,7 @@ import {
     list_audit_media_files,
     rename_audit_media_file
 } from '../media/audit_media_storage.js';
+import { resolve_audit_media_filename_on_server } from '../../shared/media/resolve_audit_media_server_filename.js';
 
 type AuthedRequest = express.Request & {
     user?: { id: string; name: string };
@@ -361,14 +362,19 @@ export function register_audit_media_routes(router: express.Router, upload_limit
                 return res.status(400).json({ error: 'Ogiltigt filnamn' });
             }
 
-            const existing_files = await list_audit_media_files(id);
+            const { files: existing_files, migrations } = await ensure_audit_media_files_png(id);
             const existing_set = new Set(existing_files.map((entry) => entry.filename));
-            if (!existing_set.has(current_filename)) {
+            const matched_current_filename = resolve_audit_media_filename_on_server(
+                current_filename,
+                existing_files.map((entry) => entry.filename),
+                migrations
+            );
+            if (!matched_current_filename) {
                 return res.status(404).json({ error: 'Filen hittades inte' });
             }
 
             const resolved = resolve_media_rename_filename(
-                current_filename,
+                matched_current_filename,
                 body.newFilename,
                 existing_set
             );
@@ -377,7 +383,7 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             }
 
             if (!resolved.unchanged) {
-                await rename_audit_media_file(id, current_filename, resolved.filename);
+                await rename_audit_media_file(id, matched_current_filename, resolved.filename);
             }
 
             const response: Record<string, unknown> = { filename: resolved.filename };

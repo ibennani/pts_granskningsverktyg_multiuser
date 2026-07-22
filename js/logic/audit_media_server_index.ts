@@ -3,13 +3,14 @@
  */
 
 import { list_audit_media, type AuditMediaFilenameMigration } from '../api/audit_media_api.js';
+import { build_audit_media_filename_migration_map } from './audit_media_filename_migrations.js';
+import {
+    find_server_media_filename_match,
+    normalize_media_filename_key,
+    resolve_server_media_fetch_filename
+} from '../../shared/media/resolve_audit_media_server_filename.js';
 
-/**
- * Normaliserar filnamn för jämförelse (trim, NFC, gemener).
- */
-export function normalize_media_filename_key(name: string): string {
-    return String(name || '').trim().normalize('NFC').toLowerCase();
-}
+export { find_server_media_filename_match, normalize_media_filename_key, resolve_server_media_fetch_filename };
 
 /**
  * Basnamn utan unikt suffix, t.ex. "bild (2).png" -> "bild.png" (normaliserat).
@@ -21,29 +22,6 @@ export function get_media_conflict_basename(filename: string): string {
     const base = dot > 0 ? trimmed.slice(0, dot) : trimmed;
     const without_suffix = base.replace(/\s+\(\d+\)$/, '');
     return normalize_media_filename_key(`${without_suffix}${ext}`);
-}
-
-/**
- * Hittar motsvarande serverfil vid exakt träff eller skiftläges-/normaliseringsmatch.
- */
-export function find_server_media_filename_match(
-    referenced_filename: string,
-    server_filenames: Set<string> | null | undefined
-): string | null {
-    const trimmed = String(referenced_filename || '').trim();
-    if (!trimmed || !server_filenames || server_filenames.size === 0) {
-        return null;
-    }
-    if (server_filenames.has(trimmed)) {
-        return trimmed;
-    }
-    const ref_key = normalize_media_filename_key(trimmed);
-    for (const server_name of server_filenames) {
-        if (normalize_media_filename_key(server_name) === ref_key) {
-            return server_name;
-        }
-    }
-    return null;
 }
 
 /**
@@ -139,7 +117,9 @@ export function filenames_existing_on_server(
 
 export type AuditMediaServerIndex = {
     load: () => Promise<AuditMediaFilenameMigration[]>;
+    ensure_loaded: () => Promise<AuditMediaFilenameMigration[]>;
     get_server_filenames: () => Set<string> | null;
+    resolve_fetch_filename: (filename: string) => string;
     mark_on_server: (filename: string) => void;
     mark_removed_from_server: (filename: string) => void;
     mark_renamed_on_server: (from_filename: string, to_filename: string) => void;
@@ -152,11 +132,25 @@ export function create_audit_media_server_index(
     audit_id: string | null | undefined
 ): AuditMediaServerIndex {
     let server_filenames: Set<string> | null = null;
+    let filename_migration_map = new Map<string, string>();
+    let load_promise: Promise<AuditMediaFilenameMigration[]> | null = null;
+    let load_completed = false;
     const id = String(audit_id || '').trim();
+
+    const merge_filename_migrations = (migrations: AuditMediaFilenameMigration[]): void => {
+        if (!migrations.length) {
+            return;
+        }
+        const loaded_map = build_audit_media_filename_migration_map(migrations);
+        loaded_map.forEach((to: string, from: string) => {
+            filename_migration_map.set(from, to);
+        });
+    };
 
     const load = async (): Promise<AuditMediaFilenameMigration[]> => {
         if (!id) {
             server_filenames = new Set();
+            load_completed = true;
             return [];
         }
         try {
@@ -166,12 +160,30 @@ export function create_audit_media_server_index(
                 server_filenames.forEach((name) => loaded.add(name));
             }
             server_filenames = loaded;
+            merge_filename_migrations(result.filename_migrations);
+            load_completed = true;
             return result.filename_migrations;
         } catch {
             server_filenames = server_filenames ?? new Set();
+            load_completed = true;
             return [];
         }
     };
+
+    const ensure_loaded = async (): Promise<AuditMediaFilenameMigration[]> => {
+        if (load_completed) {
+            return [];
+        }
+        if (!load_promise) {
+            load_promise = load().finally(() => {
+                load_promise = null;
+            });
+        }
+        return load_promise;
+    };
+
+    const resolve_fetch_filename = (filename: string): string =>
+        resolve_server_media_fetch_filename(filename, server_filenames, filename_migration_map);
 
     const mark_on_server = (filename: string): void => {
         const trimmed = String(filename || '').trim();
@@ -195,7 +207,9 @@ export function create_audit_media_server_index(
 
     return {
         load,
+        ensure_loaded,
         get_server_filenames: () => server_filenames,
+        resolve_fetch_filename,
         mark_on_server,
         mark_removed_from_server,
         mark_renamed_on_server

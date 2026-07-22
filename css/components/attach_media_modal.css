@@ -87,12 +87,7 @@
 }
 
 .attach-media-rename-panel {
-    margin: 0 0 1rem 0;
-}
-
-.attach-media-rename-panel__heading {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.125rem;
+    margin: 0;
 }
 
 .attach-media-rename-panel__intro {
@@ -199,6 +194,15 @@
     max-width: 100%;
 }
 
+/* display:flex på knappraden vinner annars över [hidden] (samma mönster som global-message-content). */
+.modal-attach-media-actions[hidden],
+.attach-media-list-heading[hidden],
+.attach-media-list-container[hidden],
+.attach-media-upload-mount[hidden],
+.attach-media-offline-hint[hidden] {
+    display: none !important;
+}
+
 dialog.modal-dialog.modal-dialog--attach-media-view-switch,
 dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-preview {
     transition:
@@ -210,6 +214,7 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
 }
 
 .modal-content--attach-media-view-switch {
+    /* Hela skalet (rubrik + brödtext) tonas före/efter dialogens storleksbyte. */
     transition: opacity var(--modal-transition-duration, 0.5s) ease;
 }
 

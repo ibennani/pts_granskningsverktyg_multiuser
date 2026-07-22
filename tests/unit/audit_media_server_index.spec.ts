@@ -8,8 +8,10 @@ import {
     partition_files_for_upload,
     filenames_existing_on_server,
     find_server_media_filename_match,
-    merge_uploaded_media_filenames
+    merge_uploaded_media_filenames,
+    resolve_server_media_fetch_filename
 } from '../../js/logic/audit_media_server_index.ts';
+import { build_audit_media_filename_migration_map } from '../../js/logic/audit_media_filename_migrations.js';
 
 describe('is_upload_duplicate_filename', () => {
     it('blockerar när filnamn finns i listan och på servern', () => {
@@ -84,5 +86,30 @@ describe('merge_uploaded_media_filenames', () => {
             'Översikt över menyn (6).png'
         );
         expect(result).toEqual(['annan.png', 'Översikt över menyn (6).png']);
+    });
+});
+
+describe('resolve_server_media_fetch_filename', () => {
+    const server = new Set(['foto.png', 'Översikt över menyn.png']);
+    const migration_map = build_audit_media_filename_migration_map([{ from: 'foto.jpg', to: 'foto.png' }]);
+
+    it('matchar migrerat filnamn mot serverfil', () => {
+        expect(resolve_server_media_fetch_filename('foto.jpg', server, migration_map)).toBe('foto.png');
+    });
+
+    it('matchar exakt filnamn utan migration', () => {
+        expect(resolve_server_media_fetch_filename('Översikt över menyn.png', server, migration_map)).toBe(
+            'Översikt över menyn.png'
+        );
+    });
+
+    it('returnerar migrerat namn om serverindex saknas', () => {
+        expect(resolve_server_media_fetch_filename('foto.jpg', null, migration_map)).toBe('foto.png');
+    });
+
+    it('returnerar original när migrerat namn saknas på servern', () => {
+        expect(resolve_server_media_fetch_filename('foto.jpg', new Set(['annan.png']), migration_map)).toBe(
+            'foto.jpg'
+        );
     });
 });
