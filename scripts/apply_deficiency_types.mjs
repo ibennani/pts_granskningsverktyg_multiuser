@@ -10,40 +10,10 @@ import {
     build_deficiency_type_lookup,
     read_deficiency_types_tsv,
 } from '../js/logic/deficiency_types_import_match.ts';
+import { RULEFILE_TARGETS } from './lib/rulefile_sync_targets.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_TSV = path.join(__dirname, 'data', 'deficiency_types_master.tsv');
-
-const RULEFILE_TARGETS = [
-    {
-        id: 'f6aa1b17-8e9e-4610-8423-e5ab0ec016d3',
-        label: 'Webb (publicerad bas)',
-        use_pdf_aliases: false,
-        require_all_matches: true,
-        update_published: true,
-    },
-    {
-        id: '5d7c1c26-c07b-4a0d-ba22-ccf025033135',
-        label: 'Webb (arbetskopia)',
-        use_pdf_aliases: false,
-        require_all_matches: true,
-        update_published: false,
-    },
-    {
-        id: '7b7ec664-1acc-4835-b60c-789b6ebba894',
-        label: 'PDF (publicerad bas)',
-        use_pdf_aliases: true,
-        require_all_matches: false,
-        update_published: true,
-    },
-    {
-        id: '55cfbabd-adb3-4c97-a7d9-929c6d2437c5',
-        label: 'PDF (arbetskopia)',
-        use_pdf_aliases: true,
-        require_all_matches: false,
-        update_published: false,
-    },
-];
 
 function resolve_tsv_path() {
     const arg_path = process.argv[2];

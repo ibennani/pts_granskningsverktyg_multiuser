@@ -162,6 +162,7 @@ playwright/.cache/
 
 # TypeScript tillfälliga filer
 tsconfig.json.tmp
+.tmp-test-server-sync/
 
 # Local development
 .local/

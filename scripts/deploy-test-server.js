@@ -83,6 +83,18 @@ async function main() {
         await putFile(join(projectRoot, 'scripts', 'pm2-leffe-common.sh'), `${remotePath}/scripts/pm2-leffe-common.sh`);
         await putFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
         await putFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
+        await putDirectory(join(projectRoot, 'scripts', 'lib'), `${remotePath}/scripts/lib`);
+        await putDirectory(join(projectRoot, 'scripts', 'data'), `${remotePath}/scripts/data`);
+        for (const script_name of [
+            'import-test-server-sync.mjs',
+            'set_audit_types_by_case.mjs',
+            'apply_deficiency_types_to_audits.mjs',
+        ]) {
+            await putFile(
+                join(projectRoot, 'scripts', script_name),
+                `${remotePath}/scripts/${script_name}`
+            );
+        }
         await exec(
             `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh ${remotePath}/scripts/pm2-leffe-common.sh`,
             { cwd: false }
