@@ -15,7 +15,7 @@ function run_npm(script_name) {
     const result = spawnSync('npm', ['run', script_name], {
         cwd: project_root,
         stdio: 'inherit',
-        shell: false,
+        shell: true,
     });
     if (result.status !== 0) {
         throw new Error(`npm run ${script_name} misslyckades (kod ${result.status})`);

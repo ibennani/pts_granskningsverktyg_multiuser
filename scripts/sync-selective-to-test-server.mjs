@@ -62,7 +62,7 @@ async function run_remote_import() {
 
 async function patch_test_audits() {
     console.log('\n[sync] Uppdaterar granskningstyper på testservern...');
-    await run_remote_db_script('scripts/set_audit_types_by_case.mjs');
+    await run_remote_db_script('scripts/set_audit_types_by_case.mjs', true);
     console.log('\n[sync] Uppdaterar bristtyper i granskningssnapshots på testservern...');
     await run_remote_db_script('scripts/apply_deficiency_types_to_audits.mjs', true);
 }

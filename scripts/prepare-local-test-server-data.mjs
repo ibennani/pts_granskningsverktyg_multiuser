@@ -15,7 +15,7 @@ function run_step(label, command, args) {
     const result = spawnSync(command, args, {
         cwd: project_root,
         stdio: 'inherit',
-        shell: false,
+        shell: true,
     });
     if (result.status !== 0) {
         throw new Error(`${label} misslyckades (kod ${result.status})`);
@@ -24,7 +24,7 @@ function run_step(label, command, args) {
 
 function main() {
     run_step('Bristtyper i regelfiler', 'npx', ['tsx', 'scripts/apply_deficiency_types.mjs']);
-    run_step('Granskningstyper per ärende', 'node', ['scripts/set_audit_types_by_case.mjs']);
+    run_step('Granskningstyper per ärende', 'npx', ['tsx', 'scripts/set_audit_types_by_case.mjs']);
     run_step('Bristtyper i granskningssnapshots', 'npx', [
         'tsx',
         'scripts/apply_deficiency_types_to_audits.mjs',
