@@ -1919,6 +1919,8 @@
   "sample_edit_confirm_added_reqs_header": "The following requirements will be ADDED to this audit section for review:",
   "sample_edit_confirm_changed_content_types_header": "Changed content types",
   "sample_edit_confirm_changed_fields_header": "Changed audit section details",
+  "sample_edit_confirm_field_current_label": "Current",
+  "sample_edit_confirm_field_new_label": "Changing to",
   "sample_edit_confirm_data_loss_warning_header": "WARNING: You are about to permanently delete saved work!",
   "sample_edit_confirm_data_loss_warning_text": "The assessments and comments you have entered for the removed requirements listed above will be deleted. This action cannot be undone.",
   "sample_edit_confirm_dialog_title": "Confirm Changes to Audit section",

@@ -1955,6 +1955,8 @@
   "sample_edit_confirm_added_reqs_header": "Följande krav läggs till för granskning:",
   "sample_edit_confirm_changed_content_types_header": "Ändrade innehållstyper",
   "sample_edit_confirm_changed_fields_header": "Ändrade uppgifter om granskningsdelen",
+  "sample_edit_confirm_field_current_label": "Nuvarande",
+  "sample_edit_confirm_field_new_label": "Ändras till",
   "sample_edit_confirm_data_loss_warning_header": "VARNING: Du är på väg att radera sparat arbete!",
   "sample_edit_confirm_data_loss_warning_text": "De bedömningar och kommentarer du har angett för de borttagna kraven kommer att raderas permanent. Denna åtgärd kan inte ångras.",
   "sample_edit_confirm_dialog_title": "Bekräfta ändringar för granskningsdel",

@@ -2,6 +2,47 @@ import "./confirm_sample_edit_view_component.css";
 import { find_requirement_definition } from '../audit_logic.js';
 import { sample_edit_analysis_has_content_type_changes } from '../logic/sample_edit_diff.js';
 
+type ChangedFieldRow = { key: string; oldValue: unknown; newValue: unknown };
+
+function build_changed_fields_section(
+    Helpers: any,
+    t: (key: string) => string,
+    changed_fields: ChangedFieldRow[],
+    get_field_label: (key: string) => string,
+    format_value: (val: unknown) => string
+): HTMLElement {
+    const section = Helpers.create_element('div', { class_name: 'report-section' });
+    section.appendChild(Helpers.create_element('h3', { text_content: t('sample_edit_confirm_changed_fields_header') }));
+
+    const field_list = Helpers.create_element('dl', { class_name: 'sample-edit-field-changes' });
+    changed_fields.forEach((field) => {
+        const field_group = Helpers.create_element('div', { class_name: 'sample-edit-field-change' });
+        field_group.appendChild(Helpers.create_element('dt', {
+            class_name: 'sample-edit-field-change__name',
+            text_content: get_field_label(field.key)
+        }));
+
+        const values_wrapper = Helpers.create_element('dd', { class_name: 'sample-edit-field-change__values' });
+        const value_pairs = Helpers.create_element('dl', { class_name: 'sample-edit-field-change__pairs' });
+
+        const current_pair = Helpers.create_element('div', { class_name: 'sample-edit-field-change__pair' });
+        current_pair.appendChild(Helpers.create_element('dt', { text_content: t('sample_edit_confirm_field_current_label') }));
+        current_pair.appendChild(Helpers.create_element('dd', { text_content: format_value(field.oldValue) }));
+
+        const new_pair = Helpers.create_element('div', { class_name: 'sample-edit-field-change__pair' });
+        new_pair.appendChild(Helpers.create_element('dt', { text_content: t('sample_edit_confirm_field_new_label') }));
+        new_pair.appendChild(Helpers.create_element('dd', { text_content: format_value(field.newValue) }));
+
+        value_pairs.append(current_pair, new_pair);
+        values_wrapper.appendChild(value_pairs);
+        field_group.append(values_wrapper);
+        field_list.appendChild(field_group);
+    });
+
+    section.appendChild(field_list);
+    return section;
+}
+
 export class ConfirmSampleEditViewComponent {
     private root: HTMLElement | null;
     private deps: any;
@@ -203,17 +244,13 @@ export class ConfirmSampleEditViewComponent {
         };
 
         if (Array.isArray(changed_fields) && changed_fields.length > 0) {
-            const section = this.Helpers.create_element('div', { class_name: 'report-section' });
-            section.appendChild(this.Helpers.create_element('h3', { text_content: t('sample_edit_confirm_changed_fields_header') }));
-            const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
-            changed_fields.forEach((f: any) => {
-                const label = get_field_label(f.key);
-                const old_v = format_value(f.oldValue);
-                const new_v = format_value(f.newValue);
-                ul.appendChild(this.Helpers.create_element('li', { text_content: `${label}: ${old_v} → ${new_v}` }));
-            });
-            section.appendChild(ul);
-            plate.appendChild(section);
+            plate.appendChild(build_changed_fields_section(
+                this.Helpers,
+                t,
+                changed_fields,
+                get_field_label,
+                format_value
+            ));
         }
 
         if (content_types_diff && (Array.isArray(content_types_diff.added) || Array.isArray(content_types_diff.removed))) {

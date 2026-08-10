@@ -1952,6 +1952,8 @@
   "sample_edit_confirm_added_reqs_header": "Følgende krav vil bli LAGT TIL denne granskningsdelen for gjennomgang:",
   "sample_edit_confirm_changed_content_types_header": "Endrede innholdstyper",
   "sample_edit_confirm_changed_fields_header": "Endrede granskningsdelsopplysninger",
+  "sample_edit_confirm_field_current_label": "Nåværende",
+  "sample_edit_confirm_field_new_label": "Endres til",
   "sample_edit_confirm_data_loss_warning_header": "ADVARSEL: Du er i ferd med å slette lagret arbeid permanent!",
   "sample_edit_confirm_data_loss_warning_text": "Vurderingene og kommentarene du har lagt inn for de fjernede kravene som er listet ovenfor, vil bli slettet. Denne handlingen kan ikke angres.",
   "sample_edit_confirm_dialog_title": "Bekreft endringer i granskningsdelen",
