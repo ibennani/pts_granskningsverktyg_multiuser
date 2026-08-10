@@ -32,7 +32,9 @@ Kör **före** `browser_navigate` om vyn behöver det:
 | Metadata (ny/pågående granskning) | `#metadata` | `#md` | sessionStorage + regelfil i state, API-mock | `tests/e2e/save_and_reload.e2e.spec.js` |
 | Granskningsdel | `#sample_management` | `#sm` | Granskning påbörjad i state | — |
 | Granskningsöversikt (enskild) | `#audit_overview` | `#ov` | `auditId` i state/hash | `tests/e2e/audit_flow.e2e.spec.js` |
-| Export | `#audit_actions` | `#xa` | sessionStorage + API-mock | `tests/e2e/export_report.e2e.spec.js` |
+| Export (hub) | `#audit_actions` | `#xa` | sessionStorage + API-mock | `tests/e2e/export_report.e2e.spec.js` |
+| Åtgärder: Hantera | `#audit_actions?section=manage` | — | sessionStorage + API-mock | — |
+| Åtgärder: Nedladdningar | `#audit_actions?section=downloads` | — | sessionStorage + API-mock | — |
 | Alla krav | `#all_requirements` | `#qr` | API-mock + pågående granskning | `tests/e2e/audit_flow.e2e.spec.js` |
 | Kravgranskning | `#requirement_audit?sampleId=s1&requirementId=req1` | `#ra?s=…&r=…` | Full mock + granskningsdel/krav i state | `tests/e2e/audit_collab_locks.e2e.spec.js` |
 | Kravlista (granskningsdel) | `#requirement_list?sampleId=…` | `#rl?s=…` | Granskning + granskningsdel | — |

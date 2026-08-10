@@ -153,6 +153,8 @@
 
     --container-max-width: 1440px;
     --spacing-unit: 1rem;
+    --heading-h1-after-gap: 0.75rem;
+    --heading-h2-after-gap: 0.625rem;
 
     /* Build timestamp styling */
     --build-timestamp-color: #9ca3af;
@@ -379,7 +381,7 @@ body {
 }
 
 .content-plate h1 {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--heading-h1-after-gap);
 }
 
 .content-plate .view-intro-text,
@@ -415,11 +417,54 @@ h3,
 h4,
 h5,
 h6 {
-    margin-bottom: 0.75em;
     font-weight: 500;
     line-height: 1.2;
     color: var(--heading-color);
     transition: color 0.3s ease;
+}
+
+h1 {
+    margin-bottom: var(--heading-h1-after-gap);
+}
+
+h2 {
+    margin-bottom: var(--heading-h2-after-gap);
+}
+
+h3,
+h4,
+h5,
+h6 {
+    margin-bottom: 0.75em;
+}
+
+h1 + * {
+    margin-top: var(--heading-h1-after-gap);
+}
+
+h2 + * {
+    margin-top: var(--heading-h2-after-gap);
+}
+
+/* Rubrikrader med knappar/ikoner bredvid titeln, inte brödtext under */
+:is(
+    .audit-overview-heading-row,
+    .start-view-section-heading-row,
+    .audit-column-heading-row,
+    .backup-status-heading-row,
+    .backup-detail-heading-row,
+    .backup-status-heading-left,
+    .markdown-preview-editor__page-header-row,
+    .audit-settings__page-header-row,
+    .rulefile-sections-header-row,
+    .checks-header-row,
+    .requirement-audit-header-title-wrapper
+) > :is(h1, h2) + * {
+    margin-top: 0;
+}
+
+.audit-header:not(.audit-header--with-filter) > h1 + * {
+    margin-top: 0;
 }
 
 [data-theme="dark"] h1,

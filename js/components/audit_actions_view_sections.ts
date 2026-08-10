@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * @fileoverview Renderar bilageguide- och exportsektioner på Åtgärder-sidan.
+ * @fileoverview Renderar innehåll för Hantera och Nedladdningar på Åtgärder-sidan.
  */
 import { audit_status_is_exportable } from '../utils/audit_status_helpers.js';
 import { has_screenshots_appendix_images } from '../export/export_screenshots_appendix_collect.js';
@@ -8,28 +8,84 @@ import { build_audit_actions_status_section } from './audit_actions_view_status_
 import { build_audit_actions_export_section } from './audit_actions_export_section.js';
 
 /**
- * Bygger innehållswrappern (sektioner under sidrubriken) för Åtgärder-sidan.
  * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
  */
-export function build_audit_actions_content_wrapper(view, state, t) {
+function build_downloads_locked_notice_paragraph(view, t) {
+    const notice = view.Helpers.create_element('p', {
+        class_name: 'audit-actions__export-description audit-actions__downloads-locked-notice',
+    });
+    notice.appendChild(document.createTextNode(t('audit_actions_downloads_in_progress_intro_before')));
+    const manage_link = view.Helpers.create_element('a', {
+        attributes: { href: '#' },
+        text_content: t('audit_actions_nav_manage'),
+    });
+    manage_link.addEventListener('click', (event) => {
+        event.preventDefault();
+        view.router?.('audit_actions', { section: 'manage' });
+    });
+    notice.appendChild(manage_link);
+    notice.appendChild(document.createTextNode(t('audit_actions_downloads_in_progress_intro_after')));
+    return notice;
+}
+
+/**
+ * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
+ */
+export function build_audit_actions_manage_content(view, state, t) {
     const content_wrapper = view.Helpers.create_element('div', {
         class_name: 'audit-actions__content',
     });
 
-    const status_section = build_audit_actions_status_section(view, state, t);
-    const appendix_guide_section = build_audit_actions_appendix_guide_section(view, state, t);
-    const appendix_download_section = build_audit_actions_appendix_download_section(view, state, t);
-    const export_section = build_audit_actions_export_section(view, state, t);
+    content_wrapper.appendChild(build_audit_actions_status_section(view, state, t));
 
-    if (state.auditStatus === 'locked' || state.auditStatus === 'archived') {
+    return content_wrapper;
+}
+
+/**
+ * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
+ */
+export function build_audit_actions_downloads_content(view, state, t) {
+    const content_wrapper = view.Helpers.create_element('div', {
+        class_name: 'audit-actions__content',
+    });
+
+    const json_section = view.Helpers.create_element('section', {
+        class_name: 'audit-actions__json-backup-section',
+    });
+    json_section.appendChild(view.Helpers.create_element('h2', {
+        class_name: 'audit-actions__section-title',
+        text_content: t('audit_actions_json_backup_title'),
+    }));
+    const json_actions = view.Helpers.create_element('div', { class_name: 'audit-actions__status-list' });
+    json_actions.appendChild(view.create_file_download_status_item({
+        label: t('audit_actions_download_label'),
+        description: t('audit_actions_download_description'),
+        on_download: () => view.handle_download_audit(),
+        variant: 'button-default',
+        icon_name: 'save',
+        id_suffix: 'download-audit',
+    }));
+    json_section.appendChild(json_actions);
+    content_wrapper.appendChild(json_section);
+
+    if (audit_status_is_exportable(state.auditStatus)) {
+        const appendix_guide_section = build_audit_actions_appendix_guide_section(view, state, t);
+        const appendix_download_section = build_audit_actions_appendix_download_section(view, state, t);
+        const export_section = build_audit_actions_export_section(view, state, t);
+
         if (appendix_guide_section) content_wrapper.appendChild(appendix_guide_section);
         if (appendix_download_section) content_wrapper.appendChild(appendix_download_section);
         if (export_section) content_wrapper.appendChild(export_section);
-        content_wrapper.appendChild(status_section);
     } else {
-        content_wrapper.appendChild(status_section);
-        if (appendix_guide_section) content_wrapper.appendChild(appendix_guide_section);
-        if (export_section) content_wrapper.appendChild(export_section);
+        const locked_section = view.Helpers.create_element('section', {
+            class_name: 'audit-actions__appendix-guide-section audit-actions__downloads-locked-section',
+        });
+        locked_section.appendChild(view.Helpers.create_element('h2', {
+            class_name: 'audit-actions__section-title',
+            text_content: t('audit_actions_downloads_locked_title'),
+        }));
+        locked_section.appendChild(build_downloads_locked_notice_paragraph(view, t));
+        content_wrapper.appendChild(locked_section);
     }
 
     return content_wrapper;

@@ -1,50 +1,25 @@
 // @ts-nocheck
 /**
- * @fileoverview Renderar statussektionen på Åtgärder-sidan.
+ * @fileoverview Renderar statussektionen på Hantera granskning (Åtgärder).
  */
 import { find_requirement_definition } from '../audit_logic.js';
-
-/**
- * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
- */
-export function resolve_audit_actions_status_section_title_key(audit_status) {
-    switch (audit_status) {
-        case 'locked':
-            return 'audit_actions_status_section_title_locked';
-        case 'archived':
-            return 'audit_actions_status_section_title_archived';
-        case 'in_progress':
-            return 'audit_actions_status_section_title_in_progress';
-        default:
-            return 'audit_actions_status_section_title_not_started';
-    }
-}
+import { build_audit_status_select } from './audit_actions_view_status_select.js';
 
 /**
  * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
  */
 export function build_audit_actions_status_section(view, state, t) {
-    const is_after_exports = state.auditStatus === 'locked' || state.auditStatus === 'archived';
     const status_section = view.Helpers.create_element('section', {
-        class_name: is_after_exports
-            ? 'audit-actions__status-section audit-actions__status-section--after-exports'
-            : 'audit-actions__status-section',
+        class_name: 'audit-actions__status-section',
     });
-    status_section.appendChild(view.Helpers.create_element('h2', {
-        class_name: 'audit-actions__section-title',
-        text_content: t(resolve_audit_actions_status_section_title_key(state.auditStatus)),
-    }));
+
+    status_section.appendChild(
+        build_audit_status_select(view, t, {
+            on_change: (event, target_status) => view.handle_status_select_change(event, target_status),
+        })
+    );
 
     const status_actions = view.Helpers.create_element('div', { class_name: 'audit-actions__status-list' });
-
-    status_actions.appendChild(view.create_file_download_status_item({
-        label: t('audit_actions_download_label'),
-        description: t('audit_actions_download_description'),
-        on_download: () => view.handle_download_audit(),
-        variant: 'button-default',
-        icon_name: 'save',
-        id_suffix: 'download-audit',
-    }));
 
     const update_rulefile_slot = view.Helpers.create_element('div', {
         class_name: 'audit-actions__update-rulefile-slot',
@@ -73,26 +48,6 @@ export function build_audit_actions_status_section(view, state, t) {
             variant: 'button-default',
             icon_name: 'info',
             id_suffix: 'view-rulefile-change-log',
-        }));
-    }
-
-    if (state.auditStatus === 'locked') {
-        status_actions.appendChild(view.create_status_action_item({
-            label: t('unlock_audit'),
-            description: t('audit_actions_unlock_audit_description'),
-            on_click: view.handle_unlock_audit,
-            variant: 'button-primary',
-            icon_name: 'unlock_audit',
-            id_suffix: 'unlock-audit',
-        }));
-    } else if (state.auditStatus === 'in_progress') {
-        status_actions.appendChild(view.create_status_action_item({
-            label: t('lock_audit'),
-            description: t('audit_actions_lock_audit_description'),
-            on_click: view.handle_lock_audit,
-            variant: 'button-primary',
-            icon_name: 'lock_audit',
-            id_suffix: 'lock-audit',
         }));
     }
 
@@ -133,32 +88,6 @@ export function build_audit_actions_status_section(view, state, t) {
     }
 
     status_section.appendChild(status_actions);
-
-    if (state.auditStatus === 'locked' || state.auditStatus === 'archived') {
-        const archive_row = view.Helpers.create_element('div', { class_name: 'audit-actions__archive-row' });
-        if (state.auditStatus === 'locked') {
-            archive_row.appendChild(view.create_status_action_item({
-                label: t('audit_actions_archive_audit_label'),
-                description: t('audit_actions_archive_description'),
-                on_click: view.handle_archive_audit,
-                variant: 'button-default',
-                icon_name: 'save',
-                id_suffix: 'archive-audit',
-            }));
-        }
-        if (state.auditStatus === 'archived') {
-            archive_row.appendChild(view.create_status_action_item({
-                label: t('audit_actions_activate_audit_label'),
-                description: t('audit_actions_activate_description'),
-                on_click: view.handle_activate_audit,
-                variant: 'button-primary',
-                icon_name: 'unlock_audit',
-                id_suffix: 'activate-audit',
-            }));
-        }
-        status_section.appendChild(archive_row);
-    }
-
     return status_section;
 }
 

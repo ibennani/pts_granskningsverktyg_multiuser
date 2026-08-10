@@ -215,7 +215,13 @@ export function get_page_title_prefix(
                     title_prefix = t('audit_overview_title');
                     break;
                 case 'audit_actions':
-                    title_prefix = t('audit_actions_title');
+                    if (params?.section === 'manage') {
+                        title_prefix = t('audit_actions_manage_title');
+                    } else if (params?.section === 'downloads') {
+                        title_prefix = t('audit_actions_downloads_title');
+                    } else {
+                        title_prefix = t('audit_actions_title');
+                    }
                     break;
                 case 'all_requirements':
                     title_prefix = t('left_menu_all_requirements');

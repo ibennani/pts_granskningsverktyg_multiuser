@@ -174,6 +174,8 @@ export default {
     '^.+[\\\\/]audit_actions_export_section\\.js$': '<rootDir>/js/components/audit_actions_export_section.ts',
     '^.+[\\\\/]audit_actions_view_export_handlers\\.js$': '<rootDir>/js/components/audit_actions_view_export_handlers.ts',
     '^.+[\\\\/]audit_actions_view_status_section\\.js$': '<rootDir>/js/components/audit_actions_view_status_section.ts',
+    '^.+[\\\\/]audit_actions_view_status_select\\.js$': '<rootDir>/js/components/audit_actions_view_status_select.ts',
+    '^.+[\\\\/]audit_actions_render\\.js$': '<rootDir>/js/components/audit_actions_render.ts',
     '^.+[\\\\/]audit_actions_view_content_transition\\.js$': '<rootDir>/js/components/audit_actions_view_content_transition.ts',
     '^.+/SampleManagementViewComponent\\.js$': '<rootDir>/js/components/SampleManagementViewComponent.ts',
     '^.+/AuditProblemsViewComponent\\.js$': '<rootDir>/js/components/AuditProblemsViewComponent.ts',

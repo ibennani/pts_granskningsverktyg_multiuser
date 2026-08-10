@@ -10,7 +10,8 @@ import { is_download_file_too_large_error } from '../utils/download_filename_uti
 import { bind_audit_actions_view_ui } from './audit_actions_view_ui.js';
 import { bind_audit_actions_export_handlers } from './audit_actions_view_export_handlers.js';
 import {
-    build_audit_actions_content_wrapper,
+    build_audit_actions_manage_content,
+    build_audit_actions_downloads_content,
 } from './audit_actions_view_sections.js';
 import {
     refresh_audit_actions_rulefile_subscription,
@@ -19,6 +20,17 @@ import {
     audit_actions_status_change_should_fade_content,
     run_audit_actions_content_transition,
 } from './audit_actions_view_content_transition.js';
+import {
+    audit_status_change_needs_confirmation,
+    get_allowed_audit_status_targets,
+    get_audit_status_change_success_message_key,
+    reset_audit_status_select,
+} from './audit_actions_view_status_select.js';
+import {
+    normalize_audit_actions_section,
+    render_audit_actions_hub,
+    render_audit_actions_section_header,
+} from './audit_actions_render.js';
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
@@ -60,12 +72,9 @@ export class AuditActionsViewComponent {
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
         this.flush_sync_to_server = deps.flush_sync_to_server || null;
 
-                this.handle_lock_audit = this.handle_lock_audit.bind(this);
         this.handle_mark_all_unreviewed_as_passed = this.handle_mark_all_unreviewed_as_passed.bind(this);
-        this.handle_unlock_audit = this.handle_unlock_audit.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
-        this.handle_archive_audit = this.handle_archive_audit.bind(this);
-        this.handle_activate_audit = this.handle_activate_audit.bind(this);
+        this.handle_status_select_change = this.handle_status_select_change.bind(this);
 
         bind_audit_actions_view_ui(this);
         bind_audit_actions_export_handlers(this);
@@ -157,33 +166,23 @@ export class AuditActionsViewComponent {
         }
     }
 
-    _primary_status_button_id(audit_status) {
-        const id_by_status = {
-            in_progress: 'audit-action-btn-lock-audit',
-            locked: 'audit-action-btn-unlock-audit',
-            archived: 'audit-action-btn-activate-audit'
-        };
-        return id_by_status[audit_status] || null;
-    }
-
-    _focus_primary_status_button(audit_status) {
-        const button_id = this._primary_status_button_id(audit_status);
-        if (!button_id || !this.root) return;
-        const button = this.root.querySelector(`#${CSS.escape(button_id)}`);
-        if (!button || typeof button.focus !== 'function') return;
+    _focus_status_select() {
+        if (!this.root) return;
+        const select = this.root.querySelector('#audit-action-status-select');
+        if (!select || typeof select.focus !== 'function') return;
         try {
-            button.focus({ preventScroll: true });
+            select.focus({ preventScroll: true });
         } catch {
-            button.focus();
+            select.focus();
         }
     }
 
     _apply_audit_status_change(event, { status, success_message_key }) {
         const t = this.Translation.t;
-        const btn = event?.currentTarget;
-        if (btn) {
-            btn.classList.add('audit-actions__btn--animating');
-            btn.setAttribute('aria-busy', 'true');
+        const control = event?.currentTarget;
+        if (control) {
+            control.classList.add('audit-actions__btn--animating');
+            control.setAttribute('aria-busy', 'true');
         }
         void (async () => {
             try {
@@ -208,48 +207,105 @@ export class AuditActionsViewComponent {
                     });
                     this._render_immediate();
                 }
-                if (btn) btn.removeAttribute('aria-busy');
+                if (control) control.removeAttribute('aria-busy');
                 await new Promise((resolve) => {
                     requestAnimationFrame(() => resolve(undefined));
                 });
-                this._focus_primary_status_button(status);
+                reset_audit_status_select(this.root, status);
+                this._focus_status_select();
                 this.NotificationComponent?.show_global_message?.(t(success_message_key), 'success');
             } catch {
+                reset_audit_status_select(this.root, this.getState()?.auditStatus);
                 this.NotificationComponent?.show_global_message?.(t('error_internal'), 'error');
             } finally {
                 this._audit_actions_status_transition_active = false;
-                if (btn) {
-                    setTimeout(() => btn.classList.remove('audit-actions__btn--animating'), 500);
+                if (control) {
+                    setTimeout(() => control.classList.remove('audit-actions__btn--animating'), 500);
                 }
             }
         })();
     }
 
-    handle_lock_audit(event) {
-        this._apply_audit_status_change(event, {
-            status: 'locked',
-            success_message_key: 'audit_locked_successfully'
-        });
+    _show_status_change_confirm_modal(event, target_status, title_key, message_key) {
+        const t = this.Translation.t;
+        const trigger = event?.currentTarget || null;
+        const ModalComponent = app_runtime_refs.modal_component;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            reset_audit_status_select(this.root, this.getState()?.auditStatus);
+            return;
+        }
+
+        const previous_status = this.getState()?.auditStatus;
+        ModalComponent.show(
+            { h1_text: t(title_key), message_text: '' },
+            (container, modal) => {
+                const msg_wrapper = this.Helpers.create_element('div', { class_name: 'modal-message-block' });
+                msg_wrapper.appendChild(this.Helpers.create_element('p', {
+                    text_content: t(message_key),
+                }));
+                const existing_msg = container.querySelector('.modal-message');
+                if (existing_msg) existing_msg.replaceWith(msg_wrapper);
+
+                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const yes_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('audit_actions_status_change_confirm_yes'),
+                });
+                yes_btn.addEventListener('click', () => {
+                    modal.close(trigger);
+                    this._apply_audit_status_change(event, {
+                        status: target_status,
+                        success_message_key: get_audit_status_change_success_message_key(
+                            previous_status,
+                            target_status
+                        ),
+                    });
+                });
+                const no_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('audit_actions_status_change_confirm_no'),
+                });
+                no_btn.addEventListener('click', () => {
+                    modal.close(trigger);
+                    reset_audit_status_select(this.root, previous_status);
+                });
+                actions_wrapper.append(yes_btn, no_btn);
+                container.appendChild(actions_wrapper);
+            }
+        );
     }
 
-    handle_unlock_audit(event) {
-        this._apply_audit_status_change(event, {
-            status: 'in_progress',
-            success_message_key: 'audit_unlocked_successfully'
-        });
-    }
+    handle_status_select_change(event, target_status) {
+        const current_status = this.getState()?.auditStatus;
+        if (!target_status || target_status === current_status) {
+            reset_audit_status_select(this.root, current_status);
+            return;
+        }
 
-    handle_archive_audit(event) {
-        this._apply_audit_status_change(event, {
-            status: 'archived',
-            success_message_key: 'audit_archived_successfully'
-        });
-    }
+        const allowed_targets = get_allowed_audit_status_targets(String(current_status ?? ''));
+        if (!allowed_targets.includes(target_status)) {
+            reset_audit_status_select(this.root, current_status);
+            this.NotificationComponent?.show_global_message?.(
+                this.Translation.t('audit_actions_status_change_not_allowed'),
+                'error'
+            );
+            return;
+        }
 
-    handle_activate_audit(event) {
+        if (audit_status_change_needs_confirmation(target_status)) {
+            const title_key = target_status === 'locked'
+                ? 'audit_actions_status_change_confirm_locked_title'
+                : 'audit_actions_status_change_confirm_archived_title';
+            const message_key = target_status === 'locked'
+                ? 'audit_actions_status_change_confirm_locked_message'
+                : 'audit_actions_status_change_confirm_archived_message';
+            this._show_status_change_confirm_modal(event, target_status, title_key, message_key);
+            return;
+        }
+
         this._apply_audit_status_change(event, {
-            status: 'locked',
-            success_message_key: 'audit_reactivated_successfully'
+            status: target_status,
+            success_message_key: get_audit_status_change_success_message_key(current_status, target_status),
         });
     }
 
@@ -368,24 +424,45 @@ export class AuditActionsViewComponent {
             return;
         }
 
-        let plate = this.root.querySelector('.content-plate');
-        if (!plate) {
-            this.root.innerHTML = '';
-            plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
-            plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
-            this.root.appendChild(plate);
-        } else {
-            const existing_content = plate.querySelector('.audit-actions__content');
-            if (existing_content) existing_content.remove();
-        }
+        const section = normalize_audit_actions_section(this.deps?.params?.section);
+        const render_deps = {
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            router: this.router,
+        };
+
+        this.root.innerHTML = '';
+        const plate = this.Helpers.create_element('div', {
+            class_name: 'content-plate audit-actions-plate',
+        });
 
         refresh_audit_actions_rulefile_subscription(this, state);
-        const content_wrapper = build_audit_actions_content_wrapper(this, state, t);
+
+        let content_wrapper;
+        if (section === 'manage') {
+            render_audit_actions_section_header(render_deps, plate, {
+                title_key: 'audit_actions_manage_title',
+                intro_key: 'audit_actions_manage_intro',
+            });
+            content_wrapper = build_audit_actions_manage_content(this, state, t);
+        } else if (section === 'downloads') {
+            render_audit_actions_section_header(render_deps, plate, {
+                title_key: 'audit_actions_downloads_title',
+                intro_key: 'audit_actions_downloads_intro',
+            });
+            content_wrapper = build_audit_actions_downloads_content(this, state, t);
+        } else {
+            render_audit_actions_hub(render_deps, plate);
+            this.root.appendChild(plate);
+            return;
+        }
+
         if (enter_hidden) {
             content_wrapper.style.opacity = '0';
             content_wrapper.style.transition = 'opacity 0.25s ease';
         }
         plate.appendChild(content_wrapper);
+        this.root.appendChild(plate);
     }
 
     destroy() {

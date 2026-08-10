@@ -1,5 +1,5 @@
 /**
- * Tester för vilka statusknappar AuditActionsViewComponent visar per läge.
+ * Tester för Åtgärder-vyn: hub, hantera, nedladdningar och status-dropdown.
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 
@@ -26,7 +26,7 @@ function make_helpers() {
     };
 }
 
-function make_deps(audit_status) {
+function make_deps(audit_status, section = '') {
     const state = {
         auditStatus: audit_status,
         ruleFileContent: { requirements: {} },
@@ -39,6 +39,7 @@ function make_deps(audit_status) {
         }
     });
     return {
+        params: section ? { section } : {},
         router: jest.fn(),
         getState: () => state,
         dispatch,
@@ -64,7 +65,7 @@ function make_deps(audit_status) {
     };
 }
 
-describe('AuditActionsViewComponent statusknappar', () => {
+describe('AuditActionsViewComponent hub och sektioner', () => {
     let AuditActionsViewComponent;
 
     beforeEach(async () => {
@@ -73,11 +74,11 @@ describe('AuditActionsViewComponent statusknappar', () => {
         AuditActionsViewComponent = mod.AuditActionsViewComponent;
     });
 
-    async function render_with_status(status) {
+    async function render_with(status, section = '') {
         const root = document.createElement('div');
         document.body.appendChild(root);
         const component = new AuditActionsViewComponent();
-        await component.init({ root, deps: make_deps(status) });
+        await component.init({ root, deps: make_deps(status, section) });
         component.render();
         return { root, component };
     }
@@ -87,122 +88,104 @@ describe('AuditActionsViewComponent statusknappar', () => {
     }
 
     function heading_texts(root) {
-        return [...root.querySelectorAll('h2')].map((h) => h.textContent);
+        return [...root.querySelectorAll('h1, h2')].map((h) => h.textContent);
     }
 
-    test('in_progress visar avsluta-knapp, inte lås upp eller arkivera', async () => {
-        const { root, component } = await render_with_status('in_progress');
+    function select_options(root) {
+        const select = root.querySelector('#audit-action-status-select');
+        if (!select) return [];
+        return [...select.options].map((o) => o.value);
+    }
+
+    test('hub visar titel och länkar till hantera och nedladdningar', async () => {
+        const { root, component } = await render_with('in_progress');
+        expect(heading_texts(root)).toContain('audit_actions_title');
+        expect(root.textContent).toContain('audit_actions_hub_intro');
+        expect(root.textContent).toContain('audit_actions_nav_manage');
+        expect(root.textContent).toContain('audit_actions_nav_downloads');
+        expect(root.querySelector('#audit-actions-hub-heading')).toBeFalsy();
+        expect(root.querySelector('#audit-action-status-select')).toBeFalsy();
+        component.destroy();
+        root.remove();
+    });
+
+    test('manage visar status-dropdown, inte lås/arkivera-knappar', async () => {
+        const { root, component } = await render_with('in_progress', 'manage');
         const ids = button_ids(root);
-        expect(ids).toContain('audit-action-btn-lock-audit');
+        expect(root.querySelector('#audit-action-status-select')).toBeTruthy();
+        expect(root.querySelector('#audit-action-status-select-hints')).toBeTruthy();
+        expect(root.querySelectorAll('.audit-actions__status-hint').length).toBe(4);
+        expect(root.textContent).toContain('audit_actions_status_use_not_started');
+        expect(root.textContent).toContain('audit_actions_status_use_in_progress');
+        expect(root.textContent).toContain('audit_actions_status_use_locked');
+        expect(root.textContent).toContain('audit_actions_status_use_archived');
+        expect(ids).not.toContain('audit-action-btn-lock-audit');
         expect(ids).not.toContain('audit-action-btn-unlock-audit');
         expect(ids).not.toContain('audit-action-btn-archive-audit');
         expect(ids).not.toContain('audit-action-btn-activate-audit');
+        expect(ids).not.toContain('audit-action-btn-download-audit');
+        expect(root.textContent).not.toContain('audit_actions_go_to_downloads');
         component.destroy();
         root.remove();
     });
 
-    test('locked visar lås upp och arkivera, inte avsluta', async () => {
-        const { root, component } = await render_with_status('locked');
-        const ids = button_ids(root);
-        expect(ids).toContain('audit-action-btn-unlock-audit');
-        expect(ids).toContain('audit-action-btn-archive-audit');
-        expect(ids).not.toContain('audit-action-btn-lock-audit');
-        expect(ids).not.toContain('audit-action-btn-activate-audit');
-        component.destroy();
-        root.remove();
-    });
-
-    test('archived visar återaktivera, inte lås upp direkt', async () => {
-        const { root, component } = await render_with_status('archived');
-        const ids = button_ids(root);
-        expect(ids).toContain('audit-action-btn-activate-audit');
-        expect(ids).not.toContain('audit-action-btn-unlock-audit');
-        expect(ids).not.toContain('audit-action-btn-lock-audit');
-        expect(ids).not.toContain('audit-action-btn-archive-audit');
-        component.destroy();
-        root.remove();
-    });
-
-    test('locked visar bilageguide, ladda ner bilagor och export före statussektionen', async () => {
-        const { root, component } = await render_with_status('locked');
-        const headings = heading_texts(root);
-
-        expect(headings.indexOf('audit_actions_appendix_guide_title')).toBeLessThan(
-            headings.indexOf('audit_actions_download_appendices_title')
-        );
-        expect(headings.indexOf('audit_actions_download_appendices_title')).toBeLessThan(
-            headings.indexOf('audit_actions_exports_title')
-        );
-        expect(headings.indexOf('audit_actions_exports_title')).toBeLessThan(
-            headings.indexOf('audit_actions_status_section_title_locked')
-        );
-
-        component.destroy();
-        root.remove();
-    });
-
-    test('archived visar bilageguide, ladda ner bilagor och export före statussektionen', async () => {
-        const { root, component } = await render_with_status('archived');
-        const headings = heading_texts(root);
-
-        expect(headings.indexOf('audit_actions_appendix_guide_title')).toBeLessThan(
-            headings.indexOf('audit_actions_download_appendices_title')
-        );
-        expect(headings.indexOf('audit_actions_download_appendices_title')).toBeLessThan(
-            headings.indexOf('audit_actions_exports_title')
-        );
-        expect(headings.indexOf('audit_actions_exports_title')).toBeLessThan(
-            headings.indexOf('audit_actions_status_section_title_archived')
-        );
-
-        component.destroy();
-        root.remove();
-    });
-
-    test('in_progress behåller endast statussektionen', async () => {
-        const { root, component } = await render_with_status('in_progress');
-        const headings = heading_texts(root);
-
-        expect(headings).toEqual(['audit_actions_status_section_title_in_progress']);
-
-        component.destroy();
-        root.remove();
-    });
-
-    test('locked visar bilageguide och exportknappar för observationstexter', async () => {
-        const { root, component } = await render_with_status('locked');
+    test('downloads visar JSON men döljer bilagor för in_progress', async () => {
+        const { root, component } = await render_with('in_progress', 'downloads');
         const ids = button_ids(root);
         const headings = heading_texts(root);
 
+        expect(headings).toContain('audit_actions_json_backup_title');
+        expect(headings).toContain('audit_actions_downloads_locked_title');
+        expect(headings).not.toContain('audit_actions_appendix_guide_title');
+        expect(ids).toContain('audit-action-btn-download-audit');
+        expect(root.textContent).toContain('audit_actions_downloads_in_progress_intro_before');
+        expect(root.textContent).toContain('audit_actions_nav_manage');
+        const manage_link = root.querySelector(
+            '.audit-actions__downloads-locked-notice a'
+        );
+        expect(manage_link?.textContent).toBe('audit_actions_nav_manage');
+        expect(root.textContent).not.toContain('audit_actions_exports_title');
+        expect(ids).not.toContain('audit-action-btn-download-observation-texts-word');
+        expect(root.textContent).not.toContain('audit_actions_go_to_manage');
+        component.destroy();
+        root.remove();
+    });
+
+    test('downloads visar bilagor och export för locked', async () => {
+        const { root, component } = await render_with('locked', 'downloads');
+        const ids = button_ids(root);
+        const headings = heading_texts(root);
+
+        expect(headings).toContain('audit_actions_json_backup_title');
         expect(headings).toContain('audit_actions_appendix_guide_title');
         expect(headings).toContain('audit_actions_download_appendices_title');
         expect(headings).toContain('audit_actions_exports_title');
+        expect(ids).toContain('audit-action-btn-download-audit');
         expect(ids).toContain('audit-action-btn-download-observation-texts-word');
         expect(ids).toContain('audit-action-btn-import-processed-observation-texts-word');
         expect(ids).toContain('audit-action-btn-appendix-1-summary');
-        expect(ids).toContain('audit-action-btn-appendix-2-protocol');
-        expect(ids).toContain('audit-action-btn-appendix-all-zip');
-        expect(root.textContent).toContain('audit_actions_appendix_guide_intro');
-        expect(root.textContent).toContain('audit_actions_download_appendices_intro');
-        expect(root.querySelector('.audit-actions__status-section--after-exports')).toBeTruthy();
-        expect(root.querySelector('#audit-action-desc-appendix-guide-upload')).toBeTruthy();
-        expect(root.querySelector('.audit-actions__appendix-guide-upload-block')).toBeTruthy();
+        expect(root.querySelector('#audit-action-status-select')).toBeFalsy();
+        component.destroy();
+        root.remove();
+    });
 
-        const download_desc = root.querySelector('#audit-action-desc-appendix-guide-download');
-        const download_btn = root.querySelector('#audit-action-btn-download-observation-texts-word');
-        const upload_desc = root.querySelector('#audit-action-desc-appendix-guide-upload');
-        const upload_btn = root.querySelector('#audit-action-btn-import-processed-observation-texts-word');
+    test('locked downloads visar bilageguide före export', async () => {
+        const { root, component } = await render_with('locked', 'downloads');
+        const headings = heading_texts(root);
 
-        expect(download_desc?.compareDocumentPosition(download_btn)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-        expect(download_btn?.compareDocumentPosition(upload_desc)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-        expect(upload_desc?.compareDocumentPosition(upload_btn)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+        expect(headings.indexOf('audit_actions_appendix_guide_title')).toBeLessThan(
+            headings.indexOf('audit_actions_download_appendices_title')
+        );
+        expect(headings.indexOf('audit_actions_download_appendices_title')).toBeLessThan(
+            headings.indexOf('audit_actions_exports_title')
+        );
 
         component.destroy();
         root.remove();
     });
 
-    test('archived visar export men inte importknapp, med förklaring', async () => {
-        const { root, component } = await render_with_status('archived');
+    test('archived downloads visar export men inte importknapp', async () => {
+        const { root, component } = await render_with('archived', 'downloads');
         const ids = button_ids(root);
 
         expect(ids).toContain('audit-action-btn-download-observation-texts-word');
@@ -212,84 +195,156 @@ describe('AuditActionsViewComponent statusknappar', () => {
         root.remove();
     });
 
-    test('exportbeskrivning ligger ovanför exportknapp', async () => {
-        const { root, component } = await render_with_status('locked');
-        const desc = root.querySelector('#audit-action-desc-download-audit');
-        const btn = root.querySelector('#audit-action-btn-download-audit');
-        expect(desc?.compareDocumentPosition(btn)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    test('manage visar statusrubrik som h2 med aria-labelledby på select', async () => {
+        const { root, component } = await render_with('in_progress', 'manage');
+        const label = root.querySelector('#audit-action-status-select-label');
+        const select = root.querySelector('#audit-action-status-select');
+
+        expect(label?.tagName).toBe('H2');
+        expect(label?.classList.contains('audit-actions__section-title')).toBe(true);
+        expect(label?.textContent).toBe('audit_actions_status_select_label');
+        expect(select?.getAttribute('aria-labelledby')).toBe('audit-action-status-select-label');
+        expect(heading_texts(root)).not.toContain('audit_actions_status_section_title_in_progress');
+
         component.destroy();
         root.remove();
     });
 
-    test('in_progress visar bara statussektionen, utan export eller bilageguide', async () => {
-        const { root, component } = await render_with_status('in_progress');
-        const ids = button_ids(root);
-        const headings = heading_texts(root);
-
-        expect(headings).toEqual(['audit_actions_status_section_title_in_progress']);
-        expect(root.textContent).not.toContain('audit_not_locked_for_export');
-        expect(root.textContent).not.toContain('audit_actions_appendix_guide_title');
-        expect(root.textContent).not.toContain('audit_actions_exports_title');
-        expect(ids).not.toContain('audit-action-btn-download-observation-texts-word');
-        expect(ids).not.toContain('audit-action-btn-import-processed-observation-texts-word');
-        component.destroy();
-        root.remove();
-    });
-
-    test('not_started visar bara statussektionen, utan export eller bilageguide', async () => {
-        const { root, component } = await render_with_status('not_started');
-        const headings = heading_texts(root);
-
-        expect(headings).toEqual(['audit_actions_status_section_title_not_started']);
-        expect(root.textContent).not.toContain('audit_not_locked_for_export');
-        component.destroy();
-        root.remove();
-    });
-
-    test('statusrubrik matchar granskningens läge', async () => {
-        const { resolve_audit_actions_status_section_title_key } = await import(
-            '../../js/components/audit_actions_view_status_section.ts'
-        );
-        expect(resolve_audit_actions_status_section_title_key('in_progress')).toBe(
-            'audit_actions_status_section_title_in_progress'
-        );
-        expect(resolve_audit_actions_status_section_title_key('locked')).toBe(
-            'audit_actions_status_section_title_locked'
-        );
-        expect(resolve_audit_actions_status_section_title_key('archived')).toBe(
-            'audit_actions_status_section_title_archived'
-        );
-        expect(resolve_audit_actions_status_section_title_key('not_started')).toBe(
-            'audit_actions_status_section_title_not_started'
-        );
-    });
-
-    test('klick på avsluta fadar ut, dispatchar locked och uppdaterar vyn', async () => {
+    test('statusändring via select utan bekräftelse dispatchar in_progress', async () => {
         jest.useFakeTimers();
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const deps = make_deps('in_progress');
+        const deps = make_deps('locked', 'manage');
         const component = new AuditActionsViewComponent();
         await component.init({ root, deps });
         component.render();
-        root.querySelector('#audit-action-btn-lock-audit').click();
+
+        const select = root.querySelector('#audit-action-status-select');
+        select.value = 'in_progress';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
         await Promise.resolve();
+
         expect(deps.dispatch).not.toHaveBeenCalled();
         await jest.advanceTimersByTimeAsync(250);
         await Promise.resolve();
         expect(deps.dispatch).toHaveBeenCalledWith({
             type: 'SET_AUDIT_STATUS',
-            payload: { status: 'locked' }
+            payload: { status: 'in_progress' }
         });
-        expect(deps.flush_sync_to_server).not.toHaveBeenCalled();
-        const content_after_swap = root.querySelector('.audit-actions__content');
-        expect(content_after_swap?.style.opacity).toBe('0');
         await jest.runAllTimersAsync();
-        expect(root.querySelector('#audit-action-btn-unlock-audit')).toBeTruthy();
-        expect(root.querySelector('#audit-action-btn-lock-audit')).toBeFalsy();
-        expect(document.activeElement?.id).toBe('audit-action-btn-unlock-audit');
+        expect(select.value).toBe('in_progress');
         component.destroy();
         root.remove();
         jest.useRealTimers();
+    });
+
+    test('statusändring till locked visar bekräftelsemodal', async () => {
+        jest.resetModules();
+        const { app_runtime_refs: runtime_refs } = await import('../../js/utils/app_runtime_refs.js');
+        const { AuditActionsViewComponent: ActionsComponent } = await import(
+            '../../js/components/AuditActionsViewComponent.ts'
+        );
+        const orig_modal = runtime_refs.modal_component;
+        const show_spy = jest.fn();
+        runtime_refs.modal_component = { show: show_spy };
+
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+        const deps = make_deps('in_progress', 'manage');
+        const component = new ActionsComponent();
+        await component.init({ root, deps });
+        component.render();
+
+        const select = root.querySelector('#audit-action-status-select');
+        select.value = 'locked';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(show_spy).toHaveBeenCalledWith(
+            expect.objectContaining({ h1_text: 'audit_actions_status_change_confirm_locked_title' }),
+            expect.any(Function)
+        );
+
+        runtime_refs.modal_component = orig_modal;
+        component.destroy();
+        root.remove();
+    });
+});
+
+describe('get_allowed_audit_status_targets', () => {
+    test('returnerar giltiga övergångar per status', async () => {
+        const { get_allowed_audit_status_targets } = await import(
+            '../../js/components/audit_actions_view_status_select.ts'
+        );
+        expect(get_allowed_audit_status_targets('in_progress')).toEqual(['in_progress', 'locked']);
+        expect(get_allowed_audit_status_targets('locked')).toEqual(['locked', 'in_progress', 'archived']);
+        expect(get_allowed_audit_status_targets('archived')).toEqual(['archived', 'locked']);
+        expect(get_allowed_audit_status_targets('not_started')).toEqual(['not_started']);
+    });
+});
+
+describe('audit_actions_render', () => {
+    test('normalize_audit_actions_section accepterar manage och downloads', async () => {
+        const { normalize_audit_actions_section } = await import(
+            '../../js/components/audit_actions_render.ts'
+        );
+        expect(normalize_audit_actions_section('manage')).toBe('manage');
+        expect(normalize_audit_actions_section('downloads')).toBe('downloads');
+        expect(normalize_audit_actions_section('hub')).toBe('');
+        expect(normalize_audit_actions_section(undefined)).toBe('');
+        expect(normalize_audit_actions_section('invalid')).toBe('');
+    });
+});
+
+describe('manage status-dropdown alternativ', () => {
+    let AuditActionsViewComponent;
+
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import('../../js/components/AuditActionsViewComponent.ts');
+        AuditActionsViewComponent = mod.AuditActionsViewComponent;
+    });
+
+    async function render_manage(status) {
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+        const component = new AuditActionsViewComponent();
+        await component.init({ root, deps: make_deps(status, 'manage') });
+        component.render();
+        return { root, component };
+    }
+
+    function select_options(root) {
+        const select = root.querySelector('#audit-action-status-select');
+        return [...select.options].map((o) => o.value);
+    }
+
+    const ALL_STATUS_OPTIONS = ['not_started', 'in_progress', 'locked', 'archived'];
+
+    test('in_progress select visar alla fyra statusar', async () => {
+        const { root, component } = await render_manage('in_progress');
+        expect(select_options(root)).toEqual(ALL_STATUS_OPTIONS);
+        component.destroy();
+        root.remove();
+    });
+
+    test('locked select visar alla fyra statusar', async () => {
+        const { root, component } = await render_manage('locked');
+        expect(select_options(root)).toEqual(ALL_STATUS_OPTIONS);
+        component.destroy();
+        root.remove();
+    });
+
+    test('archived select visar alla fyra statusar', async () => {
+        const { root, component } = await render_manage('archived');
+        expect(select_options(root)).toEqual(ALL_STATUS_OPTIONS);
+        component.destroy();
+        root.remove();
+    });
+
+    test('not_started select visar alla fyra statusar', async () => {
+        const { root, component } = await render_manage('not_started');
+        expect(select_options(root)).toEqual(ALL_STATUS_OPTIONS);
+        component.destroy();
+        root.remove();
     });
 });

@@ -106,10 +106,11 @@ test.describe('Export rapport (mockat API)', () => {
         );
 
         await setupExportApiMocks(page);
-        await page.goto('/v2/#audit_actions');
+        await page.goto('/v2/#audit_actions?section=downloads');
         await ensureSwedishAndDismissRestore(page);
 
-        await expect(page.getByRole('heading', { name: 'Exportera till olika format' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Exportera i fler format' })).toBeVisible();
+        await page.getByRole('button', { name: 'Exportera i fler format' }).click();
 
         await expect(page.locator('#audit-action-btn-export-csv')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-excel')).toBeVisible();

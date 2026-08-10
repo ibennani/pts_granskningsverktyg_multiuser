@@ -15,7 +15,7 @@
 .requirement-list-header h1 {
     font-size: 1.8rem;
     /* Återställd till standard H1-storlek för denna vy */
-    margin-bottom: 0.35rem;
+    margin-bottom: var(--heading-h1-after-gap);
     /* Lite mer utrymme till sub-info */
     color: var(--primary-color-dark);
 }
