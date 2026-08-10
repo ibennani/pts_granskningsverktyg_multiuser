@@ -50,7 +50,7 @@ const WEBB_RULE = {
 };
 
 describe('metadata monitoring and audit type flow', () => {
-    test('metadata_form_audit_type_rule_content döljer typer tills Webb/PDF valts', () => {
+    test('metadata_form_audit_type_rule_content använder regelfil när den finns', () => {
         expect(
             metadata_form_create_audit_type_field(
                 Helpers,
@@ -58,17 +58,20 @@ describe('metadata monitoring and audit type flow', () => {
                 metadata_form_audit_type_rule_content(WEBB_RULE, false),
                 'not_started',
                 ''
-            ).select_element?.options
-        ).toHaveLength(1);
+            ).select_element?.options.length
+        ).toBeGreaterThan(1);
+    });
+
+    test('metadata_form_audit_type_rule_content utan regelfil ger tom lista', () => {
         expect(
             metadata_form_create_audit_type_field(
                 Helpers,
                 Translation,
-                metadata_form_audit_type_rule_content(WEBB_RULE, true),
+                metadata_form_audit_type_rule_content(null, false),
                 'not_started',
                 ''
-            ).select_element?.options.length
-        ).toBeGreaterThan(1);
+            ).select_element?.options
+        ).toHaveLength(1);
     });
 
     test('monitoring-fält kan visa platshållare innan val', () => {
@@ -85,9 +88,23 @@ describe('metadata monitoring and audit type flow', () => {
         );
         expect(field?.select_element.options[0].value).toBe('');
         expect(field?.select_element.options[0].textContent).toBe('Välj vad som ska granskas');
+        expect(field?.select_element.value).toBe('');
     });
 
-    test('granskningstyp-fält listar typer från vald regelfil', () => {
+    test('monitoring-fält behåller platshållare med endast ett alternativ', () => {
+        const field = metadata_form_create_monitoring_type_field(
+            Helpers,
+            Translation,
+            [{ key: 'Webbplats', rule_id: 'web-id', label: 'Webb' }],
+            '',
+            undefined,
+            { include_empty_placeholder: true }
+        );
+        expect(field?.select_element.value).toBe('');
+        expect(field?.select_element.options[0].textContent).toBe('Välj vad som ska granskas');
+    });
+
+    test('granskningstyp-fält listar typer efter bekräftat monitoring-val', () => {
         const field = metadata_form_create_audit_type_field(
             Helpers,
             Translation,

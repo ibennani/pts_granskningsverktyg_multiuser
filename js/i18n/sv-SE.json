@@ -1342,7 +1342,7 @@
   "metadata_empty_warning_modal_message_go_to_list": "Vill du stanna kvar och fylla i fler uppgifter här, eller vill du avbryta och gå tillbaka till listan över alla granskningar?",
   "metadata_empty_warning_modal_title": "Du har inte fyllt i någon metadata",
   "metadata_empty_warning_stay_button": "Fortsätt ange metadata",
-  "metadata_form_instruction": "Alla fält är frivilliga Informationen kommer att inkluderas i exporterade rapporter",
+  "metadata_form_instruction": "Ange granskningens uppgifter här. Informationen följer med i exporterade rapporter och bilagor.",
   "locale_date_input_format_hint": "Exempel: {example}. Punkt, bindestreck och snedstreck fungerar som avskiljare.",
   "metadata_start_date_invalid": "Ogiltigt datum. Ange datum som {example}.",
   "metadata_end_date_invalid": "Ogiltigt slutdatum. Ange datum som {example}.",

@@ -179,6 +179,22 @@ describe('metadata_form_create_monitoring_type_field', () => {
 
     });
 
+    test('väljer angivet alternativ med placeholder-läge när nyckel är giltig', () => {
+        const options = [
+            { key: 'Webbplats', rule_id: 'web-id', label: 'Webb' },
+            { key: 'PDF-dokument', rule_id: 'pdf-id', label: 'PDF' },
+        ];
+        const field = metadata_form_create_monitoring_type_field(
+            Helpers,
+            Translation,
+            options,
+            'PDF-dokument',
+            undefined,
+            { include_empty_placeholder: true }
+        );
+        expect(field!.select_element.value).toBe('PDF-dokument');
+    });
+
     test('resolve_monitoring_type_label läser text från regelfil', () => {
         expect(
             resolve_monitoring_type_label({

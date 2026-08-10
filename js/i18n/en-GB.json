@@ -1119,7 +1119,7 @@
   "metadata_end_date_clamp_modal_title": "Adjust timestamps to the new end date?",
   "metadata_end_date_invalid": "Invalid end date. Enter a date like {example}.",
   "metadata_end_date_required": "Enter an end date for the audit.",
-  "metadata_form_instruction": "All fields are optional. This information will be included in exported reports.",
+  "metadata_form_instruction": "Enter the audit details here. This information is included in exported reports and appendices.",
   "metadata_form_intro": "Enter the audit metadata here",
   "metadata_form_submit": "Save",
   "metadata_audit_type_label": "Audit type",

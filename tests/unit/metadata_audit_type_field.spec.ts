@@ -44,10 +44,16 @@ const RULE_WITH_TYPES = {
 };
 
 describe('metadata_form_audit_type_rule_content', () => {
-    test('tom metadata för ny granskning innan Webb/PDF valts', () => {
+    test('tom metadata för ny granskning innan regelfil laddats', () => {
+        expect(
+            metadata_form_audit_type_rule_content(null, false, 'not_started')
+        ).toEqual({ metadata: {} });
+    });
+
+    test('använder regelfil när den finns även innan Webb/PDF bekräftats', () => {
         expect(
             metadata_form_audit_type_rule_content(RULE_WITH_TYPES, false, 'not_started')
-        ).toEqual({ metadata: {} });
+        ).toBe(RULE_WITH_TYPES);
     });
 
     test('effektiv regelfil för pågående granskning utan monitoringTypeConfirmed', () => {

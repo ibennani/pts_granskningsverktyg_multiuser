@@ -10,7 +10,8 @@ import {
     is_published_rule_row,
     monitoring_option_label_for_rule_row,
     resolve_monitoring_kind_from_rule_row,
-    resolve_selected_monitoring_key
+    resolve_selected_monitoring_key,
+    resolve_metadata_form_monitoring_key
 } from '../../js/logic/published_monitoring_rule_options.ts';
 
 const t = (key: string) => {
@@ -59,5 +60,19 @@ describe('published_monitoring_rule_options', () => {
         expect(find_monitoring_option_by_rule_id(options, 'new')?.rule_id).toBe('new');
         expect(find_monitoring_option_by_key(options, options[1].key)?.rule_id).toBe('new');
         expect(resolve_selected_monitoring_key(options, 'pdf')).toBe(options[0].key);
+    });
+
+    test('resolve_metadata_form_monitoring_key returnerar tom sträng utan bekräftelse eller ruleSetId', () => {
+        const options = build_published_monitoring_rule_options(
+            [
+                { id: 'pdf', monitoring_type_text: 'PDF', metadata_version: '1.0', is_published: true },
+                { id: 'web', monitoring_type_text: 'Webb', metadata_version: '1.0', is_published: true },
+            ],
+            version_greater_than,
+            t
+        );
+        expect(resolve_metadata_form_monitoring_key(false, 'pdf', options)).toBe('');
+        expect(resolve_metadata_form_monitoring_key(true, null, options)).toBe('');
+        expect(resolve_metadata_form_monitoring_key(true, 'pdf', options)).toBe(options[0].key);
     });
 });

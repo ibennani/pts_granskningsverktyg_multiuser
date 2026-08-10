@@ -14,7 +14,7 @@ import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_l
 import {
     build_published_monitoring_rule_options,
     find_monitoring_option_by_key,
-    resolve_selected_monitoring_key
+    resolve_metadata_form_monitoring_key
 } from '../logic/published_monitoring_rule_options.js';
 import { load_published_rule_content } from '../logic/new_audit_rule_loader.js';
 import {
@@ -149,17 +149,16 @@ export class EditMetadataViewComponent {
             });
 
             const next_state = this.getState();
-            this.metadata_form_component_instance.refresh_monitoring_type_field(
-                next_state.ruleFileContent,
-                true,
-                monitoring_key_trimmed,
-                this.monitoring_type_options
-            );
             this.metadata_form_component_instance.refresh_rule_dependent_fields(
                 next_state.ruleFileContent,
                 next_state.auditMetadata?.auditTypeId ?? '',
                 true
             );
+            const monitoring_select =
+                this.metadata_form_component_instance.monitoring_type_field_handles?.select_element;
+            if (monitoring_select) {
+                monitoring_select.value = monitoring_key_trimmed;
+            }
         } finally {
             this._monitoring_type_change_in_progress = false;
         }
@@ -427,6 +426,11 @@ export class EditMetadataViewComponent {
         const current_state = this.getState();
         const is_new_audit = current_state.auditStatus === 'not_started';
 
+        // metadata→metadata snabbrender kör inte init/destroy; nollställ bekräftelse vid ny granskning.
+        if (is_new_audit && current_state.freshNewAuditMetadata === true) {
+            this._monitoring_type_confirmed_by_user = false;
+        }
+
         if (!is_new_audit) {
             this.router('audit_settings', { section: 'information', returnTo: 'settings' });
             return;
@@ -542,15 +546,6 @@ export class EditMetadataViewComponent {
         })();
 
         state_after_rule = this.getState();
-        const is_fresh_new_audit_metadata = state_after_rule.freshNewAuditMetadata === true;
-        if (
-            !this._monitoring_type_confirmed_by_user
-            && !is_fresh_new_audit_metadata
-            && state_after_rule.ruleFileContent
-            && state_after_rule.ruleSetId
-        ) {
-            this._monitoring_type_confirmed_by_user = true;
-        }
 
         const start_time_iso = (() => {
             if (is_new_audit) return null;
@@ -581,9 +576,11 @@ export class EditMetadataViewComponent {
             ? this.Helpers.format_iso_for_locale_date_input(end_time_iso, lang_code)
             : '';
         const monitoring_type_confirmed = this._monitoring_type_confirmed_by_user;
-        const selected_monitoring_key = monitoring_type_confirmed
-            ? resolve_selected_monitoring_key(this.monitoring_type_options, state_after_rule.ruleSetId)
-            : '';
+        const selected_monitoring_key = resolve_metadata_form_monitoring_key(
+            monitoring_type_confirmed,
+            state_after_rule.ruleSetId,
+            this.monitoring_type_options
+        );
         const auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
         const case_handler_options = await load_metadata_case_handler_options(
             metadata.caseHandler || ''

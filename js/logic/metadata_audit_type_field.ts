@@ -33,19 +33,21 @@ export type MetadataAuditTypeFieldHandles = {
 
 /**
  * Regelfil för granskningstyp-dropdown.
- * Nya granskningar (not_started) väntar tills Webb/PDF valts.
- * Pågående och avslutade granskningar använder alltid effektiv regelfil.
+ * Använder laddad regelfil när den finns; annars tom metadata tills Webb/PDF valts.
  */
 export function metadata_form_audit_type_rule_content(
     rule_file_content: unknown,
     monitoring_type_confirmed: boolean,
     audit_status: string | null | undefined = 'not_started'
 ): unknown {
+    if (rule_file_content) {
+        return rule_file_content;
+    }
     const is_new_audit = audit_status === 'not_started';
     if (is_new_audit && !monitoring_type_confirmed) {
         return { metadata: {} };
     }
-    return rule_file_content;
+    return { metadata: {} };
 }
 
 function append_audit_type_placeholder(

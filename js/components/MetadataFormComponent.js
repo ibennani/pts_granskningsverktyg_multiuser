@@ -227,14 +227,25 @@ export const MetadataFormComponent = {
         return this._get_form_data(should_trim, trim_text_fn);
     },
 
+    _set_monitoring_type_readonly_handles(form_group, selected_monitoring_key = '') {
+        const selected_key = String(selected_monitoring_key ?? '').trim();
+        this.monitoring_type_field_handles = {
+            form_group,
+            select_element: null,
+            get_selected_monitoring_key: () => selected_key,
+        };
+    },
+
     _insert_audit_type_form_group(form_group) {
         const monitoring_group = this.monitoring_type_field_handles?.form_group;
         if (monitoring_group?.parentNode === this.form_element_ref) {
-            const insert_before = monitoring_group.nextSibling;
-            if (insert_before) {
-                this.form_element_ref.insertBefore(form_group, insert_before);
-                return;
-            }
+            monitoring_group.insertAdjacentElement('afterend', form_group);
+            return;
+        }
+        const case_group = this.case_number_input?.closest('.form-group');
+        if (case_group?.parentNode === this.form_element_ref) {
+            this.form_element_ref.insertBefore(form_group, case_group);
+            return;
         }
         this.form_element_ref.appendChild(form_group);
     },
@@ -302,6 +313,7 @@ export const MetadataFormComponent = {
         } else {
             this.form_element_ref.appendChild(readonly_group);
         }
+        this._set_monitoring_type_readonly_handles(readonly_group, selectedMonitoringKey);
     },
 
     handle_autosave_input() {
@@ -489,9 +501,7 @@ export const MetadataFormComponent = {
         this.form_element_ref.addEventListener('submit', this.handle_form_submit);
 
         const show_monitoring_dropdown =
-            showMonitoringTypeSelection &&
-            monitoringTypeOptions.length > 0 &&
-            !monitoringTypeConfirmed;
+            showMonitoringTypeSelection && monitoringTypeOptions.length > 0;
         const monitoring_display_label = resolve_monitoring_type_display_label(
             ruleFileContent,
             monitoringTypeOptions,
@@ -499,11 +509,14 @@ export const MetadataFormComponent = {
         );
 
         if (show_monitoring_dropdown) {
+            const effective_monitoring_key = monitoringTypeConfirmed
+                ? String(selectedMonitoringKey ?? '').trim()
+                : '';
             const monitoring_field = metadata_form_create_monitoring_type_field(
                 this.Helpers,
                 this.Translation,
                 monitoringTypeOptions,
-                selectedMonitoringKey,
+                effective_monitoring_key,
                 (monitoring_key) => {
                     if (typeof this.on_monitoring_type_change_callback === 'function') {
                         this.on_monitoring_type_change_callback(monitoring_key);
@@ -516,13 +529,13 @@ export const MetadataFormComponent = {
                 this.form_element_ref.appendChild(monitoring_field.form_group);
             }
         } else if (monitoring_display_label) {
-            this.form_element_ref.appendChild(
-                metadata_form_create_monitoring_type_readonly_field(
-                    this.Helpers,
-                    this.Translation,
-                    monitoring_display_label
-                )
+            const readonly_group = metadata_form_create_monitoring_type_readonly_field(
+                this.Helpers,
+                this.Translation,
+                monitoring_display_label
             );
+            this.form_element_ref.appendChild(readonly_group);
+            this._set_monitoring_type_readonly_handles(readonly_group, selectedMonitoringKey);
         }
 
         this._append_audit_type_field(initialData, audit_type_rule_content, auditStatus);

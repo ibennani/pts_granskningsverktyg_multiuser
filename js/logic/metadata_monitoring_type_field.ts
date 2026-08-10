@@ -128,7 +128,11 @@ export function metadata_form_create_monitoring_type_field(
 
     const initial = String(selected_key ?? '').trim();
     if (field_options.include_empty_placeholder === true) {
-        select.value = '';
+        if (initial && options.some((option) => option.key === initial)) {
+            select.value = initial;
+        } else {
+            select.value = '';
+        }
     } else if (initial && options.some((option) => option.key === initial)) {
         select.value = initial;
     } else if (options.length === 1) {

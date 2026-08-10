@@ -101,3 +101,16 @@ export function resolve_selected_monitoring_key(
     if (match) return match.key;
     return options[0]?.key ?? '';
 }
+
+/**
+ * Vald monitoring-nyckel för metadataformuläret: kräver både användarbekräftelse och ruleSetId.
+ */
+export function resolve_metadata_form_monitoring_key(
+    monitoring_type_confirmed: boolean,
+    rule_set_id: string | null | undefined,
+    options: MonitoringTypeOption[]
+): string {
+    if (!monitoring_type_confirmed) return '';
+    if (!String(rule_set_id ?? '').trim()) return '';
+    return resolve_selected_monitoring_key(options, rule_set_id);
+}
