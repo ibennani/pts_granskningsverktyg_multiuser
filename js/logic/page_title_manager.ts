@@ -219,6 +219,8 @@ export function get_page_title_prefix(
                         title_prefix = t('audit_actions_manage_title');
                     } else if (params?.section === 'downloads') {
                         title_prefix = t('audit_actions_downloads_title');
+                    } else if (params?.section === 'snapshots') {
+                        title_prefix = t('audit_actions_snapshots_title');
                     } else {
                         title_prefix = t('audit_actions_title');
                     }

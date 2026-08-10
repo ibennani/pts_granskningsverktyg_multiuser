@@ -34,7 +34,8 @@ Kör **före** `browser_navigate` om vyn behöver det:
 | Granskningsöversikt (enskild) | `#audit_overview` | `#ov` | `auditId` i state/hash | `tests/e2e/audit_flow.e2e.spec.js` |
 | Export (hub) | `#audit_actions` | `#xa` | sessionStorage + API-mock | `tests/e2e/export_report.e2e.spec.js` |
 | Åtgärder: Hantera | `#audit_actions?section=manage` | — | sessionStorage + API-mock | — |
-| Åtgärder: Nedladdningar | `#audit_actions?section=downloads` | — | sessionStorage + API-mock | — |
+| Åtgärder: Bilagor och exportfunktioner | `#audit_actions?section=downloads` | — | sessionStorage + API-mock | — |
+| Åtgärder: Snapshots | `#audit_actions?section=snapshots` | — | sessionStorage + API-mock | — |
 | Alla krav | `#all_requirements` | `#qr` | API-mock + pågående granskning | `tests/e2e/audit_flow.e2e.spec.js` |
 | Kravgranskning | `#requirement_audit?sampleId=s1&requirementId=req1` | `#ra?s=…&r=…` | Full mock + granskningsdel/krav i state | `tests/e2e/audit_collab_locks.e2e.spec.js` |
 | Kravlista (granskningsdel) | `#requirement_list?sampleId=…` | `#rl?s=…` | Granskning + granskningsdel | — |

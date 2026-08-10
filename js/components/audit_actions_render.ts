@@ -2,7 +2,7 @@
  * @fileoverview Renderhjälp för Åtgärder-vyn (hub och undersidor).
  */
 
-export type AuditActionsSection = '' | 'manage' | 'downloads';
+export type AuditActionsSection = '' | 'manage' | 'downloads' | 'snapshots';
 
 export type AuditActionsRenderDeps = {
     Helpers: {
@@ -13,12 +13,12 @@ export type AuditActionsRenderDeps = {
 };
 
 export function normalize_audit_actions_section(raw: unknown): AuditActionsSection {
-    if (raw === 'manage' || raw === 'downloads') return raw;
+    if (raw === 'manage' || raw === 'downloads' || raw === 'snapshots') return raw;
     if (raw === 'hub') return '';
     return '';
 }
 
-/** Hub med länkar till Hantera granskning och Nedladdningar. */
+/** Hub med länkar till undersidor i Åtgärder. */
 export function render_audit_actions_hub(deps: AuditActionsRenderDeps, plate: HTMLElement): void {
     const { Helpers: helpers, Translation: { t }, router } = deps;
 
@@ -36,7 +36,11 @@ export function render_audit_actions_hub(deps: AuditActionsRenderDeps, plate: HT
     });
 
     const list = helpers.create_element('ul', { class_name: 'audit-settings__hub-list' });
-    const add_hub_link = (section: 'manage' | 'downloads', label_key: string, desc_key: string) => {
+    const add_hub_link = (
+        section: Exclude<AuditActionsSection, ''>,
+        label_key: string,
+        desc_key: string
+    ) => {
         const item = helpers.create_element('li', { class_name: 'audit-settings__hub-item' });
         const link = helpers.create_element('a', {
             class_name: 'audit-settings__hub-link',
@@ -59,11 +63,22 @@ export function render_audit_actions_hub(deps: AuditActionsRenderDeps, plate: HT
 
     add_hub_link('manage', 'audit_actions_nav_manage', 'audit_actions_hub_manage_desc');
     add_hub_link('downloads', 'audit_actions_nav_downloads', 'audit_actions_hub_downloads_desc');
+    add_hub_link('snapshots', 'audit_actions_nav_snapshots', 'audit_actions_hub_snapshots_desc');
     nav.appendChild(list);
     plate.appendChild(nav);
 }
 
-/** Sidhuvud för undersida (Hantera eller Nedladdningar). */
+/** Sidhuvud för Snapshots (endast rubrik tills innehåll läggs till). */
+export function render_audit_actions_snapshots_header(
+    deps: AuditActionsRenderDeps,
+    plate: HTMLElement
+): void {
+    const { Helpers: helpers, Translation: { t } } = deps;
+
+    plate.appendChild(helpers.create_element('h1', { text_content: t('audit_actions_snapshots_title') }));
+}
+
+/** Sidhuvud för undersida (Hantera eller Bilagor och exportfunktioner). */
 export function render_audit_actions_section_header(
     deps: AuditActionsRenderDeps,
     plate: HTMLElement,

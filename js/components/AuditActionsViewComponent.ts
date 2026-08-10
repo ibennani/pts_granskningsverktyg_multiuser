@@ -30,6 +30,7 @@ import {
     normalize_audit_actions_section,
     render_audit_actions_hub,
     render_audit_actions_section_header,
+    render_audit_actions_snapshots_header,
 } from './audit_actions_render.js';
 import './audit_actions_view_component.css';
 
@@ -451,6 +452,10 @@ export class AuditActionsViewComponent {
                 intro_key: 'audit_actions_downloads_intro',
             });
             content_wrapper = build_audit_actions_downloads_content(this, state, t);
+        } else if (section === 'snapshots') {
+            render_audit_actions_snapshots_header(render_deps, plate);
+            this.root.appendChild(plate);
+            return;
         } else {
             render_audit_actions_hub(render_deps, plate);
             this.root.appendChild(plate);
