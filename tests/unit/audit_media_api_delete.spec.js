@@ -37,6 +37,7 @@ describe('delete_audit_media', () => {
         fetch.mockResolvedValue({
             ok: false,
             status: 500,
+            headers: { get: () => 'application/json' },
             json: async () => ({ error: 'Kunde inte ta bort fil' })
         });
 

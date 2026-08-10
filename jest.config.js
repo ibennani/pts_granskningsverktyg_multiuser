@@ -260,6 +260,7 @@ export default {
     '^.+[\\\\/]attach_media_file_drop_zone\\.js$': '<rootDir>/js/components/media/attach_media_file_drop_zone.ts',
     '^.+[\\\\/]render_audit_media_list_item\\.js$': '<rootDir>/js/components/media/render_audit_media_list_item.ts',
     '^.+[\\\\/]audit_media_storage\\.js$': '<rootDir>/server/media/audit_media_storage.ts',
+    '^.+[\\\\/]audit_media_originals\\.js$': '<rootDir>/server/media/audit_media_originals.ts',
     '^.+[\\\\/]audit_grouped_list_render\\.js$': '<rootDir>/js/components/audit_grouped_list_render.ts',
     '^.+[\\\\/]audit_group_row_ui\\.js$': '<rootDir>/js/components/audit_group_row_ui.ts',
     '^.+[\\\\/]audit_group_detail_table\\.js$': '<rootDir>/js/components/audit_group_detail_table.ts',

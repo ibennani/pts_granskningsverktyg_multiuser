@@ -19,6 +19,7 @@ export type AuditMediaFilenameMigration = {
 export type ListAuditMediaResult = {
     files: AuditMediaFileInfo[];
     filename_migrations: AuditMediaFilenameMigration[];
+    original_filenames: Record<string, string>;
 };
 
 type UploadResponse = {
@@ -144,6 +145,21 @@ export async function fetch_audit_media_bytes(audit_id: string, filename: string
     return res.arrayBuffer();
 }
 
+/**
+ * Hämtar originalfil (uppladdad/skärmdump) som råa bytes för zip-export.
+ */
+export async function fetch_audit_media_original_bytes(
+    audit_id: string,
+    filename: string
+): Promise<ArrayBuffer | null> {
+    const safe_audit = encodeURIComponent(String(audit_id));
+    const safe_name = encodeURIComponent(String(filename));
+    const url = `${get_base_url()}/audits/${safe_audit}/media/${safe_name}/original`;
+    const res = await fetch_with_auth_retry(url, { method: 'GET', cache: 'no-store' });
+    if (!res.ok) return null;
+    return res.arrayBuffer();
+}
+
 export function get_audit_media_list_url(audit_id: string): string {
     return `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/media`;
 }
@@ -158,10 +174,15 @@ export async function list_audit_media(audit_id: string): Promise<ListAuditMedia
     const data = (await res.json()) as {
         files?: AuditMediaFileInfo[];
         filenameMigrations?: AuditMediaFilenameMigration[];
+        originalFilenames?: Record<string, string>;
     };
     return {
         files: Array.isArray(data.files) ? data.files : [],
-        filename_migrations: Array.isArray(data.filenameMigrations) ? data.filenameMigrations : []
+        filename_migrations: Array.isArray(data.filenameMigrations) ? data.filenameMigrations : [],
+        original_filenames:
+            data.originalFilenames && typeof data.originalFilenames === 'object'
+                ? data.originalFilenames
+                : {}
     };
 }
 

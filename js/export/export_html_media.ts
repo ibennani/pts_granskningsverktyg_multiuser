@@ -3,7 +3,7 @@
  */
 
 import JSZip from 'jszip';
-import { fetch_audit_media_bytes, list_audit_media } from '../api/audit_media_api.js';
+import { fetch_audit_media_bytes, fetch_audit_media_original_bytes, list_audit_media } from '../api/audit_media_api.js';
 import {
     build_audit_media_filename_migration_map,
     resolve_migrated_media_filename
@@ -19,10 +19,18 @@ import {
 } from './export_media_naming.js';
 
 export const HTML_EXPORT_MEDIA_DIR = 'media';
+export const IMAGES_ZIP_ORIGINALS_DIR = 'orginalbilder';
+export const IMAGES_ZIP_CONVERTED_DIR = 'konverterade_bilder';
 
 export type HtmlExportZipEntry = {
     original_filename: string;
     zip_path: string;
+};
+
+export type ImagesZipFolderEntry = {
+    original_filename: string;
+    converted_zip_path: string;
+    original_zip_path?: string;
 };
 
 function normalize_attached_list(filenames: unknown): string[] {
@@ -220,6 +228,101 @@ export async function build_media_only_export_zip(
 ): Promise<BuildHtmlExportZipResult> {
     const zip = new JSZip();
     const missing_filenames = await add_media_entries_to_zip(zip, input.entries, input.audit_id);
+    const blob = await zip.generateAsync({ type: 'blob' });
+    return { blob, missing_filenames };
+}
+
+/**
+ * Bygger zip-poster med orginalbilder/ och konverterade_bilder/ från HTML-exportposter.
+ */
+export function build_images_zip_folder_entries(
+    flat_entries: HtmlExportZipEntry[],
+    original_filenames_map: Record<string, string>,
+    migration_map: Map<string, string>
+): ImagesZipFolderEntry[] {
+    return flat_entries.map((entry) => {
+        const resolved_canonical = resolve_migrated_media_filename(entry.original_filename, migration_map);
+        const stored_original = original_filenames_map[resolved_canonical];
+        const folder_entry: ImagesZipFolderEntry = {
+            original_filename: entry.original_filename,
+            converted_zip_path: `${IMAGES_ZIP_CONVERTED_DIR}/${entry.zip_path}`
+        };
+        if (stored_original) {
+            folder_entry.original_zip_path = `${IMAGES_ZIP_ORIGINALS_DIR}/${stored_original}`;
+        }
+        return folder_entry;
+    });
+}
+
+async function add_images_folder_entries_to_zip(
+    zip: JSZip,
+    entries: ImagesZipFolderEntry[],
+    audit_id: string | null | undefined
+): Promise<string[]> {
+    const missing_filenames: string[] = [];
+    const trimmed_audit_id = String(audit_id || '').trim();
+    if (!trimmed_audit_id) {
+        return missing_filenames;
+    }
+
+    let migration_map = new Map<string, string>();
+    try {
+        const list_result = await list_audit_media(trimmed_audit_id);
+        migration_map = build_audit_media_filename_migration_map(list_result.filename_migrations);
+    } catch {
+        migration_map = new Map();
+    }
+
+    const bytes_cache = new Map<string, ArrayBuffer | null>();
+
+    for (const entry of entries) {
+        const resolved_filename = resolve_migrated_media_filename(entry.original_filename, migration_map);
+        const cache_key = `converted:${resolved_filename}`;
+        if (!bytes_cache.has(cache_key)) {
+            bytes_cache.set(cache_key, await fetch_audit_media_bytes(trimmed_audit_id, resolved_filename));
+        }
+        const converted_bytes = bytes_cache.get(cache_key);
+        if (!converted_bytes) {
+            if (!missing_filenames.includes(entry.original_filename)) {
+                missing_filenames.push(entry.original_filename);
+            }
+            continue;
+        }
+        zip.file(entry.converted_zip_path, converted_bytes);
+
+        if (!entry.original_zip_path) {
+            continue;
+        }
+
+        const original_cache_key = `original:${entry.original_filename}`;
+        if (!bytes_cache.has(original_cache_key)) {
+            bytes_cache.set(
+                original_cache_key,
+                await fetch_audit_media_original_bytes(trimmed_audit_id, entry.original_filename)
+            );
+        }
+        const original_bytes = bytes_cache.get(original_cache_key);
+        if (original_bytes) {
+            zip.file(entry.original_zip_path, original_bytes);
+        }
+    }
+
+    return missing_filenames;
+}
+
+export type BuildImagesFolderExportZipInput = {
+    entries: ImagesZipFolderEntry[];
+    audit_id: string | null | undefined;
+};
+
+/**
+ * Bygger zip med orginalbilder/ och konverterade_bilder/.
+ */
+export async function build_images_folder_export_zip(
+    input: BuildImagesFolderExportZipInput
+): Promise<BuildHtmlExportZipResult> {
+    const zip = new JSZip();
+    const missing_filenames = await add_images_folder_entries_to_zip(zip, input.entries, input.audit_id);
     const blob = await zip.generateAsync({ type: 'blob' });
     return { blob, missing_filenames };
 }

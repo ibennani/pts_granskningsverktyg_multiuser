@@ -4,6 +4,7 @@
 
 import { ensure_audit_media_files_png } from '../services/ensure_audit_media_png.js';
 import { rename_audit_media_file } from './audit_media_storage.js';
+import { remap_audit_media_original_index } from './audit_media_originals.js';
 import { resolve_audit_media_filename_on_server } from '../../shared/media/resolve_audit_media_server_filename.js';
 import { resolve_media_rename_filename } from '../../shared/media/resolve_media_rename_filename.js';
 import { sanitize_media_filename } from '../../shared/media/sanitize_media_filename.js';
@@ -98,6 +99,11 @@ export async function execute_audit_media_rename(
 
     if (!resolved.unchanged) {
         await rename_audit_media_file(audit_id, matched_current_filename, resolved.filename);
+        await remap_audit_media_original_index(
+            audit_id,
+            matched_current_filename,
+            resolved.filename
+        );
     }
 
     return {

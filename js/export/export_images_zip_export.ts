@@ -1,5 +1,5 @@
 /**
- * @fileoverview Export av alla granskningsbilder som platt zip-fil med PTS-filnamn.
+ * @fileoverview Export av alla granskningsbilder som zip med orginalbilder/ och konverterade_bilder/.
  */
 
 import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
@@ -8,11 +8,14 @@ import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { build_export_media_filename_context } from './export_media_filename_context.js';
 import {
-    build_media_only_export_zip,
+    build_images_folder_export_zip,
+    build_images_zip_folder_entries,
     collect_html_export_zip_entries,
     flatten_html_export_zip_entries
 } from './export_html_media.js';
 import { finalize_export_catch } from './export_error_handling.js';
+import { list_audit_media } from '../api/audit_media_api.js';
+import { build_audit_media_filename_migration_map } from '../logic/audit_media_filename_migrations.js';
 
 async function build_images_zip_download_filename(
     audit: Record<string, unknown> & {
@@ -62,8 +65,25 @@ export async function export_to_images_zip(
         }
 
         const flat_entries = flatten_html_export_zip_entries(zip_entries);
-        const { blob, missing_filenames } = await build_media_only_export_zip({
-            entries: flat_entries,
+        let original_filenames_map: Record<string, string> = {};
+        let migration_map = new Map<string, string>();
+        if (audit.auditId) {
+            try {
+                const list_result = await list_audit_media(String(audit.auditId));
+                original_filenames_map = list_result.original_filenames || {};
+                migration_map = build_audit_media_filename_migration_map(list_result.filename_migrations);
+            } catch {
+                original_filenames_map = {};
+                migration_map = new Map();
+            }
+        }
+        const folder_entries = build_images_zip_folder_entries(
+            flat_entries,
+            original_filenames_map,
+            migration_map
+        );
+        const { blob, missing_filenames } = await build_images_folder_export_zip({
+            entries: folder_entries,
             audit_id: audit.auditId
         });
         const zip_filename = await build_images_zip_download_filename(audit, t);

@@ -5,6 +5,9 @@
 import {
     collect_html_export_zip_entries,
     flatten_html_export_zip_entries,
+    build_images_zip_folder_entries,
+    IMAGES_ZIP_CONVERTED_DIR,
+    IMAGES_ZIP_ORIGINALS_DIR,
     get_deficiency_media_export_names,
     get_sample_media_export_names,
     HTML_EXPORT_MEDIA_DIR
@@ -128,6 +131,37 @@ describe('export_html_media', () => {
                 zip_path: '000_1_WEBB_1_2026-04-11_26-11111.png'
             }
         ]);
+    });
+
+    test('build_images_zip_folder_entries lägger till båda mapparna när original finns', () => {
+        const flat = flatten_html_export_zip_entries(
+            collect_html_export_zip_entries(sample_audit, media_context)
+        );
+        const migration_map = new Map([['skarm1.png', 'skarm1.png']]);
+        const original_map = { 'skarm1.png': 'foto.jpg', 'stickprov.png': 'stickprov.png' };
+
+        const folder_entries = build_images_zip_folder_entries(flat, original_map, migration_map);
+
+        expect(folder_entries[0]).toEqual({
+            original_filename: 'skarm1.png',
+            converted_zip_path: `${IMAGES_ZIP_CONVERTED_DIR}/047_1_WEBB_1_2026-04-11_26-11111.png`,
+            original_zip_path: `${IMAGES_ZIP_ORIGINALS_DIR}/foto.jpg`
+        });
+        expect(folder_entries[1]).toEqual({
+            original_filename: 'stickprov.png',
+            converted_zip_path: `${IMAGES_ZIP_CONVERTED_DIR}/000_1_WEBB_1_2026-04-11_26-11111.png`,
+            original_zip_path: `${IMAGES_ZIP_ORIGINALS_DIR}/stickprov.png`
+        });
+    });
+
+    test('build_images_zip_folder_entries utan original ger endast konverterade_bilder', () => {
+        const flat = flatten_html_export_zip_entries(
+            collect_html_export_zip_entries(sample_audit, media_context)
+        );
+        const folder_entries = build_images_zip_folder_entries(flat, {}, new Map());
+
+        expect(folder_entries.every((entry) => !entry.original_zip_path)).toBe(true);
+        expect(folder_entries[0]?.converted_zip_path.startsWith(`${IMAGES_ZIP_CONVERTED_DIR}/`)).toBe(true);
     });
 
     test('create_html_observation_media renderar relativ media-sökväg', () => {

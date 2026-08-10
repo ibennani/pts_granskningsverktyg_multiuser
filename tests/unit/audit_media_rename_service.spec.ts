@@ -7,6 +7,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { execute_audit_media_rename } from '../../server/media/audit_media_rename_service.ts';
+import {
+    get_audit_media_original_index,
+    save_audit_media_original
+} from '../../server/media/audit_media_originals.ts';
 
 describe('execute_audit_media_rename', () => {
     let temp_root = '';
@@ -27,6 +31,7 @@ describe('execute_audit_media_rename', () => {
         const dir = path.join(temp_root, audit_id);
         await fs.mkdir(dir, { recursive: true });
         await fs.writeFile(path.join(dir, 'gammal.png'), Buffer.from('png'));
+        await save_audit_media_original(audit_id, 'gammal.png', path.join(dir, 'gammal.png'), 'foto.jpg');
 
         const outcome = await execute_audit_media_rename(audit_id, 'gammal.png', 'ny.png');
 
@@ -35,6 +40,7 @@ describe('execute_audit_media_rename', () => {
             expect(outcome.result.filename).toBe('ny.png');
         }
         await expect(fs.stat(path.join(dir, 'ny.png'))).resolves.toBeDefined();
+        expect(await get_audit_media_original_index(audit_id)).toEqual({ 'ny.png': 'foto.jpg' });
     });
 
     test('byter namn på video utan png-normalisering', async () => {
