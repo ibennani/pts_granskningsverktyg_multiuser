@@ -298,6 +298,8 @@ export default {
       '<rootDir>/js/components/add_sample_form/sample_url_page_title_logic.ts',
     '^.+[\\\\/]sample_url_analyze_tasks\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_tasks.ts',
     '^.+[\\\\/]sample_url_analyze_flow\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_flow.ts',
+    '^.+[\\\\/]sample_url_analyze_capture_errors\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_analyze_capture_errors.ts',
     '^.+[\\\\/]sample_url_analyze_capture\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_capture.ts',
     '^.+[\\\\/]sample_url_analyze_progress\\.js$':
       '<rootDir>/js/components/add_sample_form/sample_url_analyze_progress.ts',

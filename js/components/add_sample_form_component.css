@@ -423,6 +423,23 @@ dialog.modal-dialog.modal-dialog--sample-url-analyze {
     display: none;
 }
 
+.sample-url-analyze-modal-error-detail {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--error-color, #b00020);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--error-color, #b00020) 8%, transparent);
+    color: var(--text-color, inherit);
+    font-size: 0.95rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.sample-url-analyze-modal-error-detail[hidden] {
+    display: none;
+}
+
 .sample-url-analyze-modal-run[hidden],
 .sample-url-analyze-modal-stop[hidden],
 .sample-url-analyze-modal-close[hidden] {

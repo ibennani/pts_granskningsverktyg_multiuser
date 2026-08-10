@@ -4,6 +4,37 @@
 
 import { get_auth_token, get_base_url, refresh_auth_token } from './client.js';
 
+type AuditSnapshotApiErrorPayload = {
+    error?: string;
+    detail?: string;
+};
+
+async function parse_audit_snapshot_error_payload(res: Response): Promise<AuditSnapshotApiErrorPayload> {
+    try {
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (trimmed.startsWith('{')) {
+            return JSON.parse(trimmed) as AuditSnapshotApiErrorPayload;
+        }
+    } catch {
+        // ignoreras medvetet
+    }
+    return { error: res.statusText || `HTTP ${res.status}` };
+}
+
+function build_audit_snapshot_api_error_message(
+    payload: AuditSnapshotApiErrorPayload,
+    status: number
+): string {
+    if (payload.detail) {
+        return payload.detail;
+    }
+    if (payload.error) {
+        return payload.error;
+    }
+    return `HTTP ${status}`;
+}
+
 export type AuditSnapshotTaskOutcome = 'success' | 'failed' | 'skipped';
 
 export type AuditSnapshotCaptureResponse = {
@@ -80,14 +111,14 @@ export async function start_audit_snapshot_capture(
     signal?: AbortSignal
 ): Promise<AuditSnapshotCaptureResponse> {
     const base = get_base_url();
-    const res = await authorized_fetch(`${base}audits/${encodeURIComponent(audit_id)}/snapshots/capture`, {
+    const res = await authorized_fetch(`${base}/audits/${encodeURIComponent(audit_id)}/snapshots/capture`, {
         method: 'POST',
         body: JSON.stringify(body),
         signal,
     });
     if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.error || payload.detail || `HTTP ${res.status}`);
+        const payload = await parse_audit_snapshot_error_payload(res);
+        throw new Error(build_audit_snapshot_api_error_message(payload, res.status));
     }
     return res.json() as Promise<AuditSnapshotCaptureResponse>;
 }
@@ -98,7 +129,7 @@ export async function cancel_audit_snapshot_capture(
 ): Promise<void> {
     const base = get_base_url();
     const res = await authorized_fetch(
-        `${base}audits/${encodeURIComponent(audit_id)}/snapshots/${encodeURIComponent(capture_id)}`,
+        `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/${encodeURIComponent(capture_id)}`,
         { method: 'DELETE' }
     );
     if (!res.ok && res.status !== 404) {
@@ -111,7 +142,7 @@ export async function list_audit_snapshots(
     audit_id: string
 ): Promise<{ items: AuditSnapshotListItem[] }> {
     const base = get_base_url();
-    const res = await authorized_fetch(`${base}audits/${encodeURIComponent(audit_id)}/snapshots`);
+    const res = await authorized_fetch(`${base}/audits/${encodeURIComponent(audit_id)}/snapshots`);
     if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         throw new Error(payload.error || `HTTP ${res.status}`);
@@ -121,10 +152,10 @@ export async function list_audit_snapshots(
 
 export function get_audit_snapshot_download_url(audit_id: string, snapshot_id: string): string {
     const base = get_base_url();
-    return `${base}audits/${encodeURIComponent(audit_id)}/snapshots/${encodeURIComponent(snapshot_id)}/download`;
+    return `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/${encodeURIComponent(snapshot_id)}/download`;
 }
 
 export function get_audit_snapshots_download_all_url(audit_id: string): string {
     const base = get_base_url();
-    return `${base}audits/${encodeURIComponent(audit_id)}/snapshots/download-all`;
+    return `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/download-all`;
 }

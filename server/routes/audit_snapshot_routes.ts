@@ -42,7 +42,24 @@ function safe_user_error(err: unknown): string {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('cancelled')) return 'Capture avbruten';
     if (message.includes('SSRF') || message.includes('Ogiltig URL')) return 'Ogiltig URL';
+    if (message.includes('Timeout') || message.includes('timeout')) {
+        return 'Sidan svarade inte i tid';
+    }
+    if (message.includes('HTTP ')) {
+        return 'Sidan kunde inte läsas in';
+    }
+    if (message.includes('webbläsare') || message.includes('Chrome') || message.includes('Chromium')) {
+        return 'Kunde inte starta webbläsare på servern';
+    }
     return 'Snapshot capture misslyckades';
+}
+
+function build_capture_error_payload(err: unknown): { error: string; detail: string } {
+    const detail = err instanceof Error ? err.message : String(err);
+    return {
+        error: safe_user_error(err),
+        detail: detail.trim() || 'Okänt fel',
+    };
 }
 
 export function register_audit_snapshot_routes(router: Router): void {
@@ -70,8 +87,9 @@ export function register_audit_snapshot_routes(router: Router): void {
             });
             return res.status(202).json(response);
         } catch (err) {
-            console.error('[audit_snapshot] capture error:', err);
-            return res.status(422).json({ error: safe_user_error(err) });
+            const payload = build_capture_error_payload(err);
+            console.error('[audit_snapshot] capture error:', payload.detail);
+            return res.status(422).json(payload);
         }
     });
 

@@ -82,6 +82,7 @@ async function main() {
         await putFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
         await putFile(join(projectRoot, 'scripts', 'pm2-leffe-common.sh'), `${remotePath}/scripts/pm2-leffe-common.sh`);
         await putFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
+        await putFile(join(projectRoot, 'scripts', 'verify_snapshot_capture.ts'), `${remotePath}/scripts/verify_snapshot_capture.ts`);
         await putFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
         await putDirectory(join(projectRoot, 'scripts', 'lib'), `${remotePath}/scripts/lib`);
         await putDirectory(join(projectRoot, 'scripts', 'data'), `${remotePath}/scripts/data`);
@@ -168,6 +169,13 @@ async function main() {
         } catch (err) {
             console.warn('[deploy:test-server] VARNING: PDF-verifiering misslyckades:', err.message);
             console.warn('[deploy:test-server] Kör manuellt på servern: npx puppeteer browsers install chrome');
+        }
+
+        console.log('[deploy:test-server] Verifierar snapshot-capture mot Apohem...');
+        try {
+            await exec(`cd '${rp_esc}' && npx tsx scripts/verify_snapshot_capture.ts`, { cwd: false });
+        } catch (err) {
+            console.warn('[deploy:test-server] VARNING: Snapshot-verifiering misslyckades:', err.message);
         }
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';

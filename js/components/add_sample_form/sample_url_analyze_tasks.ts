@@ -20,6 +20,7 @@ export type SampleUrlAnalyzeTaskOutcome = 'success' | 'failed';
 export type SampleUrlAnalyzeTaskCallbacks = {
     on_task_start: (id: SampleUrlAnalyzeTaskId) => void;
     on_task_complete: (id: SampleUrlAnalyzeTaskId, outcome: SampleUrlAnalyzeTaskOutcome) => void;
+    on_fetch_error?: (detail: string) => void;
 };
 
 export type SampleUrlAnalyzeFlowHost = SampleUrlPageTitleFormHostSource &

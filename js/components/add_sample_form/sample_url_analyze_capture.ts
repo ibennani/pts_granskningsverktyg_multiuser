@@ -7,6 +7,11 @@ import {
     type AuditSnapshotCaptureResponse,
 } from '../../api/audit_snapshot_api.js';
 import { can_upload_audit_media } from '../../api/audit_media_api.js';
+import { get_auth_token } from '../../api/client.js';
+import {
+    extract_sample_url_analyze_fetch_error_detail,
+    get_sample_url_analyze_fetch_error_message,
+} from './sample_url_analyze_capture_errors.js';
 import {
     apply_page_title_to_description,
     type SampleUrlPageTitleComponentLike,
@@ -141,6 +146,21 @@ function apply_page_title_from_capture(
     return 'success';
 }
 
+function report_fetch_failure(
+    callbacks: SampleUrlAnalyzeTaskCallbacks,
+    task_ids: SampleUrlAnalyzeTaskId[],
+    detail: string,
+    is_current: () => boolean
+): void {
+    if (!is_current()) {
+        return;
+    }
+    callbacks.on_fetch_error?.(detail);
+    for (const id of task_ids) {
+        callbacks.on_task_complete(id, 'failed');
+    }
+}
+
 export async function run_unified_sample_url_analyze_tasks(
     host: SampleUrlAnalyzeCaptureHost,
     callbacks: SampleUrlAnalyzeTaskCallbacks
@@ -150,16 +170,36 @@ export async function run_unified_sample_url_analyze_tasks(
 
     const is_current = () => host.is_url_analyze_generation_current(generation);
 
+    const t = host.get_t_internally();
+
     let audit_id = host.getState?.()?.auditId ?? null;
     if (!audit_id && host.ensure_audit_id_for_media) {
         audit_id = await host.ensure_audit_id_for_media();
+    }
+    if (!get_auth_token()) {
+        for (const id of task_ids) {
+            if (!is_current()) return;
+            callbacks.on_task_start(id);
+        }
+        report_fetch_failure(
+            callbacks,
+            task_ids,
+            get_sample_url_analyze_fetch_error_message(t, 'not_logged_in'),
+            is_current
+        );
+        return;
     }
     if (!audit_id || !can_upload_audit_media(String(audit_id))) {
         for (const id of task_ids) {
             if (!is_current()) return;
             callbacks.on_task_start(id);
-            callbacks.on_task_complete(id, 'failed');
         }
+        report_fetch_failure(
+            callbacks,
+            task_ids,
+            get_sample_url_analyze_fetch_error_message(t, 'no_audit_id'),
+            is_current
+        );
         return;
     }
 
@@ -171,8 +211,13 @@ export async function run_unified_sample_url_analyze_tasks(
         for (const id of task_ids) {
             if (!is_current()) return;
             callbacks.on_task_start(id);
-            callbacks.on_task_complete(id, 'failed');
         }
+        report_fetch_failure(
+            callbacks,
+            task_ids,
+            get_sample_url_analyze_fetch_error_message(t, 'invalid_url'),
+            is_current
+        );
         return;
     }
 
@@ -215,6 +260,14 @@ export async function run_unified_sample_url_analyze_tasks(
             page_outcome === 'success'
                 ? apply_page_title_from_capture(host, response)
                 : 'failed';
+        if (title_result === 'failed') {
+            const detail =
+                response.pageTitle.error ||
+                extract_sample_url_analyze_fetch_error_detail(
+                    new Error('Sidtitel kunde inte hämtas från sidan')
+                );
+            callbacks.on_fetch_error?.(detail);
+        }
         callbacks.on_task_complete('page_title', title_result);
 
         if (!is_current()) return;
@@ -223,13 +276,25 @@ export async function run_unified_sample_url_analyze_tasks(
             response.screenshot.outcome === 'failed'
                 ? 'failed'
                 : apply_screenshot_from_capture(host, response);
+        if (screenshot_result === 'failed') {
+            const detail =
+                response.screenshot.error ||
+                extract_sample_url_analyze_fetch_error_detail(
+                    new Error('Skärmavbild kunde inte tas av sidan')
+                );
+            callbacks.on_fetch_error?.(detail);
+        }
         callbacks.on_task_complete('screenshot', screenshot_result);
     } catch (err) {
         if (!is_current()) return;
         const aborted = err instanceof Error && err.name === 'AbortError';
         if (aborted) return;
-        callbacks.on_task_complete('page_title', 'failed');
-        callbacks.on_task_complete('screenshot', 'failed');
+        report_fetch_failure(
+            callbacks,
+            task_ids,
+            extract_sample_url_analyze_fetch_error_detail(err),
+            is_current
+        );
     } finally {
         active_capture_id = null;
         active_abort_controller = null;

@@ -50,6 +50,7 @@ type ModalActionPhase = 'idle' | 'running' | 'done';
 type SampleUrlAnalyzeModalUi = {
     task_rows: Map<SampleUrlAnalyzeTaskId, SampleUrlAnalyzeTaskRowElements>;
     progress_live_el: HTMLParagraphElement;
+    error_detail_el: HTMLParagraphElement;
     progress_bar_el: HTMLDivElement;
     run_btn: HTMLButtonElement;
     stop_btn: HTMLButtonElement;
@@ -137,6 +138,25 @@ function build_progress_state(
     };
 }
 
+function clear_fetch_error_detail(ui: SampleUrlAnalyzeModalUi): void {
+    ui.error_detail_el.hidden = true;
+    ui.error_detail_el.textContent = '';
+}
+
+function show_fetch_error_detail(
+    ui: SampleUrlAnalyzeModalUi,
+    t: ShowSampleUrlAnalyzeModalOptions['t'],
+    detail: string
+): void {
+    const trimmed = String(detail || '').trim();
+    if (!trimmed) {
+        clear_fetch_error_detail(ui);
+        return;
+    }
+    ui.error_detail_el.hidden = false;
+    ui.error_detail_el.textContent = `${t('sample_url_analyze_error_detail_label')} ${trimmed}`;
+}
+
 function handle_task_complete(
     ui: SampleUrlAnalyzeModalUi,
     Helpers: ShowSampleUrlAnalyzeModalOptions['Helpers'],
@@ -187,6 +207,7 @@ function start_fetch(
     ui.fetch_snapshot = capture_sample_url_analyze_fetch_snapshot(host);
     ui.completed_count = 0;
     ui.failed_count = 0;
+    clear_fetch_error_detail(ui);
     reset_sample_url_analyze_task_rows([...ui.task_rows.values()], Helpers, t);
 
     for (const row of ui.task_rows.values()) {
@@ -199,6 +220,9 @@ function start_fetch(
 
     void run_sample_url_analyze_tasks(host, {
         on_task_start: () => {},
+        on_fetch_error: (detail) => {
+            show_fetch_error_detail(ui, t, detail);
+        },
         on_task_complete: (id: SampleUrlAnalyzeTaskId, outcome: SampleUrlAnalyzeTaskOutcome) => {
             handle_task_complete(ui, Helpers, t, id, outcome);
         },
@@ -221,6 +245,7 @@ async function stop_fetch_and_rollback(
     ui.fetch_snapshot = null;
     ui.completed_count = 0;
     ui.failed_count = 0;
+    clear_fetch_error_detail(ui);
     reset_sample_url_analyze_task_rows([...ui.task_rows.values()], Helpers, t);
     apply_progress_state(ui, t, create_initial_progress_state(ui.total_count));
     ui.progress_live_el.textContent = t('sample_url_analyze_progress_stopped');
@@ -302,7 +327,15 @@ export function show_sample_url_analyze_modal({
                 },
             }) as HTMLParagraphElement;
 
-            container.append(progress_bar_el, progress_live_el);
+            const error_detail_el = Helpers.create_element('p', {
+                class_name: 'sample-url-analyze-modal-error-detail',
+                attributes: {
+                    role: 'alert',
+                    hidden: 'true',
+                },
+            }) as HTMLParagraphElement;
+
+            container.append(progress_bar_el, progress_live_el, error_detail_el);
 
             const actions = Helpers.create_element('div', {
                 class_name: 'modal-confirm-actions',
@@ -332,6 +365,7 @@ export function show_sample_url_analyze_modal({
             const ui: SampleUrlAnalyzeModalUi = {
                 task_rows,
                 progress_live_el,
+                error_detail_el,
                 progress_bar_el,
                 run_btn,
                 stop_btn,
