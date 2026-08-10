@@ -238,7 +238,12 @@ export class RulefileSectionsViewComponent {
 
     _render_appendix1_template_section(ruleFileContent) {
         return render_rulefile_appendix1_template_section(
-            { Helpers: this.Helpers, Translation: this.Translation },
+            {
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                router: this.router,
+                getState: this.getState,
+            },
             ruleFileContent
         );
     }
@@ -554,7 +559,13 @@ export class RulefileSectionsViewComponent {
                 content_type_detail_context
             ));
             if (section_content && header_section_config) {
-                section_content.setAttribute('aria-labelledby', `rulefile-section-${header_section_config.id}-heading`);
+                const labelledby_id =
+                    section_id === 'report_template' && appendix === '1' && !is_editing
+                        ? 'rulefile-appendix1-summary-heading'
+                        : section_id === 'report_template' && appendix === '3' && !is_editing
+                            ? 'rulefile-appendix3-heading'
+                            : `rulefile-section-${header_section_config.id}-heading`;
+                section_content.setAttribute('aria-labelledby', labelledby_id);
             }
             right_wrapper.appendChild(section_content);
         }

@@ -67,22 +67,6 @@ export function render_rulefile_appendix_templates_hub(
     section.appendChild(nav);
 }
 
-export function create_rulefile_appendix_subpage_back_row(
-    deps: RulefileAppendixTemplatesRenderDeps,
-    on_click: () => void
-): HTMLElement {
-    const { Helpers: helpers, Translation: { t } } = deps;
-    const row = helpers.create_element('div', { class_name: 'audit-settings__back-row' });
-    const btn = helpers.create_element('button', {
-        class_name: ['button', 'button-default'],
-        attributes: { type: 'button' },
-        text_content: t('rulefile_appendix_back_to_hub'),
-    });
-    btn.addEventListener('click', on_click);
-    row.appendChild(btn);
-    return row;
-}
-
 export function create_rulefile_appendix_edit_button(
     deps: RulefileAppendixTemplatesRenderDeps,
     appendix: '1' | '2' | '3',

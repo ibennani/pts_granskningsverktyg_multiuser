@@ -37,6 +37,13 @@ export function create_rulefile_section_header(
     const Helpers = deps.Helpers;
     const header_wrapper = Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
 
+    const suppress_appendix_view_header =
+        section_config.id === 'report_template' && (appendix === '1' || appendix === '3') && !is_editing;
+    if (suppress_appendix_view_header) {
+        header_wrapper.hidden = true;
+        return header_wrapper;
+    }
+
     const heading_row = Helpers.create_element('div', { class_name: 'rulefile-sections-header-row' });
     const heading_id = `rulefile-section-${section_config.id}-heading`;
     const appendix_title_key =
@@ -266,6 +273,13 @@ export function create_rulefile_section_header(
         header_wrapper.appendChild(Helpers.create_element('p', {
             class_name: 'field-hint rulefile-sections-header-intro',
             text_content: t(intro_key)
+        }));
+    }
+
+    if (section_config.id === 'report_template' && appendix === '3' && is_editing) {
+        header_wrapper.appendChild(Helpers.create_element('p', {
+            class_name: 'field-hint rulefile-sections-header-intro',
+            text_content: t('rulefile_appendix3_edit_intro')
         }));
     }
 

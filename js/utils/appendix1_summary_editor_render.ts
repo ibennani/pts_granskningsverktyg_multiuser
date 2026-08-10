@@ -28,6 +28,8 @@ export type Appendix1SummaryEditorPageOptions = {
     on_save: (text: string) => void | Promise<void>;
     on_back?: () => void;
     on_discard?: () => void;
+    /** Knapp eller annan kontroll som placeras i sidhuvudsraden efter rubriken. */
+    page_header_action?: HTMLElement;
 };
 
 /**
@@ -50,6 +52,9 @@ export function render_appendix1_summary_editor_page(
             text_content: t(options.heading_key),
         })
     );
+    if (options.page_header_action) {
+        page_header.appendChild(options.page_header_action);
+    }
     container.appendChild(page_header);
 
     container.appendChild(

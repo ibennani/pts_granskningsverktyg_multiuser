@@ -149,7 +149,11 @@ test.describe('Regelfil: Bilaga 1-redigering', () => {
         await page.getByRole('link', { name: 'Bilaga 1' }).click();
         await expect(page).toHaveURL(/appendix=1/);
         await expect(page).not.toHaveURL(/edit=true/);
-        await expect(page.getByRole('heading', { name: 'Bilaga 1: Sammanfattning', level: 1 })).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: 'Bilaga 1, standardtext för sammanfattning', level: 1 })
+        ).toBeVisible();
+        await expect(page.getByText('Här ser du standardmallen för Bilaga 1')).toHaveCount(0);
+        await expect(page.locator('.audit-settings__page-header-row .rulefile-sections-edit-button')).toHaveCount(1);
         await expect(page.locator('.appendix1-body-text-editor')).toHaveCount(0);
         expect(console_errors).toEqual([]);
     });

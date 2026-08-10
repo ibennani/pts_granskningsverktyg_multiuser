@@ -6,13 +6,6 @@ import {
     read_rulefile_appendix3_template,
 } from '../../logic/appendix3_screenshots_template.js';
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
-import {
-    build_markdown_preview_editor_ui,
-    type MarkdownPreviewEditorHost,
-} from '../../utils/markdown_preview_editor_ui.js';
-import { create_rulefile_appendix_subpage_back_row } from './rulefile_appendix_templates_render.js';
-import '../../components/markdown_preview_editor.css';
-import '../audit_settings_view_component.css';
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
 type Deps = {
@@ -30,12 +23,7 @@ type Deps = {
 export class EditReportTemplateAppendix3Component {
     private root: HTMLElement | null = null;
     private deps: Deps | null = null;
-    private intro_host: MarkdownPreviewEditorHost = {
-        is_editing: false,
-        working_text: '',
-        textarea_ref: null,
-        preview_container_ref: null,
-    };
+    private intro_textarea: HTMLTextAreaElement | null = null;
 
     async init({ root, deps }: { root: HTMLElement; deps: Deps }): Promise<void> {
         this.root = root;
@@ -46,17 +34,13 @@ export class EditReportTemplateAppendix3Component {
         this.deps?.router('rulefile_sections', { section: 'report_template', appendix: '3' });
     }
 
-    private navigate_back_to_hub(): void {
-        this.deps?.router('rulefile_sections', { section: 'report_template' });
-    }
-
     private async save_template(): Promise<void> {
         if (!this.root || !this.deps) return;
         const state = this.deps.getState();
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
         const normalized = normalize_rulefile_appendix3(rule_file);
         const appendix = normalized.appendix3 as Record<string, unknown>;
-        appendix.introText = this.intro_host.working_text;
+        appendix.introText = this.intro_textarea?.value ?? '';
         normalized.appendix3 = appendix;
 
         await this.deps.dispatch({
@@ -83,31 +67,24 @@ export class EditReportTemplateAppendix3Component {
         const rule_file = this.deps.getState().ruleFileContent as Record<string, unknown> | undefined;
         const template = read_rulefile_appendix3_template(rule_file);
 
-        this.root.appendChild(
-            helpers.create_element('h1', {
-                attributes: { id: 'rulefile-appendix3-heading' },
-                text_content: t('rulefile_appendix3_edit_heading'),
+        const intro_field = helpers.create_element('div', { class_name: 'form-group' });
+        intro_field.appendChild(
+            helpers.create_element('label', {
+                attributes: { for: 'rulefile-appendix3-intro-text' },
+                text_content: t('rulefile_appendix3_intro_label'),
             })
         );
-        this.root.appendChild(
-            helpers.create_element('p', {
-                class_name: 'view-intro-text',
-                text_content: t('rulefile_appendix3_edit_intro'),
-            })
-        );
-
-        this.intro_host.working_text = template.introText;
-        this.intro_host.is_editing = false;
-        const intro_section = build_markdown_preview_editor_ui(
-            { Helpers: helpers, Translation: this.deps.Translation },
-            this.intro_host,
-            {
-                label_key: 'rulefile_appendix3_intro_label',
-                textarea_id: 'rulefile-appendix3-intro-text',
-                initial_text: template.introText,
-            }
-        );
-        this.root.appendChild(intro_section);
+        const intro_textarea = helpers.create_element('textarea', {
+            class_name: 'form-control',
+            attributes: {
+                id: 'rulefile-appendix3-intro-text',
+                rows: '16',
+            },
+        }) as HTMLTextAreaElement;
+        intro_textarea.value = template.introText;
+        this.intro_textarea = intro_textarea;
+        intro_field.appendChild(intro_textarea);
+        this.root.appendChild(intro_field);
 
         const actions = helpers.create_element('div', { class_name: 'form-actions' });
         const save_btn = helpers.create_element('button', {
@@ -127,23 +104,11 @@ export class EditReportTemplateAppendix3Component {
         actions.appendChild(save_btn);
         actions.appendChild(discard_btn);
         this.root.appendChild(actions);
-
-        this.root.appendChild(
-            create_rulefile_appendix_subpage_back_row(
-                { Helpers: helpers, Translation: this.deps.Translation, router: this.deps.router },
-                () => this.navigate_back_to_hub()
-            )
-        );
     }
 
     destroy(): void {
         this.root = null;
         this.deps = null;
-        this.intro_host = {
-            is_editing: false,
-            working_text: '',
-            textarea_ref: null,
-            preview_container_ref: null,
-        };
+        this.intro_textarea = null;
     }
 }

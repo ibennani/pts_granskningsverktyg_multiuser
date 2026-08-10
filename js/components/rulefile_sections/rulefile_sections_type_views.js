@@ -12,8 +12,11 @@ import { read_rulefile_appendix1_body_text } from '../../logic/appendix1_section
 import { read_rulefile_appendix2_labels } from '../../logic/appendix2_excel_template.js';
 import { read_rulefile_appendix3_template } from '../../logic/appendix3_screenshots_template.js';
 import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
-import { render_rulefile_appendix_templates_hub } from './rulefile_appendix_templates_render.js';
-import { render_markdown_to_html } from '../../export/export_html_build_primitives.js';
+import {
+    create_rulefile_appendix_edit_button,
+    render_rulefile_appendix_templates_hub,
+} from './rulefile_appendix_templates_render.js';
+import { can_edit_rulefile } from '../../utils/helpers.js';
 import '../../components/markdown_preview_editor.css';
 
 /**
@@ -231,13 +234,22 @@ export function render_rulefile_appendix_templates_hub_section(ctx) {
 }
 
 /**
- * @param {{ Helpers: object, Translation: object }} ctx
+ * @param {{ Helpers: object, Translation: object, router?: function, getState?: function }} ctx
  * @param {object} ruleFileContent
  */
 export function render_rulefile_appendix1_template_section(ctx, ruleFileContent) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
     const body_text = read_rulefile_appendix1_body_text(ruleFileContent);
+    const state = typeof ctx.getState === 'function' ? ctx.getState() : null;
+    const page_header_action =
+        can_edit_rulefile(state) && typeof ctx.router === 'function'
+            ? create_rulefile_appendix_edit_button(
+                  { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
+                  '1',
+                  'rulefile_sections_edit_appendix1_aria'
+              )
+            : undefined;
 
     render_appendix1_summary_editor_page(
         { Helpers: ctx.Helpers, Translation: ctx.Translation },
@@ -250,6 +262,7 @@ export function render_rulefile_appendix1_template_section(ctx, ruleFileContent)
             textarea_id: 'rulefile-appendix1-summary-text-view',
             initial_text: body_text,
             readonly: true,
+            page_header_action,
             summary_host: {
                 is_editing: false,
                 working_text: body_text,
@@ -327,34 +340,40 @@ export function render_rulefile_appendix2_template_section(ctx, ruleFileContent)
  * @param {object} ruleFileContent
  */
 export function render_rulefile_appendix3_template_section(ctx, ruleFileContent) {
-    const t = ctx.Translation.t;
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
     const template = read_rulefile_appendix3_template(ruleFileContent);
+    const state = typeof ctx.getState === 'function' ? ctx.getState() : null;
+    const page_header_action =
+        can_edit_rulefile(state) && typeof ctx.router === 'function'
+            ? create_rulefile_appendix_edit_button(
+                  { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
+                  '3',
+                  'rulefile_sections_edit_appendix3_aria'
+              )
+            : undefined;
 
-    section.appendChild(
-        Helpers.create_element('p', {
-            class_name: 'view-intro-text',
-            text_content: t('rulefile_appendix3_view_intro'),
-        })
-    );
-
-    if (template.introText.trim()) {
-        const intro_wrapper = Helpers.create_element('div', {
-            class_name: 'markdown-preview-content',
-        });
-        if (typeof Helpers.safe_set_inner_html === 'function') {
-            Helpers.safe_set_inner_html(intro_wrapper, render_markdown_to_html(template.introText), {
-                allow_html: true,
-            });
-        } else {
-            intro_wrapper.textContent = template.introText;
+    render_appendix1_summary_editor_page(
+        { Helpers: ctx.Helpers, Translation: ctx.Translation },
+        section,
+        {
+            heading_id: 'rulefile-appendix3-heading',
+            heading_key: 'rulefile_appendix_hub_3_title',
+            intro_key: 'rulefile_appendix3_view_intro',
+            label_key: 'rulefile_appendix3_intro_label',
+            textarea_id: 'rulefile-appendix3-intro-text-view',
+            initial_text: template.introText,
+            readonly: true,
+            page_header_action,
+            summary_host: {
+                is_editing: false,
+                working_text: template.introText,
+                textarea_ref: null,
+                preview_container_ref: null,
+            },
+            on_save: () => {},
         }
-        section.appendChild(
-            Helpers.create_element('h2', { text_content: t('rulefile_appendix3_intro_label') })
-        );
-        section.appendChild(intro_wrapper);
-    }
+    );
 
     return section;
 }
