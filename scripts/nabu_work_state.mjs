@@ -14,6 +14,8 @@ export const SUBAGENT_HARD_LEAK_MS = 16000;
 export const MAX_CONCURRENT_SUBAGENTS = 4;
 export const DELAYED_FLUSH_SECONDS = 10;
 export const FLUSH_RETRY_BUFFER_MS = 500;
+/** Max väntetid i notify_done innan vi ger upp (synkron retry i nabu_try_flush.ps1). */
+export const SYNC_FLUSH_MAX_MS = 25000;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = path.resolve(__dirname, '..');
@@ -102,8 +104,23 @@ export function read_state(repo_root) {
 export function write_state(state, repo_root) {
     const { state_path, cursor_dir } = get_state_paths(repo_root);
     fs.mkdirSync(cursor_dir, { recursive: true });
+    const content = `${JSON.stringify(state, null, 2)}\n`;
+    const deadline = Date.now() + 3000;
+    while (Date.now() < deadline) {
+        try {
+            fs.writeFileSync(state_path, content, 'utf8');
+            return;
+        } catch (err) {
+            const code = /** @type {NodeJS.ErrnoException} */ (err).code;
+            if (code === 'EPERM' || code === 'EBUSY' || code === 'EACCES') {
+                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+                continue;
+            }
+            throw err;
+        }
+    }
     const tmp = `${state_path}.tmp`;
-    fs.writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(tmp, content, 'utf8');
     fs.renameSync(tmp, state_path);
 }
 
@@ -155,6 +172,26 @@ export function maybe_reset_stale(state) {
     state.open_todo_count = 0;
     state.delayed_flush_scheduled = false;
     state.last_activity_at = Date.now();
+    return true;
+}
+
+/**
+ * Nollställer kvarvarande underagent-räknare utan aktiv klar-notis (läckta hooks).
+ * @param {NabuWorkState} state
+ * @returns {boolean}
+ */
+export function maybe_reset_orphaned_subagents(state) {
+    if (state.pending_subagents === 0) {
+        return false;
+    }
+    if (state.notify_requested) {
+        return false;
+    }
+    const activity_at = state.last_subagent_activity_at || state.last_activity_at;
+    if (Date.now() - activity_at < SUBAGENT_LEAK_MS) {
+        return false;
+    }
+    state.pending_subagents = 0;
     return true;
 }
 
@@ -234,6 +271,7 @@ export function count_open_todos(todos) {
 export function init_session_state(repo_root) {
     with_state_lock((state) => {
         maybe_reset_stale(state);
+        maybe_reset_orphaned_subagents(state);
         maybe_reset_leaked_subagents(state);
         maybe_reset_leaked_todos(state);
     }, repo_root);
@@ -280,9 +318,27 @@ export function request_notify(repo_root) {
         if (!state.notify_requested_at) {
             state.notify_requested_at = now;
         }
+        state.delayed_flush_scheduled = false;
         state.last_activity_at = now;
     }, repo_root);
     append_debug_log('request_notify', {}, repo_root);
+}
+
+/**
+ * Återställer klar-notis om webhook-sändning misslyckades efter try_flush.
+ * @param {string} [repo_root]
+ */
+export function requeue_notify(repo_root) {
+    with_state_lock((state) => {
+        const now = Date.now();
+        state.notify_requested = true;
+        if (!state.notify_requested_at) {
+            state.notify_requested_at = now;
+        }
+        state.delayed_flush_scheduled = false;
+        state.last_activity_at = now;
+    }, repo_root);
+    append_debug_log('requeue_notify', {}, repo_root);
 }
 
 /**
@@ -356,6 +412,7 @@ function build_flush_result(state, partial) {
 export function try_flush(repo_root) {
     return /** @type {FlushResult} */ (with_state_lock((state) => {
         maybe_reset_stale(state);
+        maybe_reset_orphaned_subagents(state);
         maybe_reset_leaked_subagents(state);
         maybe_reset_leaked_todos(state);
 
@@ -423,6 +480,10 @@ function run_cli(argv) {
     }
     if (command === 'request-notify') {
         request_notify();
+        return;
+    }
+    if (command === 'requeue-notify') {
+        requeue_notify();
         return;
     }
     if (command === 'subagent-start') {

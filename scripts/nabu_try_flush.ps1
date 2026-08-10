@@ -6,6 +6,7 @@ $ErrorActionPreference = 'Stop'
 $repo_root = Split-Path -Parent $PSScriptRoot
 $state_script = Join-Path $PSScriptRoot 'nabu_work_state.mjs'
 $message_path = Join-Path (Join-Path $repo_root '.cursor') 'nabu_flush_message.txt'
+$sync_flush_max_ms = 25000
 
 function Save-FlushMessage {
     param([string] $Text)
@@ -38,22 +39,62 @@ function Get-RetryDelaySeconds {
         }
         return $seconds
     }
-    return 10
+    return 3
 }
 
-function Schedule-DelayedFlush {
-    param(
-        [string] $Text,
-        [int] $DelaySeconds = 10
-    )
-    Save-FlushMessage -Text $Text
-    $delayed = Join-Path $PSScriptRoot 'nabu_delayed_flush.ps1'
-    Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', $delayed,
-        '-DelaySeconds', $DelaySeconds
-    ) -WindowStyle Hidden | Out-Null
+function Invoke-TryFlush {
+    try {
+        $raw = & node $state_script try-flush 2>&1
+        if (-not $raw) {
+            return $null
+        }
+        $json_line = ($raw | Out-String).Trim().Split([Environment]::NewLine) | Where-Object { $_.Trim().StartsWith('{') } | Select-Object -Last 1
+        if (-not $json_line) {
+            return $null
+        }
+        return $json_line | ConvertFrom-Json
+    } catch {
+        Write-Host "[nabu_try_flush] try-flush misslyckades: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Write-DeferredReason {
+    param($Result)
+    switch ($Result.reason) {
+        'no_request' {
+            Write-Host '[nabu_try_flush] Ingen begärd klar-notis.'
+        }
+        'pending_subagents' {
+            Write-Host "[nabu_try_flush] Uppskjuten: $($Result.count) underagent(er) kör fortfarande."
+        }
+        'open_todos' {
+            Write-Host "[nabu_try_flush] Uppskjuten: $($Result.count) öppen(a) todo(s)."
+        }
+        'debounce' {
+            Write-Host "[nabu_try_flush] Uppskjuten: debounce (väntar $($Result.wait_ms) ms)."
+        }
+        default {
+            Write-Host "[nabu_try_flush] Uppskjuten: $($Result.reason)"
+        }
+    }
+}
+
+function Send-FlushWebhook {
+    param([string] $Text)
+    if ($Text.Length -eq 0) {
+        Write-Host '[nabu_try_flush] Meddelande saknas trots sent=true.'
+        return 1
+    }
+    & (Join-Path $PSScriptRoot 'nabu_send_webhook.ps1') -Message $Text
+    $exit_code = $LASTEXITCODE
+    if ($exit_code -ne 0) {
+        & node $state_script requeue-notify | Out-Null
+        Write-Host '[nabu_try_flush] Webhook misslyckades; klar-notis återköad.'
+    } else {
+        Write-Host '[nabu_try_flush] Klar-notis skickad.'
+    }
+    return $exit_code
 }
 
 $resolved_message = Read-FlushMessage
@@ -62,42 +103,28 @@ if ($Message.Length -gt 0) {
     $resolved_message = $Message
 }
 
-$raw = & node $state_script try-flush
-if (-not $raw) {
-    Write-Host '[nabu_try_flush] Tomt svar från try-flush.'
+$deadline = [DateTime]::UtcNow.AddMilliseconds($sync_flush_max_ms)
+$result = Invoke-TryFlush
+
+while ($result.sent -ne $true -and [DateTime]::UtcNow -lt $deadline) {
+    if ($null -eq $result -or $result.reason -eq 'no_request') {
+        break
+    }
+    Write-DeferredReason -Result $result
+    $delay_seconds = Get-RetryDelaySeconds -Result $result
+    Start-Sleep -Seconds $delay_seconds
+    $result = Invoke-TryFlush
+}
+
+if ($null -eq $result) {
+    Write-Host '[nabu_try_flush] Klar-notis kunde inte verifieras; försök notify_done.cmd igen.'
     exit 1
 }
 
-$result = $raw | ConvertFrom-Json
 if ($result.sent -eq $true) {
-    if ($resolved_message.Length -eq 0) {
-        Write-Host '[nabu_try_flush] Meddelande saknas trots sent=true.'
-        exit 1
-    }
-    & (Join-Path $PSScriptRoot 'nabu_send_webhook.ps1') -Message $resolved_message
-    exit $LASTEXITCODE
+    exit (Send-FlushWebhook -Text $resolved_message)
 }
 
-switch ($result.reason) {
-    'no_request' {
-        Write-Host '[nabu_try_flush] Ingen begärd klar-notis.'
-    }
-    'pending_subagents' {
-        Write-Host "[nabu_try_flush] Uppskjuten: $($result.count) underagent(er) kör fortfarande."
-    }
-    'open_todos' {
-        Write-Host "[nabu_try_flush] Uppskjuten: $($result.count) öppen(a) todo(s)."
-    }
-    'debounce' {
-        Write-Host "[nabu_try_flush] Uppskjuten: debounce (väntar $($result.wait_ms) ms)."
-    }
-    default {
-        Write-Host "[nabu_try_flush] Uppskjuten: $($result.reason)"
-    }
-}
-
-if ($result.schedule_delayed_flush -eq $true) {
-    $delay_seconds = Get-RetryDelaySeconds -Result $result
-    Schedule-DelayedFlush -Text $resolved_message -DelaySeconds $delay_seconds
-}
-exit 0
+Write-DeferredReason -Result $result
+Write-Host '[nabu_try_flush] Klar-notis kunde inte skickas inom tidsgränsen; försök notify_done.cmd igen.'
+exit 1

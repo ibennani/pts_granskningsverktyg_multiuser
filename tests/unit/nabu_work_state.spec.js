@@ -14,10 +14,12 @@ import {
     create_default_state,
     maybe_reset_leaked_subagents,
     maybe_reset_leaked_todos,
+    maybe_reset_orphaned_subagents,
     maybe_reset_stale,
     normalize_state,
     read_state,
     request_notify,
+    requeue_notify,
     subagent_start,
     subagent_stop,
     sync_todos,
@@ -226,6 +228,32 @@ describe('nabu_work_state', () => {
         const reset = maybe_reset_leaked_todos(state);
         expect(reset).toBe(true);
         expect(state.open_todo_count).toBe(0);
+    });
+
+    test('maybe_reset_orphaned_subagents nollställer läckta räknare utan notify_requested', () => {
+        const state = create_default_state();
+        state.pending_subagents = 3;
+        state.last_subagent_activity_at = Date.now() - SUBAGENT_LEAK_MS - 1;
+
+        const reset = maybe_reset_orphaned_subagents(state);
+        expect(reset).toBe(true);
+        expect(state.pending_subagents).toBe(0);
+    });
+
+    test('request_notify nollställer delayed_flush_scheduled', () => {
+        const state = create_default_state();
+        state.delayed_flush_scheduled = true;
+        write_state(state);
+
+        request_notify();
+        expect(read_state().delayed_flush_scheduled).toBe(false);
+    });
+
+    test('requeue_notify sätter notify_requested igen', () => {
+        requeue_notify();
+        const state = read_state();
+        expect(state.notify_requested).toBe(true);
+        expect(state.delayed_flush_scheduled).toBe(false);
     });
 
     test('normalize_state skyddar mot ogiltig indata', () => {
