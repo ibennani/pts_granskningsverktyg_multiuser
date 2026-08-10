@@ -59,6 +59,11 @@ export function has_list_narrowing_filter(ctx: AuditListFilterContext): boolean 
     return count_secondary_filters(ctx) > 0 || !!(ctx.audit_filter_query || '').trim();
 }
 
+/** Sant när listan ska visa alla sektioner även om de är tomma (ingen söktext, standardfilter). */
+export function is_audit_list_show_all_sections_mode(ctx: AuditListFilterContext): boolean {
+    return !has_list_narrowing_filter(ctx);
+}
+
 /** Sant när listan ska grupperas (diarienummer eller granskare). */
 export function is_audit_list_grouped_view_mode(mode: string | undefined): boolean {
     return mode === 'case' || mode === 'auditor';
@@ -219,4 +224,25 @@ export function build_audit_list_section_configs(ctx: AuditListFilterContext): {
 /** Antal granskningar efter filter i alla sektioner. */
 export function count_filtered_audits_in_sections(section_configs: AuditListSectionConfig[]): number {
     return section_configs.reduce((sum, cfg) => sum + (cfg.audits?.length ?? 0), 0);
+}
+
+/**
+ * Returnerar sektioner som ska visas i listvyn.
+ * Utan avgränsande filter (tom sökfält, standardval) visas alla sektioner även när de är tomma.
+ * Med filter eller söktext visas bara sektioner som har matchande granskningar.
+ */
+export function get_visible_audit_list_section_configs(
+    section_configs: AuditListSectionConfig[],
+    ctx: AuditListFilterContext
+): AuditListSectionConfig[] {
+    if (!has_list_narrowing_filter(ctx)) {
+        return section_configs;
+    }
+    return section_configs.filter((cfg) => (cfg.audits?.length ?? 0) > 0);
+}
+
+/** Synliga sektionsnycklar efter filter (samma ordning som i listvyn). */
+export function get_visible_audit_list_section_keys(ctx: AuditListFilterContext): string[] {
+    const { section_configs } = build_audit_list_section_configs(ctx);
+    return get_visible_audit_list_section_configs(section_configs, ctx).map((cfg) => cfg.heading_key);
 }

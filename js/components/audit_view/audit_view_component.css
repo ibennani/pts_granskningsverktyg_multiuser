@@ -466,6 +466,42 @@
     margin-top: 0.35rem;
 }
 
+.audit-filter-search-input-wrap {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    width: 100%;
+}
+
+.audit-filter-search-input-wrap .audit-filter-input {
+    grid-area: 1 / 1;
+    width: 100%;
+    min-width: 0;
+    padding-right: 2.75rem;
+    box-sizing: border-box;
+}
+
+.audit-filter-search-input-wrap .generic-tooltip-wrapper {
+    grid-area: 1 / 1;
+    justify-self: end;
+    align-self: center;
+    margin-right: 0.25rem;
+    z-index: 1;
+}
+
+.audit-filter-clear-search {
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
 .audit-filter-input {
     width: 100%;
 }
@@ -482,9 +518,17 @@
 }
 
 .audit-audits-sections-container {
-    --audit-list-transition-duration: 0.25s; /* två faser = 0,5 s totalt vid filter-/listväxling */
+    --audit-list-transition-duration: 0.125s; /* ut + in = 0,25 s totalt vid filter */
     opacity: 1;
     transition: opacity var(--audit-list-transition-duration) ease;
+}
+
+.audit-list-section-anim {
+    --expandable-panel-transition-duration: 0.25s;
+}
+
+.audit-list-section-anim.expandable-panel {
+    margin-bottom: 0;
 }
 
 .audit-lists--transition-exit {
@@ -497,6 +541,10 @@
 
 @media (prefers-reduced-motion: reduce) {
     .audit-audits-sections-container {
+        transition: none;
+    }
+
+    .audit-list-section-anim.expandable-panel {
         transition: none;
     }
 

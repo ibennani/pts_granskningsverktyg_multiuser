@@ -3,7 +3,9 @@
 
 import {
     build_audit_list_section_configs,
-    is_audit_list_grouped_view_mode
+    get_visible_audit_list_section_configs,
+    is_audit_list_grouped_view_mode,
+    is_audit_list_show_all_sections_mode
 } from '../../logic/audit_list_section_filter.js';
 import { clamp_page_index } from '../../logic/table_pagination_logic.js';
 import {
@@ -15,6 +17,10 @@ import {
     clear_audit_lists_transition_classes,
     wrap_table_page_change_handler
 } from '../../logic/audit_list_view_transition.js';
+import {
+    expand_audit_list_sections_for_show_all_mode,
+    find_audit_list_section
+} from '../../logic/audit_list_section_transition.js';
 import { create_file_download_button } from '../../utils/file_download_button_ui.js';
 
 function get_audit_section_table_keys(heading_key) {
@@ -140,72 +146,160 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
     }
 }
 
+function get_audit_section_class_names(is_first_visible) {
+    return is_first_visible
+        ? ['start-view-audits-section']
+        : ['start-view-audits-section', 'start-view-audits-section-following'];
+}
+
+function build_audit_section_heading_row(ctx, config, section_heading_text, t) {
+    const heading_row = ctx.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
+    const section_heading = ctx.Helpers.create_element('h2', {
+        id: `${config.heading_key}-heading`,
+        text_content: section_heading_text
+    });
+    heading_row.appendChild(section_heading);
+    if (config.heading_key === 'start_view_audits_heading') {
+        const upload_audit_btn = ctx.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
+            text_content: t('audit_upload_saved_audit'),
+            attributes: { type: 'button', 'aria-label': t('audit_upload_saved_audit') }
+        });
+        upload_audit_btn.addEventListener('click', ctx.handle_audit_upload_click);
+        ctx.upload_audit_file_input = ctx.Helpers.create_element('input', {
+            class_name: 'audit-hidden-file-input',
+            attributes: {
+                type: 'file',
+                accept: '.json,application/json',
+                'aria-label': t('audit_upload_saved_audit'),
+                tabindex: '-1',
+                'aria-hidden': 'true'
+            }
+        });
+        ctx.upload_audit_file_input.addEventListener('change', ctx.handle_audit_file_select);
+        heading_row.appendChild(upload_audit_btn);
+        heading_row.appendChild(ctx.upload_audit_file_input);
+    }
+    if (config.heading_key === 'start_view_new_audits_heading') {
+        const start_new_btn = ctx.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
+            text_content: t('start_new_audit'),
+            attributes: { type: 'button', 'aria-label': t('start_new_audit') }
+        });
+        start_new_btn.addEventListener('click', ctx.handle_start_new_audit);
+        heading_row.appendChild(start_new_btn);
+    }
+    return heading_row;
+}
+
+function get_audit_section_heading_text(ctx, config, t) {
+    const heading_title = t(config.heading_key);
+    const section_count = get_audit_section_heading_count(config.heading_audits || [], ctx);
+    return t('start_view_section_heading_with_count', {
+        title: heading_title,
+        count: section_count
+    });
+}
+
+function build_audit_section_element(ctx, config, is_first_visible, t, start_expanded) {
+    const section_heading_text = get_audit_section_heading_text(ctx, config, t);
+    const section = ctx.Helpers.create_element('section', {
+        class_name: get_audit_section_class_names(is_first_visible),
+        attributes: {
+            'data-audit-section-key': config.heading_key,
+            'aria-labelledby': `${config.heading_key}-heading`
+        }
+    });
+    const anim_classes = ['audit-list-section-anim', 'expandable-panel'];
+    if (start_expanded) {
+        anim_classes.push('expandable-panel--expanded');
+    }
+    const anim_host = ctx.Helpers.create_element('div', { class_name: anim_classes });
+    const anim_inner = ctx.Helpers.create_element('div', {
+        class_name: ['expandable-panel__inner', 'audit-list-section-anim__inner']
+    });
+    anim_inner.appendChild(build_audit_section_heading_row(ctx, config, section_heading_text, t));
+    const table_wrapper = ctx.Helpers.create_element('div', {
+        class_name: 'generic-table-page-layout-host'
+    });
+    render_audit_section_table(ctx, config, table_wrapper, section_heading_text, t);
+    anim_inner.appendChild(table_wrapper);
+    anim_host.appendChild(anim_inner);
+    section.appendChild(anim_host);
+    return section;
+}
+
+function update_audit_section_element(ctx, section, config, is_first_visible, t) {
+    section.className = get_audit_section_class_names(is_first_visible).join(' ');
+    const section_heading_text = get_audit_section_heading_text(ctx, config, t);
+    const heading = section.querySelector(`#${CSS.escape(`${config.heading_key}-heading`)}`);
+    if (heading) {
+        heading.textContent = section_heading_text;
+    }
+    const table_wrapper = section.querySelector('.generic-table-page-layout-host');
+    if (table_wrapper) {
+        render_audit_section_table(ctx, config, table_wrapper, section_heading_text, t);
+    }
+}
+
+function reorder_audit_sections(container, ordered_heading_keys) {
+    ordered_heading_keys.forEach((heading_key) => {
+        const section = find_audit_list_section(container, heading_key);
+        if (section) container.appendChild(section);
+    });
+}
+
+/**
+ * Synkar sektioner i befintlig container utan att röra filterraden.
+ * @param {{ all_sections_expanded?: boolean }} [options]
+ */
+export function sync_audit_audits_sections(ctx, container, options = {}) {
+    if (!container) return;
+    const t = ctx.get_t_func();
+    const filter_result = build_audit_list_section_configs(ctx);
+    const { section_configs, has_list_narrowing_filter } = filter_result;
+    const visible_section_configs = get_visible_audit_list_section_configs(section_configs, ctx);
+    ctx._audit_list_has_narrowing_filter = has_list_narrowing_filter;
+    ctx._audit_list_has_active_filter = has_list_narrowing_filter;
+
+    const visible_keys = visible_section_configs.map((config) => config.heading_key);
+    visible_section_configs.forEach((config, index) => {
+        const is_first = index === 0;
+        let section = find_audit_list_section(container, config.heading_key);
+        if (!section) {
+            const show_all_sections = is_audit_list_show_all_sections_mode(ctx);
+            const start_expanded =
+                options.all_sections_expanded === true || show_all_sections;
+            section = build_audit_section_element(
+                ctx,
+                config,
+                is_first,
+                t,
+                start_expanded
+            );
+            container.appendChild(section);
+        } else {
+            update_audit_section_element(ctx, section, config, is_first, t);
+        }
+    });
+
+    [...container.querySelectorAll('[data-audit-section-key]')].forEach((section_el) => {
+        const key = section_el.getAttribute('data-audit-section-key');
+        if (key && !visible_keys.includes(key)) {
+            section_el.remove();
+        }
+    });
+    reorder_audit_sections(container, visible_keys);
+    expand_audit_list_sections_for_show_all_mode(container, ctx);
+}
+
 /** Renderar granskningssektionerna (listor) i befintlig container utan att röra filterraden. */
 export function render_audit_audits_sections(ctx, container) {
     if (!container) return;
     clear_audit_lists_transition_classes(container);
-    const t = ctx.get_t_func();
     container.innerHTML = '';
     container.classList.add('audit-audits-sections-container');
-
-    const { section_configs, has_list_narrowing_filter } = build_audit_list_section_configs(ctx);
-    ctx._audit_list_has_narrowing_filter = has_list_narrowing_filter;
-    ctx._audit_list_has_active_filter = has_list_narrowing_filter;
-    section_configs.forEach((config, index) => {
-        const section = ctx.Helpers.create_element('section', {
-            class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following',
-            attributes: { 'aria-labelledby': `${config.heading_key}-heading` }
-        });
-        const heading_row = ctx.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
-        const heading_title = t(config.heading_key);
-        const section_count = get_audit_section_heading_count(config.heading_audits || [], ctx);
-        const section_heading_text = t('start_view_section_heading_with_count', {
-            title: heading_title,
-            count: section_count
-        });
-        const section_heading = ctx.Helpers.create_element('h2', {
-            id: `${config.heading_key}-heading`,
-            text_content: section_heading_text
-        });
-        heading_row.appendChild(section_heading);
-        if (config.heading_key === 'start_view_audits_heading') {
-            const upload_audit_btn = ctx.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
-                text_content: t('audit_upload_saved_audit'),
-                attributes: { type: 'button', 'aria-label': t('audit_upload_saved_audit') }
-            });
-            upload_audit_btn.addEventListener('click', ctx.handle_audit_upload_click);
-            ctx.upload_audit_file_input = ctx.Helpers.create_element('input', {
-                class_name: 'audit-hidden-file-input',
-                attributes: {
-                    type: 'file',
-                    accept: '.json,application/json',
-                    'aria-label': t('audit_upload_saved_audit'),
-                    tabindex: '-1',
-                    'aria-hidden': 'true'
-                }
-            });
-            ctx.upload_audit_file_input.addEventListener('change', ctx.handle_audit_file_select);
-            heading_row.appendChild(upload_audit_btn);
-            heading_row.appendChild(ctx.upload_audit_file_input);
-        }
-        if (config.heading_key === 'start_view_new_audits_heading') {
-            const start_new_btn = ctx.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
-                text_content: t('start_new_audit'),
-                attributes: { type: 'button', 'aria-label': t('start_new_audit') }
-            });
-            start_new_btn.addEventListener('click', ctx.handle_start_new_audit);
-            heading_row.appendChild(start_new_btn);
-        }
-        section.appendChild(heading_row);
-        const table_wrapper = ctx.Helpers.create_element('div', {
-            class_name: 'generic-table-page-layout-host'
-        });
-        render_audit_section_table(ctx, config, table_wrapper, section_heading_text, t);
-        section.appendChild(table_wrapper);
-        container.appendChild(section);
-    });
+    sync_audit_audits_sections(ctx, container, { all_sections_expanded: true });
 }
 
 export function render_audit_samples_section(ctx) {

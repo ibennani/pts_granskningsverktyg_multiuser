@@ -4,6 +4,7 @@
 
 import { count_secondary_filters, type AuditListFilterContext } from '../../logic/audit_list_section_filter.js';
 import { create_audit_filter_toggle_button, update_audit_filter_toggle_button } from './audit_filter_toggle_button.js';
+import { wrap_with_static_tooltip } from '../../utils/generic_tooltip.js';
 import {
     EXPANDABLE_PANEL_EXPANDED_CLASS,
     animate_expandable_panel,
@@ -32,12 +33,16 @@ type AuditFilterAccordionCtx = {
             opts?: {
                 class_name?: string | string[];
                 text_content?: string;
+                html_content?: string;
                 attributes?: Record<string, string>;
             }
         ) => HTMLElement;
+        get_icon_svg?: (name: string, colors: string[], size: number) => string;
     };
     handle_filter_input: (event: Event) => void;
+    handle_audit_filter_clear_search?: () => void;
     _auditFilterInputRef?: HTMLInputElement | null;
+    _auditFilterClearRef?: HTMLButtonElement | null;
     _auditFilterToggleRef?: HTMLButtonElement | null;
     _auditFilterWrapperRef?: HTMLElement | null;
     _auditFilterAccordionSection?: HTMLElement | null;
@@ -60,6 +65,18 @@ function to_filter_count_ctx(ctx: AuditFilterAccordionCtx): AuditListFilterConte
         audit_list_group_mode: ctx.audit_list_group_mode,
         audit_table_page_size: ctx.audit_table_page_size
     };
+}
+
+function update_audit_filter_search_clear_button(ctx: AuditFilterAccordionCtx): void {
+    const clear_btn = ctx._auditFilterClearRef;
+    if (!clear_btn) return;
+    const input_value = ctx._auditFilterInputRef?.value ?? ctx.audit_filter_query ?? '';
+    const has_text = String(input_value).trim().length > 0;
+    clear_btn.hidden = !has_text;
+    const tooltip_wrap = clear_btn.closest('.generic-tooltip-wrapper');
+    if (tooltip_wrap instanceof HTMLElement) {
+        tooltip_wrap.hidden = !has_text;
+    }
 }
 
 function render_search_field(
@@ -92,8 +109,40 @@ function render_search_field(
     }) as HTMLInputElement;
     filter_input.addEventListener('input', ctx.handle_filter_input);
     ctx._auditFilterInputRef = filter_input;
+
+    const clear_label = t('audit_filter_clear_search');
+    const clear_btn = ctx.Helpers.create_element('button', {
+        class_name: ['button', 'button-default', 'button-small', 'audit-filter-clear-search'],
+        attributes: {
+            type: 'button',
+            'aria-label': clear_label
+        },
+        html_content:
+            typeof ctx.Helpers.get_icon_svg === 'function'
+                ? ctx.Helpers.get_icon_svg('close', ['currentColor'], 16)
+                : '×'
+    }) as HTMLButtonElement;
+    clear_btn.hidden = !(ctx.audit_filter_query || '').trim();
+    clear_btn.addEventListener('click', () => {
+        if (typeof ctx.handle_audit_filter_clear_search === 'function') {
+            ctx.handle_audit_filter_clear_search();
+        }
+    });
+    ctx._auditFilterClearRef = clear_btn;
+
+    const clear_tooltip_wrap = wrap_with_static_tooltip(ctx.Helpers, clear_btn, clear_label, {
+        use_overlay: false
+    });
+    clear_tooltip_wrap.hidden = !(ctx.audit_filter_query || '').trim();
+
+    const input_wrap = ctx.Helpers.create_element('div', {
+        class_name: 'audit-filter-search-input-wrap'
+    });
+    input_wrap.appendChild(filter_input);
+    input_wrap.appendChild(clear_tooltip_wrap);
+
     text_field.appendChild(filter_label);
-    text_field.appendChild(filter_input);
+    text_field.appendChild(input_wrap);
     search_row.appendChild(text_field);
     search_row.appendChild(
         create_audit_filter_toggle_button(ctx, wrapper, secondary_count, panel_open)
@@ -151,6 +200,7 @@ export function update_audit_filter_accordion_ui(ctx: AuditFilterAccordionCtx): 
     if (ctx._auditFilterToggleRef) {
         update_audit_filter_toggle_button(ctx._auditFilterToggleRef, ctx, secondary_count, panel_open);
     }
+    update_audit_filter_search_clear_button(ctx);
 }
 
 async function run_accordion_animation(

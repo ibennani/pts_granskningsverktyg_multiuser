@@ -9,7 +9,9 @@ import {
     filter_audits_by_current_user,
     filter_audits_by_granskningstyp,
     filter_audits_by_type,
+    get_visible_audit_list_section_configs,
     has_list_narrowing_filter,
+    is_audit_list_show_all_sections_mode,
     sort_audits_by_case_number
 } from '../../js/logic/audit_list_section_filter.ts';
 
@@ -243,6 +245,74 @@ describe('has_list_narrowing_filter', () => {
                 audit_table_page_size: 'all'
             })
         ).toBe(false);
+    });
+});
+
+describe('is_audit_list_show_all_sections_mode', () => {
+    it('är sant med tom sökruta och standardfilter', () => {
+        expect(
+            is_audit_list_show_all_sections_mode({
+                audits: [],
+                audit_filter_query: '',
+                audit_type_filter: '',
+                granskningstyp_filter: '',
+                audit_list_group_mode: 'all',
+                audit_table_page_size: 'all'
+            })
+        ).toBe(true);
+    });
+
+    it('är falskt vid söktext även om sekundära filter är standard', () => {
+        expect(
+            is_audit_list_show_all_sections_mode({
+                audits: [],
+                audit_filter_query: 'test'
+            })
+        ).toBe(false);
+    });
+});
+
+describe('get_visible_audit_list_section_configs', () => {
+    it('visar alla sektioner utan avgränsande filter även när de är tomma', () => {
+        const ctx = {
+            audit_filter_query: '',
+            audit_type_filter: '',
+            granskningstyp_filter: '',
+            audit_list_group_mode: 'all',
+            audit_table_page_size: 'all',
+            audits: [make_audit(1, 'in_progress', { caseNumber: '1' })]
+        };
+        const { section_configs } = build_audit_list_section_configs(ctx);
+        const visible = get_visible_audit_list_section_configs(section_configs, ctx);
+        expect(visible.length).toBe(4);
+        expect(visible.some((cfg) => cfg.heading_key === 'start_view_new_audits_heading')).toBe(true);
+    });
+
+    it('döljer tomma sektioner när söktext eller filter är aktivt', () => {
+        const ctx = {
+            audit_filter_query: 'alfa',
+            audits: [
+                make_audit(1, 'in_progress', { caseNumber: '1', actorName: 'Alfa AB' }),
+                make_audit(2, 'not_started', { caseNumber: '2', actorName: 'Beta' })
+            ]
+        };
+        const { section_configs } = build_audit_list_section_configs(ctx);
+        const visible = get_visible_audit_list_section_configs(section_configs, ctx);
+        expect(visible.map((cfg) => cfg.heading_key)).toEqual(['start_view_audits_heading']);
+    });
+
+    it('döljer tomma sektioner vid sekundärt filter utan söktext', () => {
+        const ctx = {
+            audit_filter_query: '',
+            audit_type_filter: 'webb',
+            audits: [
+                make_audit(1, 'in_progress', { caseNumber: '1' }, 'webb'),
+                make_audit(2, 'not_started', { caseNumber: '2' }, 'app')
+            ]
+        };
+        const { section_configs } = build_audit_list_section_configs(ctx);
+        const visible = get_visible_audit_list_section_configs(section_configs, ctx);
+        expect(visible.map((cfg) => cfg.heading_key)).toEqual(['start_view_audits_heading']);
     });
 });
 

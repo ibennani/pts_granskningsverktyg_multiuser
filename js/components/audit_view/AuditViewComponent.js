@@ -48,17 +48,19 @@ import {
 import {
     build_audit_list_section_configs,
     count_filtered_audits_in_sections,
-    count_secondary_filters
+    count_secondary_filters,
+    get_visible_audit_list_section_keys
 } from '../../logic/audit_list_section_filter.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
-import { render_audit_audits_sections, render_audit_samples_section } from './AuditSamplesSection.js';
+import { render_audit_audits_sections, render_audit_samples_section, sync_audit_audits_sections } from './AuditSamplesSection.js';
 import {
     JSON_MAX_UPLOAD_BYTES,
     format_json_max_upload_size_label,
 } from '../../../shared/constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
 import { audit_page_size_string_to_number } from '../../logic/table_pagination_logic.js';
-import { run_audit_lists_toggle_animation } from '../../logic/audit_list_view_transition.js';
+import { collect_audit_section_keys_from_container } from '../../logic/audit_list_section_transition.js';
+import { run_audit_list_filter_update_animation } from '../../logic/audit_list_view_transition.js';
 import './audit_view_component.css';
 
 const AUDIT_LIST_GROUP_MODE_STORAGE_KEY = 'gv_audit_list_group_mode';
@@ -112,6 +114,7 @@ export class AuditViewComponent {
         this._auditGroupByCaseHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
+        this._auditFilterClearRef = null;
         this._auditTypeSelectRef = null;
         this._granskningstypSelectRef = null;
         this._auditPageSizeSelectRef = null;
@@ -167,6 +170,7 @@ export class AuditViewComponent {
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
         this.handle_filter_input = this.handle_filter_input.bind(this);
+        this.handle_audit_filter_clear_search = this.handle_audit_filter_clear_search.bind(this);
         this.handle_type_filter_change = this.handle_type_filter_change.bind(this);
         this.handle_granskningstyp_filter_change = this.handle_granskningstyp_filter_change.bind(this);
         this.handle_audit_table_page_size_change = this.handle_audit_table_page_size_change.bind(this);
@@ -210,14 +214,23 @@ export class AuditViewComponent {
         this._rulesDraftPage = 0;
     }
 
-    _render_audit_lists_section() {
+    _sync_audit_lists_section() {
+        if (!this.root || this.audit_mode !== 'audits' || !this.api_available) return;
+        const container = this.root.querySelector('.audit-audits-sections-container');
+        if (!container) return;
+        sync_audit_audits_sections(this, container);
+    }
+
+    async _render_audit_lists_section() {
         if (!this.root || this.audit_mode !== 'audits' || !this.api_available) return;
         const container = this.root.querySelector('.audit-audits-sections-container');
         if (!container) {
             this.render();
             return;
         }
-        render_audit_audits_sections(this, container);
+        await this._run_audit_lists_change_with_animation(() => {
+            this._sync_audit_lists_section();
+        });
     }
 
     async _run_audit_lists_change_with_animation(apply_change) {
@@ -229,9 +242,13 @@ export class AuditViewComponent {
 
         this._audit_list_toggle_animating = true;
         try {
-            await run_audit_lists_toggle_animation(
-                () => this.root?.querySelector('.audit-audits-sections-container') ?? null,
-                apply_change
+            const get_container = () => this.root?.querySelector('.audit-audits-sections-container') ?? null;
+            await run_audit_list_filter_update_animation(
+                get_container,
+                () => collect_audit_section_keys_from_container(get_container()),
+                () => get_visible_audit_list_section_keys(this._get_audit_filter_context()),
+                apply_change,
+                () => this._get_audit_filter_context()
             );
         } finally {
             this._audit_list_toggle_animating = false;
@@ -247,7 +264,7 @@ export class AuditViewComponent {
         this.audit_table_page_size = value;
         this._reset_all_audit_table_pages();
         await this._run_audit_lists_change_with_animation(() => {
-            this._render_audit_lists_section();
+            this._sync_audit_lists_section();
         });
         this._update_audit_filter_ui_state();
         this._announce_filter_list_status();
@@ -366,7 +383,7 @@ export class AuditViewComponent {
         this._reset_all_audit_table_pages();
 
         await this._run_audit_lists_change_with_animation(() => {
-            this._render_audit_lists_section();
+            this._sync_audit_lists_section();
         });
 
         this._update_audit_filter_ui_state();
@@ -414,7 +431,7 @@ export class AuditViewComponent {
         this._reset_all_audit_table_pages();
 
         await this._run_audit_lists_change_with_animation(() => {
-            this._render_audit_lists_section();
+            this._sync_audit_lists_section();
         });
 
         this._update_audit_filter_ui_state();
@@ -452,20 +469,22 @@ export class AuditViewComponent {
         if (!AUDIT_LIST_GROUP_MODES.includes(value)) return;
         if (this.audit_list_group_mode === value || this._audit_list_toggle_animating) return;
 
+        this.audit_list_group_mode = value;
+        write_audit_list_group_mode_pref(value);
+        this._reset_all_audit_table_pages();
         await this._run_audit_lists_change_with_animation(() => {
-            this.audit_list_group_mode = value;
-            write_audit_list_group_mode_pref(value);
-            this._reset_all_audit_table_pages();
-            this._render_audit_lists_section();
+            this._sync_audit_lists_section();
         });
         this._update_audit_filter_ui_state();
         this._announce_filter_list_status();
     }
 
-    handle_filter_input(event) {
+    async handle_filter_input(event) {
         const target = event && event.target ? event.target : null;
-        const value = target ? target.value : '';
-        if (this.audit_filter_query === value) return;
+        const raw_value = target ? target.value : '';
+        const trimmed_value = String(raw_value).trim();
+        const normalized_query = trimmed_value === '' ? '' : String(raw_value);
+        if (this.audit_filter_query === normalized_query) return;
 
         let selection_start = null;
         let selection_end = null;
@@ -483,11 +502,39 @@ export class AuditViewComponent {
             this._auditListComponent._table._lastFocusPosition = null;
         }
 
-        this.audit_filter_query = value;
+        this.audit_filter_query = normalized_query;
+        if (target && trimmed_value === '' && raw_value !== '') {
+            target.value = '';
+        }
         this._reset_all_audit_table_pages();
-        this._render_audit_lists_section();
+        await this._render_audit_lists_section();
         this._update_audit_filter_ui_state();
         this._announce_filter_list_status();
+    }
+
+    async handle_audit_filter_clear_search() {
+        if (!String(this.audit_filter_query || '').trim()) return;
+        if (this._auditFilterInputRef) {
+            this._auditFilterInputRef.value = '';
+        }
+        this.audit_filter_query = '';
+        this._auditFilterHadFocus = true;
+        this._auditFilterSelection = { selectionStart: 0, selectionEnd: 0 };
+        if (this._auditListComponent?._table) {
+            this._auditListComponent._table._lastFocusPosition = null;
+        }
+        this._reset_all_audit_table_pages();
+        await this._render_audit_lists_section();
+        this._update_audit_filter_ui_state();
+        this._announce_filter_list_status();
+        const input = this._auditFilterInputRef;
+        if (input && document.contains(input)) {
+            try {
+                input.focus({ preventScroll: true });
+            } catch {
+                input.focus();
+            }
+        }
     }
 
     async handle_type_filter_change(event) {
@@ -497,7 +544,7 @@ export class AuditViewComponent {
         this.audit_type_filter = value;
         this._reset_all_audit_table_pages();
         await this._run_audit_lists_change_with_animation(() => {
-            this._render_audit_lists_section();
+            this._sync_audit_lists_section();
         });
         this._update_audit_filter_ui_state();
         this._announce_filter_list_status();
@@ -510,7 +557,7 @@ export class AuditViewComponent {
         this.granskningstyp_filter = value;
         this._reset_all_audit_table_pages();
         await this._run_audit_lists_change_with_animation(() => {
-            this._render_audit_lists_section();
+            this._sync_audit_lists_section();
         });
         this._update_audit_filter_ui_state();
         this._announce_filter_list_status();
@@ -536,7 +583,7 @@ export class AuditViewComponent {
             const fresh = await get_audits();
             this.audits = fresh;
             if (this.audit_mode === 'audits') {
-                this._render_audit_lists_section();
+                this._sync_audit_lists_section();
             } else if (this.root) {
                 this.render();
             }
@@ -2343,6 +2390,7 @@ export class AuditViewComponent {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
         this._auditFilterInputRef = null;
+        this._auditFilterClearRef = null;
         this._auditTypeSelectRef = null;
         this._granskningstypSelectRef = null;
         this._auditPageSizeSelectRef = null;

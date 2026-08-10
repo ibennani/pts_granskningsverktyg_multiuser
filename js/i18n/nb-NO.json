@@ -313,6 +313,7 @@
   "audit_download_rule_aria": "Last ned regelfil {name}",
   "audit_edit_rule_aria": "Rediger regelfil {name}",
   "audit_filter_label": "Filtrer etter saksnummer, virksomhetsnavn eller revisor",
+  "audit_filter_clear_search": "Tøm søkefeltet",
   "audit_filter_landmark_label": "Filter for tilsynslisten",
   "audit_filter_no_results": "Ingen tilsyn samsvarer med gjeldende filter.",
   "audit_filter_live_no_results": "Ingen tilsyn samsvarer med gjeldende filter.",

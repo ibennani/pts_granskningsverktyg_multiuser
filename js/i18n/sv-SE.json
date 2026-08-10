@@ -313,6 +313,7 @@
   "audit_download_rule_aria": "Ladda ner {name}",
   "audit_edit_rule_aria": "Redigera {name}",
   "audit_filter_label": "Filtrera på diarienummer, aktör eller granskare",
+  "audit_filter_clear_search": "Rensa skrivfältet",
   "audit_filter_landmark_label": "Filter för granskningslistan",
   "audit_filter_no_results": "Inga granskningar matchar filtret.",
   "audit_filter_live_no_results": "Inga granskningar matchar filtret.",

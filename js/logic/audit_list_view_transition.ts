@@ -3,6 +3,15 @@
  */
 
 import {
+    animate_audit_list_section_hide,
+    animate_audit_list_section_show,
+    expand_audit_list_sections_for_show_all_mode,
+    fade_audit_list_table_stacks_in,
+    fade_audit_list_table_stacks_out,
+    find_audit_list_section
+} from './audit_list_section_transition.js';
+import type { AuditListFilterContext } from './audit_list_section_filter.js';
+import {
     EXPANDABLE_PANEL_TRANSITION_MS,
     animate_expandable_panel,
     prefers_reduced_motion,
@@ -11,8 +20,11 @@ import {
 
 export const AUDIT_LIST_TRANSITION_MS = EXPANDABLE_PANEL_TRANSITION_MS;
 
-/** En fas (ut- eller infasning) vid filter-/listväxling; två faser ger 0,5 s totalt. */
-export const AUDIT_LIST_TOGGLE_TRANSITION_MS = AUDIT_LIST_TRANSITION_MS / 2;
+/** Total tid för listfade vid filterändring (ut + in). */
+export const AUDIT_LIST_FILTER_TRANSITION_TOTAL_MS = 250;
+
+/** En fas (ut eller infasning) vid filter-/listväxling. */
+export const AUDIT_LIST_TOGGLE_TRANSITION_MS = AUDIT_LIST_FILTER_TRANSITION_TOTAL_MS / 2;
 
 /** Kort utfasning innan innehåll byts (stack dold under layout). */
 export const TABLE_PAGE_FADE_OUT_MS = 125;
@@ -280,7 +292,7 @@ export function wrap_table_page_change_handler(
 }
 
 /**
- * Tonar ut listor, renderar om och tonar in igen (0,5 s totalt om rörelse tillåts).
+ * Tonar ut listor, renderar om och tonar in igen (0,25 s totalt om rörelse tillåts).
  */
 export async function run_audit_lists_toggle_animation(
     get_container: () => HTMLElement | null,
@@ -307,4 +319,75 @@ export async function run_audit_lists_toggle_animation(
     await next_animation_frame();
     new_container.classList.remove('audit-lists--transition-enter-start');
     await wait_element_transition(new_container, AUDIT_LIST_TOGGLE_TRANSITION_MS);
+}
+
+function section_key_sets_equal(prev_keys: string[], next_keys: string[]): boolean {
+    if (prev_keys.length !== next_keys.length) return false;
+    return prev_keys.every((key, index) => key === next_keys[index]);
+}
+
+/**
+ * Kombinerar sektionsanimation (0,25 s) och list-/tabellfade (0,25 s) vid filterändringar.
+ */
+export async function run_audit_list_filter_update_animation(
+    get_container: () => HTMLElement | null,
+    get_prev_section_keys: () => string[],
+    get_next_section_keys: () => string[],
+    run_sync: () => void,
+    get_filter_ctx?: () => AuditListFilterContext
+): Promise<void> {
+    const container = get_container();
+    if (!container || prefers_reduced_motion()) {
+        run_sync();
+        clear_audit_lists_transition_classes(get_container());
+        const synced_container = get_container();
+        if (synced_container && get_filter_ctx) {
+            expand_audit_list_sections_for_show_all_mode(synced_container, get_filter_ctx());
+        }
+        return;
+    }
+
+    const prev_keys = get_prev_section_keys();
+    const next_keys = get_next_section_keys();
+    const visibility_changed = !section_key_sets_equal(prev_keys, next_keys);
+
+    if (!visibility_changed) {
+        await run_audit_lists_toggle_animation(get_container, run_sync);
+        const synced_container = get_container();
+        if (synced_container && get_filter_ctx) {
+            expand_audit_list_sections_for_show_all_mode(synced_container, get_filter_ctx());
+        }
+        return;
+    }
+
+    const keys_to_remove = prev_keys.filter((key) => !next_keys.includes(key));
+    const keys_to_add = next_keys.filter((key) => !prev_keys.includes(key));
+    const keys_staying = next_keys.filter((key) => prev_keys.includes(key));
+
+    for (const key of keys_to_remove) {
+        const section = find_audit_list_section(container, key);
+        if (!section) continue;
+        await animate_audit_list_section_hide(section);
+        section.remove();
+    }
+
+    if (keys_staying.length > 0) {
+        await fade_audit_list_table_stacks_out(container, keys_staying);
+    }
+
+    run_sync();
+
+    const synced_container = get_container();
+    if (!synced_container) return;
+
+    const expand_promises = keys_to_add.map(async (key) => {
+        const section = find_audit_list_section(synced_container, key);
+        if (section) await animate_audit_list_section_show(section);
+    });
+    const fade_in_promise = fade_audit_list_table_stacks_in(synced_container, next_keys);
+    await Promise.all([...expand_promises, fade_in_promise]);
+    if (get_filter_ctx) {
+        expand_audit_list_sections_for_show_all_mode(synced_container, get_filter_ctx());
+    }
+    clear_audit_lists_transition_classes(synced_container);
 }
