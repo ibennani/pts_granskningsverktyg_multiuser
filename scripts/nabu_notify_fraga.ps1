@@ -72,18 +72,5 @@ $aa = [char]0x00E5
 $tz = [TimeZoneInfo]::FindSystemTimeZoneById('W. Europe Standard Time')
 $stamp = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $tz).ToString('HH:mm:ss')
 $msg = ('Du m{0}ste svara p{0} fr{0}gor om {1} ({2})' -f $aa, $summary, $stamp)
-$body = @{ message = $msg } | ConvertTo-Json -Compress
-$tmp = [System.IO.Path]::GetTempFileName()
-try {
-    [System.IO.File]::WriteAllText($tmp, $body, [System.Text.UTF8Encoding]::new($false))
-    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
-    if (-not $curl) {
-        Write-Host '[nabu_notify_fraga] Hittar inte curl.exe (krävs i PATH, t.ex. Windows 10+).'
-        exit 1
-    }
-    $data_arg = '@' + $tmp
-    & curl.exe -s -X POST -H 'Content-Type: application/json; charset=utf-8' --data-binary $data_arg $env:NABU_WEBHOOK_URL
-    exit $LASTEXITCODE
-} finally {
-    Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
-}
+& (Join-Path $PSScriptRoot 'nabu_send_webhook.ps1') -Message $msg
+exit $LASTEXITCODE
