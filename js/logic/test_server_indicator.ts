@@ -28,7 +28,7 @@ export function format_test_server_banner_text(
     const formatted = format_build_info_object(build_timestamp ?? new Date(), {
         include_seconds: false,
     });
-    return `Leffe testserver - Byggt ${formatted.date} kl ${formatted.time}`;
+    return `Testserver Leffe: Byggt ${formatted.date} kl ${formatted.time}`;
 }
 
 /** Sätter klass på html och infogar banner som första barn i body (icke-dockad). */

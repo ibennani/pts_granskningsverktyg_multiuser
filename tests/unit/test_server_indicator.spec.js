@@ -16,7 +16,7 @@ describe('test_server_indicator', () => {
 
     test('format_test_server_banner_text innehåller etikett och tid', () => {
         const text = format_test_server_banner_text('2026-06-24T10:30:00.000Z');
-        expect(text).toMatch(/^Leffe testserver - Byggt .+ kl \d{2}:\d{2}$/);
+        expect(text).toMatch(/^Testserver Leffe: Byggt .+ kl \d{2}:\d{2}$/);
     });
 
     test('apply_test_server_viewport_indicator sätter klass och banner i dokumentflöde', () => {
@@ -32,7 +32,7 @@ describe('test_server_indicator', () => {
         expect(banner.className).toBe('test-server-banner');
         expect(window.getComputedStyle(banner).position).not.toBe('fixed');
         expect(banner).toBe(document.body.firstElementChild);
-        expect(banner.textContent).toContain('Leffe testserver - Byggt');
+        expect(banner.textContent).toContain('Testserver Leffe: Byggt');
     });
 
     test('update_test_server_banner_text uppdaterar befintlig banner', () => {
@@ -41,7 +41,7 @@ describe('test_server_indicator', () => {
         window.BUILD_INFO = { timestamp: '2026-06-24T14:15:00.000Z' };
         update_test_server_banner_text();
         const banner = document.getElementById('test-server-banner');
-        expect(banner.textContent).toContain('Leffe testserver - Byggt');
+        expect(banner.textContent).toContain('Testserver Leffe: Byggt');
     });
 
     test('ingen markör utanför test-server-path', () => {
