@@ -128,7 +128,8 @@ export default defineConfig({
     open: false,
     proxy: app_base_prefix
       ? {
-          [`${app_base}api`]: {
+          // Kräv slash efter "api" så /v2/apiaudits/... (saknad slash i klient-URL) inte proxas felaktigt.
+          [`${app_base}api/`]: {
             target: 'http://localhost:3000',
             changeOrigin: true,
             rewrite: (path) => path.replace(new RegExp(`^\\/${app_base_prefix}`), ''),

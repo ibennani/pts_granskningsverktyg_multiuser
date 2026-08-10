@@ -1,6 +1,6 @@
 {
     "watch": ["server"],
-    "ext": "js,json",
+    "ext": "js,ts,json",
     "delay": "2",
     "exec": "tsx server/index.js",
     "signal": "SIGTERM",

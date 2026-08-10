@@ -9,12 +9,25 @@ type AuditSnapshotApiErrorPayload = {
     detail?: string;
 };
 
+function extract_html_error_detail(text: string): string | null {
+    const pre_match = text.match(/<pre>([^<]+)<\/pre>/i);
+    const detail = pre_match?.[1]?.trim();
+    return detail || null;
+}
+
 async function parse_audit_snapshot_error_payload(res: Response): Promise<AuditSnapshotApiErrorPayload> {
     try {
         const text = await res.text();
         const trimmed = text.trim();
         if (trimmed.startsWith('{')) {
             return JSON.parse(trimmed) as AuditSnapshotApiErrorPayload;
+        }
+        const html_detail = extract_html_error_detail(trimmed);
+        if (html_detail) {
+            return {
+                error: res.statusText || `HTTP ${res.status}`,
+                detail: html_detail,
+            };
         }
     } catch {
         // ignoreras medvetet

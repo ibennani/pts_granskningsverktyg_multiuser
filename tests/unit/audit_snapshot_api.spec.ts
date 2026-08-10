@@ -58,4 +58,22 @@ describe('audit_snapshot_api URL:er', () => {
             '/api/audits/audit-1/snapshots/download-all'
         );
     });
+
+    test('start_audit_snapshot_capture plockar ut Express HTML-fel som detail', async () => {
+        fetch_mock.mockResolvedValue({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            text: async () =>
+                '<!DOCTYPE html><html><body><pre>Cannot POST /apiaudits/audit-1/snapshots/capture</pre></body></html>',
+        });
+
+        await expect(
+            start_audit_snapshot_capture('audit-1', {
+                captureId: 'cap-1',
+                sampleId: 'sample-1',
+                url: 'https://example.com',
+            })
+        ).rejects.toThrow('Cannot POST /apiaudits/audit-1/snapshots/capture');
+    });
 });
