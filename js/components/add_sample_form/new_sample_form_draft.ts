@@ -4,6 +4,7 @@
  */
 
 export type NewSampleFormDraft = {
+    pendingSampleId?: string;
     sampleCategory?: string | null;
     sampleType?: string | null;
     description?: string;

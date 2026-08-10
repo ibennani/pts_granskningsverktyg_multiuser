@@ -199,7 +199,7 @@ function start_fetch(
 
     void run_sample_url_analyze_tasks(host, {
         on_task_start: () => {},
-        on_task_complete: (id, outcome) => {
+        on_task_complete: (id: SampleUrlAnalyzeTaskId, outcome: SampleUrlAnalyzeTaskOutcome) => {
             handle_task_complete(ui, Helpers, t, id, outcome);
         },
     });

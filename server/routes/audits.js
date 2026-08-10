@@ -12,6 +12,7 @@ import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter, media_upload_rate_limiter } from '../middleware/rateLimiter.js';
 import { register_audit_media_routes } from './audit_media_routes.js';
+import { register_audit_snapshot_routes } from './audit_snapshot_routes.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
@@ -745,15 +746,18 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
     }
 });
 
+register_audit_snapshot_routes(router);
 register_audit_media_routes(router, media_upload_rate_limiter);
 
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
+        const { remove_audit_snapshot_dir_best_effort } = await import('../snapshots/audit_snapshot_storage.js');
         const result = await query('DELETE FROM audits WHERE id = $1 RETURNING id', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
+        await remove_audit_snapshot_dir_best_effort(id);
         res.status(204).send();
     } catch (err) {
         console.error('[audits] DELETE error:', err);

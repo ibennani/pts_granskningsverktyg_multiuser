@@ -16,6 +16,7 @@ import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import timeRouter from './routes/time.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
+import { initialize_snapshot_job_service } from './services/audit_snapshot_job_service.js';
 import {
     JSON_MAX_UPLOAD_BYTES,
     format_json_max_upload_size_label,
@@ -178,6 +179,10 @@ app.use((err, _req, res, _next) => {
 });
 
 init_ws(http_server);
+
+initialize_snapshot_job_service().catch((err) => {
+    logger.warn({ err: err.message }, '[Server] Kunde inte initiera snapshot-tjänst');
+});
 
 start_backup_scheduler().catch((err) => {
     logger.warn({ err: err.message }, '[Server] Kunde inte starta backup-schema');

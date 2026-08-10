@@ -9,6 +9,7 @@ const EVENT_RULES_CHANGED = 'gv-rules-changed';
 const EVENT_RULE_LOCKS_CHANGED = 'gv-rule-locks-changed';
 const EVENT_AUDIT_LOCKS_CHANGED = 'gv-audit-locks-changed';
 const EVENT_AUDIT_UPDATED = 'gv-audit-updated';
+const EVENT_AUDIT_SNAPSHOTS_CHANGED = 'gv-audit-snapshots-changed';
 
 const RECONNECT_INITIAL_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
@@ -26,13 +27,15 @@ const _rules_callbacks = new Set();
 const _rule_locks_callbacks = new Set();
 const _audit_locks_callbacks = new Set();
 const _audit_update_callbacks = new Set();
+const _audit_snapshots_callbacks = new Set();
 
 function _has_subscribers() {
     return _audits_callbacks.size > 0
         || _rules_callbacks.size > 0
         || _rule_locks_callbacks.size > 0
         || _audit_locks_callbacks.size > 0
-        || _audit_update_callbacks.size > 0;
+        || _audit_update_callbacks.size > 0
+        || _audit_snapshots_callbacks.size > 0;
 }
 
 function _fire_audits_changed() {
@@ -97,6 +100,19 @@ function _fire_audit_updated(payload) {
     });
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(EVENT_AUDIT_UPDATED, { detail: payload || null }));
+    }
+}
+
+function _fire_audit_snapshots_changed(payload) {
+    _audit_snapshots_callbacks.forEach((cb) => {
+        try {
+            cb(payload);
+        } catch {
+            // tyst vid fel i callback
+        }
+    });
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(EVENT_AUDIT_SNAPSHOTS_CHANGED, { detail: payload || null }));
     }
 }
 
@@ -175,6 +191,13 @@ function _connect() {
                 _fire_rule_locks_changed({ ruleSetId: msg?.ruleSetId || null });
             } else if (type === 'audits:locks_changed') {
                 _fire_audit_locks_changed({ auditId: msg?.auditId || null });
+            } else if (type === 'audit:snapshots_changed') {
+                _fire_audit_snapshots_changed({
+                    auditId: msg?.auditId || null,
+                    snapshotId: msg?.snapshotId || null,
+                    sampleId: msg?.sampleId || null,
+                    status: msg?.status || null,
+                });
             }
         } catch {
             // ignorera ogiltiga meddelanden
@@ -356,6 +379,32 @@ export function subscribe_audit_updates(callback) {
 }
 
 /**
+ * Prenumerera på push när snapshot-status för en granskning ändrats.
+ * @param {function({auditId: string|null, snapshotId?: string|null, sampleId?: string|null, status?: string|null}): void} callback
+ * @returns {function(): void}
+ */
+export function subscribe_audit_snapshots(callback) {
+    if (typeof callback !== 'function') return () => {};
+    _audit_snapshots_callbacks.add(callback);
+    _ensure_ws();
+    return () => {
+        _audit_snapshots_callbacks.delete(callback);
+        if (!_has_subscribers()) {
+            _clear_reconnect_timer();
+            _stop_fallback_polling();
+            if (_ws) {
+                try {
+                    _ws.close();
+                } catch {
+                    /* ignore */
+                }
+                _ws = null;
+            }
+        }
+    };
+}
+
+/**
  * Event-namn för att lyssna via window.addEventListener.
  * Använd t.ex. window.addEventListener(ListPushService.EVENT_AUDITS_CHANGED, handler).
  */
@@ -368,7 +417,8 @@ export const EVENT_NAMES = {
     RULES_CHANGED: EVENT_RULES_CHANGED,
     RULE_LOCKS_CHANGED: EVENT_RULE_LOCKS_CHANGED,
     AUDIT_LOCKS_CHANGED: EVENT_AUDIT_LOCKS_CHANGED,
-    AUDIT_UPDATED: EVENT_AUDIT_UPDATED
+    AUDIT_UPDATED: EVENT_AUDIT_UPDATED,
+    AUDIT_SNAPSHOTS_CHANGED: EVENT_AUDIT_SNAPSHOTS_CHANGED,
 };
 
 export const ListPushService = {
@@ -377,6 +427,7 @@ export const ListPushService = {
     subscribe_rule_locks,
     subscribe_audit_locks,
     subscribe_audit_updates,
+    subscribe_audit_snapshots,
     notify_rules_list_changed,
     EVENT_NAMES
 };

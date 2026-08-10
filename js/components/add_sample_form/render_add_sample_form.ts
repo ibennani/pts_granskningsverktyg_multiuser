@@ -45,6 +45,14 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     const new_sample_draft = !component.current_editing_sample_id && typeof component.load_new_sample_draft_for_form === 'function'
         ? component.load_new_sample_draft_for_form()
         : null;
+    if (!component.current_editing_sample_id) {
+        component.pending_sample_id = new_sample_draft?.pendingSampleId ?? null;
+        if (typeof component.ensure_pending_sample_id === 'function') {
+            component.ensure_pending_sample_id();
+        }
+    } else {
+        component.pending_sample_id = null;
+    }
     const effective_sample_data = draft?.updatedSampleData
         ? draft.updatedSampleData
         : (sample_data || new_sample_draft);

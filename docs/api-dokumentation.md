@@ -721,6 +721,34 @@ try {
 
 - Markdown som blir HTML ska där det är användargenererat innehåll i första hand gå via `Helpers.sanitize_html` efter `marked.parse` (se t.ex. granskningsdel formulär).
 
+## Backend HTTP API – tekniska snapshots (granskningsdelar)
+
+Tekniska snapshots skapas i samma Chromium-session som **Hämta information** (sidtitel och skärmavbild). Snapshoten lagras separat från granskningens JSON och påverkar inte granskningens versionsnummer.
+
+**Begränsning:** Snapshots fångas med server-side Chromium. De inkluderar inte användarens inloggade session, cookies från webbläsaren eller Chrome-extension.
+
+| Metod | Route | Beskrivning |
+|-------|-------|-------------|
+| POST | `/api/audits/:id/snapshots/capture` | Startar capture. Body: `captureId`, `sampleId`, `url`, valfritt `filenameSuffix`, `attachScreenshotToSample`. Svar **202 Accepted** efter synlig fas (sidtitel + PNG). Extended CDP och zip paketeras i bakgrunden. |
+| GET | `/api/audits/:id/snapshots` | Lista per granskningsdel (färdig snapshot + eventuell pågående). |
+| GET | `/api/audits/:id/snapshots/download-all` | Zip med alla färdiga snapshots för granskningen. |
+| GET | `/api/audits/:id/snapshots/:snapshotId/download` | Ladda ner en färdig snapshot-zip. |
+| DELETE | `/api/audits/:id/snapshots/:snapshotId` | Avbryt pågående capture eller rensa ofärdigt jobb. |
+
+**WebSocket:** `audit:snapshots_changed` (payload: `auditId`, `snapshotId`, `sampleId`, `status`). Används av klienten i vyn **Åtgärder → Snapshots**.
+
+**Miljövariabler (server):**
+
+| Variabel | Standard | Syfte |
+|----------|----------|-------|
+| `GV_AUDIT_SNAPSHOT_DIR` | `./audit-snapshots` | Katalog för zip-filer |
+| `GV_SNAPSHOT_BROWSER_MAX_CONCURRENCY` | `4` | Parallella browser-slots |
+| `GV_SNAPSHOT_PACKAGE_MAX_CONCURRENCY` | `3` | Parallell zip-paketering |
+| `GV_SNAPSHOT_EXTENDED_CDP_MAX_MS` | `8000` | Tidsbudget för extended CDP |
+| `GV_SNAPSHOT_YIELD_ON_QUEUE` | `true` | Trunkera extended CDP vid kö |
+| `GV_SNAPSHOT_MAX_BYTES` | samma som filgräns | Max storlek per snapshot-zip |
+| `GV_SNAPSHOT_RESOURCE_TEXT_MAX_BYTES` | `2097152` | Max textstorlek per nätverksresurs |
+
 ---
 
 **Support:** För frågor om API:er, se [Utvecklarguide](utvecklarguide.md) eller skapa en issue i repository.

@@ -90,6 +90,7 @@ export class AddSampleFormComponent {
     private content_types_section_panel_inner: HTMLElement | null;
     private content_type_paste_analyze_btn: HTMLButtonElement | null;
     private content_type_analyze_live_region: HTMLElement | null;
+    private pending_sample_id: string | null;
 
     constructor() {
         this.root = null;
@@ -139,6 +140,7 @@ export class AddSampleFormComponent {
         this.content_types_section_panel_inner = null;
         this.content_type_paste_analyze_btn = null;
         this.content_type_analyze_live_region = null;
+        this.pending_sample_id = null;
     }
 
     init({ root, deps }: { root: HTMLElement; deps: any }) {
@@ -189,6 +191,7 @@ export class AddSampleFormComponent {
         this.content_types_section_panel_inner = null;
         this.content_type_paste_analyze_btn = null;
         this.content_type_analyze_live_region = null;
+        this.pending_sample_id = null;
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
@@ -302,6 +305,26 @@ export class AddSampleFormComponent {
 
     get_t_internally() {
         return this.Translation?.t || ((key: string) => `**${key}**`);
+    }
+
+    get_pending_sample_id(): string {
+        if (this.current_editing_sample_id) {
+            return String(this.current_editing_sample_id);
+        }
+        this.ensure_pending_sample_id();
+        return String(this.pending_sample_id);
+    }
+
+    ensure_pending_sample_id(): void {
+        if (this.current_editing_sample_id) return;
+        if (this.pending_sample_id) return;
+        const draft = this.load_new_sample_draft_for_form();
+        if (draft?.pendingSampleId) {
+            this.pending_sample_id = draft.pendingSampleId;
+            return;
+        }
+        this.pending_sample_id = this.Helpers.generate_uuid_v4();
+        this._persist_new_sample_draft(false);
     }
 
     async ensure_audit_id_for_media(): Promise<string | null> {
@@ -498,6 +521,7 @@ export class AddSampleFormComponent {
         if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
 
         return {
+            pendingSampleId: this.pending_sample_id || undefined,
             sampleCategory: sample_category_id,
             sampleType: sample_type_id,
             description,
@@ -670,11 +694,17 @@ export class AddSampleFormComponent {
                 this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
             }
         } else {
-            const new_sample_object = { ...sample_payload_data, id: this.Helpers.generate_uuid_v4(), requirementResults: {} };
+            this.ensure_pending_sample_id();
+            const new_sample_object = {
+                ...sample_payload_data,
+                id: this.pending_sample_id || this.Helpers.generate_uuid_v4(),
+                requirementResults: {},
+            };
             this.dispatch({
                 type: this.StoreActionTypes.ADD_SAMPLE,
                 payload: { ...new_sample_object, skip_render: should_skip_render }
             });
+            this.pending_sample_id = null;
             this._clear_new_sample_draft();
             if (!is_autosave && (window as any).DraftManager?.commitCurrentDraft) {
                 (window as any).DraftManager.commitCurrentDraft();
@@ -775,6 +805,15 @@ export class AddSampleFormComponent {
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
 
+        if (!this.current_editing_sample_id && this.pending_sample_id) {
+            const audit_id = this.getState?.()?.auditId;
+            if (audit_id) {
+                import('./add_sample_form/sample_url_analyze_capture.js').then(({ cancel_active_sample_url_capture }) => {
+                    void cancel_active_sample_url_capture(String(audit_id));
+                });
+            }
+        }
+
         // Återställ till ursprungsläget så att autosparade ändringar inte blir kvar när användaren väljer att inte bekräfta.
         if (this.current_editing_sample_id && this.initial_sample_snapshot) {
             try {
@@ -807,6 +846,7 @@ export class AddSampleFormComponent {
         }
 
         if (!this.current_editing_sample_id) {
+            this.pending_sample_id = null;
             this._clear_new_sample_draft();
         }
     }
@@ -836,6 +876,7 @@ export class AddSampleFormComponent {
         this.deps = null;
         this.form_element = null;
         this.current_editing_sample_id = null;
+        this.pending_sample_id = null;
         this.initial_sample_snapshot = null;
     }
 }

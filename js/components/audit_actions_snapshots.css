@@ -1,0 +1,24 @@
+.audit-actions-snapshots__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-block: 1rem;
+}
+
+.audit-actions-snapshots__table th,
+.audit-actions-snapshots__table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border-color, #ccc);
+}
+
+.audit-actions-snapshots__secondary-status,
+.audit-actions-snapshots__error-text,
+.audit-actions-snapshots__processing-note {
+    margin-block-start: 0.35rem;
+    font-size: 0.95em;
+}
+
+.audit-actions-snapshots__download-all {
+    margin-block-start: 1rem;
+}

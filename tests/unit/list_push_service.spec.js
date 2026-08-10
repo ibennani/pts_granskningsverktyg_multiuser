@@ -68,4 +68,32 @@ describe('list_push_service subscribe_audit_updates', () => {
 
         unsubscribe();
     });
+
+    test('audit:snapshots_changed triggar snapshot-callback', async () => {
+        const { subscribe_audit_snapshots } = await import('../../js/logic/list_push_service.js');
+        const callback = jest.fn();
+        const unsubscribe = subscribe_audit_snapshots(callback);
+
+        const ws = ws_instances[ws_instances.length - 1];
+        expect(ws).toBeTruthy();
+
+        ws.onmessage({
+            data: JSON.stringify({
+                type: 'audit:snapshots_changed',
+                auditId: 'audit-99',
+                snapshotId: 'snap-1',
+                sampleId: 'sample-1',
+                status: 'ready',
+            }),
+        });
+
+        expect(callback).toHaveBeenCalledWith({
+            auditId: 'audit-99',
+            snapshotId: 'snap-1',
+            sampleId: 'sample-1',
+            status: 'ready',
+        });
+
+        unsubscribe();
+    });
 });

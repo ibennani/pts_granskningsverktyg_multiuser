@@ -17,6 +17,11 @@ export type SampleUrlAnalyzeTaskId = 'page_title' | 'screenshot';
 
 export type SampleUrlAnalyzeTaskOutcome = 'success' | 'failed';
 
+export type SampleUrlAnalyzeTaskCallbacks = {
+    on_task_start: (id: SampleUrlAnalyzeTaskId) => void;
+    on_task_complete: (id: SampleUrlAnalyzeTaskId, outcome: SampleUrlAnalyzeTaskOutcome) => void;
+};
+
 export type SampleUrlAnalyzeFlowHost = SampleUrlPageTitleFormHostSource &
     SampleUrlScreenshotFormHostSource & {
         url_analyze_generation: number;

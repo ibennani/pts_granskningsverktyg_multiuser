@@ -41,6 +41,8 @@ export class AuditActionsViewComponent {
         this.newerRuleAvailable = null;
         this._newerRuleCheckInProgress = false;
         this._unsubscribe_rules = null;
+        this._snapshots_section = null;
+        this._snapshots_load_token = 0;
         this.router = null;
         this.getState = null;
         this.dispatch = null;
@@ -454,7 +456,28 @@ export class AuditActionsViewComponent {
             content_wrapper = build_audit_actions_downloads_content(this, state, t);
         } else if (section === 'snapshots') {
             render_audit_actions_snapshots_header(render_deps, plate);
+            if (this._snapshots_section) {
+                this._snapshots_section.destroy();
+                this._snapshots_section = null;
+            }
+            this._snapshots_load_token += 1;
+            const load_token = this._snapshots_load_token;
+            const snapshots_host = this.Helpers.create_element('div', {
+                class_name: 'audit-actions-snapshots__host',
+            });
+            plate.appendChild(snapshots_host);
             this.root.appendChild(plate);
+            void import('./audit_actions_snapshots_section.js').then(({ create_audit_actions_snapshots_section }) => {
+                if (load_token !== this._snapshots_load_token || !this.root) {
+                    return;
+                }
+                this._snapshots_section = create_audit_actions_snapshots_section({
+                    Helpers: this.Helpers,
+                    Translation: this.Translation,
+                    getState: () => this.getState?.() ?? {},
+                });
+                snapshots_host.replaceWith(this._snapshots_section.root);
+            });
             return;
         } else {
             render_audit_actions_hub(render_deps, plate);
@@ -472,6 +495,11 @@ export class AuditActionsViewComponent {
 
     destroy() {
         this._close_rules_push_subscription();
+        this._snapshots_load_token += 1;
+        if (this._snapshots_section) {
+            this._snapshots_section.destroy();
+            this._snapshots_section = null;
+        }
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;

@@ -3,54 +3,26 @@
  */
 
 import {
-    get_sample_url_analyze_tasks,
     type SampleUrlAnalyzeFlowHost,
-    type SampleUrlAnalyzeTaskId,
-    type SampleUrlAnalyzeTaskOutcome,
+    type SampleUrlAnalyzeTaskCallbacks,
 } from './sample_url_analyze_tasks.js';
+import {
+    run_unified_sample_url_analyze_tasks,
+    cancel_active_sample_url_capture,
+    type SampleUrlAnalyzeCaptureHost,
+} from './sample_url_analyze_capture.js';
 
 export type { SampleUrlAnalyzeFlowHost } from './sample_url_analyze_tasks.js';
-
-export type SampleUrlAnalyzeTaskCallbacks = {
-    on_task_start: (id: SampleUrlAnalyzeTaskId) => void;
-    on_task_complete: (id: SampleUrlAnalyzeTaskId, outcome: SampleUrlAnalyzeTaskOutcome) => void;
-};
-
-async function run_single_sample_url_analyze_task(
-    host: SampleUrlAnalyzeFlowHost,
-    generation: number,
-    callbacks: SampleUrlAnalyzeTaskCallbacks,
-    task: ReturnType<typeof get_sample_url_analyze_tasks>[number]
-): Promise<void> {
-    if (!host.is_url_analyze_generation_current(generation)) {
-        return;
-    }
-
-    callbacks.on_task_start(task.id);
-
-    const raw_outcome = await task.run(host);
-    if (!host.is_url_analyze_generation_current(generation)) {
-        return;
-    }
-    if (raw_outcome === 'aborted') {
-        return;
-    }
-
-    callbacks.on_task_complete(task.id, raw_outcome);
-}
 
 export async function run_sample_url_analyze_tasks(
     host: SampleUrlAnalyzeFlowHost,
     callbacks: SampleUrlAnalyzeTaskCallbacks
 ): Promise<void> {
-    const generation = host.bump_url_analyze_generation();
-    const tasks = get_sample_url_analyze_tasks();
-
-    await Promise.all(
-        tasks.map((task) => run_single_sample_url_analyze_task(host, generation, callbacks, task))
-    );
+    await run_unified_sample_url_analyze_tasks(host as SampleUrlAnalyzeCaptureHost, callbacks);
 }
 
 export function cancel_sample_url_analyze_tasks(host: SampleUrlAnalyzeFlowHost): void {
     host.bump_url_analyze_generation();
+    const audit_id = host.getState?.()?.auditId ?? null;
+    void cancel_active_sample_url_capture(audit_id ? String(audit_id) : null);
 }

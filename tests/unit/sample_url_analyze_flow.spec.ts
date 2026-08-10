@@ -23,5 +23,6 @@ describe('sample_url_analyze_tasks', () => {
         const tasks = get_sample_url_analyze_tasks();
         expect(tasks.map((task) => task.id)).toEqual(['page_title', 'screenshot']);
         expect(get_sample_url_analyze_task_ids()).toEqual(['page_title', 'screenshot']);
+        expect(tasks).toHaveLength(2);
     });
 });

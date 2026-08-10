@@ -188,6 +188,17 @@ Längst ner i granskningsöversikten finns knappar för åtgärder som gäller h
     *   **"Exportera till csv"**: Genererar en eller flera csv-filer med granskningsresultaten.
     *   **"Exportera till excel"**: Genererar en excel-fil (xlsx) med granskningsresultaten.
 
+### 6.5 Tekniska snapshots (Åtgärder → Snapshots)
+
+Under **Åtgärder** finns undersidan **Snapshots**. Där listas tekniska ögonblicksbilder som skapats när du använt **Hämta information** i en granskningsdel.
+
+1. När du kör Hämta information i formuläret för en granskningsdel hämtas sidtitel och skärmavbild som tidigare. Samtidigt startar verktyget en snapshot i bakgrunden.
+2. Du behöver inte vänta på snapshoten. Modalen visar fortfarande bara de två stegen sidtitel och skärmavbild.
+3. Gå till **Åtgärder → Snapshots** för att se status per granskningsdel: väntar, hämtar, skapar snapshot, färdig eller misslyckades.
+4. När en snapshot är färdig kan du ladda ner den som zip-fil. Du kan också ladda ner alla färdiga snapshots i en zip-fil.
+
+Snapshoten innehåller teknisk information om sidan (till exempel HTML, nätverkslogg och skärmavbild). Den fångas med serverns webbläsare och speglar inte din inloggning eller cookies i din egen webbläsare.
+
 ## 7. Granska krav
 
 ### 7.1 Kravlistvyn
