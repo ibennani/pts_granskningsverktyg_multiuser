@@ -257,7 +257,12 @@ export class RulefileSectionsViewComponent {
 
     _render_appendix3_template_section(ruleFileContent) {
         return render_rulefile_appendix3_template_section(
-            { Helpers: this.Helpers, Translation: this.Translation },
+            {
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                router: this.router,
+                getState: this.getState,
+            },
             ruleFileContent
         );
     }

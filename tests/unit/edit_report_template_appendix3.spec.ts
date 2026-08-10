@@ -139,6 +139,18 @@ describe('EditReportTemplateAppendix3Component', () => {
 });
 
 describe('render_rulefile_appendix3_template_section', () => {
+    test('visar ingen redigera-knapp utan router och getState', () => {
+        const section = render_rulefile_appendix3_template_section(
+            {
+                Helpers: create_helpers(),
+                Translation: { t: (key: string) => key },
+            },
+            sample_rule_file
+        );
+
+        expect(section.querySelector('.rulefile-sections-edit-button')).toBeNull();
+    });
+
     test('visningsläge följer Bilaga 1-mönster med h1 och redigera-knapp', () => {
         const section = render_rulefile_appendix3_template_section(
             {
