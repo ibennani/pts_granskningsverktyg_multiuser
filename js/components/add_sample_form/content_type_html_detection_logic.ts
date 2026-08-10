@@ -10,11 +10,11 @@ import {
 import {
     collect_child_detection_patterns_from_groups,
     detect_content_type_ids_from_html,
-    MAX_PASTE_HTML_LENGTH,
+    MAX_PASTE_HTML_BYTES,
     type ContentTypeDetectionPatternRule,
 } from '../../../shared/rulefile/content_type_detection_pattern.js';
 
-export { MAX_PASTE_HTML_LENGTH };
+export { MAX_PASTE_HTML_BYTES };
 
 type RuleFileLike = {
     metadata?: Record<string, unknown>;
@@ -58,6 +58,10 @@ export function detect_content_types_from_html(
     return detect_content_type_ids_from_html(html, rules);
 }
 
+function get_paste_html_utf8_byte_length(html: string): number {
+    return new TextEncoder().encode(String(html || '')).length;
+}
+
 export function is_paste_html_within_limit(html: string): boolean {
-    return String(html || '').length <= MAX_PASTE_HTML_LENGTH;
+    return get_paste_html_utf8_byte_length(html) <= MAX_PASTE_HTML_BYTES;
 }

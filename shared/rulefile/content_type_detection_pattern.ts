@@ -2,7 +2,8 @@
  * @fileoverview Regex-mönster för automatisk innehållstypdetektering från inklistrad HTML.
  */
 
-export const MAX_PASTE_HTML_LENGTH = 500_000;
+/** Max storlek för inklistrad HTML vid automatisk innehållstypanalys (5 MiB). */
+export const MAX_PASTE_HTML_BYTES = 5 * 1024 * 1024;
 
 export type ContentTypeDetectionPatternRule = {
     id: string;

@@ -98,7 +98,8 @@ describe('content_type_html_detection_logic', () => {
 
     test('is_paste_html_within_limit', () => {
         expect(is_paste_html_within_limit('a')).toBe(true);
-        expect(is_paste_html_within_limit('x'.repeat(500_001))).toBe(false);
+        expect(is_paste_html_within_limit('a'.repeat(5 * 1024 * 1024))).toBe(true);
+        expect(is_paste_html_within_limit('a'.repeat(5 * 1024 * 1024 + 1))).toBe(false);
     });
 });
 

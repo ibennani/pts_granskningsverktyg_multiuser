@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { expect, afterEach, beforeAll } from '@jest/globals';
 import { webcrypto } from 'node:crypto';
+import { TextDecoder, TextEncoder } from 'node:util';
 import { inject_deficiency_score_bar_gradient_styles } from '../js/logic/deficiency_color_scale.ts';
 import { setImmediate as nodeSetImmediate } from 'node:timers';
 import axeCore from 'jest-axe';
@@ -8,6 +9,13 @@ import axeCore from 'jest-axe';
 /** jsdom saknar Web Crypto som export_integrity m.fl. förlitar sig på. */
 if (!globalThis.crypto?.subtle) {
     Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
+}
+
+if (typeof globalThis.TextEncoder === 'undefined') {
+    globalThis.TextEncoder = TextEncoder;
+}
+if (typeof globalThis.TextDecoder === 'undefined') {
+    globalThis.TextDecoder = TextDecoder;
 }
 
 const { toHaveNoViolations } = axeCore;
