@@ -705,6 +705,10 @@ export class AddSampleFormComponent {
                 payload: { ...new_sample_object, skip_render: should_skip_render }
             });
             this.pending_sample_id = null;
+            // Undvik att destroy() skriver tillbaka formulärdata till sessionStorage-utkast
+            // efter lyckad sparning (annars fylls nästa "ny granskningsdel" med föregående värden).
+            this.skip_autosave_on_destroy = true;
+            this.autosave_session?.cancel_pending?.();
             this._clear_new_sample_draft();
             if (!is_autosave && (window as any).DraftManager?.commitCurrentDraft) {
                 (window as any).DraftManager.commitCurrentDraft();
