@@ -390,7 +390,7 @@ export function render_appendix1_sections_editor(
             options.on_change?.();
         });
         audit_type_field.appendChild(audit_type_select);
-        container.insertBefore(audit_type_field, taxonomy_field);
+        container.appendChild(audit_type_field);
     }
 
     select.addEventListener('change', () => {

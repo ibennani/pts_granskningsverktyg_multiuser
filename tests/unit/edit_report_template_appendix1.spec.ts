@@ -4,6 +4,7 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { DEFAULT_AUDIT_TYPES } from '../../shared/rulefile/rulefile_audit_types.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const server_sync_path = path.join(__dirname, '../../js/logic/server_sync.js');
@@ -238,6 +239,29 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
         const by_taxonomy = handles.get_body_text_by_taxonomy();
         expect(by_taxonomy['wcag22-pour']).toBe(wcag_default);
         expect(by_taxonomy['fptt-bilaga-2']).toBe('# FPTT\n\nEgen FPTT-text.');
+    });
+
+    test('renderar editor även med flera granskningstyper i regelfilen', () => {
+        const container = document.createElement('div');
+        const rule_with_types = {
+            ...sample_rule_file,
+            metadata: {
+                ...sample_rule_file.metadata,
+                auditTypes: DEFAULT_AUDIT_TYPES.map((row) => ({ ...row })),
+            },
+        };
+
+        render_appendix1_sections_editor(
+            {
+                Helpers: create_helpers(),
+                Translation: { t: (key: string) => key },
+            },
+            container,
+            rule_with_types
+        );
+
+        expect(container.querySelector('.appendix1-body-text-editor')).toBeTruthy();
+        expect(container.querySelector('.appendix1-audit-type-select')).toBeTruthy();
     });
 });
 
