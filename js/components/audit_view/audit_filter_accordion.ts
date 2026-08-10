@@ -104,6 +104,7 @@ function render_search_field(
             id: 'audit-filter-input',
             type: 'text',
             name: 'audit-filter',
+            autocomplete: 'off',
             value: ctx.audit_filter_query || ''
         }
     }) as HTMLInputElement;
