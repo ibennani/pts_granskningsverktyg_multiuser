@@ -14,6 +14,16 @@ function get_column_class_names(col) {
     return classes;
 }
 
+/** Tabellrendering ska inte flytta fokus från aktivt listfilter-sökfält. */
+function active_element_is_list_filter_search_input() {
+    const el = document.activeElement;
+    if (!el || el.tagName !== 'INPUT') return false;
+    const id = el.id;
+    return id === 'backup-filter-search-input'
+        || id === 'audit-filter-input'
+        || id === 'manage-users-filter-input';
+}
+
 export class GenericTableComponent {
     async init({ root, deps }) {
         this.root = root;
@@ -283,7 +293,7 @@ export class GenericTableComponent {
                 apply_restore_focus(target);
             }
         } else if (focus_restore) {
-            if (document.activeElement?.id === 'backup-filter-search-input') {
+            if (active_element_is_list_filter_search_input()) {
                 return;
             }
             if (focus_restore.in_header) {

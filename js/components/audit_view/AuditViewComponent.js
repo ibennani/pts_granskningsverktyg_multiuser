@@ -466,6 +466,23 @@ export class AuditViewComponent {
         const target = event && event.target ? event.target : null;
         const value = target ? target.value : '';
         if (this.audit_filter_query === value) return;
+
+        let selection_start = null;
+        let selection_end = null;
+        if (target && typeof target.selectionStart === 'number' && typeof target.selectionEnd === 'number') {
+            selection_start = target.selectionStart;
+            selection_end = target.selectionEnd;
+        }
+        this._auditFilterHadFocus = document.activeElement === target;
+        this._auditFilterSelection =
+            selection_start !== null && selection_end !== null
+                ? { selectionStart: selection_start, selectionEnd: selection_end }
+                : null;
+
+        if (this._auditListComponent?._table) {
+            this._auditListComponent._table._lastFocusPosition = null;
+        }
+
         this.audit_filter_query = value;
         this._reset_all_audit_table_pages();
         this._render_audit_lists_section();
