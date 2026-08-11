@@ -296,7 +296,20 @@ describe('rulefile_deficiency_index_basis_ui', () => {
 
         expect(container.querySelector('.deficiency-index-basis-layout .deficiency-index-basis-table')).not.toBeNull();
 
-        expect(container.querySelector('.classifications-part-panel .field-hint')).not.toBeNull();
+        expect(container.querySelector('#deficiency-index-basis-calculation-heading')).not.toBeNull();
+        expect(
+            container.querySelector('.deficiency-index-basis-calculation-section .view-intro-text')
+        ).not.toBeNull();
+        const table_heading = container.querySelector('#deficiency-index-basis-table-heading');
+        expect(table_heading).not.toBeNull();
+        expect(table_heading?.textContent).toBe(
+            'rulefile_classifications_deficiency_index_basis_table_heading'
+        );
+        const layout = container.querySelector('.deficiency-index-basis-layout');
+        expect(layout?.firstElementChild?.id).toBe('deficiency-index-basis-table-heading');
+        expect(container.querySelector('.classifications-part-panel .field-hint')).toBeNull();
+        expect(container.querySelectorAll('h1').length).toBe(0);
+        expect(container.querySelectorAll('h2').length).toBe(2);
 
     });
 

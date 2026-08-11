@@ -41,7 +41,7 @@ describe('appendix2_excel_template', () => {
         });
         const labels = read_rulefile_appendix2_labels(normalized);
         expect(labels.generalInfo).toHaveLength(7);
-        expect(labels.deficiencyColumns).toHaveLength(13);
+        expect(labels.deficiencyColumns).toHaveLength(9);
         expect(labels.generalInfo[0]?.label).toBe(sv_i18n.case_number);
     });
 

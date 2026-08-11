@@ -217,6 +217,9 @@ export function render_appendix1_sections_editor(
     rule_file_content: Record<string, unknown>,
     options: {
         on_change?: () => void;
+        scope?: 'rulefile' | 'audit';
+        initial_body_text_by_taxonomy?: Record<string, string>;
+        initial_concept_intros?: Record<string, string>;
     } = {}
 ): {
     get_body_text: () => string;
@@ -228,10 +231,11 @@ export function render_appendix1_sections_editor(
 } {
     const { Helpers, Translation } = ctx;
     const t = Translation.t;
+    const is_audit_scope = options.scope === 'audit';
     container.innerHTML = '';
     container.classList.add('appendix1-sections-editor-host');
 
-    const audit_types = resolve_available_audit_types(rule_file_content);
+    const audit_types = is_audit_scope ? [] : resolve_available_audit_types(rule_file_content);
     let editing_audit_type_id =
         audit_types.length === 1 ? audit_types[0].id : String(audit_types[0]?.id ?? '').trim();
 
@@ -259,7 +263,10 @@ export function render_appendix1_sections_editor(
         .filter(Boolean);
 
     const body_text_by_taxonomy = new Map<string, string>(
-        Object.entries(read_rulefile_appendix1_body_text_by_taxonomy(effective_rule_file, taxonomy_ids))
+        Object.entries(
+            options.initial_body_text_by_taxonomy
+                ?? read_rulefile_appendix1_body_text_by_taxonomy(effective_rule_file, taxonomy_ids)
+        )
     );
     const persisted_body_text_by_taxonomy = Object.fromEntries(body_text_by_taxonomy);
 
@@ -341,9 +348,10 @@ export function render_appendix1_sections_editor(
         grouping_taxonomy_id,
         deficiency_sections,
         on_change: options.on_change,
+        initial_concept_intros: options.initial_concept_intros,
     });
 
-    if (audit_types.length > 1) {
+    if (!is_audit_scope && audit_types.length > 1) {
         const audit_type_field = Helpers.create_element('div', {
             class_name: 'form-group appendix1-audit-type-template-field',
         });
@@ -407,8 +415,10 @@ export function render_appendix1_sections_editor(
         refresh_deficiency_sections();
         options.on_change?.();
     });
-    taxonomy_field.appendChild(select);
-    container.appendChild(taxonomy_field);
+    if (!is_audit_scope) {
+        taxonomy_field.appendChild(select);
+        container.appendChild(taxonomy_field);
+    }
 
     body_input.addEventListener('input', () => {
         body_text = body_input.value;

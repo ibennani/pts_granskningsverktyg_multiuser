@@ -210,6 +210,14 @@ function append_sheet_label_panel(
         SHEET_LABEL_KEYS[sheet_key],
         entries
     );
+    if (sheet_key === 'deficiencies') {
+        panel.appendChild(
+            helpers.create_element('p', {
+                class_name: 'view-intro-text rulefile-appendix2-taxonomy-note',
+                text_content: t('rulefile_appendix2_taxonomy_columns_note'),
+            })
+        );
+    }
     if (sheet_key !== host.selected_sheet) {
         panel.setAttribute('hidden', '');
     }

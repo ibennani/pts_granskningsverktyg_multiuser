@@ -80,6 +80,13 @@ export class RulefileDeficiencyIndexBasisComponent {
         const t = this.deps.Translation.t;
         this.root.innerHTML = '';
         this.root.appendChild(
+            this.deps.Helpers.create_element('h1', {
+                class_name: 'deficiency-index-basis-page-heading',
+                attributes: { id: 'rulefile-section-classifications-heading' },
+                text_content: t('rulefile_classifications_hub_deficiency_index_basis_title'),
+            })
+        );
+        this.root.appendChild(
             this.deps.Helpers.create_element('p', {
                 class_name: 'view-intro-text',
                 text_content: t('rulefile_classifications_deficiency_index_basis_intro'),

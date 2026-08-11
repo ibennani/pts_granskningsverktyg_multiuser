@@ -28,6 +28,10 @@ export const APPENDIX2_DEFICIENCY_COLUMN_KEYS = [
     'observation',
     'screenshotReference',
     'comment',
+] as const;
+
+/** Sparade etiketter i äldre regelfiler; visas inte längre i Bilaga 2-redigeraren. */
+export const APPENDIX2_LEGACY_WCAG_DEFICIENCY_COLUMN_KEYS = [
     'wcagPerceivable',
     'wcagOperable',
     'wcagUnderstandable',
@@ -84,10 +88,6 @@ export const APPENDIX2_DEFICIENCY_I18N_KEYS: Record<Appendix2DeficiencyColumnKey
     observation: 'excel_col_observation',
     screenshotReference: 'excel_col_screenshot_reference',
     comment: 'excel_col_comment',
-    wcagPerceivable: 'excel_col_wcag_perceivable',
-    wcagOperable: 'excel_col_wcag_operable',
-    wcagUnderstandable: 'excel_col_wcag_understandable',
-    wcagRobust: 'excel_col_wcag_robust',
 };
 
 function read_i18n_label(i18n: Record<string, string>, key: string, fallback: string): string {
@@ -134,10 +134,6 @@ const COLUMN_WIDTHS: Record<Appendix2DeficiencyColumnKey, number> = {
     observation: 70,
     screenshotReference: 50,
     comment: 70,
-    wcagPerceivable: 14,
-    wcagOperable: 14,
-    wcagUnderstandable: 14,
-    wcagRobust: 12,
 };
 
 export function read_rulefile_metadata_language(
@@ -288,6 +284,15 @@ export function resolve_appendix2_excel_labels(
 
 export function get_appendix2_deficiency_column_width(key: Appendix2DeficiencyColumnKey): number {
     return COLUMN_WIDTHS[key];
+}
+
+const LEGACY_WCAG_KEY_SET = new Set<string>(APPENDIX2_LEGACY_WCAG_DEFICIENCY_COLUMN_KEYS);
+
+/** Tar bort äldre WCAG-etiketter som inte längre redigeras i Bilaga 2. */
+export function filter_editable_appendix2_deficiency_columns(
+    entries: Appendix2LabelEntry[]
+): Appendix2LabelEntry[] {
+    return entries.filter((entry) => !LEGACY_WCAG_KEY_SET.has(entry.key));
 }
 
 export function normalize_report_template_appendix_param(raw: unknown): '' | '1' | '2' | '3' {

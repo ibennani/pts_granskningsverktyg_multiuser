@@ -194,13 +194,7 @@ export function get_page_title_prefix(
                     title_prefix = t('edit_audit_metadata_title');
                     break;
                 case 'audit_settings':
-                    if (params?.section === 'information') {
-                        title_prefix = t('audit_settings_nav_information');
-                    } else if (params?.section === 'summary') {
-                        title_prefix = t('audit_settings_appendix1_heading');
-                    } else {
-                        title_prefix = t('audit_settings_title');
-                    }
+                    title_prefix = t('audit_actions_information_title');
                     break;
                 case 'sample_management':
                     title_prefix = t('manage_samples_title');
@@ -221,6 +215,24 @@ export function get_page_title_prefix(
                         title_prefix = t('audit_actions_downloads_title');
                     } else if (params?.section === 'snapshots') {
                         title_prefix = t('audit_actions_snapshots_title');
+                    } else if (params?.section === 'information') {
+                        title_prefix = t('audit_actions_information_title');
+                    } else if (params?.section === 'appendix_templates') {
+                        if (params?.appendix === '1') {
+                            title_prefix = params?.edit === 'true'
+                                ? t('audit_appendix_1_edit_title')
+                                : t('audit_appendix_1_view_title');
+                        } else if (params?.appendix === '2') {
+                            title_prefix = params?.edit === 'true'
+                                ? t('audit_appendix_2_edit_title')
+                                : t('audit_appendix_2_view_title');
+                        } else if (params?.appendix === '3') {
+                            title_prefix = params?.edit === 'true'
+                                ? t('audit_appendix_3_edit_title')
+                                : t('audit_appendix_3_view_title');
+                        } else {
+                            title_prefix = t('audit_actions_appendix_templates_title');
+                        }
                     } else {
                         title_prefix = t('audit_actions_title');
                     }

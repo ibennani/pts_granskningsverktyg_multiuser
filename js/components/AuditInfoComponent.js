@@ -83,7 +83,7 @@ export class AuditInfoComponent {
                 html_content: `<span>${t('edit_button_label')}</span>` + this.Helpers.get_icon_svg('edit', ['currentColor'], 16)
             });
             edit_button.addEventListener('click', () => {
-                this.router('audit_settings', { section: 'information', returnTo: 'overview' });
+                this.router('audit_actions', { section: 'information' });
             });
             header_wrapper.appendChild(edit_button);
         }

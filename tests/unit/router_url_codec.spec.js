@@ -6,7 +6,8 @@ import {
     build_compact_hash_fragment,
     compact_param_keys_for_hash,
     expand_view_slug_from_hash,
-    normalize_params_from_hash_query
+    normalize_params_from_hash_query,
+    resolve_legacy_audit_settings_route
 } from '../../js/logic/router_url_codec.js';
 
 describe('router_url_codec', () => {
@@ -15,6 +16,21 @@ describe('router_url_codec', () => {
         expect(expand_view_slug_from_hash('ov')).toBe('audit_overview');
         expect(expand_view_slug_from_hash('audit')).toBe('audit');
         expect(expand_view_slug_from_hash('as')).toBe('audit_settings');
+    });
+
+    test('resolve_legacy_audit_settings_route mappar till Åtgärder', () => {
+        expect(resolve_legacy_audit_settings_route('audit_settings', { section: 'information' })).toEqual({
+            viewName: 'audit_actions',
+            params: { section: 'information' },
+        });
+        expect(resolve_legacy_audit_settings_route('audit_settings', { section: 'summary' })).toEqual({
+            viewName: 'audit_actions',
+            params: { section: 'appendix_templates', appendix: '1', edit: 'true' },
+        });
+        expect(resolve_legacy_audit_settings_route('audit_overview', { foo: 'bar' })).toEqual({
+            viewName: 'audit_overview',
+            params: { foo: 'bar' },
+        });
     });
 
     test('build_compact_hash_fragment stöder audit_settings section', () => {

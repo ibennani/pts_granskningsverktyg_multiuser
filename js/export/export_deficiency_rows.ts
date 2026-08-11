@@ -17,11 +17,11 @@ import {
     format_media_filenames_for_export,
     type ExportMediaFilenameContext
 } from './export_media_naming.js';
+import { resolve_appendix2_excel_labels_for_audit } from '../logic/audit_appendix_overrides.js';
+import type { Appendix1AuditSlice } from '../logic/appendix1_sections_types.js';
 import {
     get_appendix2_deficiency_column_width,
-    resolve_appendix2_excel_labels,
     type Appendix2DeficiencyColumnKey,
-    type Appendix2RulefileSlice,
 } from '../logic/appendix2_excel_template.js';
 
 export type DeficiencyColumnDef = { header: string; key: string; width: number };
@@ -50,8 +50,9 @@ export function build_deficiency_column_defs(
     include_comment_column: boolean,
     current_audit?: Record<string, unknown> | null
 ): DeficiencyColumnDef[] {
-    const rule_file_content = (current_audit?.ruleFileContent ?? null) as Appendix2RulefileSlice | null | undefined;
-    const { deficiency_column_labels } = resolve_appendix2_excel_labels(rule_file_content ?? null);
+    const { deficiency_column_labels } = resolve_appendix2_excel_labels_for_audit(
+        current_audit as Appendix1AuditSlice | null | undefined
+    );
     const header_for = (key: Appendix2DeficiencyColumnKey, i18n_key: string): string => {
         const override = deficiency_column_labels[key];
         if (override && override.trim()) return override;
@@ -69,14 +70,7 @@ export function build_deficiency_column_defs(
         { header: header_for('screenshotReference', 'excel_col_screenshot_reference'), key: 'screenshotReference', width: get_appendix2_deficiency_column_width('screenshotReference') }
     ];
 
-    const taxonomy_column_defs = get_primary_taxonomy_export_columns(current_audit ?? null, t).map((col) => {
-        const concept_id = col.key.replace(/^taxonomy_/, '');
-        const wcag_key = WCAG_CONCEPT_TO_APPENDIX2_KEY[concept_id];
-        if (!wcag_key) return col;
-        const override = deficiency_column_labels[wcag_key];
-        if (!override?.trim()) return col;
-        return { ...col, header: override };
-    });
+    const taxonomy_column_defs = get_primary_taxonomy_export_columns(current_audit ?? null, t);
 
     return [
         ...column_defs_before_comment,
@@ -84,13 +78,6 @@ export function build_deficiency_column_defs(
         ...taxonomy_column_defs
     ];
 }
-
-const WCAG_CONCEPT_TO_APPENDIX2_KEY: Record<string, Appendix2DeficiencyColumnKey> = {
-    perceivable: 'wcagPerceivable',
-    operable: 'wcagOperable',
-    understandable: 'wcagUnderstandable',
-    robust: 'wcagRobust',
-};
 
 export function deficiency_row_to_flat_values(row: DeficiencyRow, column_keys: string[]): string[] {
     return column_keys.map((key) => {

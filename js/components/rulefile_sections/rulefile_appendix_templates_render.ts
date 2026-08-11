@@ -28,15 +28,8 @@ export function render_rulefile_appendix_templates_hub(
 
     const nav = helpers.create_element('nav', {
         class_name: 'audit-settings__hub-nav',
-        attributes: { 'aria-labelledby': 'rulefile-appendix-hub-heading' },
+        attributes: { 'aria-label': t('rulefile_appendix_hub_nav_heading') },
     });
-    nav.appendChild(
-        helpers.create_element('h2', {
-            attributes: { id: 'rulefile-appendix-hub-heading' },
-            class_name: 'sr-only',
-            text_content: t('rulefile_appendix_hub_nav_heading'),
-        })
-    );
 
     const list = helpers.create_element('ul', { class_name: 'audit-settings__hub-list' });
     const add_hub_link = (appendix: '1' | '2' | '3', label_key: string, desc_key: string) => {

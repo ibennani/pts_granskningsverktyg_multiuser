@@ -23,7 +23,8 @@ import {
     strip_xlsx_document_metadata
 } from './excel_export_helpers.js';
 import { build_export_media_filename_context } from './export_media_naming.js';
-import { resolve_appendix2_excel_labels } from '../logic/appendix2_excel_template.js';
+import { resolve_appendix2_excel_labels_for_audit } from '../logic/audit_appendix_overrides.js';
+import type { Appendix1AuditSlice } from '../logic/appendix1_sections_types.js';
 
 type ExcelAudit = {
     auditMetadata: {
@@ -53,7 +54,9 @@ export async function build_excel_export_blob(
     const lang_code = get_current_language_code_from_registry();
     const audit = current_audit as ExcelAudit;
 
-    const { general_info_labels, sheet_names } = resolve_appendix2_excel_labels(audit.ruleFileContent as never);
+    const { general_info_labels, sheet_names } = resolve_appendix2_excel_labels_for_audit(
+        current_audit as Appendix1AuditSlice | null | undefined
+    );
 
     const generalSheet = workbook.addWorksheet(sheet_names.general_info);
 

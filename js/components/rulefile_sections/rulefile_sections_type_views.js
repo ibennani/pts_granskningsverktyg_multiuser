@@ -9,7 +9,7 @@ import {
     resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { read_rulefile_appendix1_body_text } from '../../logic/appendix1_sections.js';
-import { read_rulefile_appendix2_labels } from '../../logic/appendix2_excel_template.js';
+import { read_rulefile_appendix2_labels, filter_editable_appendix2_deficiency_columns } from '../../logic/appendix2_excel_template.js';
 import { read_rulefile_appendix3_template } from '../../logic/appendix3_screenshots_template.js';
 import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
 import {
@@ -236,20 +236,26 @@ export function render_rulefile_appendix_templates_hub_section(ctx) {
 /**
  * @param {{ Helpers: object, Translation: object, router?: function, getState?: function }} ctx
  * @param {object} ruleFileContent
+ * @param {{ body_text?: string, page_header_action?: HTMLElement }} [options]
  */
-export function render_rulefile_appendix1_template_section(ctx, ruleFileContent) {
+export function render_rulefile_appendix1_template_section(ctx, ruleFileContent, options = {}) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-    const body_text = read_rulefile_appendix1_body_text(ruleFileContent);
+    const body_text =
+        typeof options.body_text === 'string'
+            ? options.body_text
+            : read_rulefile_appendix1_body_text(ruleFileContent);
     const state = typeof ctx.getState === 'function' ? ctx.getState() : null;
     const page_header_action =
-        can_edit_rulefile(state) && typeof ctx.router === 'function'
-            ? create_rulefile_appendix_edit_button(
-                  { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
-                  '1',
-                  'rulefile_sections_edit_appendix1_aria'
-              )
-            : undefined;
+        options.page_header_action !== undefined
+            ? options.page_header_action
+            : can_edit_rulefile(state) && typeof ctx.router === 'function'
+                ? create_rulefile_appendix_edit_button(
+                      { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
+                      '1',
+                      'rulefile_sections_edit_appendix1_aria'
+                  )
+                : undefined;
 
     render_appendix1_summary_editor_page(
         { Helpers: ctx.Helpers, Translation: ctx.Translation },
@@ -286,15 +292,39 @@ function append_value_bullet_list(Helpers, section, values) {
     section.appendChild(list);
 }
 
+function append_appendix2_view_section(Helpers, t, section, heading_key, intro_key, values, trailing_note_key) {
+    section.appendChild(
+        Helpers.create_element('h2', {
+            text_content: t(heading_key),
+        })
+    );
+    section.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'view-intro-text rulefile-appendix2-section-intro',
+            text_content: t(intro_key),
+        })
+    );
+    append_value_bullet_list(Helpers, section, values);
+    if (trailing_note_key) {
+        section.appendChild(
+            Helpers.create_element('p', {
+                class_name: 'view-intro-text rulefile-appendix2-section-intro rulefile-appendix2-taxonomy-note',
+                text_content: t(trailing_note_key),
+            })
+        );
+    }
+}
+
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} ruleFileContent
+ * @param {{ labels?: ReturnType<typeof read_rulefile_appendix2_labels> }} [options]
  */
-export function render_rulefile_appendix2_template_section(ctx, ruleFileContent) {
+export function render_rulefile_appendix2_template_section(ctx, ruleFileContent, options = {}) {
     const t = ctx.Translation.t;
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-    const labels = read_rulefile_appendix2_labels(ruleFileContent);
+    const labels = options.labels ?? read_rulefile_appendix2_labels(ruleFileContent);
 
     section.appendChild(
         Helpers.create_element('p', {
@@ -302,56 +332,54 @@ export function render_rulefile_appendix2_template_section(ctx, ruleFileContent)
             text_content: t('rulefile_appendix2_view_intro'),
         })
     );
-    section.appendChild(
-        Helpers.create_element('h2', {
-            text_content: t('rulefile_appendix2_sheets_heading'),
-        })
-    );
-    append_value_bullet_list(Helpers, section, [
+    append_appendix2_view_section(Helpers, t, section, 'rulefile_appendix2_sheets_heading', 'rulefile_appendix2_sheets_view_intro', [
         labels.sheetNames.general_info,
         labels.sheetNames.deficiencies,
     ]);
-    section.appendChild(
-        Helpers.create_element('h2', {
-            text_content: t('rulefile_appendix2_general_info_heading'),
-        })
-    );
-    append_value_bullet_list(
+    append_appendix2_view_section(
         Helpers,
+        t,
         section,
+        'rulefile_appendix2_general_info_heading',
+        'rulefile_appendix2_general_info_view_intro',
         labels.generalInfo.map((entry) => entry.label)
     );
-    section.appendChild(
-        Helpers.create_element('h2', {
-            text_content: t('rulefile_appendix2_deficiencies_heading'),
-        })
-    );
-    append_value_bullet_list(
+    append_appendix2_view_section(
         Helpers,
+        t,
         section,
-        labels.deficiencyColumns.map((entry) => entry.label)
+        'rulefile_appendix2_deficiencies_heading',
+        'rulefile_appendix2_deficiencies_view_intro',
+        filter_editable_appendix2_deficiency_columns(labels.deficiencyColumns).map((entry) => entry.label),
+        'rulefile_appendix2_taxonomy_columns_note'
     );
 
     return section;
 }
 
 /**
- * @param {{ Helpers: object, Translation: object }} ctx
+ * @param {{ Helpers: object, Translation: object, router?: function, getState?: function }} ctx
  * @param {object} ruleFileContent
+ * @param {{ intro_text?: string, page_header_action?: HTMLElement }} [options]
  */
-export function render_rulefile_appendix3_template_section(ctx, ruleFileContent) {
+export function render_rulefile_appendix3_template_section(ctx, ruleFileContent, options = {}) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-    const template = read_rulefile_appendix3_template(ruleFileContent);
+    const template =
+        typeof options.intro_text === 'string'
+            ? { introText: options.intro_text }
+            : read_rulefile_appendix3_template(ruleFileContent);
     const state = typeof ctx.getState === 'function' ? ctx.getState() : null;
     const page_header_action =
-        can_edit_rulefile(state) && typeof ctx.router === 'function'
-            ? create_rulefile_appendix_edit_button(
-                  { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
-                  '3',
-                  'rulefile_sections_edit_appendix3_aria'
-              )
-            : undefined;
+        options.page_header_action !== undefined
+            ? options.page_header_action
+            : can_edit_rulefile(state) && typeof ctx.router === 'function'
+                ? create_rulefile_appendix_edit_button(
+                      { Helpers: ctx.Helpers, Translation: ctx.Translation, router: ctx.router },
+                      '3',
+                      'rulefile_sections_edit_appendix3_aria'
+                  )
+                : undefined;
 
     render_appendix1_summary_editor_page(
         { Helpers: ctx.Helpers, Translation: ctx.Translation },

@@ -10,7 +10,8 @@ import * as ValidationLogic from '../validation_logic.js';
 import {
     build_compact_hash_fragment,
     expand_view_slug_from_hash,
-    normalize_params_from_hash_query
+    normalize_params_from_hash_query,
+    resolve_legacy_audit_settings_route
 } from './router_url_codec.js';
 import { is_debug_nav } from '../app/runtime_flags.js';
 import {
@@ -128,8 +129,10 @@ export function parse_view_and_params_from_hash() {
         for (const [key, value] of url_params) { raw_params[key] = value; }
     }
     const params = (is_skip_link || !view_name) ? {} : normalize_params_from_hash_query(raw_params);
-    const viewName = (is_skip_link || !view_name) ? 'start' : expand_view_slug_from_hash(view_name);
-    return { viewName, params };
+    const expanded_view = (is_skip_link || !view_name) ? 'start' : expand_view_slug_from_hash(view_name);
+    const resolved = resolve_legacy_audit_settings_route(expanded_view, params);
+    const viewName = resolved.viewName;
+    return { viewName, params: resolved.params };
 }
 
 export function get_route_key_from_hash() {
@@ -138,7 +141,8 @@ export function get_route_key_from_hash() {
     const [view_name] = raw.split('?');
     if (!view_name) return 'start';
     if (view_name === SKIP_LINK_ANCHOR_ID) return 'start';
-    return expand_view_slug_from_hash(view_name);
+    const expanded = expand_view_slug_from_hash(view_name);
+    return resolve_legacy_audit_settings_route(expanded, {}).viewName;
 }
 
 export function get_scope_key_from_hash({ current_view_name_rendered, current_view_params_rendered_json }) {

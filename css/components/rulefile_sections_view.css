@@ -65,7 +65,7 @@
 .rulefile-sections-header {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0;
     margin-bottom: 1rem;
 }
 
@@ -89,7 +89,7 @@
 }
 
 .rulefile-sections-header-intro {
-    margin: 0.25rem 0 0 0;
+    margin: 0;
     max-width: 50rem;
     white-space: pre-line;
 }
@@ -820,8 +820,14 @@
 }
 
 /* Bilaga 2 visningsläge: täta punktlistor utan luft under rubrik */
+.rulefile-section-content h2:has(+ .rulefile-appendix2-section-intro + .rulefile-appendix2-value-list),
 .rulefile-section-content h2:has(+ .rulefile-appendix2-value-list) {
     margin-bottom: 0;
+}
+
+.rulefile-section-content .rulefile-appendix2-section-intro {
+    margin-top: 0.25rem;
+    margin-bottom: 0.35rem;
 }
 
 .rulefile-section-content .rulefile-appendix2-value-list {
@@ -836,6 +842,17 @@
 
 .rulefile-section-content .rulefile-appendix2-value-list li:last-child {
     margin-bottom: 0;
+}
+
+.rulefile-section-content .rulefile-appendix2-value-list + .rulefile-appendix2-taxonomy-note {
+    margin-top: 0.35rem;
+    margin-bottom: 0.75rem;
+    margin-left: 0;
+}
+
+.rulefile-appendix2-section .rulefile-appendix2-taxonomy-note {
+    margin-top: 0.75rem;
+    margin-left: 0;
 }
 
 /* Bilaga 1 brödtextredigerare */
@@ -944,13 +961,13 @@
     font-weight: 600;
 }
 
-/* Hub-sidor (Klassificeringar, Bilagornas malltexter): samma h1→intro-avstånd som .content-plate h1 */
+/* Hub-sidor (Klassificeringar, Bilagornas malltexter): ingen luft mellan h1 och intro */
 .rulefile-sections-header:has(+ .rulefile-section-content > .view-intro-text:first-child) {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
 }
 
 .rulefile-sections-header:has(+ .rulefile-section-content.taxonomy-list-view > .view-intro-text:first-child) {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0;
 }
 
 .classifications-part-panel {
@@ -1068,8 +1085,30 @@
 }
 
 /* Underlag för bristindex */
+.deficiency-index-basis-page-heading {
+    margin-bottom: 0.5rem;
+}
+
+.deficiency-index-basis-calculation-section {
+    margin-bottom: 0.75rem;
+}
+
+.deficiency-index-basis-calculation-section h2 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.35rem;
+}
+
+.deficiency-index-basis-calculation-section .view-intro-text {
+    margin-bottom: 0;
+}
+
 .deficiency-index-basis-layout {
     margin-top: 0.75rem;
+}
+
+.deficiency-index-basis-layout > h2 {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
 }
 
 .deficiency-index-basis-panel.rulefile-classifications-edit-form > .audit-settings__back-row {

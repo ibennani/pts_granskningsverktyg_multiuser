@@ -32,6 +32,33 @@ import {
     render_audit_actions_section_header,
     render_audit_actions_snapshots_header,
 } from './audit_actions_render.js';
+import { render_audit_actions_information_section } from './audit_actions_information_render.js';
+import {
+    render_audit_appendix_templates_hub,
+    render_audit_appendix1_view_section,
+    render_audit_appendix2_view_section,
+    render_audit_appendix3_view_section,
+} from './audit_actions_appendix_render.js';
+import { render_audit_appendix_edit_form } from './audit_actions_appendix_edit.js';
+import { create_rulefile_section_header } from './rulefile_sections/rulefile_sections_header.js';
+import { get_section_config } from './rulefile_sections/rulefile_sections_config.js';
+import { MetadataFormComponent } from './MetadataFormComponent.js';
+import { get_current_user_name } from '../utils/helpers.js';
+import {
+    load_metadata_auditor_options,
+} from '../logic/metadata_auditor_name_field.js';
+import {
+    load_metadata_case_handler_options,
+} from '../logic/metadata_case_handler_field.js';
+import { sync_to_server_now } from '../logic/server_sync.js';
+import {
+    audit_status_allows_metadata_edit,
+    audit_status_is_fully_readonly,
+} from '../utils/audit_status_helpers.js';
+import { enrich_audit_state_with_audit_type_overlay } from '../logic/audit_type_rule_overlay.js';
+import { normalize_report_template_appendix_param } from '../logic/appendix2_excel_template.js';
+import './rulefile_sections_view.css';
+import './audit_settings_view_component.css';
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
@@ -53,6 +80,12 @@ export class AuditActionsViewComponent {
         this.ExportLogic = null;
         this.AuditLogic = null;
         this.SaveAuditLogic = null;
+        this._metadata_container = null;
+        this._auditor_name_options = [];
+        this._case_handler_options = [];
+        this._audit_appendix_edit_component = null;
+        this._audit_appendix_edit_appendix = null;
+        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
     }
 
     async init({ root, deps }) {
@@ -81,6 +114,190 @@ export class AuditActionsViewComponent {
 
         bind_audit_actions_view_ui(this);
         bind_audit_actions_export_handlers(this);
+
+        this._auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
+        const state = this.getState?.() ?? {};
+        const current_case_handler = String(
+            (state.auditMetadata as { caseHandler?: string } | undefined)?.caseHandler ?? ''
+        ).trim();
+        this._case_handler_options = await load_metadata_case_handler_options(current_case_handler        );
+    }
+
+    _request_focus_on_audit_info_h2() {
+        try {
+            if (window.sessionStorage) {
+                window.sessionStorage.setItem(
+                    this.RETURN_FOCUS_SESSION_KEY,
+                    JSON.stringify({ focus: 'audit_info_h2' })
+                );
+            }
+        } catch {
+            // Ignorera
+        }
+        window.customFocusApplied = true;
+    }
+
+    async _handle_metadata_submit(form_data) {
+        await this.dispatch({
+            type: this.StoreActionTypes.UPDATE_METADATA,
+            payload: form_data,
+        });
+        try {
+            await sync_to_server_now(this.getState, this.dispatch);
+        } catch {
+            // Fel visas av sync
+        }
+        this.NotificationComponent.show_global_message(
+            this.Translation.t('metadata_updated_successfully'),
+            'success'
+        );
+        this._request_focus_on_audit_info_h2();
+        this.router('audit_overview');
+    }
+
+    _handle_information_back() {
+        this.router('audit_actions');
+    }
+
+    _destroy_audit_appendix_edit_component() {
+        if (this._audit_appendix_edit_component && typeof this._audit_appendix_edit_component.destroy === 'function') {
+            this._audit_appendix_edit_component.destroy();
+        }
+        this._audit_appendix_edit_component = null;
+        this._audit_appendix_edit_appendix = null;
+    }
+
+    _populate_audit_actions_information(plate, state, render_deps) {
+        const status = String(state.auditStatus ?? '');
+        const can_edit = audit_status_allows_metadata_edit(status);
+        const readonly = audit_status_is_fully_readonly(status) || !can_edit;
+        const metadata_ref = { current: this._metadata_container };
+        render_audit_actions_information_section(render_deps, plate, {
+            state,
+            readonly,
+            status,
+            metadata_container_ref: metadata_ref,
+            full_deps: this.deps,
+            handlers: {
+                on_metadata_submit: (form_data) => this._handle_metadata_submit(form_data),
+                on_back: () => this._handle_information_back(),
+            },
+            auditorNameOptions: this._auditor_name_options,
+            caseHandlerOptions: this._case_handler_options,
+        });
+        this._metadata_container = metadata_ref.current;
+    }
+
+    async _populate_audit_actions_appendix_templates(plate, state, render_deps) {
+        const appendix = normalize_report_template_appendix_param(this.deps?.params?.appendix);
+        const is_editing = this.deps?.params?.edit === 'true';
+        const status = String(state.auditStatus ?? '');
+        const can_edit = audit_status_allows_metadata_edit(status) && !audit_status_is_fully_readonly(status);
+
+        if (is_editing && can_edit && !appendix) {
+            this.router('audit_actions', {
+                section: 'appendix_templates',
+                appendix: '1',
+                edit: 'true',
+            });
+            return;
+        }
+
+        const section_config = get_section_config('report_template', this.Translation.t);
+        const section_heading_id = `rulefile-section-${section_config.id}-heading`;
+        const appendix_router = (_view, params = {}) => {
+            const { section: _ignored_section, ...rest } = params;
+            this.router('audit_actions', { section: 'appendix_templates', ...rest });
+        };
+        const header_deps = {
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            router: appendix_router,
+            getState: () => state,
+            can_edit_override: can_edit,
+        };
+
+        plate.classList.add('rulefile-sections-main-plate');
+
+        const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
+        const right_wrapper = this.Helpers.create_element('div', {
+            class_name: 'rulefile-sections-right-wrapper',
+        });
+
+        if (is_editing && can_edit && appendix) {
+            right_wrapper.appendChild(
+                create_rulefile_section_header(
+                    header_deps,
+                    section_config,
+                    true,
+                    appendix,
+                    '',
+                    ''
+                )
+            );
+            const edit_form_container = this.Helpers.create_element('div', {
+                class_name: 'rulefile-section-edit-form-container',
+            });
+            this._destroy_audit_appendix_edit_component();
+            await render_audit_appendix_edit_form(
+                { deps: this.deps, view: this },
+                edit_form_container,
+                appendix
+            );
+            const edit_section = this.Helpers.create_element('section', {
+                class_name: 'rulefile-section-content',
+                attributes: { 'aria-labelledby': section_heading_id },
+            });
+            edit_section.appendChild(edit_form_container);
+            right_wrapper.appendChild(edit_section);
+        } else if (!appendix) {
+            right_wrapper.appendChild(
+                create_rulefile_section_header(header_deps, section_config, false, '', '', '')
+            );
+            const hub_section = this.Helpers.create_element('section', {
+                class_name: 'rulefile-section-content',
+                attributes: { 'aria-labelledby': section_heading_id },
+            });
+            render_audit_appendix_templates_hub(render_deps, hub_section);
+            right_wrapper.appendChild(hub_section);
+        } else {
+            right_wrapper.appendChild(
+                create_rulefile_section_header(header_deps, section_config, false, appendix, '', '')
+            );
+            const view_section =
+                appendix === '1'
+                    ? render_audit_appendix1_view_section(render_deps, state, { can_edit })
+                    : appendix === '2'
+                        ? render_audit_appendix2_view_section(render_deps, state)
+                        : render_audit_appendix3_view_section(render_deps, state, { can_edit });
+            const labelledby_id =
+                appendix === '1'
+                    ? 'rulefile-appendix1-summary-heading'
+                    : appendix === '3'
+                        ? 'rulefile-appendix3-heading'
+                        : section_heading_id;
+            view_section.setAttribute('aria-labelledby', labelledby_id);
+            right_wrapper.appendChild(view_section);
+        }
+
+        layout.appendChild(right_wrapper);
+        plate.appendChild(layout);
+
+        const back_row = this.Helpers.create_element('div', { class_name: 'audit-settings__back-row' });
+        const back_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            attributes: { type: 'button' },
+            text_content: this.Translation.t('audit_actions_back_to_hub'),
+        });
+        back_btn.addEventListener('click', () => {
+            if (appendix) {
+                this.router('audit_actions', { section: 'appendix_templates' });
+            } else {
+                this.router('audit_actions');
+            }
+        });
+        back_row.appendChild(back_btn);
+        plate.appendChild(back_row);
     }
 
     _populate_update_rulefile_slot(slot_element, state) {
@@ -410,13 +627,13 @@ export class AuditActionsViewComponent {
         if (this._audit_actions_status_transition_active) {
             return;
         }
-        this._render_immediate();
+        void this._render_immediate();
     }
 
-    _render_immediate({ enter_hidden = false } = {}) {
+    async _render_immediate({ enter_hidden = false } = {}) {
         if (!this.root) return;
         const t = this.Translation.t;
-        const state = this.getState();
+        let state = this.getState();
 
         if (!state?.ruleFileContent) {
             this.root.innerHTML = '';
@@ -434,12 +651,24 @@ export class AuditActionsViewComponent {
             router: this.router,
         };
 
+        if (section !== 'information' && this._metadata_container) {
+            MetadataFormComponent.destroy?.();
+            this._metadata_container = null;
+        }
+        if (section !== 'appendix_templates') {
+            this._destroy_audit_appendix_edit_component();
+        }
+
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', {
             class_name: 'content-plate audit-actions-plate',
         });
 
         refresh_audit_actions_rulefile_subscription(this, state);
+
+        if (section === 'information' || section === 'appendix_templates') {
+            state = await enrich_audit_state_with_audit_type_overlay(state);
+        }
 
         let content_wrapper;
         if (section === 'manage') {
@@ -454,6 +683,14 @@ export class AuditActionsViewComponent {
                 intro_key: 'audit_actions_downloads_intro',
             });
             content_wrapper = build_audit_actions_downloads_content(this, state, t);
+        } else if (section === 'information') {
+            this._populate_audit_actions_information(plate, state, render_deps);
+            this.root.appendChild(plate);
+            return;
+        } else if (section === 'appendix_templates') {
+            await this._populate_audit_actions_appendix_templates(plate, state, render_deps);
+            this.root.appendChild(plate);
+            return;
         } else if (section === 'snapshots') {
             render_audit_actions_snapshots_header(render_deps, plate);
             if (this._snapshots_section) {
@@ -500,6 +737,11 @@ export class AuditActionsViewComponent {
             this._snapshots_section.destroy();
             this._snapshots_section = null;
         }
+        if (this._metadata_container) {
+            MetadataFormComponent.destroy?.();
+            this._metadata_container = null;
+        }
+        this._destroy_audit_appendix_edit_component();
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;

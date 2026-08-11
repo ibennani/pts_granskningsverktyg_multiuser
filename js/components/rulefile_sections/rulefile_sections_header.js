@@ -11,6 +11,7 @@ import {
     normalize_classification_part_param,
 } from './rulefile_classifications_parts.js';
 import { build_taxonomy_detail_edit_button } from './rulefile_taxonomy_detail_ui.js';
+import { create_rulefile_appendix_edit_button } from './rulefile_appendix_templates_render.js';
 
 /**
  * @param {object} deps
@@ -44,6 +45,14 @@ export function create_rulefile_section_header(
         return header_wrapper;
     }
 
+    const normalized_part = normalize_classification_part_param(classifications_part);
+    const suppress_deficiency_index_basis_header =
+        section_config.id === 'classifications' && normalized_part === 'deficiency_index_basis';
+    if (suppress_deficiency_index_basis_header) {
+        header_wrapper.hidden = true;
+        return header_wrapper;
+    }
+
     const heading_row = Helpers.create_element('div', { class_name: 'rulefile-sections-header-row' });
     const heading_id = `rulefile-section-${section_config.id}-heading`;
     const appendix_title_key =
@@ -54,7 +63,6 @@ export function create_rulefile_section_header(
                 : appendix === '3'
                     ? 'rulefile_appendix_hub_3_title'
                     : null;
-    const normalized_part = normalize_classification_part_param(classifications_part);
     const classification_part_title_key = normalized_part
         ? get_classification_part_title_key(normalized_part)
         : null;
@@ -72,7 +80,11 @@ export function create_rulefile_section_header(
     heading_row.appendChild(heading);
 
     const state_for_header = typeof deps.getState === 'function' ? deps.getState() : null;
-    const can_edit = can_edit_rulefile(state_for_header);
+    const can_edit =
+        typeof deps.can_edit_override === 'boolean'
+            ? deps.can_edit_override
+            : can_edit_rulefile(state_for_header);
+    const appendix_edit_deps = { Helpers, Translation: deps.Translation, router: deps.router };
     const taxonomy_detail_context = deps.taxonomy_detail_context ?? null;
 
     if (
@@ -187,51 +199,33 @@ export function create_rulefile_section_header(
     }
 
     if (can_edit && section_config.id === 'report_template' && !is_editing && appendix === '1') {
-        const edit_button = Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-            attributes: {
-                type: 'button',
-                'aria-label': t('rulefile_sections_edit_appendix1_aria')
-            },
-            html_content: `<span>${t('edit_button_label')}</span>` +
-                          (Helpers.get_icon_svg ? Helpers.get_icon_svg('edit') : '')
-        });
-        edit_button.addEventListener('click', () => {
-            deps.router('rulefile_sections', { section: 'report_template', appendix: '1', edit: 'true' });
-        });
-        heading_row.appendChild(edit_button);
+        heading_row.appendChild(
+            create_rulefile_appendix_edit_button(
+                appendix_edit_deps,
+                '1',
+                'rulefile_sections_edit_appendix1_aria'
+            )
+        );
     }
 
     if (can_edit && section_config.id === 'report_template' && !is_editing && appendix === '2') {
-        const edit_button = Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-            attributes: {
-                type: 'button',
-                'aria-label': t('rulefile_sections_edit_appendix2_aria')
-            },
-            html_content: `<span>${t('edit_button_label')}</span>` +
-                          (Helpers.get_icon_svg ? Helpers.get_icon_svg('edit') : '')
-        });
-        edit_button.addEventListener('click', () => {
-            deps.router('rulefile_sections', { section: 'report_template', appendix: '2', edit: 'true' });
-        });
-        heading_row.appendChild(edit_button);
+        heading_row.appendChild(
+            create_rulefile_appendix_edit_button(
+                appendix_edit_deps,
+                '2',
+                'rulefile_sections_edit_appendix2_aria'
+            )
+        );
     }
 
     if (can_edit && section_config.id === 'report_template' && !is_editing && appendix === '3') {
-        const edit_button = Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-            attributes: {
-                type: 'button',
-                'aria-label': t('rulefile_sections_edit_appendix3_aria')
-            },
-            html_content: `<span>${t('edit_button_label')}</span>` +
-                          (Helpers.get_icon_svg ? Helpers.get_icon_svg('edit') : '')
-        });
-        edit_button.addEventListener('click', () => {
-            deps.router('rulefile_sections', { section: 'report_template', appendix: '3', edit: 'true' });
-        });
-        heading_row.appendChild(edit_button);
+        heading_row.appendChild(
+            create_rulefile_appendix_edit_button(
+                appendix_edit_deps,
+                '3',
+                'rulefile_sections_edit_appendix3_aria'
+            )
+        );
     }
 
     header_wrapper.appendChild(heading_row);

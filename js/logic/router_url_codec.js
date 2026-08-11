@@ -54,6 +54,29 @@ export function expand_view_slug_from_hash(slug) {
 }
 
 /**
+ * Mappar borttagen Inställningar-vy till Åtgärder med motsvarande undersida.
+ * @param {string} view_name
+ * @param {Record<string, string>} params
+ * @returns {{ viewName: string, params: Record<string, string> }}
+ */
+export function resolve_legacy_audit_settings_route(view_name, params = {}) {
+    if (view_name !== 'audit_settings') {
+        return { viewName: view_name, params: { ...params } };
+    }
+    const section = String(params.section ?? '').trim();
+    const out = { ...params };
+    delete out.section;
+    delete out.returnTo;
+    if (section === 'summary' || section === 'principle_intros') {
+        return {
+            viewName: 'audit_actions',
+            params: { ...out, section: 'appendix_templates', appendix: '1', edit: 'true' },
+        };
+    }
+    return { viewName: 'audit_actions', params: { ...out, section: 'information' } };
+}
+
+/**
  * @param {string} canonical_view
  * @returns {string}
  */

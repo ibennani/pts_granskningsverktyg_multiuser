@@ -1,28 +1,31 @@
 /**
- * @fileoverview Redigerar Bilaga 2 Excel-etiketter i regelfilens malltexter.
+ * @fileoverview Redigerar Bilaga 2 Excel-etiketter för aktuell granskning.
  */
 import {
     APPENDIX2_DEFICIENCY_COLUMN_KEYS,
     APPENDIX2_GENERAL_INFO_KEYS,
-    normalize_rulefile_appendix2,
-    read_rulefile_appendix2_labels,
     read_rulefile_metadata_language,
 } from '../../logic/appendix2_excel_template.js';
-import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
+import {
+    build_appendix2_override_payload,
+    resolve_appendix2_excel_labels_for_audit,
+} from '../../logic/audit_appendix_overrides.js';
+import { sync_to_server_now } from '../../logic/server_sync.js';
 import {
     create_appendix2_excel_editor,
     create_appendix2_labels_host,
     read_appendix2_sheet_names_from_host,
     read_input_label_values,
     type Appendix2SheetEditorHost,
-} from './appendix2_excel_editor_ui.js';
+} from '../rulefile_sections/appendix2_excel_editor_ui.js';
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
+import type { Appendix2LocaleLabels } from '../../logic/appendix2_excel_template.js';
 
 type Deps = {
     router: (view: string, params?: Record<string, string>) => void;
     getState: () => Record<string, unknown>;
     dispatch: (action: unknown) => Promise<void> | void;
-    StoreActionTypes: { UPDATE_RULEFILE_CONTENT: string };
+    StoreActionTypes: { UPDATE_METADATA: string };
     Translation: { t: (key: string) => string };
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
@@ -30,7 +33,7 @@ type Deps = {
     NotificationComponent: { show_global_message: (msg: string, type: string) => void };
 };
 
-export class EditReportTemplateAppendix2Component {
+export class EditAuditAppendix2Component {
     private root: HTMLElement | null = null;
     private deps: Deps | null = null;
     private sheet_host: Appendix2SheetEditorHost | null = null;
@@ -41,21 +44,18 @@ export class EditReportTemplateAppendix2Component {
     }
 
     private navigate_back_to_view(): void {
-        this.deps?.router('rulefile_sections', { section: 'report_template', appendix: '2' });
+        this.deps?.router('audit_actions', { section: 'appendix_templates', appendix: '2' });
     }
 
     private async save_labels(): Promise<void> {
         if (!this.root || !this.deps || !this.sheet_host) return;
-        const state = this.deps.getState();
-        const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
-        const normalized = normalize_rulefile_appendix2(rule_file);
-        const locale = read_rulefile_metadata_language(normalized);
-        const appendix = normalized.appendix2 as Record<string, unknown>;
-        const labels_by_locale = { ...(appendix.labelsByLocale as Record<string, unknown>) };
-
-        labels_by_locale[locale] = {
+        const labels: Appendix2LocaleLabels = {
             sheetNames: read_appendix2_sheet_names_from_host(this.sheet_host),
-            generalInfo: read_input_label_values(this.root, 'appendix2-general', APPENDIX2_GENERAL_INFO_KEYS),
+            generalInfo: read_input_label_values(
+                this.root,
+                'appendix2-general',
+                APPENDIX2_GENERAL_INFO_KEYS
+            ),
             deficiencyColumns: read_input_label_values(
                 this.root,
                 'appendix2-deficiency',
@@ -63,23 +63,21 @@ export class EditReportTemplateAppendix2Component {
             ),
         };
 
-        appendix.labelsByLocale = labels_by_locale;
-        normalized.appendix2 = appendix;
-
         await this.deps.dispatch({
-            type: this.deps.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: normalized, skip_render: true },
+            type: this.deps.StoreActionTypes.UPDATE_METADATA,
+            payload: { ...build_appendix2_override_payload(labels), skip_render: true },
         });
 
+        this.deps.NotificationComponent.show_global_message(
+            this.deps.Translation.t('audit_appendix_2_saved'),
+            'success'
+        );
+
         try {
-            await flush_rulefile_editing_sync_if_active(this.deps.getState, this.deps.dispatch);
+            await sync_to_server_now(this.deps.getState, this.deps.dispatch);
         } catch {
             // Fel visas av sync
         }
-        this.deps.NotificationComponent.show_global_message(
-            this.deps.Translation.t('rulefile_appendix2_saved'),
-            'success'
-        );
     }
 
     render(): void {
@@ -87,14 +85,25 @@ export class EditReportTemplateAppendix2Component {
         this.root.innerHTML = '';
 
         const { Helpers: helpers, Translation: { t } } = this.deps;
-        const rule_file = this.deps.getState().ruleFileContent as Record<string, unknown> | undefined;
-        const labels = read_rulefile_appendix2_labels(rule_file);
+        const state = this.deps.getState();
+        const resolved = resolve_appendix2_excel_labels_for_audit(state);
+        const labels: Appendix2LocaleLabels = {
+            sheetNames: resolved.sheet_names,
+            generalInfo: Object.entries(resolved.general_info_labels).map(([key, label]) => ({
+                key,
+                label,
+            })),
+            deficiencyColumns: Object.entries(resolved.deficiency_column_labels).map(([key, label]) => ({
+                key,
+                label,
+            })),
+        };
         this.sheet_host = create_appendix2_labels_host(labels);
 
         this.root.appendChild(
-            helpers.create_element('p', {
+            this.deps.Helpers.create_element('p', {
                 class_name: 'view-intro-text',
-                text_content: t('rulefile_appendix2_edit_intro'),
+                text_content: this.deps.Translation.t('rulefile_appendix2_edit_intro'),
             })
         );
 

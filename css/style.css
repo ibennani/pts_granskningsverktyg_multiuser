@@ -153,8 +153,8 @@
 
     --container-max-width: 1440px;
     --spacing-unit: 1rem;
-    --heading-h1-after-gap: 0.75rem;
-    --heading-h2-after-gap: 0.625rem;
+    --heading-h1-after-gap: 0;
+    --heading-h2-after-gap: 0;
 
     /* Build timestamp styling */
     --build-timestamp-color: #9ca3af;

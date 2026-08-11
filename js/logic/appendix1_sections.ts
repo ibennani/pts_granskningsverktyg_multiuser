@@ -37,6 +37,11 @@ import {
 import { normalize_rulefile_appendix1 } from './appendix1_sections_normalize.js';
 import { read_audit_appendix1_summary_text } from './appendix1_summary_legacy.js';
 import {
+    merge_appendix1_slice_with_audit_override,
+    read_appendix1_override,
+    type AuditAppendixMetadata,
+} from './audit_appendix_overrides.js';
+import {
     Appendix1AuditSlice,
     Appendix1PlaceholderContext,
     Appendix1RulefileSlice,
@@ -275,6 +280,19 @@ function resolve_effective_appendix1_for_audit(
     return merge_appendix1_with_audit_type_override(base, type_id) ?? base;
 }
 
+function resolve_appendix1_slice_with_audit_overrides(
+    audit: Appendix1AuditSlice | null | undefined
+): unknown {
+    const effective = resolve_effective_appendix1_for_audit(audit);
+    const override = read_appendix1_override(
+        audit?.auditMetadata as AuditAppendixMetadata | null | undefined
+    );
+    return merge_appendix1_slice_with_audit_override(
+        effective as Record<string, unknown> | null | undefined,
+        override
+    );
+}
+
 export function resolve_audit_grouping_taxonomy_id(
     audit: Appendix1AuditSlice | null | undefined
 ): string {
@@ -288,7 +306,7 @@ export function resolve_appendix1_body_text(
     audit: Appendix1AuditSlice | null | undefined
 ): string {
     const taxonomy_id = resolve_audit_grouping_taxonomy_id(audit);
-    const effective_appendix1 = resolve_effective_appendix1_for_audit(audit);
+    const effective_appendix1 = resolve_appendix1_slice_with_audit_overrides(audit);
     const rule_slice: Appendix1RulefileSlice | null | undefined = audit?.ruleFileContent
         ? {
             ...(audit.ruleFileContent as Appendix1RulefileSlice),
@@ -318,7 +336,7 @@ export function resolve_appendix1_sections_list(
         defaults
     );
     const taxonomy_id = resolve_audit_grouping_taxonomy_id(audit);
-    const effective_appendix1 = resolve_effective_appendix1_for_audit(audit);
+    const effective_appendix1 = resolve_appendix1_slice_with_audit_overrides(audit);
     const rule_slice: Appendix1RulefileSlice | null | undefined = audit?.ruleFileContent
         ? {
             ...(audit.ruleFileContent as Appendix1RulefileSlice),
@@ -326,6 +344,18 @@ export function resolve_appendix1_sections_list(
         }
         : undefined;
     let deficiency_sections = read_rulefile_deficiency_sections_list(rule_slice);
+
+    const appendix_override = read_appendix1_override(
+        audit?.auditMetadata as AuditAppendixMetadata | null | undefined
+    );
+    if (appendix_override?.sections?.length) {
+        const override_sections = appendix_override.sections;
+        const content_overrides = override_sections.filter((section) => !is_deficiency_section(section));
+        if (content_overrides.length > 0) {
+            content_sections = merge_sections_by_id(content_sections, content_overrides);
+        }
+        deficiency_sections = merge_deficiency_sections_by_id(deficiency_sections, override_sections);
+    }
 
     if (audit?.auditMetadata && Object.prototype.hasOwnProperty.call(audit.auditMetadata, 'appendix1SectionOverrides')) {
         const overrides = read_audit_section_overrides(audit.auditMetadata);

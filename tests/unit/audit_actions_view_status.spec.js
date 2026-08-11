@@ -102,10 +102,28 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
         expect(heading_texts(root)).toContain('audit_actions_title');
         expect(root.textContent).toContain('audit_actions_hub_intro');
         expect(root.textContent).toContain('audit_actions_nav_manage');
+        expect(root.textContent).toContain('audit_actions_nav_information');
+        expect(root.textContent).toContain('audit_actions_nav_appendix_templates');
         expect(root.textContent).toContain('audit_actions_nav_downloads');
         expect(root.textContent).toContain('audit_actions_nav_snapshots');
         expect(root.querySelector('#audit-actions-hub-heading')).toBeFalsy();
         expect(root.querySelector('#audit-action-status-select')).toBeFalsy();
+        component.destroy();
+        root.remove();
+    });
+
+    test('hub visar bilagor och export som andra block efter hantera granskning', async () => {
+        const { root, component } = await render_with('in_progress');
+        const hub_links = [...root.querySelectorAll('.audit-settings__hub-link')].map((link) => link.textContent);
+
+        expect(hub_links).toEqual([
+            'audit_actions_nav_manage',
+            'audit_actions_nav_downloads',
+            'audit_actions_nav_information',
+            'audit_actions_nav_appendix_templates',
+            'audit_actions_nav_snapshots',
+        ]);
+
         component.destroy();
         root.remove();
     });
@@ -299,6 +317,8 @@ describe('audit_actions_render', () => {
         expect(normalize_audit_actions_section('manage')).toBe('manage');
         expect(normalize_audit_actions_section('downloads')).toBe('downloads');
         expect(normalize_audit_actions_section('snapshots')).toBe('snapshots');
+        expect(normalize_audit_actions_section('information')).toBe('information');
+        expect(normalize_audit_actions_section('appendix_templates')).toBe('appendix_templates');
         expect(normalize_audit_actions_section('hub')).toBe('');
         expect(normalize_audit_actions_section(undefined)).toBe('');
         expect(normalize_audit_actions_section('invalid')).toBe('');

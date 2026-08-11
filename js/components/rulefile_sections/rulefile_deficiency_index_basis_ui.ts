@@ -183,17 +183,41 @@ function build_table_row_cells(
     };
 }
 
-function append_hint_to_panel(
+function append_table_section_heading(
+    ctx: DeficiencyIndexBasisCtx,
+    layout: HTMLElement,
+    t: (key: string, opts?: Record<string, unknown>) => string
+): void {
+    layout.appendChild(
+        ctx.Helpers.create_element('h2', {
+            attributes: { id: 'deficiency-index-basis-table-heading' },
+            text_content: t('rulefile_classifications_deficiency_index_basis_table_heading'),
+        })
+    );
+}
+
+function append_calculation_section(
     ctx: DeficiencyIndexBasisCtx,
     panel: HTMLElement,
     t: (key: string, opts?: Record<string, unknown>) => string
 ): void {
-    panel.appendChild(
+    const section = ctx.Helpers.create_element('section', {
+        class_name: 'deficiency-index-basis-calculation-section',
+        attributes: { 'aria-labelledby': 'deficiency-index-basis-calculation-heading' },
+    });
+    section.appendChild(
+        ctx.Helpers.create_element('h2', {
+            attributes: { id: 'deficiency-index-basis-calculation-heading' },
+            text_content: t('rulefile_classifications_deficiency_index_basis_calculation_heading'),
+        })
+    );
+    section.appendChild(
         ctx.Helpers.create_element('p', {
-            class_name: 'field-hint',
+            class_name: 'view-intro-text',
             text_content: t('rulefile_classifications_deficiency_index_basis_weight_hint'),
         })
     );
+    panel.appendChild(section);
 }
 
 /**
@@ -211,11 +235,12 @@ export function render_deficiency_index_basis_ui(
     const part_panel = Helpers.create_element('div', {
         class_name: 'classifications-part-panel',
     });
-    append_hint_to_panel(ctx, part_panel, t);
+    append_calculation_section(ctx, part_panel, t);
 
     const rows = build_requirement_rows(rule_file_content.requirements);
     const layout = create_classifications_table_layout(Helpers);
     layout.classList.add('deficiency-index-basis-layout');
+    append_table_section_heading(ctx, layout, t);
 
     const filter_input = append_classifications_table_filter_to_layout(layout, ctx, rows.length, {
         label_key: 'rulefile_classifications_deficiency_index_basis_filter_label',

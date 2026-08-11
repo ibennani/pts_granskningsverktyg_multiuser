@@ -7,6 +7,7 @@ import {
     build_appendix1_placeholder_context,
     type Appendix1AuditSlice,
 } from './appendix1_sections.js';
+import { read_appendix3_intro_override, type AuditAppendixMetadata } from './audit_appendix_overrides.js';
 
 export type Appendix3RulefileSlice = {
     appendix3?: {
@@ -54,9 +55,13 @@ export function resolve_appendix3_screenshots_template(
     const template = read_rulefile_appendix3_template(
         audit?.ruleFileContent as Appendix3RulefileSlice | null | undefined
     );
+    const intro_override = read_appendix3_intro_override(
+        audit?.auditMetadata as AuditAppendixMetadata | null | undefined
+    );
+    const intro_source = intro_override !== undefined ? intro_override : template.introText;
     const context = build_appendix1_placeholder_context(audit);
     return {
         title: apply_appendix1_placeholders(template.title, context),
-        introText: apply_appendix1_placeholders(template.introText, context),
+        introText: apply_appendix1_placeholders(intro_source, context),
     };
 }

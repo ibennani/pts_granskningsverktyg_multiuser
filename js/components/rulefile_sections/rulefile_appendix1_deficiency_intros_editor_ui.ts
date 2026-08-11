@@ -20,6 +20,7 @@ export function render_deficiency_intro_editor(
         grouping_taxonomy_id: string;
         deficiency_sections: Appendix1SectionDefinition[];
         on_change?: () => void;
+        initial_concept_intros?: Record<string, string>;
     }
 ): {
     get_concept_intros: () => Record<string, string>;
@@ -33,14 +34,17 @@ export function render_deficiency_intro_editor(
         for (const section of sections) {
             if (section.kind !== 'deficiency_group' || !section.conceptId) continue;
             if (!concept_intros.has(section.conceptId)) {
+                const from_initial = options.initial_concept_intros?.[section.conceptId];
                 concept_intros.set(
                     section.conceptId,
-                    section.content
-                    || read_concept_appendix1_intro(
-                        options.rule_file_content.metadata,
-                        options.grouping_taxonomy_id,
-                        section.conceptId
-                    )
+                    typeof from_initial === 'string'
+                        ? from_initial
+                        : section.content
+                        || read_concept_appendix1_intro(
+                            options.rule_file_content.metadata,
+                            options.grouping_taxonomy_id,
+                            section.conceptId
+                        )
                 );
             }
         }

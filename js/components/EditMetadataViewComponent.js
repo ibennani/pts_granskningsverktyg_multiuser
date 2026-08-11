@@ -432,7 +432,7 @@ export class EditMetadataViewComponent {
         }
 
         if (!is_new_audit) {
-            this.router('audit_settings', { section: 'information', returnTo: 'settings' });
+            this.router('audit_actions', { section: 'information' });
             return;
         }
 

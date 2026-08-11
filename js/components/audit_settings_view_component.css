@@ -19,7 +19,7 @@
 }
 
 .audit-settings__page-header-row + .view-intro-text {
-    margin-top: var(--heading-h1-after-gap);
+    margin-top: 0;
 }
 
 .audit-settings__section-divider {
