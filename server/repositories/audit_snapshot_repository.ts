@@ -126,6 +126,17 @@ export async function recover_stale_processing_snapshots(error_message: string):
     return result.rowCount ?? 0;
 }
 
+export async function list_audit_snapshot_ids_for_sample(
+    audit_id: string,
+    sample_id: string
+): Promise<string[]> {
+    const result = await query(
+        `SELECT id FROM audit_snapshots WHERE audit_id = $1 AND sample_id = $2`,
+        [audit_id, sample_id]
+    );
+    return result.rows.map((row: { id: string }) => String(row.id));
+}
+
 export async function delete_audit_snapshots_for_sample(
     audit_id: string,
     sample_id: string
@@ -135,6 +146,33 @@ export async function delete_audit_snapshots_for_sample(
         [audit_id, sample_id]
     );
     return result.rows.map((row: { id: string }) => String(row.id));
+}
+
+export async function delete_audit_snapshot_by_id(
+    audit_id: string,
+    snapshot_id: string
+): Promise<boolean> {
+    const result = await query(
+        `DELETE FROM audit_snapshots WHERE audit_id = $1 AND id = $2 RETURNING id`,
+        [audit_id, snapshot_id]
+    );
+    return result.rows.length > 0;
+}
+
+export async function list_orphan_snapshot_rows(
+    audit_id: string,
+    valid_sample_ids: string[]
+): Promise<AuditSnapshotRow[]> {
+    if (valid_sample_ids.length === 0) {
+        const result = await query(`SELECT * FROM audit_snapshots WHERE audit_id = $1`, [audit_id]);
+        return result.rows.map((row: unknown) => parse_db_row(AuditSnapshotRowSchema, row));
+    }
+    const result = await query(
+        `SELECT * FROM audit_snapshots
+         WHERE audit_id = $1 AND sample_id <> ALL($2::text[])`,
+        [audit_id, valid_sample_ids]
+    );
+    return result.rows.map((row: unknown) => parse_db_row(AuditSnapshotRowSchema, row));
 }
 
 export async function list_orphan_snapshot_candidates(

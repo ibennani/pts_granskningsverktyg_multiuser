@@ -13,6 +13,10 @@ import {
     start_snapshot_capture,
     delete_snapshot_job,
 } from '../services/audit_snapshot_job_service.js';
+import {
+    purge_audit_snapshot_by_id,
+    purge_audit_snapshots_for_sample,
+} from '../services/audit_snapshot_cleanup_service.js';
 import { build_audit_snapshot_list } from '../services/audit_snapshot_list_service.js';
 import {
     get_audit_snapshot_by_id,
@@ -226,6 +230,24 @@ export function register_audit_snapshot_routes(router: Router): void {
         }
     });
 
+    router.delete('/:id/snapshots/by-sample/:sampleId', async (req: Request, res: Response) => {
+        try {
+            const audit_id = single_route_param(req.params.id);
+            const sample_id = single_route_param(req.params.sampleId);
+            if (!(await audit_exists(audit_id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const removed = await purge_audit_snapshots_for_sample(audit_id, sample_id);
+            if (removed === 0) {
+                return res.status(404).json({ error: 'Ingen snapshot hittades för granskningsdelen' });
+            }
+            return res.status(204).send();
+        } catch (err) {
+            console.error('[audit_snapshot] delete-by-sample error:', err);
+            return res.status(500).json({ error: 'Kunde inte ta bort snapshots' });
+        }
+    });
+
     router.delete('/:id/snapshots/:snapshotId', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
@@ -233,14 +255,18 @@ export function register_audit_snapshot_routes(router: Router): void {
             if (!(await audit_exists(audit_id))) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }
-            const deleted = await delete_snapshot_job(audit_id, snapshot_id);
-            if (!deleted) {
-                return res.status(404).json({ error: 'Snapshot kunde inte avbrytas' });
+            const purged = await purge_audit_snapshot_by_id(audit_id, snapshot_id);
+            if (purged) {
+                return res.status(204).send();
+            }
+            const cancelled = await delete_snapshot_job(audit_id, snapshot_id);
+            if (!cancelled) {
+                return res.status(404).json({ error: 'Snapshot hittades inte' });
             }
             return res.status(204).send();
         } catch (err) {
             console.error('[audit_snapshot] delete error:', err);
-            return res.status(500).json({ error: 'Kunde inte avbryta snapshot' });
+            return res.status(500).json({ error: 'Kunde inte ta bort snapshot' });
         }
     });
 }

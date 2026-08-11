@@ -1,15 +1,16 @@
-.audit-actions-snapshots__table {
-    width: 100%;
-    border-collapse: collapse;
+.audit-actions-snapshots__table-host {
     margin-block: 1rem;
 }
 
-.audit-actions-snapshots__table th,
-.audit-actions-snapshots__table td {
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-    vertical-align: top;
-    border-bottom: 1px solid var(--border-color, #ccc);
+.audit-snapshots-table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.audit-actions-snapshots__table-wrapper {
+    margin-block-end: 0.5rem;
 }
 
 .audit-actions-snapshots__secondary-status,

@@ -18,6 +18,7 @@
     "db:backup:list:remote": "node scripts/db-backup-list-remote.js",
     "db:backup:verify:remote": "node scripts/db-backup-verify-remote.js",
     "cleanup:docker:remote": "node scripts/cleanup-docker-remote.js",
+    "cleanup:orphan-snapshots": "npx tsx scripts/cleanup_orphan_audit_snapshots.mjs",
     "db:dedupe": "node server/scripts/dedupe-rules.js",
     "deploy:v2": "node scripts/deploy-v2.js",
     "deploy:test-server": "node scripts/deploy-test-server.js",

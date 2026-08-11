@@ -21,6 +21,10 @@ import { parse_body, parse_db_row, safe_parse_db_row } from '../utils/zod_bounda
 import { single_route_param } from '../utils/route_params.js';
 import { build_full_state } from './audit_build_state.js';
 import { broadcast_audit_requirement_updated, broadcast_audits_changed } from './audit_route_support.js';
+import {
+    purge_audit_snapshots_for_sample,
+    purge_orphan_audit_snapshots,
+} from '../services/audit_snapshot_cleanup_service.js';
 
 type AuthedRequest = Request & { user?: { name?: string | null } };
 
@@ -142,6 +146,25 @@ export function register_audit_patch_routes(router: IRouter): void {
                 });
             }
             const audit = parse_db_row(AuditRowSchema, result.rows[0]);
+
+            if (samples !== undefined) {
+                const previous_samples = Array.isArray(existing_row.samples) ? existing_row.samples : [];
+                const previous_ids = new Set(
+                    previous_samples.map((s: { id?: string }) => String(s?.id ?? '')).filter(Boolean)
+                );
+                const next_ids = new Set(
+                    (Array.isArray(samples) ? samples : [])
+                        .map((s: { id?: string }) => String(s?.id ?? ''))
+                        .filter(Boolean)
+                );
+                for (const sample_id of previous_ids) {
+                    if (!next_ids.has(sample_id)) {
+                        await purge_audit_snapshots_for_sample(id, sample_id);
+                    }
+                }
+                await purge_orphan_audit_snapshots(id, [...next_ids]);
+            }
+
             let ruleSet = null;
             if (audit.rule_set_id) {
                 const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);

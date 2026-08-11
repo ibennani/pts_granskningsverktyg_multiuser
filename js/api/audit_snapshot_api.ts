@@ -172,3 +172,33 @@ export function get_audit_snapshots_download_all_url(audit_id: string): string {
     const base = get_base_url();
     return `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/download-all`;
 }
+
+export async function delete_audit_snapshots_for_sample(
+    audit_id: string,
+    sample_id: string
+): Promise<void> {
+    const base = get_base_url();
+    const res = await authorized_fetch(
+        `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/by-sample/${encodeURIComponent(sample_id)}`,
+        { method: 'DELETE' }
+    );
+    if (!res.ok && res.status !== 404) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+    }
+}
+
+export async function delete_audit_snapshot(
+    audit_id: string,
+    snapshot_id: string
+): Promise<void> {
+    const base = get_base_url();
+    const res = await authorized_fetch(
+        `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/${encodeURIComponent(snapshot_id)}`,
+        { method: 'DELETE' }
+    );
+    if (!res.ok && res.status !== 404) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+    }
+}

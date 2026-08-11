@@ -27,6 +27,7 @@ import { show_content_type_paste_analyze_modal } from './add_sample_form/content
 import type { ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
+import { delete_audit_snapshots_for_sample } from '../api/audit_snapshot_api.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 
 type SampleCategoryOption = {
@@ -811,10 +812,12 @@ export class AddSampleFormComponent {
 
         if (!this.current_editing_sample_id && this.pending_sample_id) {
             const audit_id = this.getState?.()?.auditId;
+            const pending_id = this.pending_sample_id;
             if (audit_id) {
                 import('./add_sample_form/sample_url_analyze_capture.js').then(({ cancel_active_sample_url_capture }) => {
                     void cancel_active_sample_url_capture(String(audit_id));
                 });
+                void delete_audit_snapshots_for_sample(String(audit_id), String(pending_id));
             }
         }
 

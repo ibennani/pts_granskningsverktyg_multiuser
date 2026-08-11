@@ -197,6 +197,7 @@ export default {
     '^.+[\\\\/]EditReportTemplateAppendix3Component\\.js$':
       '<rootDir>/js/components/rulefile_sections/EditReportTemplateAppendix3Component.ts',
     '^.+[\\\\/]audit_snapshot_api\\.js$': '<rootDir>/js/api/audit_snapshot_api.ts',
+    '^.+[\\\\/]audit_snapshots_table_columns\\.js$': '<rootDir>/js/utils/audit_snapshots_table_columns.ts',
     '^.+[\\\\/]audit_actions_view_content_transition\\.js$': '<rootDir>/js/components/audit_actions_view_content_transition.ts',
     '^.+/SampleManagementViewComponent\\.js$': '<rootDir>/js/components/SampleManagementViewComponent.ts',
     '^.+/AuditProblemsViewComponent\\.js$': '<rootDir>/js/components/AuditProblemsViewComponent.ts',
@@ -356,6 +357,7 @@ export default {
     '^.+[\\\\/]page_capture_session\\.js$': '<rootDir>/server/services/page_capture_session.ts',
     '^.+[\\\\/]audit_snapshot_list_service\\.js$': '<rootDir>/server/services/audit_snapshot_list_service.ts',
     '^.+[\\\\/]audit_snapshot_job_service\\.js$': '<rootDir>/server/services/audit_snapshot_job_service.ts',
+    '^.+[\\\\/]audit_snapshot_cleanup_service\\.js$': '<rootDir>/server/services/audit_snapshot_cleanup_service.ts',
     '^.+[\\\\/]page_snapshot_capture_service\\.js$': '<rootDir>/server/services/page_snapshot_capture_service.ts',
     '^.+[\\\\/]audit_snapshot_repository\\.js$': '<rootDir>/server/repositories/audit_snapshot_repository.ts',
     '^.+[\\\\/]network_redaction\\.js$': '<rootDir>/server/snapshots/network_redaction.ts',

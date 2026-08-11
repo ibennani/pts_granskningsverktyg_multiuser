@@ -12,10 +12,16 @@ jest.unstable_mockModule(list_api_path, () => ({
     list_audit_snapshots: list_mock,
     get_audit_snapshot_download_url: jest.fn(() => '/download'),
     get_audit_snapshots_download_all_url: jest.fn(() => '/download-all'),
+    delete_audit_snapshots_for_sample: jest.fn(async () => {}),
 }));
 
 jest.unstable_mockModule(push_path, () => ({
     subscribe_audit_snapshots: jest.fn(() => () => {}),
+}));
+
+const confirm_modal_path = path.join(spec_dir, '../../js/logic/confirm_delete_modal_logic.js');
+jest.unstable_mockModule(confirm_modal_path, () => ({
+    show_confirm_delete_modal: jest.fn(),
 }));
 
 const { create_audit_actions_snapshots_section } = await import(
@@ -82,7 +88,7 @@ describe('audit_actions_snapshots_section', () => {
         });
         const section = create_audit_actions_snapshots_section(make_deps() as never);
         await section.refresh();
-        expect(section.root.querySelector('table')).toBeTruthy();
+        expect(section.root.querySelector('.generic-table')).toBeTruthy();
         expect(section.root.textContent).toContain('Startsida');
         section.destroy();
     });
