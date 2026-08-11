@@ -23,6 +23,16 @@ jest.unstable_mockModule(retake_path, () => ({
     start_sidrapport_retake_for_sample: retake_mock,
     is_sidrapport_retake_in_progress: jest.fn(() => false),
     resolve_sidrapport_capture_url: jest.fn((sample, url) => sample?.url || url),
+    resolve_retake_sample_for_row: (
+        row: { sampleId: string; requestedUrl?: string },
+        samples?: Array<{ id: string; url?: string }>
+    ) => {
+        const from_state = samples?.find((entry) => String(entry.id) === String(row.sampleId));
+        if (from_state) return from_state;
+        const url = (row.requestedUrl ?? '').trim();
+        if (!url) return null;
+        return { id: String(row.sampleId), url };
+    },
 }));
 
 jest.unstable_mockModule(push_path, () => ({

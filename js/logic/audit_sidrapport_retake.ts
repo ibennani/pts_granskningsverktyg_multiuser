@@ -4,11 +4,35 @@
 import { start_audit_snapshot_capture } from '../api/audit_snapshot_api.js';
 import { should_attach_screenshot_when_creating_sidrapport } from '../../shared/sidrapport/capture_attach_policy.js';
 
-type SampleForSidrapport = {
+export type SampleForSidrapport = {
     id: string;
     url?: string | null;
     attachedMediaFilenames?: unknown;
 };
+
+type RetakeRowLike = {
+    sampleId: string;
+    requestedUrl?: string;
+    sampleDescription?: string;
+};
+
+export function resolve_retake_sample_for_row(
+    row: RetakeRowLike,
+    samples?: SampleForSidrapport[]
+): SampleForSidrapport | null {
+    const from_state = samples?.find((entry) => String(entry.id) === String(row.sampleId));
+    if (from_state) {
+        return from_state;
+    }
+    const url = (row.requestedUrl ?? '').trim();
+    if (!url) {
+        return null;
+    }
+    return {
+        id: String(row.sampleId),
+        url,
+    };
+}
 
 export function resolve_sidrapport_capture_url(
     sample: SampleForSidrapport | undefined,

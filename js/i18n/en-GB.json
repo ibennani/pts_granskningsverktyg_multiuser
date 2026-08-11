@@ -249,6 +249,7 @@
   "audit_sidrapport_retake_creating_for_sample": "Creating page report for {sample}",
   "audit_sidrapport_retake_started": "A new page report is being created for {sample}.",
   "audit_sidrapport_retake_error": "Could not start a new page report. Try again later.",
+  "audit_sidrapport_retake_missing_url": "Could not start a new page report for {sample} because the page address is missing.",
   "audit_sidrapport_warnings_legacy_hint": "The page report has warnings. Download the zip file and read manifest.json for details, or take a new page report after updating.",
   "audit_sidrapport_warning_ax_unavailable": "The accessibility tree could not be captured.",
   "audit_sidrapport_warning_dom_snapshot_unavailable": "The DOM snapshot could not be captured.",

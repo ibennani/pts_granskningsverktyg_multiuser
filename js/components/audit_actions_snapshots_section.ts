@@ -26,7 +26,10 @@ import {
     resolve_snapshot_sample_label,
     type SnapshotTableRow,
 } from '../utils/audit_snapshots_table_columns.js';
-import { start_sidrapport_retake_for_sample } from '../logic/audit_sidrapport_retake.js';
+import {
+    resolve_retake_sample_for_row,
+    start_sidrapport_retake_for_sample,
+} from '../logic/audit_sidrapport_retake.js';
 import { is_sidrapport_retake_busy } from '../utils/sidrapport_retake_button_ui.js';
 
 export type AuditActionsSnapshotsDeps = {
@@ -182,10 +185,13 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
         if (!audit_id) return;
         if (is_sidrapport_retake_busy(row, retake_in_flight_sample_ids)) return;
 
-        const sample = deps.getState()?.samples?.find(
-            (entry) => String(entry.id) === String(row.sampleId)
-        );
-        if (!sample) return;
+        const sample = resolve_retake_sample_for_row(row, deps.getState()?.samples);
+        if (!sample) {
+            live_region.textContent = t('audit_sidrapport_retake_missing_url', {
+                sample: resolve_sample_label(row),
+            });
+            return;
+        }
 
         const sample_label = resolve_sample_label(row);
         retake_in_flight_sample_ids.add(String(row.sampleId));

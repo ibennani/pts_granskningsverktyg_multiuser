@@ -284,6 +284,7 @@
   "audit_sidrapport_retake_creating_for_sample": "Skapar sidrapport för {sample}",
   "audit_sidrapport_retake_started": "Ny sidrapport skapas för {sample}.",
   "audit_sidrapport_retake_error": "Kunde inte starta ny sidrapport. Försök igen senare.",
+  "audit_sidrapport_retake_missing_url": "Kunde inte starta ny sidrapport för {sample} eftersom sidans adress saknas.",
   "audit_sidrapport_warnings_legacy_hint": "Sidrapporten har varningar. Ladda ner zip-filen och läs manifest.json för detaljer, eller ta en ny sidrapport efter uppdatering.",
   "audit_sidrapport_warning_ax_unavailable": "Tillgänglighetsträdet kunde inte hämtas.",
   "audit_sidrapport_warning_dom_snapshot_unavailable": "DOM-ögonblicksbilden kunde inte hämtas.",

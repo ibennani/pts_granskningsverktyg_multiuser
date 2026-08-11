@@ -284,6 +284,7 @@
   "audit_sidrapport_retake_creating_for_sample": "Oppretter sidrapport for {sample}",
   "audit_sidrapport_retake_started": "Ny sidrapport opprettes for {sample}.",
   "audit_sidrapport_retake_error": "Kunne ikke starte ny sidrapport. Prov igjen senere.",
+  "audit_sidrapport_retake_missing_url": "Kunne ikke starte ny sidrapport for {sample} fordi sideadressen mangler.",
   "audit_sidrapport_warnings_legacy_hint": "Sidrapporten har advarsler. Last ned zip-filen og les manifest.json for detaljer, eller ta en ny sidrapport etter oppdatering.",
   "audit_sidrapport_warning_ax_unavailable": "Tilgjengelighetstreet kunne ikke hentes.",
   "audit_sidrapport_warning_dom_snapshot_unavailable": "DOM-oyeblikksbildet kunne ikke hentes.",
