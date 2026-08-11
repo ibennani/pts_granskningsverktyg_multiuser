@@ -282,22 +282,6 @@ export class AuditActionsViewComponent {
 
         layout.appendChild(right_wrapper);
         plate.appendChild(layout);
-
-        const back_row = this.Helpers.create_element('div', { class_name: 'audit-settings__back-row' });
-        const back_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            attributes: { type: 'button' },
-            text_content: this.Translation.t('audit_actions_back_to_hub'),
-        });
-        back_btn.addEventListener('click', () => {
-            if (appendix) {
-                this.router('audit_actions', { section: 'appendix_templates' });
-            } else {
-                this.router('audit_actions');
-            }
-        });
-        back_row.appendChild(back_btn);
-        plate.appendChild(back_row);
     }
 
     _populate_update_rulefile_slot(slot_element, state) {
