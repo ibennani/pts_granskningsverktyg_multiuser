@@ -702,6 +702,7 @@ export class AuditActionsViewComponent {
                     Helpers: this.Helpers,
                     Translation: this.Translation,
                     getState: () => this.getState?.() ?? {},
+                    router: this.router ?? undefined,
                 });
                 snapshots_host.replaceWith(this._snapshots_section.root);
             });

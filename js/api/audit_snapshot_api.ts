@@ -77,6 +77,7 @@ export type AuditSnapshotListItem = {
         capturedAt: string;
         status: 'ready';
         warningCount: number;
+        warnings?: Array<{ code: string; message: string }>;
         sizeBytes: number | null;
     } | null;
     pendingAttempt: {

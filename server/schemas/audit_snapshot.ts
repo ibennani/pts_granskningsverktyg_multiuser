@@ -26,6 +26,19 @@ export const AuditSnapshotRowSchema = z.object({
     archive_filename: z.string().nullable(),
     status: AuditSnapshotStatusSchema,
     warning_count: z.coerce.number().int().nonnegative(),
+    warnings_json: z.preprocess(
+        (value) => {
+            if (typeof value === 'string') {
+                try {
+                    return JSON.parse(value);
+                } catch {
+                    return null;
+                }
+            }
+            return value;
+        },
+        z.array(z.object({ code: z.string(), message: z.string() })).nullable().optional()
+    ),
     error: z.string().nullable(),
     size_bytes: z.coerce.number().nullable(),
     visible_phase_completed_at: z.coerce.date().nullable(),
@@ -91,6 +104,7 @@ export const AuditSnapshotListItemSchema = z.object({
             status: AuditSnapshotStatusSchema,
             error: z.string().nullable(),
             warningCount: z.number().int(),
+            warnings: z.array(z.object({ code: z.string(), message: z.string() })).optional(),
         })
         .nullable(),
 });

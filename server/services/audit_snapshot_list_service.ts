@@ -17,6 +17,25 @@ function is_processing_status(status: string): boolean {
     return status === 'queued' || status === 'capturing' || status === 'packaging';
 }
 
+function sample_has_url(sample: SampleLike | undefined): boolean {
+    return Boolean((sample?.url ?? '').trim());
+}
+
+function parse_warnings_json(
+    raw: unknown
+): Array<{ code: string; message: string }> {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((entry) => {
+            if (!entry || typeof entry !== 'object') return null;
+            const code = 'code' in entry ? String(entry.code) : '';
+            const message = 'message' in entry ? String(entry.message) : '';
+            if (!code) return null;
+            return { code, message };
+        })
+        .filter((entry): entry is { code: string; message: string } => entry !== null);
+}
+
 export async function build_audit_snapshot_list(
     audit_id: string,
     samples: SampleLike[]
@@ -32,9 +51,15 @@ export async function build_audit_snapshot_list(
 
     const sample_ids = new Set<string>();
     for (const sample of samples) {
-        sample_ids.add(String(sample.id));
+        if (sample_has_url(sample)) {
+            sample_ids.add(String(sample.id));
+        }
     }
     for (const sid of by_sample.keys()) {
+        const sample = samples.find((s) => String(s.id) === sid);
+        if (sample && !sample_has_url(sample)) {
+            continue;
+        }
         sample_ids.add(sid);
     }
 
@@ -71,6 +96,7 @@ export async function build_audit_snapshot_list(
                       capturedAt: (current_ready.completed_at ?? current_ready.created_at).toISOString(),
                       status: 'ready',
                       warningCount: current_ready.warning_count,
+                      warnings: parse_warnings_json(current_ready.warnings_json),
                       sizeBytes: current_ready.size_bytes,
                   }
                 : null,

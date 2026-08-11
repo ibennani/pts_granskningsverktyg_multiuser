@@ -157,6 +157,7 @@ async function process_capture_job(job: PendingCapture): Promise<void> {
             archive_filename: `${job.captureId}.zip`,
             size_bytes: archive.size_bytes,
             warning_count: archive.warning_count,
+            warnings_json: archive.warnings,
         });
         broadcast_snapshot_changed({
             auditId: job.audit_id,

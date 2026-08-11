@@ -60,6 +60,7 @@ export async function update_audit_snapshot_status(
         screenshot_filename: string | null;
         archive_filename: string | null;
         warning_count: number;
+        warnings_json: Array<{ code: string; message: string }> | null;
         error: string | null;
         size_bytes: number | null;
         visible_phase_completed_at: Date | null;
@@ -84,6 +85,9 @@ export async function update_audit_snapshot_status(
     }
     if (fields.archive_filename !== undefined) add_field('archive_filename', fields.archive_filename);
     if (fields.warning_count !== undefined) add_field('warning_count', fields.warning_count);
+    if (fields.warnings_json !== undefined) {
+        add_field('warnings_json', fields.warnings_json ? JSON.stringify(fields.warnings_json) : null);
+    }
     if (fields.error !== undefined) add_field('error', fields.error);
     if (fields.size_bytes !== undefined) add_field('size_bytes', fields.size_bytes);
     if (fields.visible_phase_completed_at !== undefined) {

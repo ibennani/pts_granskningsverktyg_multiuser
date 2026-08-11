@@ -19,9 +19,8 @@ import {
 import {
     normalize_url_for_screenshot,
     replace_auto_screenshot_filename,
-    should_skip_url_screenshot_capture,
-    should_skip_url_screenshot_when_attached_media_exists,
 } from './sample_url_auto_screenshot_logic.js';
+import { should_attach_screenshot_when_creating_sidrapport } from '../../../shared/sidrapport/capture_attach_policy.js';
 import { update_sample_attach_media_button } from './sample_attach_media.js';
 import type { SampleUrlAnalyzeFlowHost } from './sample_url_analyze_tasks.js';
 import type {
@@ -222,15 +221,9 @@ export async function run_unified_sample_url_analyze_tasks(
     }
 
     const attached_filenames = [...host.sample_attached_media_filenames];
-    const auto_filename = host.url_auto_screenshot_filename;
-    const skip_screenshot_attach =
-        should_skip_url_screenshot_when_attached_media_exists(attached_filenames, auto_filename) ||
-        should_skip_url_screenshot_capture(
-            normalized_url,
-            host.url_auto_screenshot_source_url,
-            auto_filename,
-            attached_filenames
-        );
+    const skip_screenshot_attach = !should_attach_screenshot_when_creating_sidrapport({
+        attachedMediaFilenames: attached_filenames,
+    });
 
     const capture_id = host.Helpers.generate_uuid_v4();
     active_capture_id = capture_id;

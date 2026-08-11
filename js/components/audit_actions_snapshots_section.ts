@@ -23,17 +23,26 @@ import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.j
 import {
     build_audit_snapshots_table_columns,
     map_snapshot_items_to_table_rows,
+    resolve_snapshot_sample_label,
     type SnapshotTableRow,
 } from '../utils/audit_snapshots_table_columns.js';
+import { start_sidrapport_retake_for_sample } from '../logic/audit_sidrapport_retake.js';
 
 export type AuditActionsSnapshotsDeps = {
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
         format_iso_to_local_datetime?: (iso: string, lang: string) => string;
         get_icon_svg?: (name: string, classes: string[], size: number) => string;
+        add_protocol_if_missing?: (url: string) => string;
+        get_external_link_icon_html?: (t: (key: string) => string) => string;
+        escape_html?: (text: string) => string;
     };
     Translation: { t: (key: string, opts?: Record<string, unknown>) => string; get_current_language_code?: () => string };
-    getState: () => { auditId?: string | null; samples?: Array<{ id: string; description?: string }> };
+    getState: () => {
+        auditId?: string | null;
+        samples?: Array<{ id: string; description?: string; url?: string; attachedMediaFilenames?: unknown }>;
+    };
+    router?: (view: string, params?: Record<string, unknown>) => void;
 };
 
 const SNAPSHOT_INTRO_ITEM_KEYS = [
@@ -124,11 +133,14 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
         return iso;
     };
 
+    const resolve_sample_label = (row: SnapshotTableRow) =>
+        resolve_snapshot_sample_label(row, deps.getState()?.samples, t);
+
     const handle_download_row = async (row: SnapshotTableRow) => {
         const snap = row.currentReady;
         if (!snap) return;
         const audit_id = String(deps.getState()?.auditId);
-        const sample_label = row.sampleDescription || row.sampleId;
+        const sample_label = resolve_sample_label(row);
         const desc = sanitize_filename_segment(sample_label) || 'sample';
         const ts = get_download_filename_datetime(snap.capturedAt);
         const filename = `snapshot_${desc}_${ts}.zip`;
@@ -141,7 +153,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     const handle_delete_row = (row: SnapshotTableRow, delete_button: HTMLElement) => {
         const audit_id = deps.getState()?.auditId;
         if (!audit_id) return;
-        const sample_label = row.sampleDescription || row.sampleId;
+        const sample_label = resolve_sample_label(row);
         const run_delete = async () => {
             try {
                 await delete_audit_snapshots_for_sample(String(audit_id), row.sampleId);
@@ -162,15 +174,38 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
         });
     };
 
+    const handle_retake_row = async (row: SnapshotTableRow) => {
+        const audit_id = deps.getState()?.auditId;
+        if (!audit_id) return;
+        const sample = deps.getState()?.samples?.find(
+            (entry) => String(entry.id) === String(row.sampleId)
+        );
+        if (!sample) return;
+        const sample_label = resolve_sample_label(row);
+        try {
+            await start_sidrapport_retake_for_sample(String(audit_id), sample, row.requestedUrl);
+            live_region.textContent = t('audit_sidrapport_retake_started', { sample: sample_label });
+            await refresh();
+        } catch {
+            live_region.textContent = t('audit_sidrapport_retake_error');
+        }
+    };
+
     const columns = build_audit_snapshots_table_columns(
-        { Helpers: helpers, Translation: deps.Translation, t },
-        { on_download: handle_download_row, on_delete: handle_delete_row },
+        { Helpers: helpers, Translation: deps.Translation, t, getState: deps.getState, router: deps.router },
+        {
+            on_download: handle_download_row,
+            on_delete: handle_delete_row,
+            on_retake: (row) => {
+                void handle_retake_row(row);
+            },
+        },
         format_datetime
     );
 
     const render_items = (items: AuditSnapshotListItem[]) => {
         const ready_count = items.filter((item) => item.currentReady).length;
-        const table_rows = map_snapshot_items_to_table_rows(items);
+        const table_rows = map_snapshot_items_to_table_rows(items, deps.getState()?.samples);
 
         for (const node of content_host.querySelectorAll(
             '.audit-actions-snapshots__download-all-wrap, .audit-actions-snapshots__processing-note'
@@ -247,7 +282,11 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
                     for (const item of items) {
                         if (item.currentReady && item.pendingAttempt?.status === 'ready') {
                             live_region.textContent = t('audit_snapshots_live_ready', {
-                                sample: item.sampleDescription || item.sampleId,
+                                sample: resolve_snapshot_sample_label(
+                                    item,
+                                    deps.getState()?.samples,
+                                    t
+                                ),
                             });
                         }
                     }

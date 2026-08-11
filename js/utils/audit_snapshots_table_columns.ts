@@ -2,13 +2,14 @@
  * @fileoverview Kolumndefinitioner för snapshot-listan (GenericTableComponent).
  */
 import type { AuditSnapshotListItem } from '../api/audit_snapshot_api.js';
+import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { create_file_download_button } from './file_download_button_ui.js';
-import {
-    get_download_filename_datetime,
-    sanitize_filename_segment,
-} from './download_filename_utils.js';
+import { format_sidrapport_warning_label } from './sidrapport_warning_labels.js';
+import { is_sidrapport_retake_in_progress } from '../logic/audit_sidrapport_retake.js';
 
 type SnapshotTableRow = AuditSnapshotListItem & { rowId: string };
+
+type SampleLike = { id: string; description?: string; url?: string; attachedMediaFilenames?: unknown };
 
 type SnapshotTableDeps = {
     Helpers: {
@@ -18,7 +19,47 @@ type SnapshotTableDeps = {
     };
     Translation: { get_current_language_code?: () => string };
     t: (key: string, opts?: Record<string, unknown>) => string;
+    getState: () => { samples?: SampleLike[] };
+    router?: (view: string, params?: Record<string, unknown>) => void;
 };
+
+export function resolve_snapshot_sample_label(
+    row: AuditSnapshotListItem,
+    samples: SampleLike[] | undefined,
+    t: SnapshotTableDeps['t']
+): string {
+    const from_state = samples?.find((sample) => String(sample.id) === String(row.sampleId));
+    const description = (from_state?.description ?? row.sampleDescription ?? '').trim();
+    if (description) return description;
+    return row.sampleId || t('undefined_description');
+}
+
+function build_sample_edit_hash(sample_id: string): string {
+    return `#${build_compact_hash_fragment('sample_form', { editSampleId: sample_id })}`;
+}
+
+function render_sample_name_link(
+    row: SnapshotTableRow,
+    deps: SnapshotTableDeps,
+    sample_label: string
+): HTMLElement | string {
+    const { Helpers, t, router } = deps;
+    if (!router) return sample_label;
+
+    const link = Helpers.create_element('a', {
+        class_name: 'generic-table-audit-link',
+        text_content: sample_label,
+        attributes: {
+            href: build_sample_edit_hash(row.sampleId),
+            'aria-label': `${t('edit_sample')}: ${sample_label}`,
+        },
+    });
+    link.addEventListener('click', (event) => {
+        event.preventDefault();
+        router('sample_form', { editSampleId: row.sampleId });
+    });
+    return link;
+}
 
 function format_status_label(
     t: SnapshotTableDeps['t'],
@@ -56,26 +97,23 @@ export function build_audit_snapshots_table_columns(
     handlers: {
         on_download: (row: SnapshotTableRow) => Promise<void>;
         on_delete: (row: SnapshotTableRow, delete_button: HTMLElement) => void;
+        on_retake: (row: SnapshotTableRow, retake_button: HTMLButtonElement) => void;
     },
     format_datetime: (iso: string | null | undefined) => string
 ) {
-    const { Helpers, t } = deps;
+    const { Helpers, t, getState } = deps;
     const icon_svg = (name: string, size = 16) =>
         Helpers.get_icon_svg ? Helpers.get_icon_svg(name, ['currentColor'], size) : '';
+    const resolve_sample_label = (row: SnapshotTableRow) =>
+        resolve_snapshot_sample_label(row, getState()?.samples, t);
 
     return [
         {
             columnKey: 'sample',
             headerLabel: t('audit_snapshots_col_sample'),
-            getSortValue: (row: SnapshotTableRow) =>
-                (row.sampleDescription ?? row.sampleId ?? '').toString(),
-            getContent: (row: SnapshotTableRow) => row.sampleDescription || row.sampleId,
-        },
-        {
-            columnKey: 'url',
-            headerLabel: t('audit_snapshots_col_url'),
-            getSortValue: (row: SnapshotTableRow) => row.requestedUrl || '',
-            getContent: (row: SnapshotTableRow) => row.requestedUrl || '—',
+            getSortValue: (row: SnapshotTableRow) => resolve_sample_label(row),
+            getContent: (row: SnapshotTableRow) =>
+                render_sample_name_link(row, deps, resolve_sample_label(row)),
         },
         {
             columnKey: 'captured',
@@ -112,6 +150,27 @@ export function build_audit_snapshots_table_columns(
                         })
                     );
                 }
+                const warnings = row.currentReady?.warnings ?? [];
+                if (warnings.length > 0) {
+                    const warning_list = Helpers.create_element('ul', {
+                        class_name: 'audit-actions-snapshots__warning-list',
+                    });
+                    for (const warning of warnings) {
+                        warning_list.appendChild(
+                            Helpers.create_element('li', {
+                                text_content: format_sidrapport_warning_label(warning, t),
+                            })
+                        );
+                    }
+                    cell.appendChild(warning_list);
+                } else if ((row.currentReady?.warningCount ?? 0) > 0) {
+                    cell.appendChild(
+                        Helpers.create_element('p', {
+                            class_name: 'audit-actions-snapshots__secondary-status',
+                            text_content: t('audit_sidrapport_warnings_legacy_hint'),
+                        })
+                    );
+                }
                 return cell;
             },
         },
@@ -130,7 +189,23 @@ export function build_audit_snapshots_table_columns(
                 const wrapper = Helpers.create_element('div', {
                     class_name: 'audit-snapshots-table-actions',
                 });
-                const sample_label = row.sampleDescription || row.sampleId;
+                const sample_label = resolve_sample_label(row);
+                const retake_busy = is_sidrapport_retake_in_progress(row);
+
+                if (!retake_busy) {
+                    const retake_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-success', 'button-small', 'generic-table-action-cell'],
+                        text_content: t('audit_sidrapport_retake_button'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': t('audit_sidrapport_retake_for_sample', { sample: sample_label }),
+                        },
+                    }) as HTMLButtonElement;
+                    retake_btn.addEventListener('click', () => {
+                        handlers.on_retake(row, retake_btn);
+                    });
+                    wrapper.appendChild(retake_btn);
+                }
 
                 if (row.currentReady) {
                     const download_parts = create_file_download_button({
@@ -162,10 +237,16 @@ export function build_audit_snapshots_table_columns(
 }
 
 export function map_snapshot_items_to_table_rows(
-    items: AuditSnapshotListItem[]
+    items: AuditSnapshotListItem[],
+    samples?: SampleLike[]
 ): SnapshotTableRow[] {
     return items
-        .filter((item) => item.currentReady || item.pendingAttempt)
+        .filter((item) => {
+            if (!item.currentReady && !item.pendingAttempt) return false;
+            const sample = samples?.find((entry) => String(entry.id) === String(item.sampleId));
+            const url = (sample?.url ?? item.requestedUrl ?? '').trim();
+            return Boolean(url);
+        })
         .map((item) => ({
             ...item,
             rowId: item.sampleId,

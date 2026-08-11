@@ -53,4 +53,29 @@ describe('audit_snapshot_list_service', () => {
         expect(items[0].pendingAttempt?.status).toBe('packaging');
         expect(items[0].sampleDescription).toBe('Startsida');
     });
+
+    test('build_audit_snapshot_list utelämnar granskningsdel utan URL', async () => {
+        const ready_at = new Date('2026-08-10T10:00:00.000Z');
+        list_mock.mockResolvedValue([
+            {
+                id: 'snap-recurring',
+                audit_id: 'audit-1',
+                sample_id: 'sample-b',
+                requested_url: 'https://old.example.com',
+                status: 'ready',
+                page_title: 'Gammal',
+                warning_count: 0,
+                size_bytes: 1024,
+                error: null,
+                created_at: ready_at,
+                completed_at: ready_at,
+            },
+        ]);
+
+        const items = await build_audit_snapshot_list('audit-1', [
+            { id: 'sample-b', description: 'Sidfot', url: '' },
+        ]);
+
+        expect(items).toHaveLength(0);
+    });
 });

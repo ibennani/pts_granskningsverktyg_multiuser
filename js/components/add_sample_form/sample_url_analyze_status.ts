@@ -1,5 +1,5 @@
 /**
- * @fileoverview Knappen «Hämta information» i granskningsdelsformuläret (öppnar modal).
+ * @fileoverview Knappen «Ta snapshot» i granskningsdelsformuläret (öppnar modal).
  */
 
 export type SampleUrlAnalyzeButtonParts = {

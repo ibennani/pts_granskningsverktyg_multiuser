@@ -88,6 +88,7 @@ async function extract_inline_styles_and_scripts(
 export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promise<{
     size_bytes: number;
     warning_count: number;
+    warnings: SnapshotWarning[];
 }> {
     const temp_dir = get_snapshot_temp_capture_dir(ctx.audit_id, ctx.capture_id);
     await fs.mkdir(temp_dir, { recursive: true });
@@ -230,7 +231,11 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             warnings,
             network_resources: [],
         });
-        return archive;
+        return {
+            size_bytes: archive.size_bytes,
+            warning_count: archive.warning_count,
+            warnings,
+        };
     } finally {
         if (cdp) {
             try {

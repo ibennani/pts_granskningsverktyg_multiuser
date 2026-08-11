@@ -8,11 +8,21 @@ const push_path = path.join(spec_dir, '../../js/logic/list_push_service.js');
 
 const list_mock = jest.fn();
 
+const retake_mock = jest.fn();
+
 jest.unstable_mockModule(list_api_path, () => ({
     list_audit_snapshots: list_mock,
     get_audit_snapshot_download_url: jest.fn(() => '/download'),
     get_audit_snapshots_download_all_url: jest.fn(() => '/download-all'),
     delete_audit_snapshots_for_sample: jest.fn(async () => {}),
+    start_audit_snapshot_capture: jest.fn(async () => ({})),
+}));
+
+const retake_path = path.join(spec_dir, '../../js/logic/audit_sidrapport_retake.js');
+jest.unstable_mockModule(retake_path, () => ({
+    start_sidrapport_retake_for_sample: retake_mock,
+    is_sidrapport_retake_in_progress: jest.fn(() => false),
+    resolve_sidrapport_capture_url: jest.fn((sample, url) => sample?.url || url),
 }));
 
 jest.unstable_mockModule(push_path, () => ({
@@ -48,7 +58,11 @@ function make_deps() {
             t: (key: string) => key,
             get_current_language_code: () => 'sv-SE',
         },
-        getState: () => ({ auditId: 'audit-1', samples: [] }),
+        getState: () => ({
+            auditId: 'audit-1',
+            samples: [{ id: 's1', description: 'Startsida', url: 'https://example.com' }],
+        }),
+        router: jest.fn(),
     };
 }
 
@@ -88,9 +102,14 @@ describe('audit_actions_snapshots_section', () => {
             ],
         });
         const section = create_audit_actions_snapshots_section(make_deps() as never);
+        document.body.appendChild(section.root);
         await section.refresh();
         expect(section.root.querySelector('.generic-table')).toBeTruthy();
         expect(section.root.textContent).toContain('Startsida');
+        const sample_link = section.root.querySelector('a.generic-table-audit-link');
+        expect(sample_link).toBeTruthy();
+        expect(sample_link?.getAttribute('href')).toContain('editSampleId=s1');
         section.destroy();
+        section.root.remove();
     });
 });
