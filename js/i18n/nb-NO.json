@@ -223,7 +223,7 @@
   "audit_appendix_1_edit_title": "Rediger Vedlegg 1",
   "audit_appendix_1_edit_intro": "Endringene gjelder bare dette tilsynet. Tomme felt bruker regelfilens standard.",
   "audit_appendix_1_saved": "Vedlegg 1 er lagret for dette tilsynet.",
-  "audit_appendix1_deficiency_intros_hint": "Hvert kapittel 3.x kan ha en kort innledning. Teksten lagres i tilsynet og gjelder bare dette tilsynet. Hvis du lar feltet stå uendret, brukes standardteksten fra regelfilen.",
+  "audit_appendix1_deficiency_intros_hint": "Hvert kapittel 3.x kan ha en kort innledning. Teksten lagres i tilsynet og gjelder bare dette tilsynet. Hvis du lar feltet stå uendret, brukes standardteksten fra regelfilen.\n\nUnder hvert kapittel i oversikten vises mangeltyper som er funnet i tilsynet. Listen bygges automatisk, og du velger ikke mangeltyper manuelt i denne visningen.\n\nMangeltypene kommer fra manglene du har markert som underkjent. De grupperes under riktig kapittel ut fra hvilket krav mangelen gjelder og hvordan kravet er koblet til taksonomibegrepet bak overskriften, for eksempel 3.1 eller 3.2. Listen viser unike mangeltyper med primær og eventuell sekundær tekst. Samme mangeltype vises bare én gang per kapittel, selv om flere mangler har samme tekst.",
   "audit_appendix_2_view_title": "Vedlegg 2: Granskningsprotokoll",
   "audit_appendix_2_view_intro": "Viser Excel-etiketter som brukes ved eksport for dette tilsynet.",
   "audit_appendix_2_edit_title": "Rediger Vedlegg 2",

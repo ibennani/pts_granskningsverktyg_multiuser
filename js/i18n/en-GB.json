@@ -188,7 +188,7 @@
   "audit_appendix_1_edit_title": "Edit Appendix 1",
   "audit_appendix_1_edit_intro": "Changes apply only to this audit. Empty fields use the rule file default.",
   "audit_appendix_1_saved": "Appendix 1 has been saved for this audit.",
-  "audit_appendix1_deficiency_intros_hint": "Each chapter 3.x can have a short introduction. The text is saved in the audit and applies only to this audit. If you leave a field unchanged, the rule file default is used.",
+  "audit_appendix1_deficiency_intros_hint": "Each chapter 3.x can have a short introduction. The text is saved in the audit and applies only to this audit. If you leave a field unchanged, the rule file default is used.\n\nBelow each chapter in the overview you will see deficiency types found in the audit. The list is built automatically and you do not select deficiency types manually in this view.\n\nThe deficiency types come from deficiencies you have marked as failed. They are grouped under the right chapter based on which requirement the deficiency relates to and how that requirement is linked to the taxonomy concept behind the heading, for example 3.1 or 3.2. The list shows unique deficiency types with primary and optional secondary text. The same deficiency type appears only once per chapter, even if several deficiencies share the same text.",
   "audit_appendix_2_view_title": "Appendix 2: Audit protocol",
   "audit_appendix_2_view_intro": "Shows Excel labels used when exporting this audit.",
   "audit_appendix_2_edit_title": "Edit Appendix 2",

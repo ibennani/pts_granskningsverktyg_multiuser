@@ -223,7 +223,7 @@
   "audit_appendix_1_edit_title": "Redigera Bilaga 1",
   "audit_appendix_1_edit_intro": "Ändringarna gäller bara den här granskningen. Tomma fält använder regelfilens standard.",
   "audit_appendix_1_saved": "Bilaga 1 har sparats för den här granskningen.",
-  "audit_appendix1_deficiency_intros_hint": "Varje kapitel 3.x kan ha en kort inledning. Texten sparas i granskningen och gäller bara den här granskningen. Om du lämnar fältet oförändrat används regelfilens standardtext.",
+  "audit_appendix1_deficiency_intros_hint": "Varje kapitel 3.x kan ha en kort inledning. Texten sparas i granskningen och gäller bara den här granskningen. Om du lämnar fältet oförändrat används regelfilens standardtext.\n\nUnder varje kapitel i översikten visas bristtyper som hittats i granskningen. Listan byggs automatiskt och du väljer inte bristtyper manuellt i den här vyn.\n\nBristtyperna kommer från de brister du har markerat som underkända. De grupperas i rätt kapitel utifrån vilket krav bristen gäller och hur kravet är kopplat till taxonomibegreppet bakom rubriken, till exempel 3.1 eller 3.2. Listan visar unika bristtyper med primär och eventuell sekundär text. Samma bristtyp visas bara en gång per kapitel, även om flera brister har samma text.",
   "audit_appendix_2_view_title": "Bilaga 2: Granskningsprotokoll",
   "audit_appendix_2_view_intro": "Visar Excel-etiketter som används vid export för den här granskningen.",
   "audit_appendix_2_edit_title": "Redigera Bilaga 2",

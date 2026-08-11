@@ -958,6 +958,7 @@
 
 .appendix1-sections-editor-host .appendix1-deficiency-intros-panel__hint {
     margin: 0.35rem 0 0;
+    white-space: pre-line;
 }
 
 .appendix1-sections-editor-host .appendix1-deficiency-intros-list {
@@ -981,6 +982,7 @@
 
 .rulefile-section-content .appendix1-deficiency-intros-panel__hint {
     margin: 0.35rem 0 0;
+    white-space: pre-line;
 }
 
 .rulefile-section-content .appendix1-deficiency-intros-view__list {
