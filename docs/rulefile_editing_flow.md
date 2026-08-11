@@ -13,7 +13,7 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 | Allmän information | rulefile_sections     | general           | Definition list            | EditGeneralSectionComponent         |
 | Krav               | rulefile_requirements | –                 | Lista med länkar           | RulefileRequirementsListComponent + EditRulefileRequirementComponent |
 | Granskningsdel          | rulefile_sections     | sample_types      | Punktlista                 | EditSampleTypesSectionComponent     |
-| Sidtyper           | rulefile_sections     | page_types        | Lista med underkategorier  | EditPageTypesSectionComponent       |
+| Sidtyper           | rulefile_sections     | page_types        | Lista per kategori (Webbsida, Återkommande) | EditPageTypesSectionComponent (två textareas) |
 | Innehållstyper     | rulefile_sections     | content_types     | Nästlad lista              | EditContentTypesSectionComponent    |
 | Informationsblock  | rulefile_sections     | info_blocks_order | Numrerad lista             | EditInfoBlocksSectionComponent      |
 | Klassificeringar   | rulefile_sections     | classifications   | Hub + fem undersidor      | EditRulefileClassificationsComponent (per part) + inline underlag bristindex |
@@ -46,7 +46,7 @@ Varje sektion har en dedikerad redigeringskomponent:
 
 - **EditGeneralSectionComponent** – Allmän information, utgivare, källa
 - **EditSampleTypesSectionComponent** – Granskningsdelskategorier och typer
-- **EditPageTypesSectionComponent** – Sidtyper med underkategorier
+- **EditPageTypesSectionComponent** – Sidtyper per kategori (Webbsida och Återkommande innehåll), en textarea per kategori med en rad per sidtyp i dropdown-listan
 - **EditContentTypesSectionComponent** – Innehållstyper (hierarki)
 - **EditInfoBlocksSectionComponent** – Informationsblock (ordning och namn)
 - **EditRulefileClassificationsComponent** – Klassificeringar per del (taxonomi, kravkoppling, granskningstyper, bristtyper)

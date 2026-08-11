@@ -78,7 +78,10 @@ export default {
       '<rootDir>/js/components/rulefile_sections/rulefile_content_types_ui.ts',
     '^.+[\\\\/]rulefile_content_type_edit_ui\\.js$':
       '<rootDir>/js/components/rulefile_sections/rulefile_content_type_edit_ui.ts',
+    '^.+[\\\\/]page_types_dropdown_editor_ui\\.js$':
+      '<rootDir>/js/components/rulefile_sections/page_types_dropdown_editor_ui.ts',
     '^.+[\\\\/]content_type_defaults\\.js$': '<rootDir>/shared/rulefile/content_type_defaults.ts',
+    '^.+[\\\\/]page_types_dropdown_sync\\.js$': '<rootDir>/shared/rulefile/page_types_dropdown_sync.ts',
     '^.+[\\\\/]content_type_accordion\\.js$':
       '<rootDir>/js/components/add_sample_form/content_type_accordion.ts',
     '^.+[\\\\/]content_type_detection\\.js$':

@@ -5,9 +5,8 @@
 import { format_simple_value } from './rulefile_sections_display_helpers.js';
 import {
     resolve_content_types,
-    resolve_page_types,
-    resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { read_page_types_dropdown_state } from '../../../shared/rulefile/page_types_dropdown_sync.js';
 import {
     read_rulefile_appendix1_body_text,
 } from '../../logic/appendix1_sections.js';
@@ -72,18 +71,19 @@ export function render_rulefile_page_types_section(ctx, metadata) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
 
-    let page_types = resolve_page_types(metadata);
+    const dropdown_state = read_page_types_dropdown_state(metadata);
+    const category_blocks = [
+        {
+            category: dropdown_state.webbsida_category,
+            lines: dropdown_state.webbsida_lines,
+        },
+        {
+            category: dropdown_state.aterkommande_category,
+            lines: dropdown_state.aterkommande_lines,
+        },
+    ].filter((block) => block.category && block.lines.length > 0);
 
-    const sample_vocab = resolve_sample_vocab(metadata);
-    let sample_categories = sample_vocab.sampleCategories;
-
-    if (!Array.isArray(page_types) || page_types.length === 0) {
-        if (Array.isArray(sample_categories) && sample_categories.length > 0) {
-            page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
-        }
-    }
-
-    if (!Array.isArray(page_types) || page_types.length === 0) {
+    if (category_blocks.length === 0) {
         section.appendChild(Helpers.create_element('p', {
             class_name: 'metadata-empty',
             text_content: t('rulefile_metadata_empty_value')
@@ -102,68 +102,21 @@ export function render_rulefile_page_types_section(ctx, metadata) {
     });
     section.appendChild(list_intro);
 
-    page_types.forEach((page_type, index) => {
-        const page_type_str = format_simple_value(page_type) || String(page_type);
-        const page_type_normalized = page_type_str.toLowerCase().trim();
-
-        let matching_category = sample_categories.find(cat => {
-            const cat_text = (cat.text || '').toLowerCase().trim();
-            return cat_text === page_type_normalized;
+    category_blocks.forEach((block, index) => {
+        const category_heading = Helpers.create_element('h3', {
+            text_content: String(block.category?.text || block.category?.id || t('rulefile_metadata_untitled_item')),
+            class_name: 'page-type-category-heading'
         });
+        section.appendChild(category_heading);
 
-        if (!matching_category) {
-            matching_category = sample_categories.find(cat => {
-                const cat_text = (cat.text || '').toLowerCase().trim();
-                const cat_id = (cat.id || '').toLowerCase().trim();
-                const cat_id_without_dashes = cat_id.replace(/-/g, ' ').trim();
-
-                return cat_id === page_type_normalized ||
-                       cat_id_without_dashes === page_type_normalized ||
-                       cat_id.replace(/-/g, '') === page_type_normalized.replace(/\s+/g, '') ||
-                       cat_text.includes(page_type_normalized) ||
-                       page_type_normalized.includes(cat_text);
-            });
-        }
-
-        if (!matching_category && index < sample_categories.length) {
-            matching_category = sample_categories[index];
-        }
-
-        if (!matching_category) {
-            console.warn('[RulefileSectionsViewComponent] No matching category found for page type:', page_type_str, 'Available categories:', sample_categories.map(c => c.text || c.id));
-        } else if (!Array.isArray(matching_category.categories) || matching_category.categories.length === 0) {
-            console.warn('[RulefileSectionsViewComponent] Matching category found but no categories array:', matching_category);
-        }
-
-        const page_type_wrapper = Helpers.create_element('div', { class_name: 'page-type-item' });
-
-        const heading = Helpers.create_element('h3', {
-            text_content: page_type_str,
-            class_name: 'page-type-heading'
+        const categories_list = Helpers.create_element('ul', { class_name: 'metadata-list' });
+        block.lines.forEach((line) => {
+            categories_list.appendChild(Helpers.create_element('li', { text_content: line }));
         });
-        page_type_wrapper.appendChild(heading);
+        section.appendChild(categories_list);
 
-        if (matching_category && Array.isArray(matching_category.categories) && matching_category.categories.length > 0) {
-            const categories_list = Helpers.create_element('ul', { class_name: 'metadata-list' });
-            matching_category.categories.forEach(category => {
-                const category_text = category.text || category.id || t('rulefile_metadata_untitled_item');
-                const list_item = Helpers.create_element('li', { text_content: category_text });
-                categories_list.appendChild(list_item);
-            });
-            page_type_wrapper.appendChild(categories_list);
-        } else {
-            const empty_msg = Helpers.create_element('p', {
-                class_name: 'metadata-empty page-type-empty',
-                text_content: t('rulefile_metadata_empty_value')
-            });
-            page_type_wrapper.appendChild(empty_msg);
-        }
-
-        section.appendChild(page_type_wrapper);
-
-        if (index < page_types.length - 1) {
-            const spacer = Helpers.create_element('div', { style: 'margin-bottom: 2rem;' });
-            section.appendChild(spacer);
+        if (index < category_blocks.length - 1) {
+            section.appendChild(Helpers.create_element('div', { style: 'margin-bottom: 2rem;' }));
         }
     });
 
