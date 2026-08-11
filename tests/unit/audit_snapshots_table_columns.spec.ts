@@ -134,6 +134,8 @@ describe('audit_snapshots_table_columns', () => {
         expect(status?.textContent).toContain('audit_sidrapport_retake_creating');
         expect(status?.querySelector('.audit-sidrapport-retake-status__spinner')).toBeTruthy();
         expect(cell.querySelector('button.button-success')).toBeNull();
+        expect(cell.querySelector('button.button-danger')).toBeNull();
+        expect(cell.textContent).not.toContain('audit_snapshots_download_one');
     });
 
     test('döljer föregående rapports datum, varningar och storlek under ny capture', () => {
@@ -175,5 +177,6 @@ describe('audit_snapshots_table_columns', () => {
 
         const actions_cell = actions_col?.getContent(row_with_pending) as HTMLElement;
         expect(actions_cell.textContent).not.toContain('audit_snapshots_download_one');
+        expect(actions_cell.querySelector('button.button-danger')).toBeNull();
     });
 });

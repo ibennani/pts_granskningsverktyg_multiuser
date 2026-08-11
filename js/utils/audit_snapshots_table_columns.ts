@@ -271,16 +271,18 @@ export function build_audit_snapshots_table_columns(
                     wrapper.appendChild(download_parts.wrapper);
                 }
 
-                const delete_btn = Helpers.create_element('button', {
-                    class_name: ['button', 'button-danger', 'button-small', 'generic-table-action-cell'],
-                    html_content: `<span>${t('delete')}</span>${icon_svg('delete')}`,
-                    attributes: {
-                        type: 'button',
-                        'aria-label': t('audit_snapshots_delete_one_for_sample', { sample: sample_label }),
-                    },
-                });
-                delete_btn.addEventListener('click', () => handlers.on_delete(row, delete_btn));
-                wrapper.appendChild(delete_btn);
+                if (!replacement_active) {
+                    const delete_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-danger', 'button-small', 'generic-table-action-cell'],
+                        html_content: `<span>${t('delete')}</span>${icon_svg('delete')}`,
+                        attributes: {
+                            type: 'button',
+                            'aria-label': t('audit_snapshots_delete_one_for_sample', { sample: sample_label }),
+                        },
+                    });
+                    delete_btn.addEventListener('click', () => handlers.on_delete(row, delete_btn));
+                    wrapper.appendChild(delete_btn);
+                }
                 return wrapper;
             },
         },
