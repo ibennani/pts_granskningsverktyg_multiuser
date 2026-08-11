@@ -95,6 +95,8 @@ async function main() {
         await putFile(join(projectRoot, 'scripts', 'pm2-leffe-common.sh'), `${remotePath}/scripts/pm2-leffe-common.sh`);
         await putFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
         await putFile(join(projectRoot, 'scripts', 'verify_snapshot_capture.ts'), `${remotePath}/scripts/verify_snapshot_capture.ts`);
+        await putFile(join(projectRoot, 'scripts', 'verify_snapshot_db_schema.ts'), `${remotePath}/scripts/verify_snapshot_db_schema.ts`);
+        await putFile(join(projectRoot, 'scripts', 'verify_snapshot_e2e.ts'), `${remotePath}/scripts/verify_snapshot_e2e.ts`);
         await putFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
         await putDirectory(join(projectRoot, 'scripts', 'lib'), `${remotePath}/scripts/lib`);
         await putDirectory(join(projectRoot, 'scripts', 'data'), `${remotePath}/scripts/data`);
@@ -163,6 +165,7 @@ async function main() {
             `npx pm2 start npm --name ${PM2_NAME} --cwd ${remotePath} --max-memory-restart 600M --exp-backoff-restart-delay 200 -- run dev:server`,
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
+        const rp_esc = remotePath.replace(/'/g, "'\\''");
         const server_setup = [
             'npm install --omit=dev --ignore-scripts',
             'npx puppeteer browsers install chrome',
@@ -171,8 +174,16 @@ async function main() {
         ].join(' && ');
         await exec(server_setup);
 
+        console.log('[deploy:test-server] Verifierar audit_snapshots-schema (warnings_json)...');
+        try {
+            await exec(`cd '${rp_esc}' && npx tsx scripts/verify_snapshot_db_schema.ts`, { cwd: false });
+        } catch (err) {
+            throw new Error(
+                `audit_snapshots-schema saknar warnings_json eller skrivning misslyckades: ${err.message}`
+            );
+        }
+
         console.log(`[deploy:test-server] Verifierar backend på port ${API_PORT}...`);
-        const rp_esc = remotePath.replace(/'/g, "'\\''");
         const health_verify = [
             'set +e',
             `for _ in 1 2 3 4 5; do if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 http://127.0.0.1:${API_PORT}/api/health | grep -qx 200; then echo "[deploy:test-server] Backend OK (HTTP 200)."; exit 0; fi; sleep 3; done`,
@@ -195,6 +206,13 @@ async function main() {
             await exec(`cd '${rp_esc}' && npx tsx scripts/verify_snapshot_capture.ts`, { cwd: false });
         } catch (err) {
             console.warn('[deploy:test-server] VARNING: Snapshot-verifiering misslyckades:', err.message);
+        }
+
+        console.log('[deploy:test-server] Verifierar full sidrapport med databasskrivning (warnings_json)...');
+        try {
+            await exec(`cd '${rp_esc}' && npx tsx scripts/verify_snapshot_e2e.ts`, { cwd: false });
+        } catch (err) {
+            throw new Error(`Sidrapport E2E misslyckades: ${err.message}`);
         }
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
