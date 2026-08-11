@@ -156,6 +156,10 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             return Date.now() - extended_started > get_snapshot_extended_cdp_max_ms();
         };
 
+        if (!should_yield()) {
+            await persist_resource_bodies(cdp, network_state, temp_dir, warnings);
+        }
+
         const extended = await capture_extended_page_artifacts(page, cdp, { should_yield });
         warnings.push(...extended.warnings);
         if (should_yield() && get_snapshot_yield_on_queue() && ctx.should_yield_extended()) {
@@ -167,16 +171,14 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
 
         if (network_state.mainDocumentBody) {
             await write_temp_file(temp_dir, 'source.html', network_state.mainDocumentBody);
+        } else if (extended.rendered_html.trim()) {
+            await write_temp_file(temp_dir, 'source.html', extended.rendered_html);
         } else {
             warnings.push({ code: 'source_html_unavailable', message: 'Source HTML unavailable' });
         }
 
         await write_temp_file(temp_dir, 'rendered.html', extended.rendered_html);
         await extract_inline_styles_and_scripts(page, temp_dir);
-
-        if (!should_yield()) {
-            await persist_resource_bodies(cdp, network_state, temp_dir, warnings);
-        }
 
         if (extended.accessibility_tree) {
             await write_temp_file(

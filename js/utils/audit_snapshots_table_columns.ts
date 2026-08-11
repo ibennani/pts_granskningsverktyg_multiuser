@@ -4,7 +4,10 @@
 import type { AuditSnapshotListItem } from '../api/audit_snapshot_api.js';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { create_file_download_button } from './file_download_button_ui.js';
-import { format_sidrapport_warning_label } from './sidrapport_warning_labels.js';
+import {
+    format_sidrapport_warning_label,
+    dedupe_sidrapport_warnings_for_display,
+} from './sidrapport_warning_labels.js';
 import {
     is_sidrapport_retake_busy,
     render_sidrapport_retake_control,
@@ -154,7 +157,7 @@ export function build_audit_snapshots_table_columns(
                         })
                     );
                 }
-                const warnings = row.currentReady?.warnings ?? [];
+                const warnings = dedupe_sidrapport_warnings_for_display(row.currentReady?.warnings ?? []);
                 if (warnings.length > 0) {
                     const warning_list = Helpers.create_element('ul', {
                         class_name: 'audit-actions-snapshots__warning-list',

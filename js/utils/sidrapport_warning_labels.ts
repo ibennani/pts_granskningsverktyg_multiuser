@@ -25,3 +25,17 @@ export function format_sidrapport_warning_label(
     }
     return warning.message || warning.code;
 }
+
+/** Visar varje varningstyp högst en gång (äldre sidrapporter kan ha dubbletter). */
+export function dedupe_sidrapport_warnings_for_display(
+    warnings: SidrapportWarning[]
+): SidrapportWarning[] {
+    const seen = new Set<string>();
+    const deduped: SidrapportWarning[] = [];
+    for (const warning of warnings) {
+        if (seen.has(warning.code)) continue;
+        seen.add(warning.code);
+        deduped.push(warning);
+    }
+    return deduped;
+}

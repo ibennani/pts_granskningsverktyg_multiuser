@@ -58,6 +58,51 @@ export function create_network_capture_state(): NetworkCaptureState {
     return { resources: [], mainDocumentRequestId: null, mainDocumentBody: null };
 }
 
+export function is_resource_body_capture_candidate(
+    resource: Pick<PendingResource, 'failed' | 'requestId' | 'mimeType' | 'resourceType'>,
+    main_document_request_id: string | null
+): boolean {
+    if (resource.failed) return false;
+    if (main_document_request_id && resource.requestId === main_document_request_id) {
+        return true;
+    }
+    const mime = (resource.mimeType || '').toLowerCase();
+    const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
+    const is_js =
+        mime.includes('javascript') ||
+        mime.includes('ecmascript') ||
+        resource.resourceType === 'Script';
+    return is_css || is_js;
+}
+
+export function push_body_unavailable_warning(
+    warnings: SnapshotWarning[],
+    body_unavailable_count: number
+): void {
+    if (body_unavailable_count <= 0) return;
+    warnings.push({
+        code: 'body_unavailable',
+        message:
+            body_unavailable_count === 1
+                ? 'One network resource body could not be captured'
+                : `${body_unavailable_count} network resource bodies could not be captured`,
+    });
+}
+
+export function push_resource_too_large_warning(
+    warnings: SnapshotWarning[],
+    resource_too_large_count: number
+): void {
+    if (resource_too_large_count <= 0) return;
+    warnings.push({
+        code: 'resource_too_large',
+        message:
+            resource_too_large_count === 1
+                ? 'One resource body exceeded size limit'
+                : `${resource_too_large_count} resource bodies exceeded size limit`,
+    });
+}
+
 export async function attach_network_listeners(
     cdp: CDPSession,
     state: NetworkCaptureState
@@ -98,7 +143,7 @@ export async function attach_network_listeners(
         entry.mimeType = event.response.mimeType ?? null;
         entry.status = event.response.status;
         entry.responseHeaders = sanitize_response_headers(event.response.headers);
-        if (entry.resourceType === 'Document' && !state.mainDocumentRequestId) {
+        if (entry.resourceType === 'Document') {
             state.mainDocumentRequestId = event.requestId;
         }
     });
@@ -148,9 +193,13 @@ export async function persist_resource_bodies(
     const max_bytes = get_snapshot_resource_text_max_bytes();
     let css_index = 0;
     let js_index = 0;
+    let body_unavailable_count = 0;
+    let resource_too_large_count = 0;
 
     for (const resource of state.resources) {
-        if (resource.failed) continue;
+        if (!is_resource_body_capture_candidate(resource, state.mainDocumentRequestId)) {
+            continue;
+        }
         try {
             const body_result = await cdp.send('Network.getResponseBody', {
                 requestId: resource.requestId,
@@ -160,10 +209,7 @@ export async function persist_resource_bodies(
                 : Buffer.from(body_result.body, 'utf8');
             if (raw.length > max_bytes) {
                 resource.bodySkipReason = 'resource exceeded size limit';
-                warnings.push({
-                    code: 'resource_too_large',
-                    message: `Resource body omitted: ${resource.url}`,
-                });
+                resource_too_large_count += 1;
                 continue;
             }
             const text = raw.toString('utf8');
@@ -174,12 +220,6 @@ export async function persist_resource_bodies(
             }
             const mime = (resource.mimeType || '').toLowerCase();
             const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
-            const is_js =
-                mime.includes('javascript') ||
-                mime.includes('ecmascript') ||
-                resource.resourceType === 'Script';
-            if (!is_css && !is_js) continue;
-
             const ext = is_css ? 'css' : 'js';
             const subdir = is_css ? 'resources/stylesheets' : 'resources/scripts';
             const filename = safe_resource_filename(is_css ? css_index++ : js_index++, ext);
@@ -191,12 +231,12 @@ export async function persist_resource_bodies(
             resource.bodyCaptured = true;
         } catch {
             resource.bodySkipReason = 'network response body no longer available';
-            warnings.push({
-                code: 'body_unavailable',
-                message: `Could not capture body: ${resource.url}`,
-            });
+            body_unavailable_count += 1;
         }
     }
+
+    push_body_unavailable_warning(warnings, body_unavailable_count);
+    push_resource_too_large_warning(warnings, resource_too_large_count);
 }
 
 export async function capture_extended_page_artifacts(
