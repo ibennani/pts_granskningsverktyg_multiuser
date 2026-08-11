@@ -10,6 +10,7 @@ import {
     build_appendix2_override_payload,
     resolve_appendix2_excel_labels_for_audit,
 } from '../../logic/audit_appendix_overrides.js';
+import { resolve_appendix2_taxonomy_column_labels_for_audit } from '../../logic/appendix2_taxonomy_view.js';
 import { sync_to_server_now } from '../../logic/server_sync.js';
 import {
     create_appendix2_excel_editor,
@@ -107,8 +108,11 @@ export class EditAuditAppendix2Component {
             })
         );
 
+        const taxonomy_column_labels = resolve_appendix2_taxonomy_column_labels_for_audit(state, t);
         const form = helpers.create_element('form', { class_name: 'rulefile-appendix2-form' });
-        create_appendix2_excel_editor(helpers, t, this.sheet_host, form, labels);
+        create_appendix2_excel_editor(helpers, t, this.sheet_host, form, labels, {
+            taxonomy_column_labels,
+        });
 
         const actions = helpers.create_element('div', { class_name: 'form-actions' });
         const save_btn = helpers.create_element('button', {

@@ -183,13 +183,29 @@ function append_sheet_name_panel(
     host.sheet_name_input_ref = name_input;
 }
 
+function append_taxonomy_column_readonly_list(
+    helpers: EditorHelpers,
+    panel: HTMLElement,
+    taxonomy_column_labels: string[]
+): void {
+    if (taxonomy_column_labels.length === 0) return;
+    const list = helpers.create_element('ul', {
+        class_name: ['metadata-list', 'rulefile-appendix2-value-list', 'rulefile-appendix2-taxonomy-columns-list'],
+    });
+    taxonomy_column_labels.forEach((label) => {
+        list.appendChild(helpers.create_element('li', { text_content: label }));
+    });
+    panel.appendChild(list);
+}
+
 function append_sheet_label_panel(
     helpers: EditorHelpers,
     t: EditorTranslation['t'],
     host: Appendix2SheetEditorHost,
     section: HTMLElement,
     sheet_key: Appendix2SheetKey,
-    entries: Appendix2LabelEntry[]
+    entries: Appendix2LabelEntry[],
+    taxonomy_column_labels: string[] = []
 ): void {
     const heading_id = `rulefile-appendix2-${sheet_key}-labels-heading`;
     const panel = helpers.create_element('section', {
@@ -211,6 +227,7 @@ function append_sheet_label_panel(
         entries
     );
     if (sheet_key === 'deficiencies') {
+        append_taxonomy_column_readonly_list(helpers, panel, taxonomy_column_labels);
         panel.appendChild(
             helpers.create_element('p', {
                 class_name: 'view-intro-text rulefile-appendix2-taxonomy-note',
@@ -225,13 +242,19 @@ function append_sheet_label_panel(
     host.label_panel_refs[sheet_key] = panel;
 }
 
+export type Appendix2ExcelEditorOptions = {
+    taxonomy_column_labels?: string[];
+};
+
 export function create_appendix2_excel_editor(
     helpers: EditorHelpers,
     t: EditorTranslation['t'],
     host: Appendix2SheetEditorHost,
     form: HTMLElement,
-    labels: Appendix2LocaleLabels
+    labels: Appendix2LocaleLabels,
+    options: Appendix2ExcelEditorOptions = {}
 ): void {
+    const taxonomy_column_labels = options.taxonomy_column_labels ?? [];
     const section = helpers.create_element('section', {
         class_name: 'rulefile-appendix2-section',
         attributes: { 'aria-labelledby': 'rulefile-appendix2-sheets-heading' },
@@ -246,7 +269,15 @@ export function create_appendix2_excel_editor(
     append_sheet_select(helpers, t, host, section);
     append_sheet_name_panel(helpers, t, host, section);
     append_sheet_label_panel(helpers, t, host, section, 'general_info', labels.generalInfo);
-    append_sheet_label_panel(helpers, t, host, section, 'deficiencies', labels.deficiencyColumns);
+    append_sheet_label_panel(
+        helpers,
+        t,
+        host,
+        section,
+        'deficiencies',
+        labels.deficiencyColumns,
+        taxonomy_column_labels
+    );
     form.appendChild(section);
 }
 

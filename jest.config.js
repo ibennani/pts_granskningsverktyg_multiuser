@@ -186,6 +186,7 @@ export default {
     '^.+[\\\\/]audit_actions_snapshots_section\\.js$': '<rootDir>/js/components/audit_actions_snapshots_section.ts',
     '^.+[\\\\/]audit_appendix_overrides\\.js$': '<rootDir>/js/logic/audit_appendix_overrides.ts',
     '^.+[\\\\/]appendix2_excel_template\\.js$': '<rootDir>/js/logic/appendix2_excel_template.ts',
+    '^.+[\\\\/]appendix2_taxonomy_view\\.js$': '<rootDir>/js/logic/appendix2_taxonomy_view.ts',
     '^.+[\\\\/]appendix3_screenshots_template\\.js$': '<rootDir>/js/logic/appendix3_screenshots_template.ts',
     '^.+[\\\\/]audit_actions_information_render\\.js$': '<rootDir>/js/components/audit_actions_information_render.ts',
     '^.+[\\\\/]audit_actions_appendix_render\\.js$': '<rootDir>/js/components/audit_actions_appendix_render.ts',

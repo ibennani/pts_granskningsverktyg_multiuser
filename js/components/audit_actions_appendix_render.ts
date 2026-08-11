@@ -5,6 +5,7 @@ import './audit_settings_view_component.css';
 import { resolve_appendix1_deficiency_view_data_for_audit } from '../logic/appendix1_deficiency_view_data.js';
 import { resolve_appendix1_body_text } from '../logic/appendix1_sections.js';
 import { resolve_appendix2_excel_labels_for_audit } from '../logic/audit_appendix_overrides.js';
+import { resolve_appendix2_taxonomy_column_labels_for_audit } from '../logic/appendix2_taxonomy_view.js';
 import { resolve_appendix3_screenshots_template } from '../logic/appendix3_screenshots_template.js';
 import {
     render_rulefile_appendix_templates_hub,
@@ -124,11 +125,16 @@ export function render_audit_appendix2_view_section(
     deps: AuditAppendixTemplatesRenderDeps,
     state: Record<string, unknown>
 ): HTMLElement {
+    const t = deps.Translation.t;
     const resolved = resolve_appendix2_excel_labels_for_audit(state);
+    const taxonomy_column_labels = resolve_appendix2_taxonomy_column_labels_for_audit(state, t);
     return render_rulefile_appendix2_template_section(
         build_view_ctx(deps, state),
         (state.ruleFileContent as Record<string, unknown>) || {},
-        { labels: appendix2_labels_from_resolved(resolved) }
+        {
+            labels: appendix2_labels_from_resolved(resolved),
+            taxonomy_column_labels,
+        }
     );
 }
 

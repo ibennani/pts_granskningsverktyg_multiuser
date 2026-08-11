@@ -337,13 +337,23 @@ function append_appendix2_view_section(Helpers, t, section, heading_key, intro_k
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} ruleFileContent
- * @param {{ labels?: ReturnType<typeof read_rulefile_appendix2_labels> }} [options]
+ * @param {{ labels?: ReturnType<typeof read_rulefile_appendix2_labels>, taxonomy_column_labels?: string[] }} [options]
  */
 export function render_rulefile_appendix2_template_section(ctx, ruleFileContent, options = {}) {
     const t = ctx.Translation.t;
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
     const labels = options.labels ?? read_rulefile_appendix2_labels(ruleFileContent);
+    const editable_deficiency_labels = filter_editable_appendix2_deficiency_columns(
+        labels.deficiencyColumns
+    ).map((entry) => entry.label);
+    const taxonomy_column_labels = Array.isArray(options.taxonomy_column_labels)
+        ? options.taxonomy_column_labels.filter((label) => typeof label === 'string' && label.trim())
+        : [];
+    const deficiency_column_labels =
+        taxonomy_column_labels.length > 0
+            ? [...editable_deficiency_labels, ...taxonomy_column_labels]
+            : editable_deficiency_labels;
 
     section.appendChild(
         Helpers.create_element('p', {
@@ -369,7 +379,7 @@ export function render_rulefile_appendix2_template_section(ctx, ruleFileContent,
         section,
         'rulefile_appendix2_deficiencies_heading',
         'rulefile_appendix2_deficiencies_view_intro',
-        filter_editable_appendix2_deficiency_columns(labels.deficiencyColumns).map((entry) => entry.label),
+        deficiency_column_labels,
         'rulefile_appendix2_taxonomy_columns_note'
     );
 
