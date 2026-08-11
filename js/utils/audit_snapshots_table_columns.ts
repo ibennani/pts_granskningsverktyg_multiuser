@@ -68,10 +68,38 @@ function render_sample_name_link(
     return link;
 }
 
+function is_sidrapport_replacement_active(
+    row: AuditSnapshotListItem,
+    is_retake_busy?: (row: SnapshotTableRow) => boolean
+): boolean {
+    if (is_retake_busy?.(row as SnapshotTableRow)) {
+        return true;
+    }
+    const status = row.pendingAttempt?.status;
+    return status === 'queued' || status === 'capturing' || status === 'packaging';
+}
+
+function format_replacement_status_label(
+    t: SnapshotTableDeps['t'],
+    row: AuditSnapshotListItem
+): string {
+    const pending = row.pendingAttempt;
+    if (pending) {
+        if (pending.status === 'queued') return t('audit_snapshots_status_queued');
+        if (pending.status === 'capturing') return t('audit_snapshots_status_capturing');
+        if (pending.status === 'packaging') return t('audit_snapshots_status_packaging');
+    }
+    return t('audit_snapshots_status_capturing');
+}
+
 function format_status_label(
     t: SnapshotTableDeps['t'],
-    item: AuditSnapshotListItem
+    item: AuditSnapshotListItem,
+    is_retake_busy?: (row: SnapshotTableRow) => boolean
 ): string {
+    if (is_sidrapport_replacement_active(item, is_retake_busy)) {
+        return format_replacement_status_label(t, item);
+    }
     const pending = item.pendingAttempt;
     if (pending) {
         if (pending.status === 'queued') return t('audit_snapshots_status_queued');
@@ -126,29 +154,32 @@ export function build_audit_snapshots_table_columns(
             columnKey: 'captured',
             headerLabel: t('audit_snapshots_col_captured'),
             getSortValue: (row: SnapshotTableRow) =>
-                row.currentReady?.capturedAt ? Date.parse(row.currentReady.capturedAt) || 0 : 0,
+                is_sidrapport_replacement_active(row, deps.is_sidrapport_retake_busy)
+                    ? 0
+                    : row.currentReady?.capturedAt
+                      ? Date.parse(row.currentReady.capturedAt) || 0
+                      : 0,
             getContent: (row: SnapshotTableRow) =>
-                format_datetime(row.currentReady?.capturedAt ?? null),
+                is_sidrapport_replacement_active(row, deps.is_sidrapport_retake_busy)
+                    ? '—'
+                    : format_datetime(row.currentReady?.capturedAt ?? null),
         },
         {
             columnKey: 'status',
             headerLabel: t('audit_snapshots_col_status'),
-            getSortValue: (row: SnapshotTableRow) => format_status_label(t, row),
+            getSortValue: (row: SnapshotTableRow) =>
+                format_status_label(t, row, deps.is_sidrapport_retake_busy),
             getContent: (row: SnapshotTableRow) => {
                 const cell = Helpers.create_element('div');
-                cell.appendChild(
-                    Helpers.create_element('span', { text_content: format_status_label(t, row) })
+                const replacement_active = is_sidrapport_replacement_active(
+                    row,
+                    deps.is_sidrapport_retake_busy
                 );
-                if (row.pendingAttempt && row.currentReady) {
-                    cell.appendChild(
-                        Helpers.create_element('p', {
-                            class_name: 'audit-actions-snapshots__secondary-status',
-                            text_content: t('audit_snapshots_replacement_in_progress', {
-                                captured_at: format_datetime(row.currentReady.capturedAt),
-                            }),
-                        })
-                    );
-                }
+                cell.appendChild(
+                    Helpers.create_element('span', {
+                        text_content: format_status_label(t, row, deps.is_sidrapport_retake_busy),
+                    })
+                );
                 if (row.pendingAttempt?.status === 'failed' && row.pendingAttempt.error) {
                     cell.appendChild(
                         Helpers.create_element('p', {
@@ -156,6 +187,9 @@ export function build_audit_snapshots_table_columns(
                             text_content: row.pendingAttempt.error,
                         })
                     );
+                }
+                if (replacement_active) {
+                    return cell;
                 }
                 const warnings = dedupe_sidrapport_warnings_for_display(row.currentReady?.warnings ?? []);
                 if (warnings.length > 0) {
@@ -184,9 +218,14 @@ export function build_audit_snapshots_table_columns(
         {
             columnKey: 'size',
             headerLabel: t('audit_snapshots_col_size'),
-            getSortValue: (row: SnapshotTableRow) => row.currentReady?.sizeBytes ?? -1,
+            getSortValue: (row: SnapshotTableRow) =>
+                is_sidrapport_replacement_active(row, deps.is_sidrapport_retake_busy)
+                    ? -1
+                    : row.currentReady?.sizeBytes ?? -1,
             getContent: (row: SnapshotTableRow) =>
-                format_bytes(row.currentReady?.sizeBytes ?? null, t),
+                is_sidrapport_replacement_active(row, deps.is_sidrapport_retake_busy)
+                    ? '—'
+                    : format_bytes(row.currentReady?.sizeBytes ?? null, t),
         },
         {
             columnKey: 'actions',
@@ -197,6 +236,10 @@ export function build_audit_snapshots_table_columns(
                     class_name: 'audit-snapshots-table-actions',
                 });
                 const sample_label = resolve_sample_label(row);
+                const replacement_active = is_sidrapport_replacement_active(
+                    row,
+                    deps.is_sidrapport_retake_busy
+                );
                 const resolve_retake_busy = () =>
                     deps.is_sidrapport_retake_busy
                         ? deps.is_sidrapport_retake_busy(row)
@@ -215,7 +258,7 @@ export function build_audit_snapshots_table_columns(
                     )
                 );
 
-                if (row.currentReady) {
+                if (row.currentReady && !replacement_active) {
                     const download_parts = create_file_download_button({
                         Helpers: Helpers as never,
                         t,

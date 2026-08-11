@@ -135,4 +135,45 @@ describe('audit_snapshots_table_columns', () => {
         expect(status?.querySelector('.audit-sidrapport-retake-status__spinner')).toBeTruthy();
         expect(cell.querySelector('button.button-success')).toBeNull();
     });
+
+    test('döljer föregående rapports datum, varningar och storlek under ny capture', () => {
+        const row_with_pending = {
+            ...base_row,
+            currentReady: {
+                ...base_row.currentReady,
+                warningCount: 1,
+                warnings: [{ code: 'body_unavailable', message: 'x' }],
+                sizeBytes: 11_000_000,
+            },
+            pendingAttempt: {
+                snapshotId: 'snap-2',
+                status: 'capturing' as const,
+                warningCount: 0,
+                sizeBytes: null,
+                error: null,
+            },
+        };
+        const deps = make_deps();
+        const columns = build_audit_snapshots_table_columns(
+            deps as never,
+            { on_download: async () => {}, on_delete: () => {}, on_retake: () => {} },
+            () => '2026-08-11 16:03:49'
+        );
+
+        const captured_col = columns.find((col) => col.columnKey === 'captured');
+        const status_col = columns.find((col) => col.columnKey === 'status');
+        const size_col = columns.find((col) => col.columnKey === 'size');
+        const actions_col = columns.find((col) => col.columnKey === 'actions');
+
+        expect(captured_col?.getContent(row_with_pending)).toBe('—');
+        expect(size_col?.getContent(row_with_pending)).toBe('—');
+
+        const status_cell = status_col?.getContent(row_with_pending) as HTMLElement;
+        expect(status_cell.textContent).toContain('audit_snapshots_status_capturing');
+        expect(status_cell.textContent).not.toContain('audit_snapshots_status_ready_warnings');
+        expect(status_cell.querySelector('.audit-actions-snapshots__warning-list')).toBeNull();
+
+        const actions_cell = actions_col?.getContent(row_with_pending) as HTMLElement;
+        expect(actions_cell.textContent).not.toContain('audit_snapshots_download_one');
+    });
 });
