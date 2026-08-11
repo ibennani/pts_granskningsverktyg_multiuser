@@ -280,6 +280,8 @@
   "audit_snapshots_load_error": "Kunne ikke hente sidrapportlisten. Prov igjen senere.",
   "audit_sidrapport_retake_button": "Ta ny sidrapport",
   "audit_sidrapport_retake_for_sample": "Ta ny sidrapport for {sample}",
+  "audit_sidrapport_retake_creating": "Oppretter sidrapport",
+  "audit_sidrapport_retake_creating_for_sample": "Oppretter sidrapport for {sample}",
   "audit_sidrapport_retake_started": "Ny sidrapport opprettes for {sample}.",
   "audit_sidrapport_retake_error": "Kunne ikke starte ny sidrapport. Prov igjen senere.",
   "audit_sidrapport_warnings_legacy_hint": "Sidrapporten har advarsler. Last ned zip-filen og les manifest.json for detaljer, eller ta en ny sidrapport etter oppdatering.",

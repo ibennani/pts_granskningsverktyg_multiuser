@@ -27,6 +27,7 @@ import {
     type SnapshotTableRow,
 } from '../utils/audit_snapshots_table_columns.js';
 import { start_sidrapport_retake_for_sample } from '../logic/audit_sidrapport_retake.js';
+import { is_sidrapport_retake_busy } from '../utils/sidrapport_retake_button_ui.js';
 
 export type AuditActionsSnapshotsDeps = {
     Helpers: {
@@ -123,6 +124,8 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     let unsubscribe: (() => void) | null = null;
     let poll_timer: ReturnType<typeof setInterval> | null = null;
     let last_items_json = '';
+    let last_items: AuditSnapshotListItem[] = [];
+    const retake_in_flight_sample_ids = new Set<string>();
     const sort_state = { columnIndex: 0, direction: 'asc' as 'asc' | 'desc' };
 
     const format_datetime = (iso: string | null | undefined) => {
@@ -177,22 +180,39 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     const handle_retake_row = async (row: SnapshotTableRow) => {
         const audit_id = deps.getState()?.auditId;
         if (!audit_id) return;
+        if (is_sidrapport_retake_busy(row, retake_in_flight_sample_ids)) return;
+
         const sample = deps.getState()?.samples?.find(
             (entry) => String(entry.id) === String(row.sampleId)
         );
         if (!sample) return;
+
         const sample_label = resolve_sample_label(row);
+        retake_in_flight_sample_ids.add(String(row.sampleId));
+        render_items(last_items);
+
         try {
             await start_sidrapport_retake_for_sample(String(audit_id), sample, row.requestedUrl);
             live_region.textContent = t('audit_sidrapport_retake_started', { sample: sample_label });
             await refresh();
         } catch {
             live_region.textContent = t('audit_sidrapport_retake_error');
+        } finally {
+            retake_in_flight_sample_ids.delete(String(row.sampleId));
+            await refresh();
         }
     };
 
     const columns = build_audit_snapshots_table_columns(
-        { Helpers: helpers, Translation: deps.Translation, t, getState: deps.getState, router: deps.router },
+        {
+            Helpers: helpers,
+            Translation: deps.Translation,
+            t,
+            getState: deps.getState,
+            router: deps.router,
+            is_sidrapport_retake_busy: (row) =>
+                is_sidrapport_retake_busy(row, retake_in_flight_sample_ids),
+        },
         {
             on_download: handle_download_row,
             on_delete: handle_delete_row,
@@ -204,6 +224,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     );
 
     const render_items = (items: AuditSnapshotListItem[]) => {
+        last_items = items;
         const ready_count = items.filter((item) => item.currentReady).length;
         const table_rows = map_snapshot_items_to_table_rows(items, deps.getState()?.samples);
 

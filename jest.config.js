@@ -215,6 +215,7 @@ export default {
     '^.+[\\\\/]audit_snapshots_table_columns\\.js$': '<rootDir>/js/utils/audit_snapshots_table_columns.ts',
     '^.+[\\\\/]audit_sidrapport_retake\\.js$': '<rootDir>/js/logic/audit_sidrapport_retake.ts',
     '^.+[\\\\/]sidrapport_warning_labels\\.js$': '<rootDir>/js/utils/sidrapport_warning_labels.ts',
+    '^.+[\\\\/]sidrapport_retake_button_ui\\.js$': '<rootDir>/js/utils/sidrapport_retake_button_ui.ts',
     '^.+[\\\\/]capture_attach_policy\\.js$': '<rootDir>/shared/sidrapport/capture_attach_policy.ts',
     '^.+[\\\\/]audit_actions_view_content_transition\\.js$': '<rootDir>/js/components/audit_actions_view_content_transition.ts',
     '^.+/SampleManagementViewComponent\\.js$': '<rootDir>/js/components/SampleManagementViewComponent.ts',

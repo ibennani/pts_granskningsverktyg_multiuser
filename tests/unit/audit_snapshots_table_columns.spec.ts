@@ -116,4 +116,23 @@ describe('audit_snapshots_table_columns', () => {
         );
         expect(columns.some((col) => col.columnKey === 'url')).toBe(false);
     });
+
+    test('åtgärdskolumnen visar status med spinner när sidrapport skapas', () => {
+        const deps = make_deps({
+            is_sidrapport_retake_busy: () => true,
+        });
+        const columns = build_audit_snapshots_table_columns(
+            deps as never,
+            { on_download: async () => {}, on_delete: () => {}, on_retake: () => {} },
+            () => '—'
+        );
+        const actions_col = columns.find((col) => col.columnKey === 'actions');
+        const cell = actions_col?.getContent(base_row) as HTMLElement;
+        const status = cell.querySelector('[role="status"]');
+
+        expect(status).toBeTruthy();
+        expect(status?.textContent).toContain('audit_sidrapport_retake_creating');
+        expect(status?.querySelector('.audit-sidrapport-retake-status__spinner')).toBeTruthy();
+        expect(cell.querySelector('button.button-success')).toBeNull();
+    });
 });

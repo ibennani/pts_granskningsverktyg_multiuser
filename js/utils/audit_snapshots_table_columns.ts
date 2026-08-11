@@ -5,7 +5,10 @@ import type { AuditSnapshotListItem } from '../api/audit_snapshot_api.js';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { create_file_download_button } from './file_download_button_ui.js';
 import { format_sidrapport_warning_label } from './sidrapport_warning_labels.js';
-import { is_sidrapport_retake_in_progress } from '../logic/audit_sidrapport_retake.js';
+import {
+    is_sidrapport_retake_busy,
+    render_sidrapport_retake_control,
+} from './sidrapport_retake_button_ui.js';
 
 type SnapshotTableRow = AuditSnapshotListItem & { rowId: string };
 
@@ -21,6 +24,7 @@ type SnapshotTableDeps = {
     t: (key: string, opts?: Record<string, unknown>) => string;
     getState: () => { samples?: SampleLike[] };
     router?: (view: string, params?: Record<string, unknown>) => void;
+    is_sidrapport_retake_busy?: (row: SnapshotTableRow) => boolean;
 };
 
 export function resolve_snapshot_sample_label(
@@ -97,7 +101,7 @@ export function build_audit_snapshots_table_columns(
     handlers: {
         on_download: (row: SnapshotTableRow) => Promise<void>;
         on_delete: (row: SnapshotTableRow, delete_button: HTMLElement) => void;
-        on_retake: (row: SnapshotTableRow, retake_button: HTMLButtonElement) => void;
+        on_retake: (row: SnapshotTableRow) => void;
     },
     format_datetime: (iso: string | null | undefined) => string
 ) {
@@ -190,22 +194,23 @@ export function build_audit_snapshots_table_columns(
                     class_name: 'audit-snapshots-table-actions',
                 });
                 const sample_label = resolve_sample_label(row);
-                const retake_busy = is_sidrapport_retake_in_progress(row);
+                const resolve_retake_busy = () =>
+                    deps.is_sidrapport_retake_busy
+                        ? deps.is_sidrapport_retake_busy(row)
+                        : is_sidrapport_retake_busy(row);
 
-                if (!retake_busy) {
-                    const retake_btn = Helpers.create_element('button', {
-                        class_name: ['button', 'button-success', 'button-small', 'generic-table-action-cell'],
-                        text_content: t('audit_sidrapport_retake_button'),
-                        attributes: {
-                            type: 'button',
-                            'aria-label': t('audit_sidrapport_retake_for_sample', { sample: sample_label }),
-                        },
-                    }) as HTMLButtonElement;
-                    retake_btn.addEventListener('click', () => {
-                        handlers.on_retake(row, retake_btn);
-                    });
-                    wrapper.appendChild(retake_btn);
-                }
+                wrapper.appendChild(
+                    render_sidrapport_retake_control(
+                        Helpers,
+                        t,
+                        sample_label,
+                        resolve_retake_busy(),
+                        () => {
+                            if (resolve_retake_busy()) return;
+                            handlers.on_retake(row);
+                        }
+                    )
+                );
 
                 if (row.currentReady) {
                     const download_parts = create_file_download_button({

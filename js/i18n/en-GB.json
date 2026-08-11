@@ -245,6 +245,8 @@
   "audit_snapshots_load_error": "Could not load the page report list. Try again later.",
   "audit_sidrapport_retake_button": "Take new page report",
   "audit_sidrapport_retake_for_sample": "Take new page report for {sample}",
+  "audit_sidrapport_retake_creating": "Creating page report",
+  "audit_sidrapport_retake_creating_for_sample": "Creating page report for {sample}",
   "audit_sidrapport_retake_started": "A new page report is being created for {sample}.",
   "audit_sidrapport_retake_error": "Could not start a new page report. Try again later.",
   "audit_sidrapport_warnings_legacy_hint": "The page report has warnings. Download the zip file and read manifest.json for details, or take a new page report after updating.",
