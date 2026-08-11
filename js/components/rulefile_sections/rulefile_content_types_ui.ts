@@ -110,6 +110,42 @@ function build_requirements_count_cell(Helpers: ViewCtx['Helpers'], count: numbe
     });
 }
 
+function build_default_selected_cell(
+    ctx: ViewCtx,
+    row: ContentTypeTableRow,
+    working_metadata: Record<string, unknown>,
+    on_change?: () => void
+): HTMLElement {
+    const { Helpers, Translation: { t } } = ctx;
+    const cell = Helpers.create_element('td', { class_name: 'content-types-default-selected-cell' });
+    const parents = read_content_type_parents(working_metadata);
+    const child = parents[row.parent_index]?.types?.[row.child_index];
+    if (!child) return cell;
+
+    const display_name = row.type_text || row.child_id || t('rulefile_metadata_untitled_item');
+    const checkbox_id = `content-type-default-${row.key.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    const checkbox = Helpers.create_element('input', {
+        class_name: 'form-check-input',
+        attributes: {
+            id: checkbox_id,
+            type: 'checkbox',
+            'aria-label': t('rulefile_content_types_default_selected_row_aria', { name: display_name }),
+        },
+    }) as HTMLInputElement;
+    checkbox.checked = child.defaultSelected === true;
+    checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+            child.defaultSelected = true;
+        } else {
+            delete child.defaultSelected;
+        }
+        working_metadata.contentTypes = parents;
+        on_change?.();
+    });
+    cell.appendChild(checkbox);
+    return cell;
+}
+
 function build_edit_button(
     ctx: ViewCtx,
     row: ContentTypeTableRow,
@@ -214,6 +250,10 @@ function render_empty_table(ctx: ViewCtx, container: HTMLElement): void {
             text: t('rulefile_content_types_requirements_count_column'),
             class_name: 'content-types-requirements-count-header',
         },
+        {
+            text: t('rulefile_content_types_default_selected_column'),
+            class_name: 'content-types-default-selected-header',
+        },
         { text: t('rulefile_content_types_actions_column'), class_name: 'content-types-actions-header' },
     ];
     const { table } = create_classifications_table(ctx, {
@@ -249,6 +289,10 @@ function render_content_types_table(
             text: t('rulefile_content_types_requirements_count_column'),
             class_name: 'content-types-requirements-count-header',
         },
+        {
+            text: t('rulefile_content_types_default_selected_column'),
+            class_name: 'content-types-default-selected-header',
+        },
         { text: t('rulefile_content_types_actions_column'), class_name: 'content-types-actions-header' },
     ];
 
@@ -280,6 +324,7 @@ function render_content_types_table(
                 build_group_cell(Helpers, t, row.group_text),
                 build_text_cell(Helpers, t, row.description_text),
                 build_requirements_count_cell(Helpers, row.requirements_count),
+                build_default_selected_cell(ctx, row, working_metadata, options.on_change),
                 build_actions_cell(ctx, row, on_edit, (delete_button) => {
                     confirm_delete_content_type(ctx, row, delete_button, () => {
                         const removed = remove_content_type_row(
@@ -320,6 +365,12 @@ export function render_content_types_overview(
     table_host.classList.add('content-types-table-wrapper');
     container.appendChild(table_host);
     render_content_types_table(ctx, table_host, working_metadata, rule_file_content, options);
+    container.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'field-hint content-types-default-selected-help',
+            text_content: ctx.Translation.t('rulefile_content_types_default_selected_help'),
+        })
+    );
 }
 
 export function navigate_to_content_type_create(ctx: ViewCtx): void {

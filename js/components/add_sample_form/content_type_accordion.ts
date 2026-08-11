@@ -9,6 +9,7 @@ import {
     animate_expandable_panel,
     apply_instant_expanded_panel_state
 } from '../../utils/expandable_panel_transition.js';
+import { resolve_initial_content_type_ids } from '../../../shared/rulefile/content_type_defaults.js';
 type ContentTypeChild = {
     id: string;
     text: string;
@@ -23,9 +24,13 @@ type ContentTypeGroup = {
 
 export function init_content_type_selection(
     component: any,
-    effective_sample_data: { selectedContentTypes?: string[] } | null
+    effective_sample_data: { selectedContentTypes?: string[] } | null,
+    metadata: unknown,
+    is_new_sample: boolean
 ): void {
-    component.content_type_selected_ids = new Set(effective_sample_data?.selectedContentTypes || []);
+    component.content_type_selected_ids = new Set(
+        resolve_initial_content_type_ids(effective_sample_data, metadata, is_new_sample)
+    );
 }
 
 export function sync_content_type_selection_from_dom(component: any): void {
@@ -230,10 +235,12 @@ async function toggle_content_types_section(
 export function render_content_types_section_accordion(
     component: any,
     groups: ContentTypeGroup[],
-    effective_sample_data: { selectedContentTypes?: string[] } | null
+    effective_sample_data: { selectedContentTypes?: string[] } | null,
+    metadata: unknown
 ): void {
     const t = component.get_t_internally();
-    init_content_type_selection(component, effective_sample_data);
+    const is_new_sample = !component.current_editing_sample_id;
+    init_content_type_selection(component, effective_sample_data, metadata, is_new_sample);
 
     const initially_open = component.current_editing_sample_id
         ? false

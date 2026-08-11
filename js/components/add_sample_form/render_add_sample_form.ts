@@ -161,7 +161,12 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         handle_sample_attach_media_click(component, event);
     });
     component.content_types_container_element.appendChild(sample_screenshot_section);
-    render_content_types_section_accordion(component, grouped_content_types, effective_sample_data);
+    render_content_types_section_accordion(
+        component,
+        grouped_content_types,
+        effective_sample_data,
+        current_state.ruleFileContent.metadata
+    );
     component.content_types_container_element.addEventListener('change', component.handle_content_type_change);
     component.form_element.appendChild(component.content_types_container_element);
 

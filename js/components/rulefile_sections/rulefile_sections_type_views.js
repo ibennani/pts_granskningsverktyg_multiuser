@@ -208,6 +208,12 @@ export function render_rulefile_content_types_section(ctx, metadata) {
                         class_name: 'metadata-subject',
                         text_content: child.text || child.id || t('rulefile_metadata_untitled_item')
                     }));
+                    if (child.defaultSelected === true) {
+                        child_item.appendChild(Helpers.create_element('span', {
+                            class_name: 'metadata-badge metadata-badge-default-selected',
+                            text_content: t('rulefile_content_types_default_selected_readonly_label')
+                        }));
+                    }
                     if (child.description) {
                         child_item.appendChild(Helpers.create_element('p', {
                             class_name: 'metadata-description',

@@ -36,6 +36,7 @@ type EditFormState = {
     parent_id: string;
     description: string;
     detection_pattern: string;
+    default_selected: boolean;
 };
 
 type EditOptions = {
@@ -58,11 +59,15 @@ function read_form_state(form: HTMLFormElement): EditFormState {
     const pattern_input = form.querySelector(
         '[data-content-type-field="detectionPattern"]'
     ) as HTMLTextAreaElement | null;
+    const default_selected_input = form.querySelector(
+        '[data-content-type-field="defaultSelected"]'
+    ) as HTMLInputElement | null;
     return {
         text: text_input?.value ?? '',
         parent_id: group_select?.value ?? '',
         description: description_input?.value ?? '',
         detection_pattern: pattern_input?.value ?? '',
+        default_selected: default_selected_input?.checked === true,
     };
 }
 
@@ -93,6 +98,11 @@ function apply_form_state_to_metadata(
         child.detectionPattern = pattern;
     } else {
         delete child.detectionPattern;
+    }
+    if (form_state.default_selected) {
+        child.defaultSelected = true;
+    } else {
+        delete child.defaultSelected;
     }
     working_metadata.contentTypes = parents;
     return next_location;
@@ -328,6 +338,34 @@ export function render_content_type_edit_form(
     pattern_group.appendChild(pattern_input);
     fields.appendChild(pattern_group);
 
+    const default_selected_group = Helpers.create_element('div', { class_name: 'form-group' });
+    const default_selected_id = `content-type-default-selected-${Math.random().toString(36).substring(2, 8)}`;
+    const default_selected_wrapper = Helpers.create_element('div', { class_name: 'form-check' });
+    const default_selected_input = Helpers.create_element('input', {
+        class_name: 'form-check-input',
+        attributes: {
+            id: default_selected_id,
+            type: 'checkbox',
+            'data-content-type-field': 'defaultSelected',
+        },
+    }) as HTMLInputElement;
+    default_selected_input.checked = child.defaultSelected === true;
+    default_selected_wrapper.appendChild(default_selected_input);
+    default_selected_wrapper.appendChild(
+        Helpers.create_element('label', {
+            attributes: { for: default_selected_id },
+            text_content: t('rulefile_content_types_default_selected_field'),
+        })
+    );
+    default_selected_group.appendChild(default_selected_wrapper);
+    default_selected_group.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'field-hint',
+            text_content: t('rulefile_content_types_default_selected_help'),
+        })
+    );
+    fields.appendChild(default_selected_group);
+
     form.appendChild(fields);
 
     const requirements_host = Helpers.create_element('div', {
@@ -376,6 +414,7 @@ export function render_content_type_edit_form(
     name_input.addEventListener('input', handle_field_input);
     description_input.addEventListener('input', handle_field_input);
     pattern_input.addEventListener('input', handle_field_input);
+    default_selected_input.addEventListener('change', handle_field_input);
     group_select.addEventListener('change', () => {
         sync_from_form(false);
         options.on_change?.();

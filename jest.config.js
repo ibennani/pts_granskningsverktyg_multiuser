@@ -78,6 +78,11 @@ export default {
       '<rootDir>/js/components/rulefile_sections/rulefile_content_types_ui.ts',
     '^.+[\\\\/]rulefile_content_type_edit_ui\\.js$':
       '<rootDir>/js/components/rulefile_sections/rulefile_content_type_edit_ui.ts',
+    '^.+[\\\\/]content_type_defaults\\.js$': '<rootDir>/shared/rulefile/content_type_defaults.ts',
+    '^.+[\\\\/]content_type_accordion\\.js$':
+      '<rootDir>/js/components/add_sample_form/content_type_accordion.ts',
+    '^.+[\\\\/]content_type_detection\\.js$':
+      '<rootDir>/js/components/add_sample_form/content_type_detection.ts',
     '^.+[\\\\/]rulefile_taxonomy_principles_editor_ui\\.js$':
       '<rootDir>/js/components/rulefile_sections/rulefile_taxonomy_principles_editor_ui.ts',
     '^.+[\\\\/]rulefile_taxonomy_principle_intro_ui\\.js$':

@@ -114,6 +114,9 @@ export const EditContentTypesSectionComponent = {
                     if (!cleaned.detectionPattern) {
                         delete cleaned.detectionPattern;
                     }
+                    if (child?.defaultSelected === true) {
+                        cleaned.defaultSelected = true;
+                    }
                     return cleaned;
                 })
                 .filter(child => child.id || child.text || child.description || child.detectionPattern);
