@@ -19,7 +19,6 @@ import { create_rulefile_appendix_edit_button } from './rulefile_appendix_templa
  * @param {object} deps.Translation
  * @param {function} deps.router
  * @param {function} deps.getState
- * @param {() => unknown | null} [deps.get_page_types_edit_component]
  * @param {string} [appendix]
  * @param {string} [classifications_part]
  * @param {string} [heading_text_override]
@@ -275,25 +274,6 @@ export function create_rulefile_section_header(
             class_name: 'field-hint rulefile-sections-header-intro',
             text_content: t('rulefile_appendix3_edit_intro')
         }));
-    }
-
-    if (can_edit && section_config.id === 'page_types' && is_editing) {
-        const add_button_wrapper = Helpers.create_element('div', { class_name: 'rulefile-sections-add-button-wrapper' });
-        const add_button = Helpers.create_element('button', {
-            class_name: ['button', 'button-primary', 'button-small', 'rulefile-sections-edit-button'],
-            attributes: {
-                type: 'button',
-                'data-action': 'add-page-type'
-            },
-            html_content: `<span>${t('rulefile_metadata_add_page_type')}</span>` +
-                          (Helpers.get_icon_svg ? `<span aria-hidden="true">${Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
-        });
-        add_button.addEventListener('click', () => {
-            const comp = deps.get_page_types_edit_component ? deps.get_page_types_edit_component() : null;
-            comp?.handle_add_page_type_click?.();
-        });
-        add_button_wrapper.appendChild(add_button);
-        header_wrapper.appendChild(add_button_wrapper);
     }
 
     return header_wrapper;

@@ -85,6 +85,7 @@ function create_textarea_section(
             id: `${options.textarea_name}-textarea`,
             name: options.textarea_name,
             rows: '6',
+            'data-skip-markdown-toolbar': 'true',
         },
     }) as HTMLTextAreaElement;
     textarea.value = options.initial_value;

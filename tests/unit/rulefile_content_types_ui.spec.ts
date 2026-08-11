@@ -85,12 +85,8 @@ describe('rulefile_content_types_ui', () => {
         expect(container.querySelector('.content-types-description-header')?.textContent).toBe(
             'rulefile_content_types_description_column'
         );
-        expect(container.querySelector('.content-types-default-selected-header')?.textContent).toBe(
-            'rulefile_content_types_default_selected_column'
-        );
-        expect(container.querySelector('.content-types-default-selected-help')?.textContent).toBe(
-            'rulefile_content_types_default_selected_help'
-        );
+        expect(container.querySelector('.content-types-default-selected-header')).toBeNull();
+        expect(container.querySelector('.content-types-default-selected-help')).toBeNull();
 
         const html_row = Array.from(container.querySelectorAll('tbody tr')).find((row) =>
             row.querySelector('.content-types-row-header')?.textContent === 'HTML'

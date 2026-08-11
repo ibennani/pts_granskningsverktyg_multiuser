@@ -105,7 +105,6 @@ export class RulefileSectionsViewComponent {
             Translation: this.Translation,
             router: this.router,
             getState: this.getState,
-            get_page_types_edit_component: () => this.page_types_edit_component,
             taxonomy_detail_context,
             content_type_detail_context,
         }, section_config, is_editing, appendix, classifications_part, heading_text_override);

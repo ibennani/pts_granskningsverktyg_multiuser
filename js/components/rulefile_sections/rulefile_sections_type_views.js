@@ -102,22 +102,20 @@ export function render_rulefile_page_types_section(ctx, metadata) {
     });
     section.appendChild(list_intro);
 
-    category_blocks.forEach((block, index) => {
-        const category_heading = Helpers.create_element('h3', {
+    category_blocks.forEach((block) => {
+        const group = Helpers.create_element('div', { class_name: 'page-types-read-group' });
+
+        group.appendChild(Helpers.create_element('h3', {
             text_content: String(block.category?.text || block.category?.id || t('rulefile_metadata_untitled_item')),
-            class_name: 'page-type-category-heading'
-        });
-        section.appendChild(category_heading);
+            class_name: 'page-types-read-group-heading',
+        }));
 
-        const categories_list = Helpers.create_element('ul', { class_name: 'metadata-list' });
+        const list = Helpers.create_element('ul', { class_name: 'page-types-read-list' });
         block.lines.forEach((line) => {
-            categories_list.appendChild(Helpers.create_element('li', { text_content: line }));
+            list.appendChild(Helpers.create_element('li', { text_content: line }));
         });
-        section.appendChild(categories_list);
-
-        if (index < category_blocks.length - 1) {
-            section.appendChild(Helpers.create_element('div', { style: 'margin-bottom: 2rem;' }));
-        }
+        group.appendChild(list);
+        section.appendChild(group);
     });
 
     return section;
@@ -156,16 +154,30 @@ export function render_rulefile_content_types_section(ctx, metadata) {
             if (Array.isArray(parent.types) && parent.types.length > 0) {
                 const child_list = Helpers.create_element('ul', { class_name: 'metadata-nested-list-child' });
                 parent.types.forEach(child => {
+                    const child_name = child.text || child.id || t('rulefile_metadata_untitled_item');
                     const child_item = Helpers.create_element('li');
                     child_item.appendChild(Helpers.create_element('span', {
                         class_name: 'metadata-subject',
-                        text_content: child.text || child.id || t('rulefile_metadata_untitled_item')
+                        text_content: child_name
                     }));
                     if (child.defaultSelected === true) {
-                        child_item.appendChild(Helpers.create_element('span', {
-                            class_name: 'metadata-badge metadata-badge-default-selected',
-                            text_content: t('rulefile_content_types_default_selected_readonly_label')
+                        const default_note = Helpers.create_element('span', {
+                            class_name: 'content-type-default-selected-note',
+                        });
+                        if (Helpers.get_icon_svg) {
+                            default_note.appendChild(Helpers.create_element('span', {
+                                class_name: 'content-type-default-selected-note__icon',
+                                attributes: { 'aria-hidden': 'true' },
+                                html_content: Helpers.get_icon_svg('check_circle', ['currentColor'], 16),
+                            }));
+                        }
+                        default_note.appendChild(Helpers.create_element('span', {
+                            class_name: 'content-type-default-selected-note__text',
+                            text_content: t('rulefile_content_types_default_selected_readonly_text', {
+                                name: child_name,
+                            }),
                         }));
+                        child_item.appendChild(default_note);
                     }
                     if (child.description) {
                         child_item.appendChild(Helpers.create_element('p', {
