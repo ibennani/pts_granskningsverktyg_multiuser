@@ -2,6 +2,7 @@
  * @fileoverview Bilagornas malltexter under Åtgärder — samma vy som regelfil Rapportmall, med resolved data.
  */
 import './audit_settings_view_component.css';
+import { resolve_appendix1_deficiency_view_data_for_audit } from '../logic/appendix1_deficiency_view_data.js';
 import { resolve_appendix1_body_text } from '../logic/appendix1_sections.js';
 import { resolve_appendix2_excel_labels_for_audit } from '../logic/audit_appendix_overrides.js';
 import { resolve_appendix3_screenshots_template } from '../logic/appendix3_screenshots_template.js';
@@ -106,12 +107,15 @@ export function render_audit_appendix1_view_section(
           )
         : undefined;
 
+    const t = deps.Translation.t;
     return render_rulefile_appendix1_template_section(
         build_view_ctx(deps, state),
         (state.ruleFileContent as Record<string, unknown>) || {},
         {
             body_text: resolve_appendix1_body_text(state),
             page_header_action,
+            deficiency_intros_hint_key: 'audit_appendix1_deficiency_intros_hint',
+            deficiency_view_data: resolve_appendix1_deficiency_view_data_for_audit(state, t),
         }
     );
 }

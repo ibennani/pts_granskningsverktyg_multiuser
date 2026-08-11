@@ -9,28 +9,27 @@ import { extractDeficiencyNumber } from './export_format_helpers.js';
 
 const MIN_DEFICIENCY_ID_PART_WIDTH = 3;
 
-/**
- * Varje lagrat underkänt kriterium med brist-id som har motsvarande krav i regelfilen.
- * @param {object} current_audit
- * @param {(ctx: object) => void} callback ctx: sample, req_definition, req_result, check_id, pc_id, pc_obj
- */
-export function for_each_failed_export_pass_criterion(
+type FailedPassCriterionContext = {
+    sample: unknown;
+    req_definition: unknown;
+    req_result: unknown;
+    check_id: string;
+    pc_id: string;
+    pc_obj: { deficiencyId?: string; observationDetail?: string; status?: string };
+};
+
+function walk_failed_pass_criteria(
     current_audit: unknown,
-    callback: (ctx: {
-        sample: unknown;
-        req_definition: unknown;
-        req_result: unknown;
-        check_id: string;
-        pc_id: string;
-        pc_obj: { deficiencyId?: string; observationDetail?: string; status?: string };
-    }) => void
-) {
+    require_deficiency_id: boolean,
+    callback: (ctx: FailedPassCriterionContext) => void
+): void {
     if (!current_audit) return;
     const requirements = (current_audit as { ruleFileContent?: { requirements?: unknown } }).ruleFileContent
         ?.requirements || {};
     traverse_all_pass_criteria(current_audit as import('../utils/traverse_audit_data.js').AuditStateLike, (ctx) => {
         const pc_obj = ctx.pc_result;
-        if (!pc_obj || pc_obj.status !== 'failed' || !pc_obj.deficiencyId) return;
+        if (!pc_obj || pc_obj.status !== 'failed') return;
+        if (require_deficiency_id && !pc_obj.deficiencyId) return;
         const req_definition = find_requirement_definition(requirements, ctx.req_key);
         if (!req_definition) return;
         callback({
@@ -39,9 +38,32 @@ export function for_each_failed_export_pass_criterion(
             req_result: ctx.req_result,
             check_id: ctx.check_key,
             pc_id: ctx.pc_key,
-            pc_obj
+            pc_obj,
         });
     });
+}
+
+/**
+ * Varje underkänt bedömningskriterium med motsvarande krav i regelfilen.
+ * Används när bristtyper ska visas även under pågående granskning (innan brist-id tilldelats).
+ */
+export function for_each_failed_pass_criterion(
+    current_audit: unknown,
+    callback: (ctx: FailedPassCriterionContext) => void
+): void {
+    walk_failed_pass_criteria(current_audit, false, callback);
+}
+
+/**
+ * Varje lagrat underkänt kriterium med brist-id som har motsvarande krav i regelfilen.
+ * @param {object} current_audit
+ * @param {(ctx: object) => void} callback ctx: sample, req_definition, req_result, check_id, pc_id, pc_obj
+ */
+export function for_each_failed_export_pass_criterion(
+    current_audit: unknown,
+    callback: (ctx: FailedPassCriterionContext) => void
+): void {
+    walk_failed_pass_criteria(current_audit, true, callback);
 }
 
 /**

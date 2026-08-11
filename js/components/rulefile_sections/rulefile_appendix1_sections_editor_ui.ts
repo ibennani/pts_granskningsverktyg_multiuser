@@ -220,6 +220,8 @@ export function render_appendix1_sections_editor(
         scope?: 'rulefile' | 'audit';
         initial_body_text_by_taxonomy?: Record<string, string>;
         initial_concept_intros?: Record<string, string>;
+        grouping_taxonomy_id?: string;
+        deficiency_intros_hint_key?: string;
     } = {}
 ): {
     get_body_text: () => string;
@@ -253,7 +255,9 @@ export function render_appendix1_sections_editor(
 
     let effective_rule_file = resolve_effective_rule_file(editing_audit_type_id);
 
-    let grouping_taxonomy_id = read_rulefile_appendix1_grouping_taxonomy_id(effective_rule_file);
+    const fixed_grouping_taxonomy_id = String(options.grouping_taxonomy_id ?? '').trim();
+    let grouping_taxonomy_id = fixed_grouping_taxonomy_id
+        || read_rulefile_appendix1_grouping_taxonomy_id(effective_rule_file);
     const taxonomies = resolve_taxonomies(rule_file_content.metadata as Record<string, unknown>) as Array<{
         id?: string;
         label?: string;
@@ -349,6 +353,7 @@ export function render_appendix1_sections_editor(
         deficiency_sections,
         on_change: options.on_change,
         initial_concept_intros: options.initial_concept_intros,
+        hint_key: options.deficiency_intros_hint_key,
     });
 
     if (!is_audit_scope && audit_types.length > 1) {
@@ -402,6 +407,7 @@ export function render_appendix1_sections_editor(
     }
 
     select.addEventListener('change', () => {
+        if (fixed_grouping_taxonomy_id) return;
         persist_current_body_text(body_text_by_taxonomy, grouping_taxonomy_id, body_input.value);
         grouping_taxonomy_id = select.value.trim();
         body_text = load_body_text_for_taxonomy(

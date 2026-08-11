@@ -7,7 +7,7 @@ import {
     get_concept_ids_for_requirement,
     resolve_taxonomy_concepts,
 } from '../../shared/classification/taxonomy_grouping.js';
-import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
+import { for_each_failed_pass_criterion } from './export_deficiency_traversal.js';
 
 export const WCAG_PRINCIPLE_ORDER = ['perceivable', 'operable', 'understandable', 'robust'] as const;
 
@@ -27,6 +27,10 @@ export type DeficiencyTypesByPrinciple = DeficiencyTypesByConcept;
 
 const PRIMARY_TEXT_KEYS = ['PrimaryText', 'primaryText', 'primary'] as const;
 const SECONDARY_TEXT_KEYS = ['SecondaryText', 'secondaryText', 'secondary'] as const;
+
+function normalize_concept_id(value: unknown): string {
+    return String(value ?? '').trim().toLowerCase();
+}
 
 function read_string_field(source: Record<string, unknown>, keys: readonly string[]): string {
     for (const key of keys) {
@@ -92,13 +96,14 @@ export function collect_deficiency_types_grouped_by_taxonomy(
     const groups = new Map<string, Map<string, DeficiencyTypeText>>();
 
     const add_entry = (concept_id: string, entry: DeficiencyTypeText) => {
-        if (!concept_id) return;
+        const normalized_id = normalize_concept_id(concept_id);
+        if (!normalized_id) return;
         const dedupe_key = `${entry.primary}\0${entry.secondary}`;
-        if (!groups.has(concept_id)) groups.set(concept_id, new Map());
-        groups.get(concept_id)!.set(dedupe_key, entry);
+        if (!groups.has(normalized_id)) groups.set(normalized_id, new Map());
+        groups.get(normalized_id)!.set(dedupe_key, entry);
     };
 
-    for_each_failed_export_pass_criterion(current_audit, ({ req_definition, pc_obj }) => {
+    for_each_failed_pass_criterion(current_audit, ({ req_definition, pc_obj }) => {
         let type = read_deficiency_type_node(pc_obj);
         if (!type) {
             type = read_deficiency_type_node(req_definition);
@@ -111,14 +116,20 @@ export function collect_deficiency_types_grouped_by_taxonomy(
     });
 
     return order
-        .filter((id) => groups.has(id) && (groups.get(id)?.size ?? 0) > 0)
-        .map((id) => ({
-            concept_id: id,
-            label: label_by_id.get(id) || id,
-            types: Array.from(groups.get(id)!.values()).sort((a, b) =>
-                a.primary.localeCompare(b.primary, 'sv')
-            ),
-        }));
+        .filter((id) => {
+            const normalized_id = normalize_concept_id(id);
+            return groups.has(normalized_id) && (groups.get(normalized_id)?.size ?? 0) > 0;
+        })
+        .map((id) => {
+            const normalized_id = normalize_concept_id(id);
+            return {
+                concept_id: id,
+                label: label_by_id.get(id) || id,
+                types: Array.from(groups.get(normalized_id)!.values()).sort((a, b) =>
+                    a.primary.localeCompare(b.primary, 'sv')
+                ),
+            };
+        });
 }
 
 export function collect_deficiency_types_grouped_by_principle(

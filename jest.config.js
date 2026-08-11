@@ -86,6 +86,12 @@ export default {
       '<rootDir>/js/components/rulefile_sections/rulefile_appendix1_sections_editor_ui.ts',
     '^.+[\\\\/]rulefile_appendix1_deficiency_intros_editor_ui\\.js$':
       '<rootDir>/js/components/rulefile_sections/rulefile_appendix1_deficiency_intros_editor_ui.ts',
+    '^.+[\\\\/]appendix1_deficiency_list_render\\.js$':
+      '<rootDir>/js/utils/appendix1_deficiency_list_render.ts',
+    '^.+[\\\\/]appendix1_deficiency_intros_view_render\\.js$':
+      '<rootDir>/js/utils/appendix1_deficiency_intros_view_render.ts',
+    '^.+[\\\\/]appendix1_deficiency_view_data\\.js$':
+      '<rootDir>/js/logic/appendix1_deficiency_view_data.ts',
     '^.+[\\\\/]EditReportTemplateAppendix1Component\\.js$':
       '<rootDir>/js/components/rulefile_sections/EditReportTemplateAppendix1Component.ts',
     '^.+[\\\\/]shared/pdf/appendix1_toc_page_numbers\\.js$':

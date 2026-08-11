@@ -166,9 +166,10 @@ describe('rulefile_appendix1_sections_editor_ui', () => {
         expect(heading?.textContent).toBe('rulefile_appendix1_deficiency_intros_heading');
         expect(hint?.tagName).toBe('P');
         expect(hint?.textContent).toBe('rulefile_appendix1_deficiency_intros_hint');
-        expect(
-            container.querySelector('.appendix1-deficiency-intros-list')?.getAttribute('aria-labelledby')
-        ).toBe(heading?.id);
+        const panel = container.querySelector('.appendix1-deficiency-intros-panel');
+        const list = container.querySelector('.appendix1-deficiency-intros-list');
+        expect(list?.getAttribute('aria-labelledby')).toBe(heading?.id);
+        expect(panel?.contains(list as Node)).toBe(false);
     });
 
     test('uppdaterar bristgruppsförhandsvisning när taxonomi byts', () => {

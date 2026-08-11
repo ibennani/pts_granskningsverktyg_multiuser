@@ -4,8 +4,6 @@
 import {
     build_rulefile_appendix1_persisted_sections,
     normalize_rulefile_appendix1,
-    read_rulefile_appendix1_body_text_by_taxonomy,
-    read_rulefile_appendix1_grouping_taxonomy_id,
     resolve_appendix1_body_text,
     resolve_audit_grouping_taxonomy_id,
     resolve_principle_intro_content,
@@ -14,7 +12,6 @@ import type { Appendix1SectionDefinition } from '../../logic/appendix1_sections_
 import { generate_deficiency_sections_from_taxonomy } from '../../logic/appendix1_sections.js';
 import { build_appendix1_override_payload } from '../../logic/audit_appendix_overrides.js';
 import { sync_to_server_now } from '../../logic/server_sync.js';
-import { resolve_taxonomies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { render_appendix1_sections_editor } from '../rulefile_sections/rulefile_appendix1_sections_editor_ui.js';
 import { build_save_button_html_content } from '../../ui/save_button_html.js';
 
@@ -59,10 +56,10 @@ export class EditAuditAppendix1Component {
         if (!deps || !editor_handles) return;
 
         const grouping_taxonomy_id = editor_handles.get_grouping_taxonomy_id();
-        const body_text_by_taxonomy = editor_handles.get_body_text_by_taxonomy();
         const body_text =
-            body_text_by_taxonomy[grouping_taxonomy_id]?.trim()
+            editor_handles.get_body_text_by_taxonomy()[grouping_taxonomy_id]?.trim()
             ?? editor_handles.get_body_text().trim();
+        const body_text_by_taxonomy = { [grouping_taxonomy_id]: body_text };
         const sections = build_rulefile_appendix1_persisted_sections(
             body_text,
             editor_handles.get_sections()
@@ -99,25 +96,17 @@ export class EditAuditAppendix1Component {
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
         const normalized = normalize_rulefile_appendix1(rule_file);
         const taxonomy_id = resolve_audit_grouping_taxonomy_id(state);
-        const taxonomies = resolve_taxonomies(normalized.metadata as Record<string, unknown>) as Array<{
-            id?: string;
-        }>;
-        const taxonomy_ids = taxonomies
-            .map((taxonomy) => String(taxonomy.id ?? '').trim())
-            .filter(Boolean);
-        const body_text_by_taxonomy = read_rulefile_appendix1_body_text_by_taxonomy(
-            normalized,
-            taxonomy_ids
-        );
         const resolved_body = resolve_appendix1_body_text(state);
-        body_text_by_taxonomy[taxonomy_id] = resolved_body;
+        const body_text_by_taxonomy: Record<string, string> = {
+            [taxonomy_id]: resolved_body,
+        };
 
         const deficiency_sections = generate_deficiency_sections_from_taxonomy(
             {
                 ...normalized,
                 appendix1: {
                     ...(normalized.appendix1 as Record<string, unknown> | undefined),
-                    groupingTaxonomyId: read_rulefile_appendix1_grouping_taxonomy_id(normalized),
+                    groupingTaxonomyId: taxonomy_id,
                 },
             },
             this.deps.Translation.t
@@ -146,6 +135,8 @@ export class EditAuditAppendix1Component {
             normalized,
             {
                 scope: 'audit',
+                grouping_taxonomy_id: taxonomy_id,
+                deficiency_intros_hint_key: 'audit_appendix1_deficiency_intros_hint',
                 initial_body_text_by_taxonomy: body_text_by_taxonomy,
                 initial_concept_intros,
             }

@@ -8,10 +8,16 @@ import {
     resolve_page_types,
     resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
-import { read_rulefile_appendix1_body_text } from '../../logic/appendix1_sections.js';
+import {
+    read_rulefile_appendix1_body_text,
+} from '../../logic/appendix1_sections.js';
+import { render_appendix1_deficiency_sections_view } from '../../utils/appendix1_deficiency_intros_view_render.js';
 import { read_rulefile_appendix2_labels, filter_editable_appendix2_deficiency_columns } from '../../logic/appendix2_excel_template.js';
 import { read_rulefile_appendix3_template } from '../../logic/appendix3_screenshots_template.js';
 import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
+import {
+    resolve_appendix1_deficiency_view_data_for_rulefile,
+} from '../../logic/appendix1_deficiency_view_data.js';
 import {
     create_rulefile_appendix_edit_button,
     render_rulefile_appendix_templates_hub,
@@ -236,10 +242,11 @@ export function render_rulefile_appendix_templates_hub_section(ctx) {
 /**
  * @param {{ Helpers: object, Translation: object, router?: function, getState?: function }} ctx
  * @param {object} ruleFileContent
- * @param {{ body_text?: string, page_header_action?: HTMLElement }} [options]
+ * @param {{ body_text?: string, page_header_action?: HTMLElement, deficiency_intros_hint_key?: string }} [options]
  */
 export function render_rulefile_appendix1_template_section(ctx, ruleFileContent, options = {}) {
     const Helpers = ctx.Helpers;
+    const t = ctx.Translation.t;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
     const body_text =
         typeof options.body_text === 'string'
@@ -276,6 +283,18 @@ export function render_rulefile_appendix1_template_section(ctx, ruleFileContent,
                 preview_container_ref: null,
             },
             on_save: () => {},
+        }
+    );
+
+    const view_data = options.deficiency_view_data
+        ?? resolve_appendix1_deficiency_view_data_for_rulefile(ruleFileContent, t);
+    render_appendix1_deficiency_sections_view(
+        { Helpers: ctx.Helpers, Translation: ctx.Translation },
+        section,
+        {
+            deficiency_sections: view_data.deficiency_sections,
+            deficiency_types_by_concept: view_data.deficiency_types_by_concept,
+            hint_key: options.deficiency_intros_hint_key ?? 'rulefile_appendix1_deficiency_intros_hint',
         }
     );
 

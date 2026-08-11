@@ -11,11 +11,9 @@ import {
     strip_leading_duplicate_appendix1_heading,
     type Appendix1SectionDefinition,
 } from '../logic/appendix1_sections.js';
-import {
-    collect_deficiency_types_grouped_by_taxonomy,
-    type DeficiencyTypeText,
-} from './export_deficiency_types_collect.js';
+import { collect_deficiency_types_grouped_by_taxonomy } from './export_deficiency_types_collect.js';
 import { escape_html_internal, render_markdown_to_html } from './export_html_build_primitives.js';
+import { build_deficiency_list_html } from '../utils/appendix1_deficiency_list_render.js';
 import {
     APPENDIX1_COVER_IMAGE_PLACEHOLDER,
     build_appendix1_pdf_print_css,
@@ -166,18 +164,6 @@ function build_section_content_html(
         return `<ul>${items.map((item) => `<li>${render_markdown_to_html(item)}</li>`).join('')}</ul>`;
     }
     return render_markdown_to_html(resolved);
-}
-
-function build_deficiency_list_html(types: DeficiencyTypeText[]): string {
-    if (types.length === 0) return '';
-    let html = '<ol>';
-    for (const entry of types) {
-        const primary = escape_html_internal(entry.primary);
-        const secondary = entry.secondary ? ` ${escape_html_internal(entry.secondary)}` : '';
-        html += `<li><strong>${primary}</strong>${secondary}</li>`;
-    }
-    html += '</ol>';
-    return html;
 }
 
 function build_body_sections_html(

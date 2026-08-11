@@ -223,6 +223,21 @@ describe('export_deficiency_types_collect', () => {
         expect(resolved).toBeNull();
     });
 
+    test('collect_deficiency_types_grouped_by_taxonomy samlar bristtyper utan tilldelat brist-id', () => {
+        const audit = create_audit_with_deficiency_types();
+        const samples = audit.samples as Array<Record<string, unknown>>;
+        const pc1 = (
+            ((samples[0]?.requirementResults as Record<string, unknown>)?.req1 as Record<string, unknown>)
+                ?.checkResults as Record<string, unknown>
+        )?.chk1 as Record<string, unknown>;
+        const pass_criteria = pc1?.passCriteria as Record<string, unknown>;
+        delete (pass_criteria?.pc1 as Record<string, unknown>).deficiencyId;
+
+        const groups = collect_deficiency_types_grouped_by_taxonomy(audit, 'wcag22-pour', t);
+        expect(groups).toHaveLength(2);
+        expect(groups[0].types[0].primary).toBe('Semantiska element används inte.');
+    });
+
     test('collect_deficiency_types_grouped_by_taxonomy faller tillbaka till requirement.DeficiencyType i regelfilen', () => {
         const audit = {
             ruleFileContent: {

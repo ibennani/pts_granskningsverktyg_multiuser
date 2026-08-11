@@ -21,6 +21,7 @@ export function render_deficiency_intro_editor(
         deficiency_sections: Appendix1SectionDefinition[];
         on_change?: () => void;
         initial_concept_intros?: Record<string, string>;
+        hint_key?: string;
     }
 ): {
     get_concept_intros: () => Record<string, string>;
@@ -66,16 +67,19 @@ export function render_deficiency_intro_editor(
     panel.appendChild(
         Helpers.create_element('p', {
             class_name: 'field-hint appendix1-section-panel__hint appendix1-deficiency-intros-panel__hint',
-            text_content: t('rulefile_appendix1_deficiency_intros_hint'),
+            text_content: t(
+                options.hint_key ?? 'rulefile_appendix1_deficiency_intros_hint'
+            ),
         })
     );
+
+    container.appendChild(panel);
 
     const list = Helpers.create_element('div', {
         class_name: 'appendix1-deficiency-intros-list',
         attributes: { 'aria-labelledby': heading_id },
     });
-    panel.appendChild(list);
-    container.appendChild(panel);
+    container.appendChild(list);
 
     const render_rows = (sections: Appendix1SectionDefinition[]) => {
         list.innerHTML = '';
