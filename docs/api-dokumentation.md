@@ -742,12 +742,18 @@ Tekniska snapshots skapas i samma Chromium-session som **Hämta information** (s
 | Variabel | Standard | Syfte |
 |----------|----------|-------|
 | `GV_AUDIT_SNAPSHOT_DIR` | `./audit-snapshots` | Katalog för zip-filer |
+# Sidrapport (miljövariabler)
 | `GV_SNAPSHOT_BROWSER_MAX_CONCURRENCY` | `4` | Parallella browser-slots |
 | `GV_SNAPSHOT_PACKAGE_MAX_CONCURRENCY` | `3` | Parallell zip-paketering |
 | `GV_SNAPSHOT_EXTENDED_CDP_MAX_MS` | `8000` | Tidsbudget för extended CDP |
 | `GV_SNAPSHOT_YIELD_ON_QUEUE` | `true` | Trunkera extended CDP vid kö |
 | `GV_SNAPSHOT_MAX_BYTES` | samma som filgräns | Max storlek per snapshot-zip |
 | `GV_SNAPSHOT_RESOURCE_TEXT_MAX_BYTES` | `2097152` | Max textstorlek per nätverksresurs |
+| `GV_SNAPSHOT_HOST_MAX_CONCURRENCY` | `1` | Max parallella captures per värdnamn |
+| `GV_SNAPSHOT_HOST_COOLDOWN_MS` | `3000` | Paus mellan captures till samma värd |
+| `GV_SNAPSHOT_NETWORK_BUFFER_PER_RESOURCE` | `5242880` | CDP-buffert per nätverksresurs (byte) |
+| `GV_SNAPSHOT_NETWORK_BUFFER_TOTAL` | `52428800` | Total CDP-nätverksbuffert (byte) |
+| `GV_SNAPSHOT_POST_NAVIGATION_SETTLE_MS` | `1500` | Väntan efter navigation före body-insamling |
 
 ---
 

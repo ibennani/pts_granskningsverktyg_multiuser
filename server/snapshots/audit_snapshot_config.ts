@@ -43,3 +43,23 @@ export function get_snapshot_max_bytes(): number {
 export function get_snapshot_resource_text_max_bytes(): number {
     return read_int_env('GV_SNAPSHOT_RESOURCE_TEXT_MAX_BYTES', 2 * 1024 * 1024);
 }
+
+export function get_snapshot_host_max_concurrency(): number {
+    return read_int_env('GV_SNAPSHOT_HOST_MAX_CONCURRENCY', 1);
+}
+
+export function get_snapshot_host_cooldown_ms(): number {
+    return read_int_env('GV_SNAPSHOT_HOST_COOLDOWN_MS', 3000);
+}
+
+export function get_snapshot_network_buffer_per_resource(): number {
+    return read_int_env('GV_SNAPSHOT_NETWORK_BUFFER_PER_RESOURCE', 5 * 1024 * 1024);
+}
+
+export function get_snapshot_network_buffer_total(): number {
+    return read_int_env('GV_SNAPSHOT_NETWORK_BUFFER_TOTAL', 50 * 1024 * 1024);
+}
+
+export function get_snapshot_post_navigation_settle_ms(): number {
+    return read_int_env('GV_SNAPSHOT_POST_NAVIGATION_SETTLE_MS', 1500);
+}

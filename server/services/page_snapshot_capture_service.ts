@@ -17,7 +17,10 @@ import {
     attach_network_listeners,
     capture_extended_page_artifacts,
     create_network_capture_state,
+    create_resource_body_persist_counters,
     persist_resource_bodies,
+    push_body_unavailable_warning,
+    push_resource_too_large_warning,
     sha256_buffer,
     to_network_json_entries,
     type ConsoleEntry,
@@ -85,6 +88,19 @@ async function extract_inline_styles_and_scripts(
     );
 }
 
+async function accumulate_persisted_resource_bodies(
+    cdp: CDPSession,
+    network_state: ReturnType<typeof create_network_capture_state>,
+    temp_dir: string,
+    counters: ReturnType<typeof create_resource_body_persist_counters>,
+    totals: { body_unavailable: number; too_large: number }
+): Promise<ReturnType<typeof create_resource_body_persist_counters>> {
+    const result = await persist_resource_bodies(cdp, network_state, temp_dir, counters);
+    totals.body_unavailable += result.body_unavailable_count;
+    totals.too_large += result.resource_too_large_count;
+    return result.counters;
+}
+
 export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promise<{
     size_bytes: number;
     warning_count: number;
@@ -100,6 +116,8 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
     const warnings: SnapshotWarning[] = [];
     const network_state = create_network_capture_state();
     const visible_started = Date.now();
+    const body_totals = { body_unavailable: 0, too_large: 0 };
+    let body_counters = create_resource_body_persist_counters();
 
     try {
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
@@ -113,6 +131,14 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
 
         await navigate_for_screenshot_capture(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
+
+        body_counters = await accumulate_persisted_resource_bodies(
+            cdp,
+            network_state,
+            temp_dir,
+            body_counters,
+            body_totals
+        );
 
         const final_url = page.url();
         const capture = await capture_viewport_png_with_adjustments(page, ctx.url);
@@ -149,16 +175,22 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
 
         await ctx.on_visible_complete(visible_result);
 
+        if (!ctx.is_cancelled()) {
+            body_counters = await accumulate_persisted_resource_bodies(
+                cdp,
+                network_state,
+                temp_dir,
+                body_counters,
+                body_totals
+            );
+        }
+
         const extended_started = Date.now();
         const should_yield = (): boolean => {
             if (ctx.is_cancelled()) return true;
             if (get_snapshot_yield_on_queue() && ctx.should_yield_extended()) return true;
             return Date.now() - extended_started > get_snapshot_extended_cdp_max_ms();
         };
-
-        if (!should_yield()) {
-            await persist_resource_bodies(cdp, network_state, temp_dir, warnings);
-        }
 
         const extended = await capture_extended_page_artifacts(page, cdp, { should_yield });
         warnings.push(...extended.warnings);
@@ -203,6 +235,9 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
 
         const network_json = build_network_json(to_network_json_entries(network_state.resources));
         await write_temp_file(temp_dir, 'network.json', JSON.stringify(network_json, null, 2));
+
+        push_body_unavailable_warning(warnings, body_totals.body_unavailable);
+        push_resource_too_large_warning(warnings, body_totals.too_large);
 
         const metadata = {
             formatVersion: 1,

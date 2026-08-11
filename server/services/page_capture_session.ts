@@ -8,6 +8,7 @@ import {
     scroll_to_top,
     settle_after_lazy_load,
 } from './page_screenshot_lazy_load.js';
+import { get_snapshot_post_navigation_settle_ms } from '../snapshots/audit_snapshot_config.js';
 import {
     assert_acceptable_navigation_status,
     configure_stealth_page,
@@ -100,6 +101,23 @@ export async function navigate_for_screenshot_capture(
     await navigate_and_validate_capture_page(page, url, timeout_ms);
     await apply_consent_local_storage(page, consent);
     await settle_after_consent_apply(page);
+    await settle_after_initial_navigation(page);
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
+
+/** Kort väntan efter första laddning så nätverkskroppar kan hämtas före scroll. */
+export async function settle_after_initial_navigation(page: Page): Promise<void> {
+    try {
+        await page.waitForNetworkIdle({ idleTime: 500, timeout: 10_000 });
+    } catch {
+        // Sidor med websocket eller polling — fortsätt ändå
+    }
+    await delay(get_snapshot_post_navigation_settle_ms());
 }
 
 async function ensure_banner_dismissed(

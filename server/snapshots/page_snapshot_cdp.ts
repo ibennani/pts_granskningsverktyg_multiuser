@@ -9,7 +9,11 @@ import {
     sanitize_response_headers,
     type NetworkResourceEntry,
 } from './network_redaction.js';
-import { get_snapshot_resource_text_max_bytes } from './audit_snapshot_config.js';
+import {
+    get_snapshot_resource_text_max_bytes,
+    get_snapshot_network_buffer_per_resource,
+    get_snapshot_network_buffer_total,
+} from './audit_snapshot_config.js';
 
 export type SnapshotWarning = {
     code: string;
@@ -107,7 +111,10 @@ export async function attach_network_listeners(
     cdp: CDPSession,
     state: NetworkCaptureState
 ): Promise<void> {
-    await cdp.send('Network.enable');
+    await cdp.send('Network.enable', {
+        maxResourceBufferSize: get_snapshot_network_buffer_per_resource(),
+        maxTotalBufferSize: get_snapshot_network_buffer_total(),
+    });
     cdp.on('Network.requestWillBeSent', (event) => {
         const resource_type = event.type ?? 'Other';
         const existing = state.resources.find((r) => r.requestId === event.requestId);
@@ -184,19 +191,35 @@ function safe_resource_filename(index: number, ext: string): string {
     return `resource-${String(index).padStart(4, '0')}.${ext}`;
 }
 
+export type ResourceBodyPersistCounters = {
+    css_index: number;
+    js_index: number;
+};
+
+export function create_resource_body_persist_counters(): ResourceBodyPersistCounters {
+    return { css_index: 0, js_index: 0 };
+}
+
+export type PersistResourceBodiesResult = {
+    body_unavailable_count: number;
+    resource_too_large_count: number;
+    counters: ResourceBodyPersistCounters;
+};
+
 export async function persist_resource_bodies(
     cdp: CDPSession,
     state: NetworkCaptureState,
     temp_dir: string,
-    warnings: SnapshotWarning[]
-): Promise<void> {
+    counters: ResourceBodyPersistCounters = create_resource_body_persist_counters()
+): Promise<PersistResourceBodiesResult> {
     const max_bytes = get_snapshot_resource_text_max_bytes();
-    let css_index = 0;
-    let js_index = 0;
+    let css_index = counters.css_index;
+    let js_index = counters.js_index;
     let body_unavailable_count = 0;
     let resource_too_large_count = 0;
 
     for (const resource of state.resources) {
+        if (resource.bodyCaptured) continue;
         if (!is_resource_body_capture_candidate(resource, state.mainDocumentRequestId)) {
             continue;
         }
@@ -235,8 +258,11 @@ export async function persist_resource_bodies(
         }
     }
 
-    push_body_unavailable_warning(warnings, body_unavailable_count);
-    push_resource_too_large_warning(warnings, resource_too_large_count);
+    return {
+        body_unavailable_count,
+        resource_too_large_count,
+        counters: { css_index, js_index },
+    };
 }
 
 export async function capture_extended_page_artifacts(

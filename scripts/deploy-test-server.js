@@ -16,6 +16,18 @@ if (!process.env.DEPLOY_SSH_HOSTNAME) process.env.DEPLOY_SSH_HOSTNAME = 'ux-gran
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
+function merge_env_file_contents(base_content, override_content) {
+    const values = new Map();
+    for (const line of `${base_content}\n${override_content}`.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq === -1) continue;
+        values.set(trimmed.slice(0, eq).trim(), trimmed.slice(eq + 1));
+    }
+    return `${[...values.entries()].map(([key, value]) => `${key}=${value}`).join('\n')}\n`;
+}
+
 const {
     run,
     exec,
@@ -117,6 +129,13 @@ async function main() {
             let envContent = readFileSync(envTestPath, 'utf8');
             envContent = envContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             if (envContent.charCodeAt(0) === 0xFEFF) envContent = envContent.slice(1);
+            const snapshot_env_path = join(projectRoot, 'config', 'test-server-snapshot.env');
+            if (existsSync(snapshot_env_path)) {
+                let snapshot_env = readFileSync(snapshot_env_path, 'utf8');
+                snapshot_env = snapshot_env.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                envContent = merge_env_file_contents(envContent, snapshot_env);
+                console.log('[deploy:test-server] Mergar config/test-server-snapshot.env (sidrapport-inställningar).');
+            }
             const serverEnv = envContent.split('\n').filter((line) => !line.match(/^\s*DEPLOY_/)).join('\n');
             const envCleanPath = join(projectRoot, '.env.test-server.deploy');
             writeFileSync(envCleanPath, serverEnv, 'utf8');

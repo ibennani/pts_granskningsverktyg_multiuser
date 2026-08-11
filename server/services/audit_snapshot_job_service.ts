@@ -9,6 +9,7 @@ import {
     get_snapshot_browser_max_concurrency,
     get_snapshot_package_max_concurrency,
 } from '../snapshots/audit_snapshot_config.js';
+import { acquire_snapshot_host_slot } from '../snapshots/snapshot_host_throttle.js';
 import {
     insert_audit_snapshot_row,
     update_audit_snapshot_status,
@@ -90,6 +91,7 @@ async function save_png_to_audit_media(
 }
 
 async function process_capture_job(job: PendingCapture): Promise<void> {
+    const host_slot = await acquire_snapshot_host_slot(job.url);
     await browser_semaphore.acquire();
     await update_audit_snapshot_status(job.captureId, 'capturing', {
         started_at: new Date(),
@@ -186,6 +188,7 @@ async function process_capture_job(job: PendingCapture): Promise<void> {
         cancelled_ids.delete(job.captureId);
     } finally {
         browser_semaphore.release();
+        host_slot.release();
         void pump_queue();
     }
 }
