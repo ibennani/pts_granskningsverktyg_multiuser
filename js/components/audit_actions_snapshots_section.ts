@@ -36,6 +36,46 @@ export type AuditActionsSnapshotsDeps = {
     getState: () => { auditId?: string | null; samples?: Array<{ id: string; description?: string }> };
 };
 
+const SNAPSHOT_INTRO_ITEM_KEYS = [
+    'audit_snapshots_intro_item_screenshot',
+    'audit_snapshots_intro_item_html',
+    'audit_snapshots_intro_item_network',
+    'audit_snapshots_intro_item_console',
+    'audit_snapshots_intro_item_accessibility',
+    'audit_snapshots_intro_item_metadata',
+] as const;
+
+function render_snapshots_intro(
+    helpers: AuditActionsSnapshotsDeps['Helpers'],
+    t: AuditActionsSnapshotsDeps['Translation']['t']
+): HTMLElement {
+    const wrapper = helpers.create_element('div', { class_name: 'audit-actions-snapshots-intro' });
+    wrapper.appendChild(
+        helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('audit_snapshots_intro'),
+        })
+    );
+    wrapper.appendChild(
+        helpers.create_element('p', {
+            class_name: 'audit-actions-snapshots-intro__list-heading',
+            text_content: t('audit_snapshots_intro_contents_heading'),
+        })
+    );
+    const list = helpers.create_element('ul', { class_name: 'audit-actions-snapshots-intro__list' });
+    for (const key of SNAPSHOT_INTRO_ITEM_KEYS) {
+        list.appendChild(helpers.create_element('li', { text_content: t(key) }));
+    }
+    wrapper.appendChild(list);
+    wrapper.appendChild(
+        helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('audit_snapshots_intro_footer'),
+        })
+    );
+    return wrapper;
+}
+
 async function fetch_authenticated_blob(url: string): Promise<Blob> {
     const token = get_auth_token();
     const res = await fetch(url, {
@@ -56,12 +96,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     const lang = deps.Translation.get_current_language_code?.() || 'sv-SE';
 
     const root = helpers.create_element('div', { class_name: 'audit-actions-snapshots' });
-    root.appendChild(
-        helpers.create_element('p', {
-            class_name: 'view-intro-text',
-            text_content: t('audit_snapshots_intro'),
-        })
-    );
+    root.appendChild(render_snapshots_intro(helpers, t));
 
     const live_region = helpers.create_element('p', {
         class_name: 'visually-hidden',

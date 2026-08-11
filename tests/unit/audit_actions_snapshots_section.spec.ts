@@ -62,6 +62,7 @@ describe('audit_actions_snapshots_section', () => {
         const section = create_audit_actions_snapshots_section(make_deps() as never);
         document.body.appendChild(section.root);
         await section.refresh();
+        expect(section.root.textContent).toContain('audit_snapshots_intro_item_screenshot');
         expect(section.root.textContent).toContain('audit_snapshots_empty');
         section.destroy();
         section.root.remove();
