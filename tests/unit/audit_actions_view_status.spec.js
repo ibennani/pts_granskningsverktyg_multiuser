@@ -26,10 +26,10 @@ function make_helpers() {
     };
 }
 
-function make_deps(audit_status, section = '') {
+function make_deps(audit_status, section = '', extra_params = {}) {
     const state = {
         auditStatus: audit_status,
-        ruleFileContent: { requirements: {} },
+        ruleFileContent: { requirements: {}, metadata: { language: 'sv' }, appendix2: {} },
         samples: [{ id: 's1', requirementResults: {} }],
         auditMetadata: {}
     };
@@ -39,7 +39,7 @@ function make_deps(audit_status, section = '') {
         }
     });
     return {
-        params: section ? { section } : {},
+        params: section ? { section, ...extra_params } : { ...extra_params },
         router: jest.fn(),
         getState: () => state,
         dispatch,
@@ -74,12 +74,12 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
         AuditActionsViewComponent = mod.AuditActionsViewComponent;
     });
 
-    async function render_with(status, section = '') {
+    async function render_with(status, section = '', extra_params = {}) {
         const root = document.createElement('div');
         document.body.appendChild(root);
         const component = new AuditActionsViewComponent();
-        await component.init({ root, deps: make_deps(status, section) });
-        component.render();
+        await component.init({ root, deps: make_deps(status, section, extra_params) });
+        await component._render_immediate();
         return { root, component };
     }
 
@@ -123,6 +123,18 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
             'audit_actions_nav_appendix_templates',
             'audit_actions_nav_snapshots',
         ]);
+
+        component.destroy();
+        root.remove();
+    });
+
+    test('bilagoredigering saknar Tillbaka till Åtgärder-rad direkt under plattan', async () => {
+        const { root, component } = await render_with('locked', 'appendix_templates', {
+            appendix: '2',
+            edit: 'true',
+        });
+        const plate = root.querySelector('.audit-actions-plate.rulefile-sections-main-plate');
+        expect(plate?.querySelector(':scope > .audit-settings__back-row')).toBeNull();
 
         component.destroy();
         root.remove();

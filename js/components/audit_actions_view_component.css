@@ -1,5 +1,10 @@
 @import '../../css/components/expandable_panel.css';
 
+/* Bilagornas malltexter: ingen extra Tillbaka till åtgärder-rad (meny + Tillbaka till visning) */
+.audit-actions-plate.rulefile-sections-main-plate > .audit-settings__back-row {
+    display: none;
+}
+
 .audit-actions-plate .audit-settings__hub-nav {
     margin-top: 0.25rem;
 }

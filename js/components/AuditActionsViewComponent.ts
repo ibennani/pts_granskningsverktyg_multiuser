@@ -282,6 +282,12 @@ export class AuditActionsViewComponent {
 
         layout.appendChild(right_wrapper);
         plate.appendChild(layout);
+
+        for (const child of plate.children) {
+            if (child.classList.contains('audit-settings__back-row')) {
+                child.remove();
+            }
+        }
     }
 
     _populate_update_rulefile_slot(slot_element, state) {
