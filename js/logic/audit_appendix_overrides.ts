@@ -162,15 +162,18 @@ export function read_appendix3_intro_override(
 export function build_appendix1_override_payload(
     body_text: string,
     body_text_by_taxonomy: Record<string, string>,
-    sections: Appendix1SectionDefinition[],
-    principle_intro_overrides: Record<string, string>
+    principle_intro_overrides: Record<string, string>,
+    sections?: Appendix1SectionDefinition[] | null
 ): Record<string, unknown> {
+    const appendix1_override: Appendix1Override = {
+        bodyText: body_text,
+        bodyTextByTaxonomy: body_text_by_taxonomy,
+    };
+    if (Array.isArray(sections) && sections.length > 0) {
+        appendix1_override.sections = sections;
+    }
     return {
-        appendix1Override: {
-            bodyText: body_text,
-            bodyTextByTaxonomy: body_text_by_taxonomy,
-            sections,
-        },
+        appendix1Override: appendix1_override,
         appendix1PrincipleIntroOverrides: principle_intro_overrides,
     };
 }

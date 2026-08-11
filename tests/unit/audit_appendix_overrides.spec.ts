@@ -3,6 +3,7 @@
  */
 import { describe, test, expect } from '@jest/globals';
 import {
+    build_appendix1_override_payload,
     merge_appendix1_slice_with_audit_override,
     resolve_appendix2_excel_labels_for_audit,
     read_appendix3_intro_override,
@@ -16,6 +17,20 @@ describe('audit_appendix_overrides', () => {
             { bodyText: 'Granskning' }
         );
         expect(merged?.bodyText).toBe('Granskning');
+    });
+
+    test('build_appendix1_override_payload utelämnar sections om de inte skickas med', () => {
+        const payload = build_appendix1_override_payload(
+            'Brödtext',
+            { 'wcag22-pour': 'Brödtext' },
+            { perceivable: 'Inledning' }
+        );
+        expect(payload.appendix1Override).toMatchObject({
+            bodyText: 'Brödtext',
+            bodyTextByTaxonomy: { 'wcag22-pour': 'Brödtext' },
+        });
+        expect(payload.appendix1Override).not.toHaveProperty('sections');
+        expect(payload.appendix1PrincipleIntroOverrides).toEqual({ perceivable: 'Inledning' });
     });
 
     test('resolve_appendix2_excel_labels_for_audit mergar audit override', () => {

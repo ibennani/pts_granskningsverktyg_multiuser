@@ -2,7 +2,6 @@
  * @fileoverview Redigerar Bilaga 1-malltexter för aktuell granskning (auditMetadata).
  */
 import {
-    build_rulefile_appendix1_persisted_sections,
     normalize_rulefile_appendix1,
     resolve_appendix1_body_text,
     resolve_audit_grouping_taxonomy_id,
@@ -60,14 +59,9 @@ export class EditAuditAppendix1Component {
             editor_handles.get_body_text_by_taxonomy()[grouping_taxonomy_id]?.trim()
             ?? editor_handles.get_body_text().trim();
         const body_text_by_taxonomy = { [grouping_taxonomy_id]: body_text };
-        const sections = build_rulefile_appendix1_persisted_sections(
-            body_text,
-            editor_handles.get_sections()
-        );
         const payload = build_appendix1_override_payload(
             body_text,
             body_text_by_taxonomy,
-            sections,
             editor_handles.get_concept_intros()
         );
 
@@ -76,16 +70,17 @@ export class EditAuditAppendix1Component {
             payload: { ...payload, skip_render: true },
         });
 
-        deps.NotificationComponent.show_global_message(
-            deps.Translation.t('audit_appendix_1_saved'),
-            'success'
-        );
-
         try {
             await sync_to_server_now(deps.getState, deps.dispatch);
         } catch {
             // Fel visas av sync
         }
+
+        deps.NotificationComponent.show_global_message(
+            deps.Translation.t('audit_appendix_1_saved'),
+            'success'
+        );
+        this.navigate_back_to_view();
     }
 
     render(): void {

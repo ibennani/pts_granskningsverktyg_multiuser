@@ -193,5 +193,6 @@ describe('EditAuditAppendix1Component', () => {
         expect(dispatch_payloads[0]?.appendix1Override).toMatchObject({
             bodyTextByTaxonomy: { 'fptt-bilaga-2': expect.any(String) },
         });
+        expect(dispatch_payloads[0]?.appendix1Override).not.toHaveProperty('sections');
     });
 });
