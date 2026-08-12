@@ -7,8 +7,8 @@ const Helpers = { create_element, get_icon_svg };
 
 const t = (key: string) => {
     const map: Record<string, string> = {
-        sample_url_analyze_button: 'Skapa sidrapport',
-        sample_url_analyze_button_aria: 'Skapa sidrapport: öppna dialog',
+        sample_url_analyze_button: 'Hämta bild och sidtitel',
+        sample_url_analyze_button_aria: 'Hämta bild och sidtitel: öppna dialog',
     };
     return map[key] ?? key;
 };
@@ -20,8 +20,8 @@ describe('sample_url_analyze_status', () => {
         expect(parts.wrapper.classList.contains('sample-url-analyze-button-wrap')).toBe(true);
         expect(parts.wrapper.classList.contains('generic-tooltip-wrapper')).toBe(false);
         expect(parts.wrapper.children[0]).toBe(parts.button);
-        expect(parts.button.textContent).toContain('Skapa sidrapport');
-        expect(parts.button.getAttribute('aria-label')).toBe('Skapa sidrapport: öppna dialog');
+        expect(parts.button.textContent).toContain('Hämta bild och sidtitel');
+        expect(parts.button.getAttribute('aria-label')).toBe('Hämta bild och sidtitel: öppna dialog');
         expect(parts.button.hasAttribute('disabled')).toBe(false);
     });
 });
