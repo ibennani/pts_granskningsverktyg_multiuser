@@ -1,5 +1,5 @@
 /**
- * @fileoverview Kör unified snapshot-capture i en Chromium-session.
+ * @fileoverview Kör unified snapshot-capture med separat ren observation av initialt CMP-gränssnitt.
  */
 import fs from 'fs/promises';
 import path from 'path';
@@ -7,8 +7,8 @@ import type { Browser, Page, CDPSession } from 'puppeteer';
 import {
     launch_capture_browser,
     prepare_capture_page,
-    navigate_for_initial_consent_observation,
-    apply_cached_consent_and_settle,
+    navigate_and_validate_capture_page,
+    navigate_for_screenshot_capture,
     capture_viewport_png_with_adjustments,
     CAPTURE_NAVIGATION_TIMEOUT_MS,
     type CaptureAdjustments,
@@ -39,7 +39,7 @@ import {
 import { restore_baseline_viewport } from '../snapshots/analysis/snapshot_viewport_baseline.js';
 import { capture_initial_consent_evidence } from '../snapshots/analysis/phase1/initial_consent_analysis.js';
 import { run_snapshot_analysis } from '../snapshots/analysis/snapshot_analysis_runner.js';
-import { load_consent_for_domain, apply_consent_cookies } from './page_screenshot_consent_cache.js';
+import type { AnalysisModuleEnvelope } from '../snapshots/analysis/snapshot_analysis_types.js';
 import type { AuditSnapshotCaptureResponse } from '../schemas/audit_snapshot.js';
 
 export type VisibleCaptureResult = AuditSnapshotCaptureResponse & {
@@ -68,6 +68,66 @@ async function write_temp_file(temp_dir: string, rel: string, content: string | 
     const full = path.join(temp_dir, rel);
     await fs.mkdir(path.dirname(full), { recursive: true });
     await fs.writeFile(full, content);
+}
+
+/**
+ * Fångar CMP/cookiegränssnitt i en helt separat Chromium-session.
+ * Sessionen har ingen CMP-request-blockering, ingen cached consent och gör ingen interaktion.
+ */
+async function capture_clean_initial_consent_observation(
+    url: string,
+    temp_dir: string,
+    screenshot_budget: { remaining: number },
+    is_cancelled: () => boolean
+): Promise<AnalysisModuleEnvelope | null> {
+    let observation_browser: Browser | undefined;
+    try {
+        if (is_cancelled()) return null;
+        observation_browser = await launch_capture_browser();
+        const observation_page = await observation_browser.newPage();
+        await prepare_capture_page(observation_page);
+        await navigate_and_validate_capture_page(
+            observation_page,
+            url,
+            CAPTURE_NAVIGATION_TIMEOUT_MS
+        );
+        if (is_cancelled()) return null;
+        try {
+            await observation_page.waitForNetworkIdle({ idleTime: 300, timeout: 5000 });
+        } catch {
+            // CMP:er med polling/websocket får ändå observeras efter timeout.
+        }
+        return await capture_initial_consent_evidence(
+            observation_page,
+            temp_dir,
+            screenshot_budget
+        );
+    } catch (error) {
+        return {
+            module: 'initial-consent',
+            version: 2,
+            phase: 1,
+            status: 'partial',
+            durationMs: 0,
+            recordCount: 0,
+            truncated: false,
+            skipReason: 'observation-failed',
+            warnings: [error instanceof Error ? error.message : String(error)],
+            data: {
+                consentUiFound: false,
+                observationMode: 'clean-no-interaction',
+                banners: [],
+            },
+        };
+    } finally {
+        if (observation_browser) {
+            try {
+                await observation_browser.close();
+            } catch {
+                // ignore
+            }
+        }
+    }
 }
 
 async function extract_inline_styles_and_scripts(
@@ -126,6 +186,16 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
     try {
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
 
+        // Separat observationssession: får aldrig påverka huvudcapture med storage eller CMP-blockering.
+        const initial_consent_envelope = await capture_clean_initial_consent_observation(
+            ctx.url,
+            temp_dir,
+            screenshot_budget,
+            ctx.is_cancelled
+        );
+        if (ctx.is_cancelled()) throw new Error('Capture cancelled');
+
+        // Huvudcapture använder fortsatt den etablerade CMP-cleanupen.
         browser = await launch_capture_browser();
         page = await browser.newPage();
         cdp = await page.createCDPSession();
@@ -138,18 +208,8 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             main_frame_id: frame_tree.frameTree.frame.id,
         });
 
-        await navigate_for_initial_consent_observation(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
+        await navigate_for_screenshot_capture(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
-
-        const initial_consent_envelope = await capture_initial_consent_evidence(
-            page,
-            temp_dir,
-            screenshot_budget
-        );
-
-        const consent = await load_consent_for_domain(ctx.url);
-        await apply_consent_cookies(page, consent);
-        await apply_cached_consent_and_settle(page, consent);
 
         body_counters = await run_persist_resource_bodies_pass(
             cdp,
