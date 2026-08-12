@@ -43,6 +43,7 @@ import { run_reduced_motion_analysis } from './phase2/reduced_motion_analysis.js
 import { run_pointer_analysis } from './phase2/pointer_analysis.js';
 import { run_iframe_analysis } from './phase2/iframe_analysis.js';
 import { run_text_resize_analysis } from './phase2/text_resize_analysis.js';
+import { run_menu_interaction_analysis } from './phase2/menu_interaction_analysis.js';
 import { DOM_SNAPSHOT_COMPUTED_STYLES } from '../page_snapshot_cdp.js';
 import { run_analysis_module } from './snapshot_analysis_module_runner.js';
 
@@ -58,6 +59,7 @@ const PHASE1_MODULES: AnalysisModuleDef[] = [
 ];
 
 const PHASE2_MODULES: AnalysisModuleDef[] = [
+    { name: 'main-menu-states', phase: 2, version: 1, output_path: 'analysis/phase2/main-menu-states.json', run: run_menu_interaction_analysis },
     { name: 'live-regions', phase: 2, version: 1, output_path: 'analysis/phase2/live-regions.json', run: run_live_region_analysis },
     { name: 'stateful-components', phase: 2, version: 1, output_path: 'analysis/phase2/stateful-components.json', run: run_stateful_component_analysis },
     { name: 'forms', phase: 2, version: 1, output_path: 'analysis/phase2/forms.json', run: run_form_analysis },
