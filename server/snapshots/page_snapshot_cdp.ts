@@ -50,16 +50,39 @@ type PendingResource = {
     bodyCaptured: boolean;
     bodySkipReason: string | null;
     archiveRelativePath: string | null;
+    /** Kroppsbytes hämtade direkt vid Network.loadingFinished. */
+    pendingBodyBytes: Buffer | null;
 };
 
 export type NetworkCaptureState = {
     resources: PendingResource[];
     mainDocumentRequestId: string | null;
     mainDocumentBody: string | null;
+    eager_capture_tasks: Promise<void>[];
 };
 
 export function create_network_capture_state(): NetworkCaptureState {
-    return { resources: [], mainDocumentRequestId: null, mainDocumentBody: null };
+    return {
+        resources: [],
+        mainDocumentRequestId: null,
+        mainDocumentBody: null,
+        eager_capture_tasks: [],
+    };
+}
+
+export async function await_eager_resource_body_captures(state: NetworkCaptureState): Promise<void> {
+    if (state.eager_capture_tasks.length === 0) return;
+    await Promise.allSettled(state.eager_capture_tasks);
+    state.eager_capture_tasks = [];
+}
+
+export function decode_cdp_response_body(body_result: {
+    body: string;
+    base64Encoded: boolean;
+}): Buffer {
+    return body_result.base64Encoded
+        ? Buffer.from(body_result.body, 'base64')
+        : Buffer.from(body_result.body, 'utf8');
 }
 
 export function is_resource_body_capture_candidate(
@@ -68,6 +91,9 @@ export function is_resource_body_capture_candidate(
 ): boolean {
     if (resource.failed) return false;
     if (main_document_request_id && resource.requestId === main_document_request_id) {
+        return true;
+    }
+    if (resource.resourceType === 'Document') {
         return true;
     }
     const mime = (resource.mimeType || '').toLowerCase();
@@ -111,6 +137,26 @@ export async function attach_network_listeners(
     cdp: CDPSession,
     state: NetworkCaptureState
 ): Promise<void> {
+    const max_bytes = get_snapshot_resource_text_max_bytes();
+
+    const capture_body_eager = async (entry: PendingResource): Promise<void> => {
+        if (entry.bodyCaptured || entry.pendingBodyBytes || entry.bodySkipReason) return;
+        if (!is_resource_body_capture_candidate(entry, state.mainDocumentRequestId)) return;
+        try {
+            const body_result = await cdp.send('Network.getResponseBody', {
+                requestId: entry.requestId,
+            });
+            const raw = decode_cdp_response_body(body_result);
+            if (raw.length > max_bytes) {
+                entry.bodySkipReason = 'resource exceeded size limit';
+                return;
+            }
+            entry.pendingBodyBytes = raw;
+        } catch {
+            entry.bodySkipReason = 'network response body no longer available';
+        }
+    };
+
     await cdp.send('Network.enable', {
         maxResourceBufferSize: get_snapshot_network_buffer_per_resource(),
         maxTotalBufferSize: get_snapshot_network_buffer_total(),
@@ -138,10 +184,14 @@ export async function attach_network_listeners(
             bodyCaptured: false,
             bodySkipReason: null,
             archiveRelativePath: null,
+            pendingBodyBytes: null,
         };
         entry.url = event.request.url;
         entry.method = event.request.method;
         entry.resourceType = resource_type;
+        if (resource_type === 'Document') {
+            state.mainDocumentRequestId = event.requestId;
+        }
         if (!existing) state.resources.push(entry);
     });
     cdp.on('Network.responseReceived', (event: { requestId: string; response: { url: string; mimeType: string; status: number; headers: Record<string, string> } }) => {
@@ -158,6 +208,8 @@ export async function attach_network_listeners(
         const entry = state.resources.find((r) => r.requestId === event.requestId);
         if (!entry) return;
         entry.encodedSize = event.encodedDataLength;
+        const task = capture_body_eager(entry);
+        state.eager_capture_tasks.push(task);
     });
     cdp.on('Network.loadingFailed', (event: { requestId: string; errorText: string }) => {
         const entry = state.resources.find((r) => r.requestId === event.requestId);
@@ -212,6 +264,8 @@ export async function persist_resource_bodies(
     temp_dir: string,
     counters: ResourceBodyPersistCounters = create_resource_body_persist_counters()
 ): Promise<PersistResourceBodiesResult> {
+    await await_eager_resource_body_captures(state);
+
     const max_bytes = get_snapshot_resource_text_max_bytes();
     let css_index = counters.css_index;
     let js_index = counters.js_index;
@@ -223,39 +277,59 @@ export async function persist_resource_bodies(
         if (!is_resource_body_capture_candidate(resource, state.mainDocumentRequestId)) {
             continue;
         }
-        try {
-            const body_result = await cdp.send('Network.getResponseBody', {
-                requestId: resource.requestId,
-            });
-            const raw = body_result.base64Encoded
-                ? Buffer.from(body_result.body, 'base64')
-                : Buffer.from(body_result.body, 'utf8');
-            if (raw.length > max_bytes) {
-                resource.bodySkipReason = 'resource exceeded size limit';
+
+        let raw: Buffer | null = resource.pendingBodyBytes;
+        if (!raw) {
+            if (resource.bodySkipReason === 'resource exceeded size limit') {
                 resource_too_large_count += 1;
                 continue;
             }
-            const text = raw.toString('utf8');
-            if (resource.requestId === state.mainDocumentRequestId) {
-                state.mainDocumentBody = text;
-                resource.bodyCaptured = true;
+            if (resource.bodySkipReason) {
+                body_unavailable_count += 1;
                 continue;
             }
-            const mime = (resource.mimeType || '').toLowerCase();
-            const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
-            const ext = is_css ? 'css' : 'js';
-            const subdir = is_css ? 'resources/stylesheets' : 'resources/scripts';
-            const filename = safe_resource_filename(is_css ? css_index++ : js_index++, ext);
-            const rel = path.posix.join(subdir, filename);
-            const full = path.join(temp_dir, rel);
-            await fs.mkdir(path.dirname(full), { recursive: true });
-            await fs.writeFile(full, text, 'utf8');
-            resource.archiveRelativePath = rel;
-            resource.bodyCaptured = true;
-        } catch {
-            resource.bodySkipReason = 'network response body no longer available';
-            body_unavailable_count += 1;
+            try {
+                const body_result = await cdp.send('Network.getResponseBody', {
+                    requestId: resource.requestId,
+                });
+                raw = decode_cdp_response_body(body_result);
+            } catch {
+                resource.bodySkipReason = 'network response body no longer available';
+                body_unavailable_count += 1;
+                continue;
+            }
         }
+
+        if (raw.length > max_bytes) {
+            resource.bodySkipReason = 'resource exceeded size limit';
+            resource.pendingBodyBytes = null;
+            resource_too_large_count += 1;
+            continue;
+        }
+
+        const text = raw.toString('utf8');
+        if (
+            resource.requestId === state.mainDocumentRequestId ||
+            resource.resourceType === 'Document'
+        ) {
+            state.mainDocumentBody = text;
+            resource.bodyCaptured = true;
+            resource.pendingBodyBytes = null;
+            continue;
+        }
+
+        const mime = (resource.mimeType || '').toLowerCase();
+        const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
+        const ext = is_css ? 'css' : 'js';
+        const subdir = is_css ? 'resources/stylesheets' : 'resources/scripts';
+        const filename = safe_resource_filename(is_css ? css_index++ : js_index++, ext);
+        const rel = path.posix.join(subdir, filename);
+        const full = path.join(temp_dir, rel);
+        await fs.mkdir(path.dirname(full), { recursive: true });
+        await fs.writeFile(full, text, 'utf8');
+        resource.archiveRelativePath = rel;
+        resource.bodyCaptured = true;
+        resource.pendingBodyBytes = null;
     }
 
     return {

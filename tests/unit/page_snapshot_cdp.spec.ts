@@ -1,8 +1,14 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, jest } from '@jest/globals';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
 import {
     is_resource_body_capture_candidate,
     push_body_unavailable_warning,
     push_resource_too_large_warning,
+    decode_cdp_response_body,
+    create_network_capture_state,
+    persist_resource_bodies,
 } from '../../server/snapshots/page_snapshot_cdp.ts';
 import {
     dedupe_sidrapport_warnings_for_display,
@@ -60,6 +66,103 @@ describe('page_snapshot_cdp helpers', () => {
                 'doc-1'
             )
         ).toBe(false);
+    });
+
+    test('is_resource_body_capture_candidate inkluderar Document utan main id', () => {
+        expect(
+            is_resource_body_capture_candidate(
+                {
+                    failed: false,
+                    requestId: 'doc-early',
+                    mimeType: null,
+                    resourceType: 'Document',
+                },
+                null
+            )
+        ).toBe(true);
+    });
+
+    test('decode_cdp_response_body hanterar text och base64', () => {
+        expect(decode_cdp_response_body({ body: 'hej', base64Encoded: false }).toString('utf8')).toBe(
+            'hej'
+        );
+        expect(
+            decode_cdp_response_body({
+                body: Buffer.from('abc', 'utf8').toString('base64'),
+                base64Encoded: true,
+            }).toString('utf8')
+        ).toBe('abc');
+    });
+
+    test('persist_resource_bodies skriver från pendingBodyBytes utan CDP-anrop', async () => {
+        const temp_dir = await fs.mkdtemp(path.join(os.tmpdir(), 'snapshot-cdp-'));
+        const state = create_network_capture_state();
+        state.mainDocumentRequestId = 'doc-1';
+        state.resources.push({
+            requestId: 'js-1',
+            url: 'https://example.com/app.js',
+            method: 'GET',
+            resourceType: 'Script',
+            mimeType: 'application/javascript',
+            status: 200,
+            encodedSize: 12,
+            decodedSize: null,
+            failed: false,
+            failureReason: null,
+            redirectChain: [],
+            responseHeaders: {},
+            bodyCaptured: false,
+            bodySkipReason: null,
+            archiveRelativePath: null,
+            pendingBodyBytes: Buffer.from('console.log(1);', 'utf8'),
+        });
+
+        const cdp = { send: jest.fn() };
+        const result = await persist_resource_bodies(
+            cdp as never,
+            state,
+            temp_dir
+        );
+
+        expect(cdp.send).not.toHaveBeenCalled();
+        expect(result.body_unavailable_count).toBe(0);
+        expect(state.resources[0]?.bodyCaptured).toBe(true);
+        const written = await fs.readFile(
+            path.join(temp_dir, 'resources/scripts/resource-0000.js'),
+            'utf8'
+        );
+        expect(written).toBe('console.log(1);');
+        await fs.rm(temp_dir, { recursive: true, force: true });
+    });
+
+    test('persist_resource_bodies räknar inte dubbelt när eager redan misslyckat', async () => {
+        const temp_dir = await fs.mkdtemp(path.join(os.tmpdir(), 'snapshot-cdp-'));
+        const state = create_network_capture_state();
+        state.resources.push({
+            requestId: 'js-1',
+            url: 'https://example.com/app.js',
+            method: 'GET',
+            resourceType: 'Script',
+            mimeType: 'application/javascript',
+            status: 200,
+            encodedSize: 12,
+            decodedSize: null,
+            failed: false,
+            failureReason: null,
+            redirectChain: [],
+            responseHeaders: {},
+            bodyCaptured: false,
+            bodySkipReason: 'network response body no longer available',
+            archiveRelativePath: null,
+            pendingBodyBytes: null,
+        });
+
+        const cdp = { send: jest.fn() };
+        const result = await persist_resource_bodies(cdp as never, state, temp_dir);
+
+        expect(cdp.send).not.toHaveBeenCalled();
+        expect(result.body_unavailable_count).toBe(1);
+        await fs.rm(temp_dir, { recursive: true, force: true });
     });
 
     test('push_body_unavailable_warning lägger till en varning', () => {
