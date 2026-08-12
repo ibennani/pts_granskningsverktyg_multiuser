@@ -46,7 +46,51 @@ export async function flush_before_view_switch({ flush_sync_to_server, getState,
     }
 }
 
-export function destroy_previous_view_component({
+/**
+ * Kärnparametrar för kravvy (utan sidomeny-inställningar i hash).
+ * @param {Record<string, string>|null|undefined} params
+ * @returns {{ sampleId?: string, requirementId?: string }}
+ */
+export function requirement_audit_core_route_params(params) {
+    const p = params && typeof params === 'object' ? params : {};
+    const out = {};
+    if (p.sampleId !== undefined && p.sampleId !== null && p.sampleId !== '') {
+        out.sampleId = String(p.sampleId);
+    }
+    if (p.requirementId !== undefined && p.requirementId !== null && p.requirementId !== '') {
+        out.requirementId = String(p.requirementId);
+    }
+    return out;
+}
+
+/**
+ * Vybyte inom kravgranskning när endast granskningsdel eller krav ändras.
+ */
+export function is_requirement_audit_core_param_change({
+    prev_view,
+    view_name,
+    prev_params,
+    params,
+    current_view_component_instance,
+    requirement_audit_component
+}) {
+    if (view_name !== 'requirement_audit' || prev_view !== 'requirement_audit') return false;
+    if (!current_view_component_instance || current_view_component_instance !== requirement_audit_component) {
+        return false;
+    }
+    if (typeof current_view_component_instance.render !== 'function') return false;
+
+    const prev_core = requirement_audit_core_route_params(prev_params);
+    const next_core = requirement_audit_core_route_params(params);
+    if (!next_core.sampleId || !next_core.requirementId) return false;
+
+    return (
+        prev_core.sampleId !== next_core.sampleId ||
+        prev_core.requirementId !== next_core.requirementId
+    );
+}
+
+export async function destroy_previous_view_component({
     current_view_component_instance,
     notificationComponent,
     requirementListComponent,
@@ -60,7 +104,7 @@ export function destroy_previous_view_component({
     notificationComponent?.clear_global_message?.();
     if (current_view_component_instance === requirementListComponent && view_name_to_render === 'rulefile_requirements') {
         try {
-            current_view_component_instance.destroy();
+            await current_view_component_instance.destroy();
         } catch (err) {
             consoleManager.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
             if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
@@ -75,7 +119,10 @@ export function destroy_previous_view_component({
     }
 
     try {
-        current_view_component_instance.destroy();
+        const destroy_result = current_view_component_instance.destroy();
+        if (destroy_result && typeof destroy_result.then === 'function') {
+            await destroy_result;
+        }
     } catch (err) {
         consoleManager.error('[Main.js] Error destroying component:', err);
         if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {

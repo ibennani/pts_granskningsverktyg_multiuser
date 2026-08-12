@@ -14,7 +14,8 @@ import {
 import { dependencyManager } from '../utils/dependency_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { ensure_main_view_content_host, clear_main_view_content_except_global_notifications } from './app_dom.js';
-import { get_component_class, rulefileSectionsViewComponent, requirementListComponent } from './view_components_index.js';
+import { get_component_class, rulefileSectionsViewComponent, requirementListComponent, requirementAuditComponent } from './view_components_index.js';
+import { strip_requirement_audit_ui_keys } from './requirement_audit_url_ui.js';
 import { resolve_view_request } from '../view/resolve_view_request.js';
 import { resolve_skip_target, resolve_view_dom_host } from '../view/view_dom_host.js';
 import {
@@ -22,6 +23,7 @@ import {
     destroy_previous_view_component,
     flush_before_view_switch,
     init_and_render_view_component,
+    is_requirement_audit_core_param_change,
     is_same_view_quick_render,
     render_quick_view
 } from '../view/view_lifecycle.js';
@@ -69,6 +71,10 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     const resolved = resolve_view_request({ view_name_to_render, params_to_render, deps });
     let view_name_mut = resolved.view_name;
     let params_mut = resolved.params;
+
+    if (view_name_mut === 'requirement_audit') {
+        params_mut = strip_requirement_audit_ui_keys(params_mut);
+    }
 
     nav_debug('render_view startar', { view_name_to_render: view_name_mut, params_to_render: params_mut });
     const t = get_t_fallback();
@@ -153,9 +159,38 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         return;
     }
 
+    const is_requirement_audit_param_nav = is_requirement_audit_core_param_change({
+        prev_view,
+        view_name: view_name_mut,
+        prev_params,
+        params: params_mut,
+        current_view_component_instance,
+        requirement_audit_component: requirementAuditComponent
+    });
+
+    if (is_requirement_audit_param_nav) {
+        await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
+        current_view_component_instance.deps.params = params_mut;
+        current_view_component_instance.params = params_mut;
+        const renderPromise = current_view_component_instance.render();
+        if (renderPromise && typeof renderPromise.then === 'function') {
+            await renderPromise;
+        }
+        if (render_ctx.current_view_name_rendered === view_name_mut) {
+            updatePageTitle(view_name_mut, params_mut);
+        }
+        const skip_target_ra = resolve_skip_target({ view_root }) || view_root;
+        ensure_skip_link_target(skip_target_ra);
+        if (DraftManager?.restoreIntoDom) DraftManager.restoreIntoDom(skip_target_ra);
+        update_restore_position(view_name_mut, params_mut, null);
+        updateBackupRestorePosition(get_restore_position_via_hook());
+        apply_post_render_focus_instruction({ view_name: view_name_mut, view_root: skip_target_ra });
+        return;
+    }
+
     await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
 
-    destroy_previous_view_component({
+    await destroy_previous_view_component({
         current_view_component_instance,
         notificationComponent,
         requirementListComponent,

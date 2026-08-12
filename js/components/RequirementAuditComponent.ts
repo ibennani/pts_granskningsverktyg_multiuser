@@ -104,9 +104,12 @@ export class RequirementAuditComponent {
         this._plate_text_autosave_timer = null;
         /** Osparade observationstexter per kriterium (överlever load_and_prepare och statusväxling). */
         this._pc_observation_drafts = new Map();
+        /** Skyddar singleton mot att async destroy nollar instans efter ny init. */
+        this._lifecycle_generation = 0;
     }
 
     async init({ root, deps }) {
+        this._lifecycle_generation += 1;
         this.root = root;
         this.deps = deps;
         this.router = deps.router;
@@ -2024,7 +2027,11 @@ export class RequirementAuditComponent {
     }
 
     async destroy() {
+        const destroy_generation = this._lifecycle_generation;
         await this.flush_before_leave_async();
+        if (this._lifecycle_generation !== destroy_generation) {
+            return;
+        }
         this._clear_pc_observation_drafts();
         unregister_unload_persist_hook('requirement_audit_plate');
         this._handle_unload_persist = null;

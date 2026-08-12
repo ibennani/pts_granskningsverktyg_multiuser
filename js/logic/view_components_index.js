@@ -127,5 +127,6 @@ export function get_component_class(view_name) {
 
 export {
     rulefileSectionsViewComponent,
-    requirementListComponent
+    requirementListComponent,
+    requirementAuditComponent
 };
