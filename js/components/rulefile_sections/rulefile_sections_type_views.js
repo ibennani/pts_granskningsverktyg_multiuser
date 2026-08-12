@@ -282,7 +282,7 @@ function append_value_bullet_list(Helpers, section, values) {
     section.appendChild(list);
 }
 
-function append_appendix2_view_section(Helpers, t, section, heading_key, intro_key, values, trailing_note_key) {
+function append_appendix2_view_section(Helpers, t, section, heading_key, intro_key, values, trailing_note) {
     section.appendChild(
         Helpers.create_element('h2', {
             text_content: t(heading_key),
@@ -295,11 +295,11 @@ function append_appendix2_view_section(Helpers, t, section, heading_key, intro_k
         })
     );
     append_value_bullet_list(Helpers, section, values);
-    if (trailing_note_key) {
+    if (trailing_note?.key && trailing_note.count > 0) {
         section.appendChild(
             Helpers.create_element('p', {
                 class_name: 'view-intro-text rulefile-appendix2-section-intro rulefile-appendix2-taxonomy-note',
-                text_content: t(trailing_note_key),
+                text_content: t(trailing_note.key, { count: trailing_note.count }),
             })
         );
     }
@@ -351,7 +351,10 @@ export function render_rulefile_appendix2_template_section(ctx, ruleFileContent,
         'rulefile_appendix2_deficiencies_heading',
         'rulefile_appendix2_deficiencies_view_intro',
         deficiency_column_labels,
-        'rulefile_appendix2_taxonomy_columns_note'
+        {
+            key: 'rulefile_appendix2_taxonomy_columns_note',
+            count: taxonomy_column_labels.length,
+        }
     );
 
     return section;

@@ -27,7 +27,12 @@ function make_deps(overrides: Record<string, unknown> = {}) {
         Helpers: {
             create_element: (tag: string, opts: Record<string, unknown> = {}) => {
                 const el = document.createElement(tag);
-                if (opts.class_name) el.className = String(opts.class_name);
+                if (opts.class_name) {
+                    el.className = Array.isArray(opts.class_name)
+                        ? opts.class_name.join(' ')
+                        : String(opts.class_name);
+                }
+                if (opts.html_content) el.innerHTML = String(opts.html_content);
                 if (opts.text_content) el.textContent = String(opts.text_content);
                 if (opts.attributes && typeof opts.attributes === 'object') {
                     for (const [key, value] of Object.entries(opts.attributes as Record<string, string>)) {
@@ -70,6 +75,7 @@ describe('audit_snapshots_table_columns', () => {
 
         expect(cell.tagName).toBe('A');
         expect(cell.textContent).toBe('Startsida');
+        expect(cell.getAttribute('aria-label')).toBeNull();
         expect(cell.getAttribute('href')).toContain('editSampleId=s1');
 
         cell.click();
@@ -178,5 +184,35 @@ describe('audit_snapshots_table_columns', () => {
         const actions_cell = actions_col?.getContent(row_with_pending) as HTMLElement;
         expect(actions_cell.textContent).not.toContain('audit_snapshots_download_one');
         expect(actions_cell.querySelector('button.button-danger')).toBeNull();
+    });
+
+    test('Radera-knappen har aria-label som börjar med samma ord som knapptexten', () => {
+        const t = (key: string, opts?: Record<string, unknown>) => {
+            if (key === 'delete') return 'Radera';
+            if (key === 'audit_snapshots_delete_one_for_sample') {
+                return `Radera sidrapporter för ${String(opts?.sample ?? '')}`;
+            }
+            if (key === 'audit_snapshots_download_one') return 'Ladda ner sidrapport';
+            if (key === 'audit_snapshots_download_one_for_sample') {
+                return `Ladda ner sidrapport för ${String(opts?.sample ?? '')}`;
+            }
+            if (key === 'audit_sidrapport_retake_button') return 'Ta ny sidrapport';
+            if (key === 'audit_sidrapport_retake_for_sample') {
+                return `Ta ny sidrapport för ${String(opts?.sample ?? '')}`;
+            }
+            return key;
+        };
+        const deps = make_deps({ t });
+        const columns = build_audit_snapshots_table_columns(
+            deps as never,
+            { on_download: async () => {}, on_delete: () => {}, on_retake: () => {} },
+            () => '—'
+        );
+        const actions_col = columns.find((col) => col.columnKey === 'actions');
+        const cell = actions_col?.getContent(base_row) as HTMLElement;
+        const delete_btn = cell.querySelector('button.button-danger');
+
+        expect(delete_btn?.textContent).toContain('Radera');
+        expect(delete_btn?.getAttribute('aria-label')).toBe('Radera sidrapporter för Startsida');
     });
 });

@@ -6,16 +6,13 @@ import { GenericTableComponent } from './GenericTableComponent.js';
 import {
     list_audit_snapshots,
     get_audit_snapshot_download_url,
-    get_audit_snapshots_download_all_url,
     delete_audit_snapshots_for_sample,
     type AuditSnapshotListItem,
 } from '../api/audit_snapshot_api.js';
-import { create_file_download_button } from '../utils/file_download_button_ui.js';
 import {
     get_download_filename_datetime,
     sanitize_filename_segment,
     trigger_browser_blob_download,
-    FILE_DOWNLOAD_MAX_BYTES,
 } from '../utils/download_filename_utils.js';
 import { get_auth_token } from '../api/client.js';
 import { subscribe_audit_snapshots } from '../logic/list_push_service.js';
@@ -31,6 +28,7 @@ import {
     start_sidrapport_retake_for_sample,
 } from '../logic/audit_sidrapport_retake.js';
 import { is_sidrapport_retake_busy } from '../utils/sidrapport_retake_button_ui.js';
+import { render_audit_snapshots_toolbar } from '../utils/audit_actions_snapshots_toolbar.js';
 
 export type AuditActionsSnapshotsDeps = {
     Helpers: {
@@ -117,9 +115,13 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     }) as HTMLParagraphElement;
 
     const content_host = helpers.create_element('div', { class_name: 'audit-actions-snapshots__content' });
+    const toolbar_host = helpers.create_element('div', {
+        class_name: 'audit-actions-snapshots__toolbar-host',
+        attributes: { hidden: 'hidden' },
+    });
     const table_host = helpers.create_element('div', { class_name: 'audit-actions-snapshots__table-host' });
     content_host.appendChild(table_host);
-    root.append(live_region, content_host);
+    root.append(live_region, toolbar_host, content_host);
 
     const table_component = new GenericTableComponent();
     void table_component.init({ root: table_host, deps: { Helpers: helpers } });
@@ -129,6 +131,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     let last_items_json = '';
     let last_items: AuditSnapshotListItem[] = [];
     const retake_in_flight_sample_ids = new Set<string>();
+    let retake_all_in_flight = false;
     const sort_state = { columnIndex: 0, direction: 'asc' as 'asc' | 'desc' };
 
     const format_datetime = (iso: string | null | undefined) => {
@@ -231,12 +234,29 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
 
     const render_items = (items: AuditSnapshotListItem[]) => {
         last_items = items;
-        const ready_count = items.filter((item) => item.currentReady).length;
         const table_rows = map_snapshot_items_to_table_rows(items, deps.getState()?.samples);
 
-        for (const node of content_host.querySelectorAll(
-            '.audit-actions-snapshots__download-all-wrap, .audit-actions-snapshots__processing-note'
-        )) {
+        render_audit_snapshots_toolbar(
+            toolbar_host,
+            {
+                Helpers: helpers,
+                t,
+                getState: deps.getState,
+                fetch_authenticated_blob,
+                retake_in_flight_sample_ids,
+                get_retake_all_in_flight: () => retake_all_in_flight,
+                set_retake_all_in_flight: (value) => {
+                    retake_all_in_flight = value;
+                },
+                on_retake_all_complete: (message_key, opts) => {
+                    live_region.textContent = t(message_key, opts);
+                },
+                on_refresh: refresh,
+            },
+            items
+        );
+
+        for (const node of content_host.querySelectorAll('.audit-actions-snapshots__processing-note')) {
             node.remove();
         }
 
@@ -257,27 +277,6 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
             t,
             getRowId: (row: SnapshotTableRow) => row.rowId,
         });
-
-        if (ready_count > 0) {
-            const download_all_parts = create_file_download_button({
-                Helpers: helpers as never,
-                t,
-                label: t('audit_snapshots_download_all'),
-                extra_class_names: ['audit-actions-snapshots__download-all'],
-                on_download: async () => {
-                    const audit_id = String(deps.getState()?.auditId);
-                    const url = get_audit_snapshots_download_all_url(audit_id);
-                    const blob = await fetch_authenticated_blob(url);
-                    if (blob.size > FILE_DOWNLOAD_MAX_BYTES) {
-                        throw new Error(t('audit_snapshots_download_all_too_large'));
-                    }
-                    const filename = `snapshots_all_${get_download_filename_datetime(null)}.zip`;
-                    trigger_browser_blob_download(blob, filename);
-                },
-            });
-            download_all_parts.wrapper.classList.add('audit-actions-snapshots__download-all-wrap');
-            content_host.appendChild(download_all_parts.wrapper);
-        }
 
         if (
             items.some(

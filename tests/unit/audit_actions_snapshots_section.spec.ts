@@ -53,7 +53,11 @@ function make_deps() {
         Helpers: {
             create_element: (tag: string, opts: Record<string, unknown> = {}) => {
                 const el = document.createElement(tag);
-                if (opts.class_name) el.className = String(opts.class_name);
+                if (opts.class_name) {
+                    el.className = Array.isArray(opts.class_name)
+                        ? opts.class_name.join(' ')
+                        : String(opts.class_name);
+                }
                 if (opts.text_content) el.textContent = String(opts.text_content);
                 if (opts.attributes && typeof opts.attributes === 'object') {
                     for (const [key, value] of Object.entries(opts.attributes as Record<string, string>)) {
@@ -119,6 +123,62 @@ describe('audit_actions_snapshots_section', () => {
         const sample_link = section.root.querySelector('a.generic-table-audit-link');
         expect(sample_link).toBeTruthy();
         expect(sample_link?.getAttribute('href')).toContain('editSampleId=s1');
+        expect(section.root.querySelector('.audit-actions-snapshots__toolbar')).toBeTruthy();
+        expect(section.root.querySelector('.audit-actions-snapshots__download-all-wrap')).toBeTruthy();
+        expect(section.root.textContent).toContain('audit_sidrapport_retake_all_button');
+        section.destroy();
+        section.root.remove();
+    });
+
+    test('visar Skapa sidrapporter när inga färdiga sidrapporter finns', async () => {
+        list_mock.mockResolvedValue({
+            items: [
+                {
+                    sampleId: 's1',
+                    sampleDescription: 'Startsida',
+                    requestedUrl: 'https://example.com',
+                    pageTitle: null,
+                    currentReady: null,
+                    pendingAttempt: null,
+                },
+            ],
+        });
+        const section = create_audit_actions_snapshots_section(make_deps() as never);
+        document.body.appendChild(section.root);
+        await section.refresh();
+        expect(section.root.textContent).toContain('audit_sidrapport_create_all_button');
+        expect(section.root.textContent).not.toContain('audit_sidrapport_retake_all_button');
+        const bulk_button = section.root.querySelector('.audit-actions-snapshots__retake-all');
+        expect(bulk_button?.classList.contains('button-small')).toBe(true);
+        section.destroy();
+        section.root.remove();
+    });
+
+    test('visar Skapa sidrapporter vid misslyckad sidrapport utan färdig', async () => {
+        list_mock.mockResolvedValue({
+            items: [
+                {
+                    sampleId: 's1',
+                    sampleDescription: 'Startsida',
+                    requestedUrl: 'https://example.com',
+                    pageTitle: 'Exempel',
+                    currentReady: null,
+                    pendingAttempt: {
+                        snapshotId: 'snap-fail',
+                        status: 'failed',
+                        capturedAt: null,
+                        warningCount: 0,
+                        sizeBytes: null,
+                    },
+                },
+            ],
+        });
+        const section = create_audit_actions_snapshots_section(make_deps() as never);
+        document.body.appendChild(section.root);
+        await section.refresh();
+        expect(section.root.textContent).not.toContain('audit_snapshots_download_all');
+        expect(section.root.querySelector('.audit-actions-snapshots__download-all-wrap')).toBeFalsy();
+        expect(section.root.textContent).toContain('audit_sidrapport_create_all_button');
         section.destroy();
         section.root.remove();
     });

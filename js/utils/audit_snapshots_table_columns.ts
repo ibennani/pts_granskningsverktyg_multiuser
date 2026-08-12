@@ -58,7 +58,6 @@ function render_sample_name_link(
         text_content: sample_label,
         attributes: {
             href: build_sample_edit_hash(row.sampleId),
-            'aria-label': `${t('edit_sample')}: ${sample_label}`,
         },
     });
     link.addEventListener('click', (event) => {

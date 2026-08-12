@@ -226,12 +226,14 @@ function append_sheet_label_panel(
         SHEET_LABEL_KEYS[sheet_key],
         entries
     );
-    if (sheet_key === 'deficiencies') {
+    if (sheet_key === 'deficiencies' && taxonomy_column_labels.length > 0) {
         append_taxonomy_column_readonly_list(helpers, panel, taxonomy_column_labels);
         panel.appendChild(
             helpers.create_element('p', {
                 class_name: 'view-intro-text rulefile-appendix2-taxonomy-note',
-                text_content: t('rulefile_appendix2_taxonomy_columns_note'),
+                text_content: t('rulefile_appendix2_taxonomy_columns_note', {
+                    count: taxonomy_column_labels.length,
+                }),
             })
         );
     }

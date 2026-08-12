@@ -17,7 +17,31 @@
 }
 
 .audit-actions-snapshots__table-host {
-    margin-block: 1rem;
+    margin-block: 0.5rem 1rem;
+}
+
+.audit-actions-snapshots__toolbar-host {
+    margin-block: 1rem 0.5rem;
+}
+
+.audit-actions-snapshots__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.audit-actions-snapshots__toolbar-start,
+.audit-actions-snapshots__toolbar-end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.audit-actions-snapshots__toolbar-end {
+    margin-inline-start: auto;
 }
 
 .audit-actions-snapshots__warning-list {
@@ -87,5 +111,5 @@
 }
 
 .audit-actions-snapshots__download-all {
-    margin-block-start: 1rem;
+    margin-block-start: 0;
 }
