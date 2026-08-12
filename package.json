@@ -31,6 +31,7 @@
     "copy:v2-users-to-test-server": "node scripts/copy-v2-users-to-test-server.js",
     "setup:test-server": "node scripts/seed-test-server-from-local.js --confirm && cross-env DEPLOY_TEST_SERVER_COPY_ENV=1 node scripts/deploy-test-server.js",
     "diagnose:v2": "node scripts/diagnose-v2-remote.js",
+    "fix:pm2-systemd": "node scripts/fix-pm2-systemd-remote.js",
     "setup:boot": "node scripts/remote-setup-v2-boot.js",
     "setup:cron": "node scripts/deploy-setup-cron.js",
     "setup:drift": "node scripts/setup-drift-remote.js",

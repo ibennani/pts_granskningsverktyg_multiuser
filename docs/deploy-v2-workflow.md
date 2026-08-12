@@ -129,7 +129,7 @@ Om du bara ändrat `server/`:
 |---------|----------|
 | Sidan visar bara byggdatum | Nginx serverar inte assets – kolla `chmod -R o+rX` på deploy-root och nginx-config |
 | "Servern svarar inte" | Backend eller API-proxy – kolla Docker, Postgres, PM2, SELinux |
-| 502 Bad Gateway | Nginx kan inte nå backend – kolla `setsebool httpd_can_network_connect 1` |
+| 502 Bad Gateway efter serveromstart | PM2 systemd får Permission denied på `/usr/lib/node_modules/pm2` (0750). Kör `npm run fix:pm2-systemd` eller `npm run setup:boot` |
 | Permission denied | `chmod -R o+rX /var/www/granskningsverktyget-v2` (deploy-root) |
 | **Radering fungerar inte** | Nginx: `location /v2/api/` måste komma FÖRE `location /v2/` i config. Annars kan try_files fånga DELETE/PUT och ge 405. Uppdatera enligt `scripts/ux-granskning-with-v2.conf` |
 | **Regelfil kan inte raderas** | Regelfiler som används av granskningar blockeras (409). Radera granskningarna först, sedan regelfilen |

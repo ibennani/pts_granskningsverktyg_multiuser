@@ -10,15 +10,18 @@
 import { join } from 'path';
 import {
     exec,
+    exec_sudo,
     disconnect,
     remotePath,
     projectRoot,
     putFile,
     username,
-    getSshClient
+    getSshClient,
+    resolve_sudo_password
 } from './deploy-utils.js';
 
-const sudoPassword = process.env.DEPLOY_SUDO_PASSWORD || '';
+const sudoPassword = resolve_sudo_password();
+const PM2_GLOBAL_DIR = '/usr/lib/node_modules/pm2';
 
 async function exec_capture(cmd, opts = {}) {
     const useCwd = opts.cwd !== false;
@@ -38,20 +41,36 @@ async function exec_capture(cmd, opts = {}) {
 
 async function run_sudo(shell_cmd) {
     if (!sudoPassword) {
-        throw new Error('DEPLOY_SUDO_PASSWORD saknas i .env');
+        throw new Error('DEPLOY_SUDO_PASSWORD eller DEPLOY_SSH_PASSWORD saknas i .env');
     }
-    const b64 = Buffer.from(sudoPassword, 'utf8').toString('base64');
-    await exec(
-        `echo ${JSON.stringify(b64)} | base64 -d | sudo -S -k bash -c ${JSON.stringify(shell_cmd)}`,
-        { cwd: false }
+    await exec_sudo(shell_cmd, { cwd: false });
+}
+
+/**
+ * RHEL/Fedora: global pm2 ligger ofta i 0750-katalog – deploy-användaren får EXEC 203 vid boot.
+ * Körs utan systemctl restart så pågående backend inte störs.
+ */
+async function patch_pm2_systemd_for_boot(boot_user) {
+    if (!sudoPassword) {
+        console.warn('[setup:boot] Hoppar över PM2 boot-patch (sudo-lösenord saknas).');
+        return;
+    }
+    const pm2_service = `pm2-${boot_user}.service`;
+    const unit_path = `/etc/systemd/system/${pm2_service}`;
+    console.info('[setup:boot] Säkerställer att global pm2 går att köra vid boot...');
+    await run_sudo(`test -d ${PM2_GLOBAL_DIR} && chmod -R a+rx ${PM2_GLOBAL_DIR} || true`);
+    await run_sudo(
+        `test -f ${unit_path} && (grep -q '^TimeoutStartSec=' ${unit_path} || sed -i '/^\\[Service\\]/a TimeoutStartSec=180' ${unit_path}) || true`
     );
+    await run_sudo('systemctl daemon-reload');
 }
 
 async function setup_pm2_systemd(boot_user) {
     const pm2_service = `pm2-${boot_user}.service`;
     const enabled = await exec_capture(`systemctl is-enabled ${pm2_service} 2>/dev/null || true`, { cwd: false });
     if (enabled.stdout.trim() === 'enabled') {
-        console.info(`[setup:boot] ${pm2_service} är redan enabled.`);
+        console.info(`[setup:boot] ${pm2_service} är redan enabled – patchar boot-rättigheter.`);
+        await patch_pm2_systemd_for_boot(boot_user);
         return;
     }
 
@@ -75,6 +94,7 @@ async function setup_pm2_systemd(boot_user) {
     const root_cmd = `env PATH=${user_path}:/usr/bin ${pm2_bin} startup systemd -u ${boot_user} --hp ${boot_home}`;
     console.info('[setup:boot] Registrerar PM2 i systemd (sudo)...');
     await run_sudo(root_cmd);
+    await patch_pm2_systemd_for_boot(boot_user);
     await exec('npx pm2 save');
 }
 
