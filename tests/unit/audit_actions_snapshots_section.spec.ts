@@ -222,4 +222,41 @@ describe('audit_actions_snapshots_section', () => {
         section.destroy();
         section.root.remove();
     });
+
+    test('visar informationsruta ovanför tabellen när sidrapport skapas i bakgrunden', async () => {
+        list_mock.mockResolvedValue({
+            items: [
+                {
+                    sampleId: 's1',
+                    sampleDescription: 'Startsida',
+                    requestedUrl: 'https://example.com',
+                    pageTitle: null,
+                    currentReady: null,
+                    pendingAttempt: {
+                        snapshotId: 'snap-pending',
+                        status: 'capturing',
+                        capturedAt: null,
+                        warningCount: 0,
+                        sizeBytes: null,
+                    },
+                },
+            ],
+        });
+        const section = create_audit_actions_snapshots_section(make_deps() as never);
+        document.body.appendChild(section.root);
+        await section.refresh();
+
+        const info_el = section.root.querySelector('.global-message-content.message-info.global-message-inline');
+        const table_host = section.root.querySelector('.audit-actions-snapshots__table-host');
+        expect(info_el).toBeTruthy();
+        expect(table_host).toBeTruthy();
+        expect(info_el?.textContent).toContain('audit_snapshots_download_all_partial_note');
+        expect(info_el?.getAttribute('role')).toBe('status');
+        expect(
+            info_el?.compareDocumentPosition(table_host!) & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+
+        section.destroy();
+        section.root.remove();
+    });
 });

@@ -2,6 +2,8 @@
  * @fileoverview Innehåll för Åtgärder → Snapshots.
  */
 import './audit_actions_snapshots.css';
+import '../components/notification_component.css';
+import { mount_inline_info_message_dom } from '../notifications/notification_renderer.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import {
     list_audit_snapshots,
@@ -108,6 +110,10 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
     const lang = deps.Translation.get_current_language_code?.() || 'sv-SE';
 
     const root = helpers.create_element('div', { class_name: 'audit-actions-snapshots' });
+
+    root.appendChild(
+        helpers.create_element('h1', { text_content: t('audit_actions_snapshots_title') })
+    );
     root.appendChild(render_snapshots_intro(helpers, t));
 
     const live_region = helpers.create_element('p', {
@@ -120,9 +126,10 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
         class_name: 'audit-actions-snapshots__toolbar-host',
         attributes: { hidden: 'hidden' },
     });
+    const info_host = helpers.create_element('div', { class_name: 'audit-actions-snapshots__info-host' });
     const table_host = helpers.create_element('div', { class_name: 'audit-actions-snapshots__table-host' });
     content_host.appendChild(table_host);
-    root.append(live_region, toolbar_host, content_host);
+    root.append(live_region, toolbar_host, info_host, content_host);
 
     const table_component = new GenericTableComponent();
     void table_component.init({ root: table_host, deps: { Helpers: helpers } });
@@ -280,9 +287,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
             items
         );
 
-        for (const node of content_host.querySelectorAll('.audit-actions-snapshots__processing-note')) {
-            node.remove();
-        }
+        info_host.replaceChildren();
 
         table_component.render({
             root: table_host,
@@ -309,12 +314,9 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
                     ['queued', 'capturing', 'packaging'].includes(item.pendingAttempt.status)
             )
         ) {
-            content_host.appendChild(
-                helpers.create_element('p', {
-                    class_name: 'audit-actions-snapshots__processing-note',
-                    text_content: t('audit_snapshots_download_all_partial_note'),
-                })
-            );
+            const info_el = helpers.create_element('div');
+            mount_inline_info_message_dom(info_el, t('audit_snapshots_download_all_partial_note'));
+            info_host.appendChild(info_el);
         }
     };
 

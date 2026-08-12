@@ -85,3 +85,18 @@ export function apply_visible_message_presentation(element, type, is_critical) {
     element.classList.add(`message-${type}`);
     element.removeAttribute('hidden');
 }
+
+/**
+ * Bygger en inline informationsruta utan stängknapp (samma typklasser som global info-notis).
+ * @param {HTMLElement} element
+ * @param {string} message
+ */
+export function mount_inline_info_message_dom(element, message) {
+    element.innerHTML = '';
+    const text_wrap = document.createElement('span');
+    text_wrap.className = 'global-message-text';
+    text_wrap.textContent = message;
+    element.appendChild(text_wrap);
+    apply_visible_message_presentation(element, 'info', false);
+    element.classList.add('global-message-inline');
+}

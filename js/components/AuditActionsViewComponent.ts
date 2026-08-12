@@ -30,7 +30,6 @@ import {
     normalize_audit_actions_section,
     render_audit_actions_hub,
     render_audit_actions_section_header,
-    render_audit_actions_snapshots_header,
 } from './audit_actions_render.js';
 import { render_audit_actions_information_section } from './audit_actions_information_render.js';
 import {
@@ -682,7 +681,6 @@ export class AuditActionsViewComponent {
             this.root.appendChild(plate);
             return;
         } else if (section === 'snapshots') {
-            render_audit_actions_snapshots_header(render_deps, plate);
             if (this._snapshots_section) {
                 this._snapshots_section.destroy();
                 this._snapshots_section = null;

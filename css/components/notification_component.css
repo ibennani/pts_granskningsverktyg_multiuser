@@ -15,6 +15,27 @@
     display: none;
 }
 
+/* Inline informationsruta i vy (samma utseende som #global-message-area.message-info) */
+.global-message-content.global-message-inline {
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    width: 100%;
+}
+
+.global-message-content.global-message-inline.message-info {
+    background-color: var(--info-color-light);
+    border-color: var(--info-color);
+    color: #000000;
+}
+
+[data-theme="dark"] .global-message-content.global-message-inline.message-info {
+    background-color: #0c5460;
+    border-color: var(--info-color);
+    color: #ffffff;
+}
+
 .global-message-content { 
     /* Används för att sätta typklasser */
 }
