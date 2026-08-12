@@ -5,6 +5,7 @@ import {
     list_audit_snapshots_for_audit,
     type AuditSnapshotRow,
 } from '../repositories/audit_snapshot_repository.js';
+import { resolve_snapshot_list_requested_url } from './audit_snapshot_capture_url.js';
 import type { AuditSnapshotListItem } from '../schemas/audit_snapshot.js';
 
 type SampleLike = {
@@ -106,7 +107,11 @@ export async function build_audit_snapshot_list(
         items.push({
             sampleId: sample_id,
             sampleDescription: sample?.description ?? undefined,
-            requestedUrl: pending?.requested_url ?? current_ready?.requested_url ?? sample?.url ?? '',
+            requestedUrl: resolve_snapshot_list_requested_url(
+                sample,
+                pending?.requested_url,
+                current_ready?.requested_url
+            ),
             pageTitle: pending?.page_title ?? current_ready?.page_title ?? null,
             currentReady: current_ready
                 ? {

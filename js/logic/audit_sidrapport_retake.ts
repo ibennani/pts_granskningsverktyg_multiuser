@@ -34,13 +34,8 @@ export function resolve_retake_sample_for_row(
     };
 }
 
-export function resolve_sidrapport_capture_url(
-    sample: SampleForSidrapport | undefined,
-    fallback_url: string
-): string {
-    const from_sample = (sample?.url ?? '').trim();
-    if (from_sample) return from_sample;
-    return (fallback_url ?? '').trim();
+export function resolve_sidrapport_capture_url(sample: SampleForSidrapport | undefined): string {
+    return (sample?.url ?? '').trim();
 }
 
 export function is_sidrapport_retake_in_progress(row: {
@@ -52,10 +47,9 @@ export function is_sidrapport_retake_in_progress(row: {
 
 export async function start_sidrapport_retake_for_sample(
     audit_id: string,
-    sample: SampleForSidrapport,
-    requested_url: string
+    sample: SampleForSidrapport
 ): Promise<void> {
-    const url = resolve_sidrapport_capture_url(sample, requested_url);
+    const url = resolve_sidrapport_capture_url(sample);
     if (!url) {
         throw new Error('missing_url');
     }

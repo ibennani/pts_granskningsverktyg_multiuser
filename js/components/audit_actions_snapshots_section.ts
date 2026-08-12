@@ -209,7 +209,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
         render_items(last_items);
 
         try {
-            await start_sidrapport_retake_for_sample(String(audit_id), sample, row.requestedUrl);
+            await start_sidrapport_retake_for_sample(String(audit_id), sample);
             live_region.textContent = t('audit_sidrapport_retake_started', { sample: sample_label });
             await refresh();
         } catch {

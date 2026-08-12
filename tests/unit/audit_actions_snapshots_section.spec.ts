@@ -22,7 +22,7 @@ const retake_path = path.join(spec_dir, '../../js/logic/audit_sidrapport_retake.
 jest.unstable_mockModule(retake_path, () => ({
     start_sidrapport_retake_for_sample: retake_mock,
     is_sidrapport_retake_in_progress: jest.fn(() => false),
-    resolve_sidrapport_capture_url: jest.fn((sample, url) => sample?.url || url),
+    resolve_sidrapport_capture_url: jest.fn((sample) => (sample?.url ?? '').trim()),
     resolve_retake_sample_for_row: (
         row: { sampleId: string; requestedUrl?: string },
         samples?: Array<{ id: string; url?: string }>

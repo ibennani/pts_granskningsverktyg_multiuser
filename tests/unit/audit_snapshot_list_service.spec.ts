@@ -119,4 +119,34 @@ describe('audit_snapshot_list_service', () => {
 
         expect(items).toHaveLength(0);
     });
+
+    test('build_audit_snapshot_list använder granskningsdelens URL före snapshot-URL', async () => {
+        const ready_at = new Date('2026-08-10T10:00:00.000Z');
+        list_mock.mockResolvedValue([
+            {
+                id: 'snap-ready',
+                audit_id: 'audit-1',
+                sample_id: 'sample-search',
+                requested_url: 'https://www.apohem.se/produkt',
+                status: 'ready',
+                page_title: 'Produkt',
+                warning_count: 0,
+                size_bytes: 4096,
+                error: null,
+                created_at: ready_at,
+                completed_at: ready_at,
+            },
+        ]);
+
+        const items = await build_audit_snapshot_list('audit-1', [
+            {
+                id: 'sample-search',
+                description: 'Sök efter tandkräm',
+                url: 'https://www.apohem.se/sok?q=tandkr%C3%A4m',
+            },
+        ]);
+
+        expect(items).toHaveLength(1);
+        expect(items[0].requestedUrl).toBe('https://www.apohem.se/sok?q=tandkr%C3%A4m');
+    });
 });

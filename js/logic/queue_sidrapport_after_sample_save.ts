@@ -91,11 +91,7 @@ export async function queue_sidrapport_after_sample_save(
             attachedMediaFilenames: sample.attachedMediaFilenames,
         };
 
-        void start_sidrapport_retake_for_sample(
-            audit_id,
-            sample_for_capture,
-            String(sample.url ?? '')
-        ).catch(() => {
+        void start_sidrapport_retake_for_sample(audit_id, sample_for_capture).catch(() => {
             // Bakgrund — fel visas i Sidrapporter-vyn
         });
     } catch {

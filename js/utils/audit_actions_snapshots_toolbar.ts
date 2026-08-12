@@ -77,11 +77,7 @@ async function start_bulk_sidrapport_capture(
             deps.retake_in_flight_sample_ids.add(String(item.sampleId));
             started_sample_ids.push(String(item.sampleId));
             try {
-                await start_sidrapport_retake_for_sample(
-                    String(audit_id),
-                    sample,
-                    item.requestedUrl
-                );
+                await start_sidrapport_retake_for_sample(String(audit_id), sample);
                 started_count += 1;
             } catch {
                 deps.retake_in_flight_sample_ids.delete(String(item.sampleId));

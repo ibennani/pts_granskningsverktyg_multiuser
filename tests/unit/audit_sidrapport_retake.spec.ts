@@ -1,6 +1,7 @@
 import { describe, test, expect } from '@jest/globals';
 import {
     resolve_retake_sample_for_row,
+    resolve_sidrapport_capture_url,
     is_sidrapport_retake_in_progress,
 } from '../../js/logic/audit_sidrapport_retake.ts';
 
@@ -36,6 +37,17 @@ describe('audit_sidrapport_retake', () => {
         expect(
             resolve_retake_sample_for_row({ sampleId: 'x', requestedUrl: '' }, [])
         ).toBeNull();
+    });
+
+    test('resolve_sidrapport_capture_url använder bara granskningsdelens URL', () => {
+        expect(
+            resolve_sidrapport_capture_url({
+                id: 's1',
+                url: 'https://www.apohem.se/sok?q=tandkr%C3%A4m',
+            })
+        ).toBe('https://www.apohem.se/sok?q=tandkr%C3%A4m');
+        expect(resolve_sidrapport_capture_url({ id: 's1', url: '' })).toBe('');
+        expect(resolve_sidrapport_capture_url(undefined)).toBe('');
     });
 
     test('is_sidrapport_retake_in_progress ignorerar failed', () => {

@@ -7,7 +7,7 @@ import path from 'path';
 import { query } from '../db.js';
 import { parse_body } from '../utils/zod_boundary.js';
 import { AuditSnapshotCaptureBodySchema } from '../schemas/audit_snapshot.js';
-import { assert_public_http_url, SsrfUrlRejectedError } from '../utils/ssrf_url_guard.js';
+import { SsrfUrlRejectedError } from '../utils/ssrf_url_guard.js';
 import { single_route_param } from '../utils/route_params.js';
 import {
     start_snapshot_capture,
@@ -18,6 +18,11 @@ import {
     purge_audit_snapshots_for_sample,
 } from '../services/audit_snapshot_cleanup_service.js';
 import { build_audit_snapshot_list } from '../services/audit_snapshot_list_service.js';
+import {
+    resolve_snapshot_capture_url_for_audit,
+    SnapshotSampleMissingUrlError,
+    SnapshotSampleNotFoundError,
+} from '../services/audit_snapshot_capture_url.js';
 import {
     get_audit_snapshot_by_id,
 } from '../repositories/audit_snapshot_repository.js';
@@ -81,17 +86,33 @@ export function register_audit_snapshot_routes(router: Router): void {
             const body = parse_body(AuditSnapshotCaptureBodySchema, req.body, res);
             if (!body) return;
 
-            let safe_url: URL;
+            let capture_url: string;
             try {
-                safe_url = assert_public_http_url(body.url);
+                const resolved = await resolve_snapshot_capture_url_for_audit(
+                    audit_id,
+                    body.sampleId,
+                    body.url
+                );
+                capture_url = resolved.url;
+                if (resolved.client_url_ignored) {
+                    console.info(
+                        `[audit_snapshot] Använder granskningsdelens URL för sample ${body.sampleId} (ignorerar avvikande klient-URL).`
+                    );
+                }
             } catch (err) {
+                if (err instanceof SnapshotSampleNotFoundError) {
+                    return res.status(404).json({ error: err.message });
+                }
+                if (err instanceof SnapshotSampleMissingUrlError) {
+                    return res.status(422).json({ error: err.message });
+                }
                 const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
                 return res.status(422).json({ error: message });
             }
 
             const response = await start_snapshot_capture(audit_id, {
                 ...body,
-                url: safe_url.href,
+                url: capture_url,
             });
             return res.status(202).json(response);
         } catch (err) {

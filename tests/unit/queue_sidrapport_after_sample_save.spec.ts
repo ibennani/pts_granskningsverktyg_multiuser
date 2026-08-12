@@ -94,8 +94,7 @@ describe('queue_sidrapport_after_sample_save', () => {
         expect(list_mock).toHaveBeenCalledWith('audit-1');
         expect(retake_mock).toHaveBeenCalledWith(
             'audit-1',
-            expect.objectContaining({ id: 's1', url: 'https://example.com' }),
-            'https://example.com'
+            expect.objectContaining({ id: 's1', url: 'https://example.com' })
         );
     });
 
