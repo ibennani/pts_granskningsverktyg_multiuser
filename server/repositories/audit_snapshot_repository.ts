@@ -113,7 +113,7 @@ export async function mark_previous_ready_superseded(
     await query(
         `UPDATE audit_snapshots
          SET status = 'superseded', superseded_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-         WHERE audit_id = $1 AND sample_id = $2 AND status = 'ready' AND id <> $3`,
+         WHERE audit_id = $1 AND sample_id = $2 AND status IN ('ready', 'failed') AND id <> $3`,
         [audit_id, sample_id, except_capture_id]
     );
 }

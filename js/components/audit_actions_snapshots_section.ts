@@ -54,6 +54,7 @@ const SNAPSHOT_INTRO_ITEM_KEYS = [
     'audit_snapshots_intro_item_console',
     'audit_snapshots_intro_item_accessibility',
     'audit_snapshots_intro_item_metadata',
+    'audit_snapshots_intro_item_download_all',
 ] as const;
 
 function render_snapshots_intro(

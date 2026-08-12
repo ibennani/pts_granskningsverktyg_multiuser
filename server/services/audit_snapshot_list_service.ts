@@ -17,6 +17,28 @@ function is_processing_status(status: string): boolean {
     return status === 'queued' || status === 'capturing' || status === 'packaging';
 }
 
+function row_sort_timestamp(row: AuditSnapshotRow): number {
+    return (row.completed_at ?? row.created_at).getTime();
+}
+
+function resolve_relevant_failed_attempt(
+    sample_rows: AuditSnapshotRow[],
+    pending: AuditSnapshotRow | null,
+    current_ready: AuditSnapshotRow | null
+): AuditSnapshotRow | null {
+    const latest_failed =
+        sample_rows.find((r) => r.status === 'failed' && r.id !== pending?.id) ?? null;
+    if (!latest_failed) {
+        return null;
+    }
+    if (!current_ready) {
+        return latest_failed;
+    }
+    return row_sort_timestamp(latest_failed) > row_sort_timestamp(current_ready)
+        ? latest_failed
+        : null;
+}
+
 function sample_has_url(sample: SampleLike | undefined): boolean {
     return Boolean((sample?.url ?? '').trim());
 }
@@ -73,17 +95,13 @@ export async function build_audit_snapshot_list(
 
         const current_ready = sample_rows.find((r) => r.status === 'ready') ?? null;
         const pending = sample_rows.find((r) => is_processing_status(r.status)) ?? null;
-        const latest_failed =
-            sample_rows.find((r) => r.status === 'failed' && r.id !== pending?.id) ?? null;
+        const latest_failed = resolve_relevant_failed_attempt(
+            sample_rows,
+            pending,
+            current_ready
+        );
 
-        const pending_attempt =
-            pending ??
-            (latest_failed && current_ready
-                ? {
-                      ...latest_failed,
-                      status: latest_failed.status as 'failed',
-                  }
-                : latest_failed);
+        const pending_attempt = pending ?? latest_failed;
 
         items.push({
             sampleId: sample_id,

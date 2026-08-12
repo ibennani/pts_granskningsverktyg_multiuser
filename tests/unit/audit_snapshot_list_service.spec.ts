@@ -54,6 +54,47 @@ describe('audit_snapshot_list_service', () => {
         expect(items[0].sampleDescription).toBe('Startsida');
     });
 
+    test('build_audit_snapshot_list ignorerar gammalt misslyckat försök när färdig sidrapport finns', async () => {
+        const ready_at = new Date('2026-08-12T10:00:00.000Z');
+        const failed_at = new Date('2026-08-11T09:00:00.000Z');
+        list_mock.mockResolvedValue([
+            {
+                id: 'snap-ready',
+                audit_id: 'audit-1',
+                sample_id: 'sample-a',
+                requested_url: 'https://example.com',
+                status: 'ready',
+                page_title: 'Exempel',
+                warning_count: 0,
+                size_bytes: 4096,
+                error: null,
+                created_at: ready_at,
+                completed_at: ready_at,
+            },
+            {
+                id: 'snap-failed-old',
+                audit_id: 'audit-1',
+                sample_id: 'sample-a',
+                requested_url: 'https://example.com',
+                status: 'failed',
+                page_title: 'Exempel',
+                warning_count: 0,
+                size_bytes: null,
+                error: 'Navigation timeout of 30000 ms exceeded',
+                created_at: failed_at,
+                completed_at: failed_at,
+            },
+        ]);
+
+        const items = await build_audit_snapshot_list('audit-1', [
+            { id: 'sample-a', description: 'Startsida', url: 'https://example.com' },
+        ]);
+
+        expect(items).toHaveLength(1);
+        expect(items[0].currentReady?.snapshotId).toBe('snap-ready');
+        expect(items[0].pendingAttempt).toBeNull();
+    });
+
     test('build_audit_snapshot_list utelämnar granskningsdel utan URL', async () => {
         const ready_at = new Date('2026-08-10T10:00:00.000Z');
         list_mock.mockResolvedValue([
