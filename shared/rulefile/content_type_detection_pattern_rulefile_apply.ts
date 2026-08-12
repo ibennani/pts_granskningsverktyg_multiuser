@@ -1,10 +1,13 @@
 /**
- * @fileoverview Tillämpar eller rensar detectionPattern i regelfil beroende på webb/PDF.
+ * @fileoverview Tillämpar eller rensar detektionsregler i regelfil beroende på webb/PDF.
  */
 
 import {
     resolve_web_detection_pattern_for_label,
 } from './content_type_detection_pattern_web_catalog.js';
+import {
+    resolve_web_detection_selector_for_label,
+} from './content_type_detection_selector_web_catalog.js';
 
 export type RulefileMonitoringKind = 'web' | 'pdf' | 'unknown';
 
@@ -13,6 +16,7 @@ type ContentTypeChild = {
     text?: string;
     description?: string;
     detectionPattern?: string;
+    detectionSelector?: string;
 };
 
 type ContentTypeGroup = {
@@ -37,20 +41,36 @@ export function resolve_rulefile_monitoring_kind(metadata: unknown): RulefileMon
     return 'unknown';
 }
 
-function strip_child_detection_pattern(child: ContentTypeChild): ContentTypeChild {
+function strip_child_detection_rules(child: ContentTypeChild): ContentTypeChild {
     const next = { ...child };
     delete next.detectionPattern;
+    delete next.detectionSelector;
     return next;
 }
 
-function apply_web_pattern_to_child(child: ContentTypeChild): ContentTypeChild {
-    const pattern = resolve_web_detection_pattern_for_label(child?.text);
-    if (!pattern) return { ...child };
-    return { ...child, detectionPattern: pattern };
+/**
+ * Fyller endast saknade webb-defaults. Ett explicit värde i regelfilen är alltid auktoritativt.
+ */
+function apply_web_rules_to_child(child: ContentTypeChild): ContentTypeChild {
+    const next = { ...child };
+
+    const explicit_pattern = String(child?.detectionPattern ?? '').trim();
+    if (!explicit_pattern) {
+        const pattern = resolve_web_detection_pattern_for_label(child?.text);
+        if (pattern) next.detectionPattern = pattern;
+    }
+
+    const explicit_selector = String(child?.detectionSelector ?? '').trim();
+    if (!explicit_selector) {
+        const selector = resolve_web_detection_selector_for_label(child?.text);
+        if (selector) next.detectionSelector = selector;
+    }
+
+    return next;
 }
 
 /**
- * Sätter katalogmönster på webb-regelfilens undertyper; tar bort mönster för PDF.
+ * Sätter katalogdefaults på webb-regelfilens undertyper; tar bort automatiska detektionsfält för PDF.
  */
 export function apply_detection_patterns_to_content_types(
     content_types: ContentTypeGroup[] | null | undefined,
@@ -62,9 +82,9 @@ export function apply_detection_patterns_to_content_types(
         const types = Array.isArray(group?.types) ? group.types : [];
         const next_types =
             monitoring_kind === 'pdf'
-                ? types.map(strip_child_detection_pattern)
+                ? types.map(strip_child_detection_rules)
                 : monitoring_kind === 'web'
-                  ? types.map(apply_web_pattern_to_child)
+                  ? types.map(apply_web_rules_to_child)
                   : types.map((child) => ({ ...child }));
 
         return { ...group, types: next_types };
@@ -72,7 +92,7 @@ export function apply_detection_patterns_to_content_types(
 }
 
 /**
- * Uppdaterar metadata.contentTypes med webb- eller PDF-regler för detectionPattern.
+ * Uppdaterar metadata.contentTypes med webb- eller PDF-regler.
  */
 export function apply_detection_patterns_for_rulefile_metadata(metadata: MetadataRecord): MetadataRecord {
     const monitoring_kind = resolve_rulefile_monitoring_kind(metadata);
