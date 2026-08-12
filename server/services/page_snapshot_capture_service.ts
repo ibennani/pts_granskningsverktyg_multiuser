@@ -22,6 +22,7 @@ import {
     create_resource_body_persist_counters,
     persist_resource_bodies,
     push_body_unavailable_warning,
+    push_cmp_banner_remaining_warning,
     push_resource_too_large_warning,
     sha256_buffer,
     to_network_json_entries,
@@ -161,6 +162,9 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         const capture = await capture_viewport_png_with_adjustments(page, ctx.url, {
             height_mode: 'full_document',
         });
+        if (capture.adjustments.cookieBannerVisibleAfterCapture) {
+            push_cmp_banner_remaining_warning(warnings);
+        }
         await write_temp_file(temp_dir, 'screenshot.png', capture.png_buffer);
 
         await restore_baseline_viewport(page);

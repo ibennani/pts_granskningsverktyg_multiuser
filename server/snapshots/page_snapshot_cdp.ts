@@ -138,6 +138,13 @@ export function push_resource_too_large_warning(
     });
 }
 
+export function push_cmp_banner_remaining_warning(warnings: SnapshotWarning[]): void {
+    warnings.push({
+        code: 'cmp_banner_remaining',
+        message: 'Cookie banner may still be visible after capture adjustments',
+    });
+}
+
 export async function attach_network_listeners(
     cdp: CDPSession,
     state: NetworkCaptureState,

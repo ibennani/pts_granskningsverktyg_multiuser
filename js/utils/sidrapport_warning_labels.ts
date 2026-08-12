@@ -13,6 +13,7 @@ const WARNING_I18N_KEYS: Record<string, string> = {
     resource_too_large: 'audit_sidrapport_warning_resource_too_large',
     body_unavailable: 'audit_sidrapport_warning_body_unavailable',
     extended_truncated: 'audit_sidrapport_warning_extended_truncated',
+    cmp_banner_remaining: 'audit_sidrapport_warning_cmp_banner_remaining',
 };
 
 export function format_sidrapport_warning_label(

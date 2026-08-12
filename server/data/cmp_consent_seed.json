@@ -1,5 +1,20 @@
 {
-  "_comment": "Manuell CMP-seed för skärmdumpar. Kopiera cookie-värde från Chrome DevTools → Application → Cookies efter «Godkänn alla». Nyckel = domän utan www.",
+  "_comment": "Manuell CMP-seed för sidrapporter. Kopiera cookie-värde från Chrome DevTools efter «Godkänn alla». Nyckel = domän utan www.",
+  "_vendors": {
+    "cookiebot": "CookieConsent",
+    "onetrust": "OptanonConsent",
+    "usercentrics": "uc_user_interaction / uc_settings (localStorage)",
+    "didomi": "didomi_token (localStorage)",
+    "cookieyes": "cookieyes-consent",
+    "termly": "termly_* cookies",
+    "iubenda": "_iub_cs-* cookies",
+    "complianz": "cmplz_* cookies",
+    "borlabs": "borlabsCookie",
+    "real_cookie_banner": "rcb_* cookies",
+    "cookiefirst": "cookiefirst (localStorage)",
+    "tarteaucitron": "ingen standard cookie, använd dismiss i Leffe",
+    "commanders_act": "tc_* cookies"
+  },
   "example.com": {
     "source": "manual",
     "updated_at": "2026-01-01T00:00:00.000Z",

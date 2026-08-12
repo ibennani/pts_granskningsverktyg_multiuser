@@ -48,6 +48,7 @@ export type CaptureAdjustments = {
     consentApplied: boolean;
     cookieBannerClicked: boolean;
     cookieBannerElementsHidden: number;
+    cookieBannerVisibleAfterCapture: boolean;
     cmpRequestsBlocked: number;
     lazyLoadScrollPerformed: boolean;
 };
@@ -196,6 +197,7 @@ export async function capture_viewport_png_with_adjustments(
         await learn_consent_from_page(page, url);
     }
 
+    const banner_still_visible = await is_cookie_banner_visible(page);
     const blocked_count = read_cmp_blocked_count(page);
     const png_buffer = Buffer.from(
         await page.screenshot({
@@ -211,6 +213,7 @@ export async function capture_viewport_png_with_adjustments(
             consentApplied: true,
             cookieBannerClicked: dismiss_state.clicked,
             cookieBannerElementsHidden: hidden_count,
+            cookieBannerVisibleAfterCapture: banner_still_visible,
             cmpRequestsBlocked: blocked_count,
             lazyLoadScrollPerformed: true,
         },
