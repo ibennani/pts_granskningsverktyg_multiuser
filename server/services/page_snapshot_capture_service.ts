@@ -141,7 +141,9 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         );
 
         const final_url = page.url();
-        const capture = await capture_viewport_png_with_adjustments(page, ctx.url);
+        const capture = await capture_viewport_png_with_adjustments(page, ctx.url, {
+            height_mode: 'full_document',
+        });
         await write_temp_file(temp_dir, 'screenshot.png', capture.png_buffer);
 
         let screenshot_outcome: VisibleCaptureResult['screenshot'] = {

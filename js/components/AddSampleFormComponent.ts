@@ -27,7 +27,7 @@ import { show_content_type_paste_analyze_modal } from './add_sample_form/content
 import type { ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
-import { delete_audit_snapshots_for_sample } from '../api/audit_snapshot_api.js';
+import { queue_sidrapport_after_sample_save } from '../logic/queue_sidrapport_after_sample_save.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 
 type SampleCategoryOption = {
@@ -674,7 +674,9 @@ export class AddSampleFormComponent {
             this.NotificationComponent.show_global_message(t('error_cannot_add_sample_when_audit_closed'), 'error');
             return;
         }
+        let saved_sample_id: string | null = null;
         if (this.current_editing_sample_id) {
+            saved_sample_id = String(this.current_editing_sample_id);
             this.dispatch({
                 type: this.StoreActionTypes.UPDATE_SAMPLE,
                 payload: {
@@ -696,9 +698,10 @@ export class AddSampleFormComponent {
             }
         } else {
             this.ensure_pending_sample_id();
+            saved_sample_id = this.pending_sample_id || this.Helpers.generate_uuid_v4();
             const new_sample_object = {
                 ...sample_payload_data,
-                id: this.pending_sample_id || this.Helpers.generate_uuid_v4(),
+                id: saved_sample_id,
                 requirementResults: {},
             };
             this.dispatch({
@@ -719,6 +722,21 @@ export class AddSampleFormComponent {
 
         if (!is_autosave && this.on_sample_saved_callback) {
             this.on_sample_saved_callback();
+        }
+
+        if (!is_autosave && saved_sample_id) {
+            void queue_sidrapport_after_sample_save(
+                    {
+                        getState: () => this.getState?.() ?? null,
+                        dispatch: (action) => this.dispatch(action),
+                    },
+                    {
+                        sampleId: saved_sample_id,
+                        url: sample_payload_data.url,
+                        sampleCategory: sample_payload_data.sampleCategory,
+                        attachedMediaFilenames: sample_payload_data.attachedMediaFilenames,
+                    }
+                );
         }
     }
 
@@ -809,17 +827,6 @@ export class AddSampleFormComponent {
     discard() {
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
-
-        if (!this.current_editing_sample_id && this.pending_sample_id) {
-            const audit_id = this.getState?.()?.auditId;
-            const pending_id = this.pending_sample_id;
-            if (audit_id) {
-                import('./add_sample_form/sample_url_analyze_capture.js').then(({ cancel_active_sample_url_capture }) => {
-                    void cancel_active_sample_url_capture(String(audit_id));
-                });
-                void delete_audit_snapshots_for_sample(String(audit_id), String(pending_id));
-            }
-        }
 
         // Återställ till ursprungsläget så att autosparade ändringar inte blir kvar när användaren väljer att inte bekräfta.
         if (this.current_editing_sample_id && this.initial_sample_snapshot) {

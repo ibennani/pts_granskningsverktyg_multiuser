@@ -21,7 +21,8 @@ import {
     is_cookie_banner_visible,
     settle_after_consent_apply,
 } from './page_screenshot_cookie_consent.js';
-import { compute_screenshot_clip_height_css } from './page_screenshot_capture_height.js';
+import { compute_screenshot_clip_height_css, compute_full_document_screenshot_height_css } from './page_screenshot_capture_height.js';
+import { get_snapshot_full_page_max_height_css } from '../snapshots/audit_snapshot_config.js';
 import {
     enable_cmp_request_block_for_screenshot,
     read_cmp_blocked_count,
@@ -128,9 +129,12 @@ async function ensure_banner_dismissed(
     return { banner_gone: result.banner_gone, clicked: result.clicked };
 }
 
+export type CaptureScreenshotHeightMode = 'viewport_capped' | 'full_document';
+
 export async function capture_viewport_png_with_adjustments(
     page: Page,
-    url: string
+    url: string,
+    options: { height_mode?: CaptureScreenshotHeightMode } = {}
 ): Promise<{ png_buffer: Buffer; page_title: string; adjustments: CaptureAdjustments }> {
     let dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: true });
 
@@ -142,10 +146,14 @@ export async function capture_viewport_png_with_adjustments(
 
     const page_title = await read_capture_page_title(page);
     const scroll_height_css = await read_document_scroll_height(page);
-    const capture_height_css = compute_screenshot_clip_height_css(
-        scroll_height_css,
-        CAPTURE_VIEWPORT_WIDTH
-    );
+    const height_mode = options.height_mode ?? 'viewport_capped';
+    const capture_height_css =
+        height_mode === 'full_document'
+            ? compute_full_document_screenshot_height_css(
+                  scroll_height_css,
+                  get_snapshot_full_page_max_height_css()
+              )
+            : compute_screenshot_clip_height_css(scroll_height_css, CAPTURE_VIEWPORT_WIDTH);
 
     await page.setViewport({
         width: CAPTURE_VIEWPORT_WIDTH,

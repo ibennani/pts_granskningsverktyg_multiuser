@@ -63,3 +63,7 @@ export function get_snapshot_network_buffer_total(): number {
 export function get_snapshot_post_navigation_settle_ms(): number {
     return read_int_env('GV_SNAPSHOT_POST_NAVIGATION_SETTLE_MS', 1500);
 }
+
+export function get_snapshot_full_page_max_height_css(): number {
+    return read_int_env('GV_SNAPSHOT_FULL_PAGE_MAX_HEIGHT_CSS', 50_000);
+}

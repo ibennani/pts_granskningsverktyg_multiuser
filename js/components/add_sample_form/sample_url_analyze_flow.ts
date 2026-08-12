@@ -3,26 +3,46 @@
  */
 
 import {
+    get_sample_url_analyze_tasks,
     type SampleUrlAnalyzeFlowHost,
     type SampleUrlAnalyzeTaskCallbacks,
+    type SampleUrlAnalyzeTaskOutcome,
 } from './sample_url_analyze_tasks.js';
-import {
-    run_unified_sample_url_analyze_tasks,
-    cancel_active_sample_url_capture,
-    type SampleUrlAnalyzeCaptureHost,
-} from './sample_url_analyze_capture.js';
 
 export type { SampleUrlAnalyzeFlowHost } from './sample_url_analyze_tasks.js';
+
+function map_task_outcome(
+    outcome: SampleUrlAnalyzeTaskOutcome | 'aborted'
+): SampleUrlAnalyzeTaskOutcome | 'aborted' {
+    return outcome;
+}
 
 export async function run_sample_url_analyze_tasks(
     host: SampleUrlAnalyzeFlowHost,
     callbacks: SampleUrlAnalyzeTaskCallbacks
 ): Promise<void> {
-    await run_unified_sample_url_analyze_tasks(host as SampleUrlAnalyzeCaptureHost, callbacks);
+    const generation = host.bump_url_analyze_generation();
+    const is_current = () => host.is_url_analyze_generation_current(generation);
+    const tasks = get_sample_url_analyze_tasks();
+
+    for (const task of tasks) {
+        if (!is_current()) {
+            return;
+        }
+        callbacks.on_task_start(task.id);
+        const outcome = map_task_outcome(await task.run(host));
+        if (!is_current()) {
+            return;
+        }
+        if (outcome === 'aborted') {
+            return;
+        }
+        callbacks.on_task_complete(task.id, outcome);
+    }
 }
 
 export function cancel_sample_url_analyze_tasks(host: SampleUrlAnalyzeFlowHost): void {
     host.bump_url_analyze_generation();
-    const audit_id = host.getState?.()?.auditId ?? null;
-    void cancel_active_sample_url_capture(audit_id ? String(audit_id) : null);
+    host.url_page_title_generation += 1;
+    host.url_auto_screenshot_generation += 1;
 }

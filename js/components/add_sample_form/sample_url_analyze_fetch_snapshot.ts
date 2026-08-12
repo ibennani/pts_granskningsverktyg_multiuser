@@ -3,7 +3,6 @@
  */
 
 import { can_upload_audit_media, delete_audit_media } from '../../api/audit_media_api.js';
-import { cancel_active_sample_url_capture } from './sample_url_analyze_capture.js';
 import { update_sample_attach_media_button } from './sample_attach_media.js';
 import type { SampleUrlAnalyzeFlowHost } from './sample_url_analyze_tasks.js';
 
@@ -66,11 +65,6 @@ export async function rollback_sample_url_analyze_fetch(
     snapshot: SampleUrlAnalyzeFetchSnapshot
 ): Promise<void> {
     abort_inflight_sample_url_tasks(host);
-
-    const audit_id = host.getState?.()?.auditId ?? null;
-    if (audit_id) {
-        await cancel_active_sample_url_capture(String(audit_id));
-    }
 
     const current_auto_filename = host.url_auto_screenshot_filename;
     if (

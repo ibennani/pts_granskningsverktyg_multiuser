@@ -1,6 +1,7 @@
 import "./confirm_sample_edit_view_component.css";
 import { find_requirement_definition } from '../audit_logic.js';
 import { sample_edit_analysis_has_content_type_changes } from '../logic/sample_edit_diff.js';
+import { queue_sidrapport_after_sample_save } from '../logic/queue_sidrapport_after_sample_save.js';
 
 type ChangedFieldRow = { key: string; oldValue: unknown; newValue: unknown };
 
@@ -145,6 +146,23 @@ export class ConfirmSampleEditViewComponent {
                 }
 
                 this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
+
+                const updated = pending_changes.updatedSampleData;
+                if (updated) {
+                    void queue_sidrapport_after_sample_save(
+                        {
+                            getState: () => this.getState?.() ?? null,
+                            dispatch: (action) => this.dispatch(action),
+                        },
+                        {
+                            sampleId: String(pending_changes.sampleId),
+                            url: updated.url,
+                            sampleCategory: updated.sampleCategory,
+                            attachedMediaFilenames: updated.attachedMediaFilenames,
+                        }
+                    );
+                }
+
                 this.router('sample_management');
 
                 // Om synk/poll ersätter state strax efteråt kan ändringen "försvinna" utan att användaren ser fel.

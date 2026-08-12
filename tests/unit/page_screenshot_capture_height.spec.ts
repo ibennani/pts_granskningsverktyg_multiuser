@@ -1,6 +1,7 @@
 import { describe, test, expect } from '@jest/globals';
 import {
     compute_screenshot_clip_height_css,
+    compute_full_document_screenshot_height_css,
     MAX_CAPTURE_HEIGHT_TO_WIDTH_RATIO,
 } from '../../server/services/page_screenshot_capture_height.ts';
 
@@ -19,5 +20,10 @@ describe('page_screenshot_capture_height', () => {
     test('ger minst 1 px vid tom eller negativ höjd', () => {
         expect(compute_screenshot_clip_height_css(0, viewport_width)).toBe(1);
         expect(compute_screenshot_clip_height_css(-100, viewport_width)).toBe(1);
+    });
+
+    test('full_document använder hela scrollhöjden upp till max', () => {
+        expect(compute_full_document_screenshot_height_css(12_000, 50_000)).toBe(12_000);
+        expect(compute_full_document_screenshot_height_css(80_000, 50_000)).toBe(50_000);
     });
 });
