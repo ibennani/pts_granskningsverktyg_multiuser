@@ -33,6 +33,7 @@ import { run_text_spacing_analysis } from './phase1/text_spacing_analysis.js';
 import { run_contrast_analysis } from './phase1/contrast_analysis.js';
 import { run_target_size_analysis } from './phase1/target_size_analysis.js';
 import { run_safe_interaction_analysis } from './phase1/safe_interaction_analysis.js';
+import { run_recurring_components_analysis } from './phase1/recurring_components_analysis.js';
 import { run_live_region_analysis } from './phase2/live_region_analysis.js';
 import { run_stateful_component_analysis } from './phase2/stateful_component_analysis.js';
 import { run_form_analysis } from './phase2/form_analysis.js';
@@ -53,6 +54,7 @@ const PHASE1_MODULES: AnalysisModuleDef[] = [
     { name: 'contrast', phase: 1, version: 1, output_path: 'analysis/phase1/contrast.json', run: run_contrast_analysis },
     { name: 'target-size', phase: 1, version: 1, output_path: 'analysis/phase1/target-size.json', run: run_target_size_analysis },
     { name: 'interactions', phase: 1, version: 1, output_path: 'analysis/phase1/interactions.json', run: run_safe_interaction_analysis },
+    { name: 'recurring-components', phase: 1, version: 1, output_path: 'analysis/phase1/recurring-components.json', run: run_recurring_components_analysis },
 ];
 
 const PHASE2_MODULES: AnalysisModuleDef[] = [
