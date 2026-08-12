@@ -14,7 +14,10 @@ import {
     FILE_DOWNLOAD_MAX_BYTES,
 } from '../../shared/constants/file_download_limits.js';
 
-export { FILE_DOWNLOAD_MAX_BYTES } from '../../shared/constants/file_download_limits.js';
+export {
+    FILE_DOWNLOAD_MAX_BYTES,
+    SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES,
+} from '../../shared/constants/file_download_limits.js';
 export { format_file_download_max_size_label } from '../../shared/constants/file_download_limits.js';
 
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
@@ -92,6 +95,8 @@ export async function get_server_filename_datetime(iso?: string | null): Promise
 export type TriggerBrowserBlobDownloadOptions = {
     /** Dold temporärlänk (används t.ex. vid backup-nedladdning). */
     aria_hidden?: boolean;
+    /** Överskrid standardgränsen (t.ex. samlings-zip med sidrapporter). */
+    max_bytes?: number;
 };
 
 export const FILE_DOWNLOAD_TOO_LARGE_CODE = 'FILE_DOWNLOAD_TOO_LARGE';
@@ -119,9 +124,12 @@ export function is_download_file_too_large_error(error: unknown): error is Downl
 /**
  * Kastar om blob överskrider maxstorlek för nedladdning.
  */
-export function assert_download_blob_within_limit(blob: Blob): void {
-    if (blob.size > FILE_DOWNLOAD_MAX_BYTES) {
-        throw new DownloadFileTooLargeError(blob.size, FILE_DOWNLOAD_MAX_BYTES);
+export function assert_download_blob_within_limit(
+    blob: Blob,
+    max_bytes: number = FILE_DOWNLOAD_MAX_BYTES
+): void {
+    if (blob.size > max_bytes) {
+        throw new DownloadFileTooLargeError(blob.size, max_bytes);
     }
 }
 
@@ -134,7 +142,7 @@ export function trigger_browser_blob_download(
     filename: string,
     options: TriggerBrowserBlobDownloadOptions = {}
 ): void {
-    assert_download_blob_within_limit(blob);
+    assert_download_blob_within_limit(blob, options.max_bytes);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

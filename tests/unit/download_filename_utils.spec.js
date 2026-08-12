@@ -93,6 +93,29 @@ describe('download_filename_utils', () => {
         );
     });
 
+    test('trigger_browser_blob_download respekterar max_bytes i options', () => {
+        const custom_max = 100 * 1024 * 1024;
+        const blob = new Blob([new Uint8Array(FILE_DOWNLOAD_MAX_BYTES + 1)]);
+        const click = jest.fn();
+        jest.spyOn(document.body, 'appendChild').mockImplementation((el) => {
+            el.click = click;
+            return el;
+        });
+        jest.spyOn(document.body, 'removeChild').mockImplementation((el) => el);
+        const saved_create = global.URL.createObjectURL;
+        const saved_revoke = global.URL.revokeObjectURL;
+        global.URL.createObjectURL = jest.fn(() => 'blob:test');
+        global.URL.revokeObjectURL = jest.fn();
+
+        expect(() =>
+            trigger_browser_blob_download(blob, 'stor.bin', { max_bytes: custom_max })
+        ).not.toThrow();
+
+        global.URL.createObjectURL = saved_create;
+        global.URL.revokeObjectURL = saved_revoke;
+        jest.restoreAllMocks();
+    });
+
     test('is_download_file_too_large_error känner igen felet', () => {
         const err = new DownloadFileTooLargeError(100, FILE_DOWNLOAD_MAX_BYTES);
         expect(is_download_file_too_large_error(err)).toBe(true);

@@ -246,12 +246,12 @@ describe('audit_actions_snapshots_section', () => {
         document.body.appendChild(section.root);
         await section.refresh();
 
-        const info_el = section.root.querySelector('.global-message-content.message-info.global-message-inline');
+        const info_el = section.root.querySelector('.global-message-content.message-warning.global-message-inline');
         const table_host = section.root.querySelector('.audit-actions-snapshots__table-host');
         expect(info_el).toBeTruthy();
         expect(table_host).toBeTruthy();
         expect(info_el?.textContent).toContain('audit_snapshots_download_all_partial_note');
-        expect(info_el?.getAttribute('role')).toBe('status');
+        expect(info_el?.getAttribute('role')).toBe('alert');
         expect(
             info_el?.compareDocumentPosition(table_host!) & Node.DOCUMENT_POSITION_FOLLOWING
         ).toBeTruthy();

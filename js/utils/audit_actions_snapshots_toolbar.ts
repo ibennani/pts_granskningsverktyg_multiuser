@@ -5,7 +5,8 @@ import { create_file_download_button } from './file_download_button_ui.js';
 import {
     get_download_filename_datetime,
     trigger_browser_blob_download,
-    FILE_DOWNLOAD_MAX_BYTES,
+    DownloadFileTooLargeError,
+    SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES,
 } from './download_filename_utils.js';
 import { get_audit_snapshots_download_all_url } from '../api/audit_snapshot_api.js';
 import type { AuditSnapshotListItem } from '../api/audit_snapshot_api.js';
@@ -142,11 +143,13 @@ export function render_audit_snapshots_toolbar(
                 const audit_id = String(deps.getState()?.auditId);
                 const url = get_audit_snapshots_download_all_url(audit_id);
                 const blob = await deps.fetch_authenticated_blob(url);
-                if (blob.size > FILE_DOWNLOAD_MAX_BYTES) {
-                    throw new Error(deps.t('audit_snapshots_download_all_too_large'));
+                if (blob.size > SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES) {
+                    throw new DownloadFileTooLargeError(blob.size, SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES);
                 }
                 const filename = `snapshots_all_${get_download_filename_datetime(null)}.zip`;
-                trigger_browser_blob_download(blob, filename);
+                trigger_browser_blob_download(blob, filename, {
+                    max_bytes: SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES,
+                });
             },
         });
         download_all_parts.wrapper.classList.add('audit-actions-snapshots__download-all-wrap');

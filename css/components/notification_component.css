@@ -36,6 +36,18 @@
     color: #ffffff;
 }
 
+.global-message-content.global-message-inline.message-warning {
+    background-color: var(--warning-color-light);
+    border-color: var(--warning-color);
+    color: #000000;
+}
+
+[data-theme="dark"] .global-message-content.global-message-inline.message-warning {
+    background-color: #806600;
+    border-color: var(--warning-color);
+    color: #ffffff;
+}
+
 .global-message-content { 
     /* Används för att sätta typklasser */
 }

@@ -87,16 +87,17 @@ export function apply_visible_message_presentation(element, type, is_critical) {
 }
 
 /**
- * Bygger en inline informationsruta utan stängknapp (samma typklasser som global info-notis).
+ * Bygger en inline notisruta utan stängknapp (samma typklasser som global notis).
  * @param {HTMLElement} element
  * @param {string} message
+ * @param {'info'|'warning'|'success'|'error'} [type]
  */
-export function mount_inline_info_message_dom(element, message) {
+export function mount_inline_message_dom(element, message, type = 'info') {
     element.innerHTML = '';
     const text_wrap = document.createElement('span');
     text_wrap.className = 'global-message-text';
     text_wrap.textContent = message;
     element.appendChild(text_wrap);
-    apply_visible_message_presentation(element, 'info', false);
+    apply_visible_message_presentation(element, type, false);
     element.classList.add('global-message-inline');
 }

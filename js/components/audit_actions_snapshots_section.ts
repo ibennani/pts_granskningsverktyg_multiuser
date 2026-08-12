@@ -3,7 +3,7 @@
  */
 import './audit_actions_snapshots.css';
 import '../components/notification_component.css';
-import { mount_inline_info_message_dom } from '../notifications/notification_renderer.js';
+import { mount_inline_message_dom } from '../notifications/notification_renderer.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import {
     list_audit_snapshots,
@@ -315,7 +315,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
             )
         ) {
             const info_el = helpers.create_element('div');
-            mount_inline_info_message_dom(info_el, t('audit_snapshots_download_all_partial_note'));
+            mount_inline_message_dom(info_el, t('audit_snapshots_download_all_partial_note'), 'warning');
             info_host.appendChild(info_el);
         }
     };

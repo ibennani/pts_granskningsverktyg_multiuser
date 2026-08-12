@@ -242,11 +242,19 @@ export async function run_file_download_flow(
                 'file_download_failed',
                 error.user_message
             );
+        } else if (is_download_file_too_large_error(error)) {
+            apply_error_state(
+                parts,
+                t,
+                Helpers,
+                icon_size,
+                'file_download_too_large',
+                t('file_download_too_large', {
+                    max_size: format_file_download_max_size_label(error.max_bytes),
+                })
+            );
         } else {
-            const message_key = is_download_file_too_large_error(error)
-                ? 'file_download_too_large'
-                : 'file_download_failed';
-            apply_error_state(parts, t, Helpers, icon_size, message_key);
+            apply_error_state(parts, t, Helpers, icon_size, 'file_download_failed');
         }
         await new Promise((resolve) => setTimeout(resolve, READY_RESET_MS));
         set_file_download_idle(parts, idle_icon_html, idle_tooltip);
