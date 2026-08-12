@@ -301,7 +301,7 @@
   "audit_sidrapport_warning_extended_truncated": "Den tekniska insamlingen avbröts tidigt på grund av hög belastning.",
   "audit_snapshots_size_kb": "kB",
   "audit_snapshots_size_mb": "MB",
-  "audit_actions_downloads_locked_title": "Du kan ännu inte ladda ner",
+  "audit_actions_downloads_locked_title": "Du kan ännu inte ladda ner granskningens bilagor",
   "audit_actions_downloads_intro": "Här laddar du ner säkerhetskopia, bilagor och exportfiler.",
   "audit_actions_downloads_in_progress_intro_before": "Bilagor och export i fler format blir tillgängliga när granskningen är avslutad. Gå till ",
   "audit_actions_downloads_in_progress_intro_after": " och ändra status till Avslutad.",
