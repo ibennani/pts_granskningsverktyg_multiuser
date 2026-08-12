@@ -154,6 +154,46 @@ describe('audit_actions_snapshots_section', () => {
         section.root.remove();
     });
 
+    test('visar varningsram utan verktygsrad när listan inte kan hämtas', async () => {
+        list_mock.mockRejectedValue(new Error('network'));
+        const section = create_audit_actions_snapshots_section(make_deps() as never);
+        document.body.appendChild(section.root);
+        await section.refresh();
+        const error_el = section.root.querySelector('.audit-actions-snapshots__load-error');
+        expect(error_el).toBeTruthy();
+        expect(error_el?.getAttribute('role')).toBe('alert');
+        expect(section.root.textContent).toContain('audit_snapshots_load_error');
+        expect(section.root.querySelector('.audit-actions-snapshots__toolbar')).toBeFalsy();
+        expect(section.root.querySelector('.generic-table')).toBeFalsy();
+        section.destroy();
+        section.root.remove();
+    });
+
+    test('döljer verktygsrad efter laddningsfel även om tabellen visades tidigare', async () => {
+        list_mock.mockResolvedValue({
+            items: [
+                {
+                    sampleId: 's1',
+                    sampleDescription: 'Startsida',
+                    requestedUrl: 'https://example.com',
+                    pageTitle: null,
+                    currentReady: null,
+                    pendingAttempt: null,
+                },
+            ],
+        });
+        const section = create_audit_actions_snapshots_section(make_deps() as never);
+        document.body.appendChild(section.root);
+        await section.refresh();
+        expect(section.root.querySelector('.audit-actions-snapshots__toolbar')).toBeTruthy();
+        list_mock.mockRejectedValueOnce(new Error('network'));
+        await section.refresh();
+        expect(section.root.querySelector('.audit-actions-snapshots__load-error')).toBeTruthy();
+        expect(section.root.querySelector('.audit-actions-snapshots__toolbar')).toBeFalsy();
+        section.destroy();
+        section.root.remove();
+    });
+
     test('visar Skapa sidrapporter vid misslyckad sidrapport utan färdig', async () => {
         list_mock.mockResolvedValue({
             items: [

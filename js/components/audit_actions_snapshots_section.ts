@@ -233,7 +233,30 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
         format_datetime
     );
 
+    const clear_load_error = () => {
+        content_host.querySelector('.audit-actions-snapshots__load-error')?.remove();
+        table_host.removeAttribute('hidden');
+    };
+
+    const show_load_error = () => {
+        toolbar_host.replaceChildren();
+        toolbar_host.setAttribute('hidden', 'hidden');
+        table_host.setAttribute('hidden', 'hidden');
+        if (content_host.querySelector('.audit-actions-snapshots__load-error')) {
+            return;
+        }
+        content_host.insertBefore(
+            helpers.create_element('p', {
+                class_name: 'audit-actions-snapshots__load-error',
+                attributes: { role: 'alert' },
+                text_content: t('audit_snapshots_load_error'),
+            }),
+            table_host
+        );
+    };
+
     const render_items = (items: AuditSnapshotListItem[]) => {
+        clear_load_error();
         last_items = items;
         const table_rows = map_snapshot_items_to_table_rows(items, deps.getState()?.samples);
 
@@ -320,10 +343,7 @@ export function create_audit_actions_snapshots_section(deps: AuditActionsSnapsho
                 }
             }
         } catch {
-            content_host.innerHTML = '';
-            content_host.appendChild(
-                helpers.create_element('p', { text_content: t('audit_snapshots_load_error') })
-            );
+            show_load_error();
         }
     };
 

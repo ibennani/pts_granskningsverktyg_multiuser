@@ -104,10 +104,17 @@
 }
 
 .audit-actions-snapshots__secondary-status,
-.audit-actions-snapshots__error-text,
 .audit-actions-snapshots__processing-note {
     margin-block-start: 0.35rem;
     font-size: 0.95em;
+}
+
+.audit-actions-snapshots__load-error {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: var(--warning-color-light, rgba(201, 149, 61, 0.15));
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
 }
 
 .audit-actions-snapshots__download-all {
