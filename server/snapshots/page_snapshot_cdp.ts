@@ -93,9 +93,6 @@ export function is_resource_body_capture_candidate(
     if (main_document_request_id && resource.requestId === main_document_request_id) {
         return true;
     }
-    if (resource.resourceType === 'Document') {
-        return true;
-    }
     const mime = (resource.mimeType || '').toLowerCase();
     const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
     const is_js =
@@ -135,8 +132,10 @@ export function push_resource_too_large_warning(
 
 export async function attach_network_listeners(
     cdp: CDPSession,
-    state: NetworkCaptureState
+    state: NetworkCaptureState,
+    options: { main_frame_id: string }
 ): Promise<void> {
+    const main_frame_id = options.main_frame_id;
     const max_bytes = get_snapshot_resource_text_max_bytes();
 
     const capture_body_eager = async (entry: PendingResource): Promise<void> => {
@@ -189,20 +188,22 @@ export async function attach_network_listeners(
         entry.url = event.request.url;
         entry.method = event.request.method;
         entry.resourceType = resource_type;
-        if (resource_type === 'Document') {
+        if (resource_type === 'Document' && event.frameId === main_frame_id) {
             state.mainDocumentRequestId = event.requestId;
         }
         if (!existing) state.resources.push(entry);
     });
-    cdp.on('Network.responseReceived', (event: { requestId: string; response: { url: string; mimeType: string; status: number; headers: Record<string, string> } }) => {
+    cdp.on('Network.responseReceived', (event: { requestId: string; frameId?: string; response: { url: string; mimeType: string; status: number; headers: Record<string, string> } }) => {
         const entry = state.resources.find((r) => r.requestId === event.requestId);
         if (!entry) return;
         entry.mimeType = event.response.mimeType ?? null;
         entry.status = event.response.status;
         entry.responseHeaders = sanitize_response_headers(event.response.headers);
-        if (entry.resourceType === 'Document') {
+        if (entry.resourceType === 'Document' && event.frameId === main_frame_id) {
             state.mainDocumentRequestId = event.requestId;
         }
+        const task = capture_body_eager(entry);
+        state.eager_capture_tasks.push(task);
     });
     cdp.on('Network.loadingFinished', (event: { requestId: string; encodedDataLength: number }) => {
         const entry = state.resources.find((r) => r.requestId === event.requestId);
@@ -308,10 +309,7 @@ export async function persist_resource_bodies(
         }
 
         const text = raw.toString('utf8');
-        if (
-            resource.requestId === state.mainDocumentRequestId ||
-            resource.resourceType === 'Document'
-        ) {
+        if (resource.requestId === state.mainDocumentRequestId) {
             state.mainDocumentBody = text;
             resource.bodyCaptured = true;
             resource.pendingBodyBytes = null;

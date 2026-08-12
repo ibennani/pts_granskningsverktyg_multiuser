@@ -127,7 +127,9 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         cdp = await page.createCDPSession();
         await prepare_capture_page(page);
         attach_console_listeners(page, console_entries);
-        await attach_network_listeners(cdp, network_state);
+        await attach_network_listeners(cdp, network_state, {
+            main_frame_id: page.mainFrame()._id,
+        });
 
         await navigate_for_screenshot_capture(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');

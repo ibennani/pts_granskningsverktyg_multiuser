@@ -68,18 +68,18 @@ describe('page_snapshot_cdp helpers', () => {
         ).toBe(false);
     });
 
-    test('is_resource_body_capture_candidate inkluderar Document utan main id', () => {
+    test('is_resource_body_capture_candidate hoppar över iframe-dokument', () => {
         expect(
             is_resource_body_capture_candidate(
                 {
                     failed: false,
-                    requestId: 'doc-early',
-                    mimeType: null,
+                    requestId: 'iframe-doc',
+                    mimeType: 'text/html',
                     resourceType: 'Document',
                 },
-                null
+                'main-doc'
             )
-        ).toBe(true);
+        ).toBe(false);
     });
 
     test('decode_cdp_response_body hanterar text och base64', () => {
