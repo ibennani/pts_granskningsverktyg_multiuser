@@ -754,6 +754,16 @@ Tekniska snapshots skapas i samma Chromium-session som **Hämta information** (s
 | `GV_SNAPSHOT_NETWORK_BUFFER_PER_RESOURCE` | `5242880` | CDP-buffert per nätverksresurs (byte) |
 | `GV_SNAPSHOT_NETWORK_BUFFER_TOTAL` | `52428800` | Total CDP-nätverksbuffert (byte) |
 | `GV_SNAPSHOT_POST_NAVIGATION_SETTLE_MS` | `1500` | Väntan efter navigation före body-insamling |
+| `GV_SNAPSHOT_ANALYSIS_PHASE1_ENABLED` | `true` | Kör fas 1-analys i fullrapport |
+| `GV_SNAPSHOT_ANALYSIS_PHASE2_ENABLED` | `true` | Kör fas 2-analys i fullrapport |
+| `GV_SNAPSHOT_ANALYSIS_MAX_MS` | `45000` | Tidsbudget för analysmoduler |
+| `GV_SNAPSHOT_ANALYSIS_TAB_MAX_STEPS` | `200` | Max Tab-steg i tangentbordsanalys |
+| `GV_SNAPSHOT_ANALYSIS_INTERACTION_MAX` | `30` | Max säkra interaktioner |
+| `GV_SNAPSHOT_ANALYSIS_HOVER_MAX` | `20` | Max hover-kandidater |
+| `GV_SNAPSHOT_ANALYSIS_IFRAME_MAX` | `5` | Max fördjupade iframes |
+| `GV_SNAPSHOT_ANALYSIS_MUTATION_MAX` | `500` | Max mutation records |
+| `GV_SNAPSHOT_ANALYSIS_DYNAMIC_MS` | `5000` | Dynamisk observationsperiod |
+| `GV_SNAPSHOT_ANALYSIS_SCREENSHOT_MAX` | `5` | Max extra analys-screenshots |
 
 ---
 

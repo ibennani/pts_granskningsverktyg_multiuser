@@ -7,7 +7,8 @@ import type { Browser, Page, CDPSession } from 'puppeteer';
 import {
     launch_capture_browser,
     prepare_capture_page,
-    navigate_for_screenshot_capture,
+    navigate_for_initial_consent_observation,
+    apply_cached_consent_and_settle,
     capture_viewport_png_with_adjustments,
     CAPTURE_NAVIGATION_TIMEOUT_MS,
     type CaptureAdjustments,
@@ -34,6 +35,10 @@ import {
     get_snapshot_extended_cdp_max_ms,
     get_snapshot_yield_on_queue,
 } from '../snapshots/audit_snapshot_config.js';
+import { restore_baseline_viewport } from '../snapshots/analysis/snapshot_viewport_baseline.js';
+import { capture_initial_consent_evidence } from '../snapshots/analysis/phase1/initial_consent_analysis.js';
+import { run_snapshot_analysis } from '../snapshots/analysis/snapshot_analysis_runner.js';
+import { load_consent_for_domain, apply_consent_cookies } from './page_screenshot_consent_cache.js';
 import type { AuditSnapshotCaptureResponse } from '../schemas/audit_snapshot.js';
 
 export type VisibleCaptureResult = AuditSnapshotCaptureResponse & {
@@ -115,6 +120,7 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
     const network_state = create_network_capture_state();
     const visible_started = Date.now();
     let body_counters = create_resource_body_persist_counters();
+    const screenshot_budget = { remaining: 5 };
 
     try {
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
@@ -124,12 +130,23 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         cdp = await page.createCDPSession();
         await prepare_capture_page(page);
         attach_console_listeners(page, console_entries);
+        const frame_tree = await cdp.send('Page.getFrameTree') as { frame: { id: string } };
         await attach_network_listeners(cdp, network_state, {
-            main_frame_id: page.mainFrame()._id,
+            main_frame_id: frame_tree.frame.id,
         });
 
-        await navigate_for_screenshot_capture(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
+        await navigate_for_initial_consent_observation(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
+
+        const initial_consent_envelope = await capture_initial_consent_evidence(
+            page,
+            temp_dir,
+            screenshot_budget
+        );
+
+        const consent = await load_consent_for_domain(ctx.url);
+        await apply_consent_cookies(page, consent);
+        await apply_cached_consent_and_settle(page, consent);
 
         body_counters = await run_persist_resource_bodies_pass(
             cdp,
@@ -143,6 +160,8 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             height_mode: 'full_document',
         });
         await write_temp_file(temp_dir, 'screenshot.png', capture.png_buffer);
+
+        await restore_baseline_viewport(page);
 
         let screenshot_outcome: VisibleCaptureResult['screenshot'] = {
             outcome: 'success',
@@ -237,6 +256,18 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         push_body_unavailable_warning(warnings, final_body_issues.body_unavailable_count);
         push_resource_too_large_warning(warnings, final_body_issues.resource_too_large_count);
 
+        const analysis_summary = await run_snapshot_analysis({
+            page,
+            cdp,
+            temp_dir,
+            url: ctx.url,
+            is_cancelled: ctx.is_cancelled,
+            should_yield_extended: ctx.should_yield_extended,
+            yield_on_queue: get_snapshot_yield_on_queue(),
+            warnings,
+            initial_consent_envelope,
+        });
+
         const metadata = {
             formatVersion: 1,
             captureId: ctx.capture_id,
@@ -255,6 +286,15 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             failedRequestCount: network_json.failedRequestCount,
             consoleErrorCount: console_entries.filter((e) => e.type === 'error').length,
             screenshotSha256: sha256_buffer(capture.png_buffer),
+            analysisVersion: 1,
+            analysis: {
+                phase1Enabled: analysis_summary.index.phase1Enabled,
+                phase2Enabled: analysis_summary.index.phase2Enabled,
+                phase1Completed: analysis_summary.phase1_completed,
+                phase2Completed: analysis_summary.phase2_completed,
+                moduleCount: analysis_summary.module_count,
+                warningCount: analysis_summary.warning_count,
+            },
         };
 
         await ctx.on_packaging_start();

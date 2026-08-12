@@ -100,6 +100,29 @@ export async function navigate_for_screenshot_capture(
     const consent = await load_consent_for_domain(url);
     await apply_consent_cookies(page, consent);
     await navigate_and_validate_capture_page(page, url, timeout_ms);
+    await apply_cached_consent_and_settle(page, consent);
+}
+
+/** Navigation utan förapplicerad cached consent (för initial consent-evidens). */
+export async function navigate_for_initial_consent_observation(
+    page: Page,
+    url: string,
+    timeout_ms: number
+): Promise<void> {
+    await enable_cmp_request_block_for_screenshot(page);
+    await navigate_and_validate_capture_page(page, url, timeout_ms);
+    try {
+        await page.waitForNetworkIdle({ idleTime: 300, timeout: 5000 });
+    } catch {
+        // fortsätt
+    }
+}
+
+/** Applicerar cached consent efter initial observation, utan reload. */
+export async function apply_cached_consent_and_settle(
+    page: Page,
+    consent: Awaited<ReturnType<typeof load_consent_for_domain>>
+): Promise<void> {
     await apply_consent_local_storage(page, consent);
     await settle_after_consent_apply(page);
     await settle_after_initial_navigation(page);

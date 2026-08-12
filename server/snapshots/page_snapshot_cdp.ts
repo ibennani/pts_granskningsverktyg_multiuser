@@ -34,6 +34,18 @@ export type FrameEntry = {
     isMainFrame: boolean;
 };
 
+/** Computed style properties captured in dom-snapshot.json (order matters). */
+export const DOM_SNAPSHOT_COMPUTED_STYLES = [
+    'display', 'visibility', 'color', 'background-color', 'font-size',
+    'font-weight', 'line-height', 'opacity', 'position', 'width', 'height',
+    'overflow', 'white-space', 'text-decoration', 'outline', 'content', 'transform',
+    'outline-style', 'outline-width', 'outline-color', 'outline-offset',
+    'box-shadow',
+    'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
+    'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+    'background-image', 'text-shadow',
+] as const;
+
 type PendingResource = {
     requestId: string;
     url: string;
@@ -374,11 +386,7 @@ export async function capture_extended_page_artifacts(
     if (!options.should_yield()) {
         try {
             dom_snapshot = await cdp.send('DOMSnapshot.captureSnapshot', {
-                computedStyles: [
-                    'display', 'visibility', 'color', 'background-color', 'font-size',
-                    'font-weight', 'line-height', 'opacity', 'position', 'width', 'height',
-                    'overflow', 'white-space', 'text-decoration', 'outline', 'content', 'transform',
-                ],
+                computedStyles: [...DOM_SNAPSHOT_COMPUTED_STYLES],
             });
         } catch {
             warnings.push({ code: 'dom_snapshot_unavailable', message: 'DOM snapshot unavailable' });
