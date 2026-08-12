@@ -196,9 +196,9 @@ describe('audit_snapshots_table_columns', () => {
             if (key === 'audit_snapshots_download_one_for_sample') {
                 return `Ladda ner sidrapport för ${String(opts?.sample ?? '')}`;
             }
-            if (key === 'audit_sidrapport_retake_button') return 'Ta ny sidrapport';
+            if (key === 'audit_sidrapport_retake_button') return 'Skapa ny sidrapport';
             if (key === 'audit_sidrapport_retake_for_sample') {
-                return `Ta ny sidrapport för ${String(opts?.sample ?? '')}`;
+                return `Skapa ny sidrapport för ${String(opts?.sample ?? '')}`;
             }
             return key;
         };

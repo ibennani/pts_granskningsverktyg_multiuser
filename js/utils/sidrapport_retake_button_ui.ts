@@ -1,5 +1,5 @@
 /**
- * @fileoverview Knapp och laddningsstatus för «Ta ny sidrapport» i sidrapportslistan.
+ * @fileoverview Knapp och laddningsstatus för «Skapa ny sidrapport» i sidrapportslistan.
  */
 import { is_sidrapport_retake_in_progress } from '../logic/audit_sidrapport_retake.js';
 import { get_icon_svg as default_get_icon_svg } from '../ui/icons.js';
