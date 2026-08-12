@@ -1,16 +1,18 @@
 /**
- * @fileoverview Browser-side hjälpskript för snapshot-analys (evaluate).
+ * @fileoverview Browser-side hjälpskript för snapshot-analys (page.evaluate).
+ * Måste vara ren JavaScript — laddas via snapshot_analysis_browser_scripts_loader.ts
+ * så tsx/esbuild inte injicerar __name i serialiserad kod.
  */
 
-export const BROWSER_GET_FOCUSED_ELEMENT_INFO = () => {
-    const active = document.activeElement as HTMLElement | null;
+export function browser_get_focused_element_info() {
+    const active = document.activeElement;
     if (!active || active === document.body || active === document.documentElement) {
         return null;
     }
     const rect = active.getBoundingClientRect();
-    const get_dom_path = (el: Element): string => {
-        const parts: string[] = [];
-        let node: Element | null = el;
+    const get_dom_path = (el) => {
+        const parts = [];
+        let node = el;
         while (node && node !== document.documentElement && parts.length < 12) {
             let part = node.tagName.toLowerCase();
             if (node.id) {
@@ -18,10 +20,10 @@ export const BROWSER_GET_FOCUSED_ELEMENT_INFO = () => {
                 parts.unshift(part);
                 break;
             }
-            const parent_el: Element | null = node.parentElement;
+            const parent_el = node.parentElement;
             if (parent_el) {
                 const siblings = Array.from(parent_el.children).filter(
-                    (child: Element) => child.tagName === node!.tagName
+                    (child) => child.tagName === node.tagName
                 );
                 if (siblings.length > 1) {
                     part += `:nth-of-type(${siblings.indexOf(node) + 1})`;
@@ -50,9 +52,9 @@ export const BROWSER_GET_FOCUSED_ELEMENT_INFO = () => {
         accessibleName: accessible_name || null,
         id: active.id || null,
         name: active.getAttribute('name'),
-        href: active.tagName === 'A' ? (active as HTMLAnchorElement).href : null,
+        href: active.tagName === 'A' ? active.href : null,
         tabIndex: active.tabIndex,
-        disabled: (active as HTMLInputElement).disabled === true,
+        disabled: active.disabled === true,
         ariaDisabled: active.getAttribute('aria-disabled') === 'true',
         ariaHidden: active.getAttribute('aria-hidden') === 'true',
         boundingBox: {
@@ -73,10 +75,10 @@ export const BROWSER_GET_FOCUSED_ELEMENT_INFO = () => {
             rect.right <= window.innerWidth &&
             rect.bottom <= window.innerHeight,
     };
-};
+}
 
-export const BROWSER_GET_COMPUTED_FOCUS_STYLES = () => {
-    const active = document.activeElement as HTMLElement | null;
+export function browser_get_computed_focus_styles() {
+    const active = document.activeElement;
     if (!active) return null;
     const cs = getComputedStyle(active);
     return {
@@ -96,20 +98,20 @@ export const BROWSER_GET_COMPUTED_FOCUS_STYLES = () => {
         backgroundColor: cs.backgroundColor,
         color: cs.color,
     };
-};
+}
 
-export const BROWSER_COLLECT_REFLOW_CANDIDATES = () => {
+export function browser_collect_reflow_candidates() {
     const doc_el = document.documentElement;
     const body = document.body;
     const client_width = doc_el.clientWidth;
     const scroll_width = Math.max(doc_el.scrollWidth, body?.scrollWidth ?? 0);
     const has_horizontal_overflow = scroll_width > client_width + 1;
-    const candidates: Array<Record<string, unknown>> = [];
+    const candidates = [];
     const viewport_w = window.innerWidth;
     const elements = document.querySelectorAll('body *');
     const max = 80;
     for (let i = 0; i < elements.length && candidates.length < max; i++) {
-        const el = elements[i] as HTMLElement;
+        const el = elements[i];
         const rect = el.getBoundingClientRect();
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
@@ -137,9 +139,9 @@ export const BROWSER_COLLECT_REFLOW_CANDIDATES = () => {
         hasHorizontalOverflow: has_horizontal_overflow,
         candidates,
     };
-};
+}
 
-export const BROWSER_APPLY_TEXT_SPACING_CSS = () => {
+export function browser_apply_text_spacing_css() {
     const existing = document.querySelector('[data-gv-snapshot-analysis="text-spacing"]');
     if (existing) existing.remove();
     const style = document.createElement('style');
@@ -150,20 +152,20 @@ export const BROWSER_APPLY_TEXT_SPACING_CSS = () => {
     `;
     document.head.appendChild(style);
     return true;
-};
+}
 
-export const BROWSER_REMOVE_TEXT_SPACING_CSS = () => {
+export function browser_remove_text_spacing_css() {
     const node = document.querySelector('[data-gv-snapshot-analysis="text-spacing"]');
     if (node) node.remove();
     return !document.querySelector('[data-gv-snapshot-analysis="text-spacing"]');
-};
+}
 
-export const BROWSER_COLLECT_TEXT_SPACING_ISSUES = () => {
-    const issues: Array<Record<string, unknown>> = [];
+export function browser_collect_text_spacing_issues() {
+    const issues = [];
     const containers = document.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, div, span');
     const max = 60;
     for (let i = 0; i < containers.length && issues.length < max; i++) {
-        const el = containers[i] as HTMLElement;
+        const el = containers[i];
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         const text = el.textContent?.trim();
@@ -184,10 +186,10 @@ export const BROWSER_COLLECT_TEXT_SPACING_ISSUES = () => {
         }
     }
     return issues;
-};
+}
 
-export const BROWSER_COLLECT_CONTRAST_CANDIDATES = () => {
-    const results: Array<Record<string, unknown>> = [];
+export function browser_collect_contrast_candidates() {
+    const results = [];
     const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const max = 120;
     while (results.length < max) {
@@ -222,16 +224,16 @@ export const BROWSER_COLLECT_CONTRAST_CANDIDATES = () => {
         });
     }
     return results;
-};
+}
 
-export const BROWSER_COLLECT_TARGET_SIZES = () => {
+export function browser_collect_target_sizes() {
     const selectors =
         'button, input, select, textarea, a[href], [role="button"], [role="link"], [tabindex]:not([tabindex="-1"])';
     const elements = document.querySelectorAll(selectors);
-    const results: Array<Record<string, unknown>> = [];
+    const results = [];
     const max = 100;
     for (let i = 0; i < elements.length && results.length < max; i++) {
-        const el = elements[i] as HTMLElement;
+        const el = elements[i];
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         const rect = el.getBoundingClientRect();
@@ -250,22 +252,22 @@ export const BROWSER_COLLECT_TARGET_SIZES = () => {
         });
     }
     return results;
-};
+}
 
-export const BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES = () => {
-    const results: Array<Record<string, unknown>> = [];
+export function browser_collect_safe_interaction_candidates() {
+    const results = [];
     const elements = document.querySelectorAll(
         'button, [aria-expanded], [aria-controls], summary, [role="button"]'
     );
     for (let i = 0; i < elements.length; i++) {
-        const el = elements[i] as HTMLElement;
+        const el = elements[i];
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         results.push({
             tagName: el.tagName.toLowerCase(),
             type: el.getAttribute('type'),
             role: el.getAttribute('role'),
-            href: el.tagName === 'A' ? (el as HTMLAnchorElement).href : null,
+            href: el.tagName === 'A' ? el.href : null,
             ariaExpanded: el.getAttribute('aria-expanded'),
             ariaControls: el.getAttribute('aria-controls'),
             ariaHaspopup: el.getAttribute('aria-haspopup'),
@@ -275,16 +277,16 @@ export const BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES = () => {
         });
     }
     return results;
-};
+}
 
-export const BROWSER_DETECT_CONSENT_BANNER = () => {
+export function browser_detect_consent_banner() {
     const keywords = ['cookie', 'consent', 'gdpr', 'samtycke', 'integritet'];
-    const candidates: Array<Record<string, unknown>> = [];
+    const candidates = [];
     const elements = document.querySelectorAll(
         '[role="dialog"], [aria-modal="true"], [id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i]'
     );
     for (let i = 0; i < elements.length; i++) {
-        const el = elements[i] as HTMLElement;
+        const el = elements[i];
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         const text = el.textContent?.toLowerCase() || '';
@@ -309,4 +311,4 @@ export const BROWSER_DETECT_CONSENT_BANNER = () => {
         });
     }
     return candidates;
-};
+}

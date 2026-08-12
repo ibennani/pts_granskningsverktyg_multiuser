@@ -3,7 +3,7 @@
  */
 import type { AnalysisContext, AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
 import { with_baseline_viewport } from '../snapshot_viewport_baseline.js';
-import { BROWSER_COLLECT_REFLOW_CANDIDATES } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_COLLECT_REFLOW_CANDIDATES } from '../snapshot_analysis_browser_scripts_loader.js';
 import { write_analysis_png } from '../snapshot_analysis_io.js';
 
 export async function run_reflow_analysis(ctx: AnalysisContext): Promise<AnalysisModuleEnvelope> {

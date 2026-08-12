@@ -3,7 +3,7 @@
  */
 import type { Page } from 'puppeteer';
 import type { AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
-import { BROWSER_DETECT_CONSENT_BANNER } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_DETECT_CONSENT_BANNER } from '../snapshot_analysis_browser_scripts_loader.js';
 import { get_snapshot_analysis_consent_wait_ms } from '../snapshot_analysis_config.js';
 import { write_analysis_png } from '../snapshot_analysis_io.js';
 

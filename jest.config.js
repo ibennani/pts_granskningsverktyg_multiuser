@@ -394,7 +394,7 @@ export default {
     '^.+[\\\\/]snapshot_element_identity\\.js$': '<rootDir>/server/snapshots/analysis/snapshot_element_identity.ts',
     '^.+[\\\\/]snapshot_safe_interaction\\.js$': '<rootDir>/server/snapshots/analysis/snapshot_safe_interaction.ts',
     '^.+[\\\\/]snapshot_contrast_utils\\.js$': '<rootDir>/server/snapshots/analysis/snapshot_contrast_utils.ts',
-    '^.+[\\\\/]snapshot_analysis_browser_scripts\\.js$': '<rootDir>/server/snapshots/analysis/snapshot_analysis_browser_scripts.ts',
+    '^.+[\\\\/]snapshot_analysis_browser_scripts_loader\\.js$': '<rootDir>/server/snapshots/analysis/snapshot_analysis_browser_scripts_loader.ts',
     '^.+[\\\\/]keyboard_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/keyboard_analysis.ts',
     '^.+[\\\\/]focus_visibility_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/focus_visibility_analysis.ts',
     '^.+[\\\\/]reflow_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/reflow_analysis.ts',

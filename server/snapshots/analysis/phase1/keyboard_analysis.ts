@@ -4,7 +4,7 @@
 import type { AnalysisContext, AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
 import { build_element_identity_from_eval, identity_key, sanitize_href } from '../snapshot_element_identity.js';
 import { get_snapshot_analysis_tab_max_steps } from '../snapshot_analysis_config.js';
-import { BROWSER_GET_FOCUSED_ELEMENT_INFO } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_GET_FOCUSED_ELEMENT_INFO } from '../snapshot_analysis_browser_scripts_loader.js';
 
 export async function run_keyboard_analysis(ctx: AnalysisContext): Promise<AnalysisModuleEnvelope> {
     const started = Date.now();

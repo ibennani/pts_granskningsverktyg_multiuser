@@ -7,7 +7,7 @@ import {
     BROWSER_APPLY_TEXT_SPACING_CSS,
     BROWSER_COLLECT_TEXT_SPACING_ISSUES,
     BROWSER_REMOVE_TEXT_SPACING_CSS,
-} from '../snapshot_analysis_browser_scripts.js';
+} from '../snapshot_analysis_browser_scripts_loader.js';
 import { write_analysis_png } from '../snapshot_analysis_io.js';
 
 export async function run_text_spacing_analysis(ctx: AnalysisContext): Promise<AnalysisModuleEnvelope> {

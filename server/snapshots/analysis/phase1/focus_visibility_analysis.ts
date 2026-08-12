@@ -2,7 +2,7 @@
  * @fileoverview Fas 1.2 – fokusutseende (computed style diff).
  */
 import type { AnalysisContext, AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
-import { BROWSER_GET_COMPUTED_FOCUS_STYLES, BROWSER_GET_FOCUSED_ELEMENT_INFO } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_GET_COMPUTED_FOCUS_STYLES, BROWSER_GET_FOCUSED_ELEMENT_INFO } from '../snapshot_analysis_browser_scripts_loader.js';
 import { build_element_identity_from_eval } from '../snapshot_element_identity.js';
 
 const FOCUS_PROPS = [

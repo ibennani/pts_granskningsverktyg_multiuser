@@ -2,7 +2,7 @@
  * @fileoverview Fas 1.5 – kontrastunderlag.
  */
 import type { AnalysisContext, AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
-import { BROWSER_COLLECT_CONTRAST_CANDIDATES } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_COLLECT_CONTRAST_CANDIDATES } from '../snapshot_analysis_browser_scripts_loader.js';
 import {
     contrast_ratio,
     is_large_text_candidate,

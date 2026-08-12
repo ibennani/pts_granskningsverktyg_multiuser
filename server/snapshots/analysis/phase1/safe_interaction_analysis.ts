@@ -2,7 +2,7 @@
  * @fileoverview Fas 1.7 – begränsade säkra interaktioner.
  */
 import type { AnalysisContext, AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
-import { BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES } from '../snapshot_analysis_browser_scripts_loader.js';
 import { classify_safe_interaction } from '../snapshot_safe_interaction.js';
 import { get_snapshot_analysis_interaction_max } from '../snapshot_analysis_config.js';
 import { build_element_identity_from_eval } from '../snapshot_element_identity.js';

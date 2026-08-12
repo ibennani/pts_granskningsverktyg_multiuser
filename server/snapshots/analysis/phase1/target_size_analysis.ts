@@ -2,7 +2,7 @@
  * @fileoverview Fas 1.6 – klickytors storlek.
  */
 import type { AnalysisContext, AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
-import { BROWSER_COLLECT_TARGET_SIZES } from '../snapshot_analysis_browser_scripts.js';
+import { BROWSER_COLLECT_TARGET_SIZES } from '../snapshot_analysis_browser_scripts_loader.js';
 import { build_element_identity_from_eval } from '../snapshot_element_identity.js';
 
 export async function run_target_size_analysis(ctx: AnalysisContext): Promise<AnalysisModuleEnvelope> {
