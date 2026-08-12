@@ -16,6 +16,7 @@ import {
     persist_resource_bodies,
     create_resource_body_persist_counters,
     await_eager_resource_body_captures,
+    count_body_capture_issues,
     to_network_json_entries,
 } from '../server/snapshots/page_snapshot_cdp.ts';
 
@@ -36,6 +37,7 @@ await await_eager_resource_body_captures(state);
 
 const counters = create_resource_body_persist_counters();
 const result = await persist_resource_bodies(cdp, state, temp_dir, counters);
+const final_issues = count_body_capture_issues(state);
 
 const entries = to_network_json_entries(state.resources);
 const skipped = entries.filter((r) => r.bodySkipReason);
@@ -49,6 +51,7 @@ console.log(
             captured: captured.length,
             skipped: skipped.length,
             persist_result: result,
+            final_issues,
             skipped_samples: skipped.slice(0, 15).map((r) => ({
                 url: r.url.slice(0, 100),
                 type: r.resourceType,

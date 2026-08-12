@@ -86,13 +86,9 @@ export function decode_cdp_response_body(body_result: {
 }
 
 export function is_resource_body_capture_candidate(
-    resource: Pick<PendingResource, 'failed' | 'requestId' | 'mimeType' | 'resourceType'>,
-    main_document_request_id: string | null
+    resource: Pick<PendingResource, 'failed' | 'mimeType' | 'resourceType'>
 ): boolean {
     if (resource.failed) return false;
-    if (main_document_request_id && resource.requestId === main_document_request_id) {
-        return true;
-    }
     const mime = (resource.mimeType || '').toLowerCase();
     const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
     const is_js =
@@ -140,7 +136,7 @@ export async function attach_network_listeners(
 
     const capture_body_eager = async (entry: PendingResource): Promise<void> => {
         if (entry.bodyCaptured || entry.pendingBodyBytes || entry.bodySkipReason) return;
-        if (!is_resource_body_capture_candidate(entry, state.mainDocumentRequestId)) return;
+        if (!is_resource_body_capture_candidate(entry)) return;
         try {
             const body_result = await cdp.send('Network.getResponseBody', {
                 requestId: entry.requestId,
@@ -152,7 +148,7 @@ export async function attach_network_listeners(
             }
             entry.pendingBodyBytes = raw;
         } catch {
-            entry.bodySkipReason = 'network response body no longer available';
+            // Låt persist-pass försöka igen; kroppen kan bli tillgänglig strax efter loadingFinished.
         }
     };
 
@@ -202,8 +198,6 @@ export async function attach_network_listeners(
         if (entry.resourceType === 'Document' && event.frameId === main_frame_id) {
             state.mainDocumentRequestId = event.requestId;
         }
-        const task = capture_body_eager(entry);
-        state.eager_capture_tasks.push(task);
     });
     cdp.on('Network.loadingFinished', (event: { requestId: string; encodedDataLength: number }) => {
         const entry = state.resources.find((r) => r.requestId === event.requestId);
@@ -259,6 +253,28 @@ export type PersistResourceBodiesResult = {
     counters: ResourceBodyPersistCounters;
 };
 
+/** Räknar kvarvarande kroppar som borde ha sparats efter alla persist-pass. */
+export function count_body_capture_issues(
+    state: NetworkCaptureState
+): Pick<PersistResourceBodiesResult, 'body_unavailable_count' | 'resource_too_large_count'> {
+    let body_unavailable_count = 0;
+    let resource_too_large_count = 0;
+
+    for (const resource of state.resources) {
+        if (resource.bodyCaptured) continue;
+        if (!is_resource_body_capture_candidate(resource)) {
+            continue;
+        }
+        if (resource.bodySkipReason === 'resource exceeded size limit') {
+            resource_too_large_count += 1;
+            continue;
+        }
+        body_unavailable_count += 1;
+    }
+
+    return { body_unavailable_count, resource_too_large_count };
+}
+
 export async function persist_resource_bodies(
     cdp: CDPSession,
     state: NetworkCaptureState,
@@ -275,7 +291,7 @@ export async function persist_resource_bodies(
 
     for (const resource of state.resources) {
         if (resource.bodyCaptured) continue;
-        if (!is_resource_body_capture_candidate(resource, state.mainDocumentRequestId)) {
+        if (!is_resource_body_capture_candidate(resource)) {
             continue;
         }
 
@@ -309,13 +325,6 @@ export async function persist_resource_bodies(
         }
 
         const text = raw.toString('utf8');
-        if (resource.requestId === state.mainDocumentRequestId) {
-            state.mainDocumentBody = text;
-            resource.bodyCaptured = true;
-            resource.pendingBodyBytes = null;
-            continue;
-        }
-
         const mime = (resource.mimeType || '').toLowerCase();
         const is_css = mime.includes('css') || resource.resourceType === 'Stylesheet';
         const ext = is_css ? 'css' : 'js';

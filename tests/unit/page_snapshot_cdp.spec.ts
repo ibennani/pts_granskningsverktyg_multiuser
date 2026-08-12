@@ -8,6 +8,7 @@ import {
     push_resource_too_large_warning,
     decode_cdp_response_body,
     create_network_capture_state,
+    count_body_capture_issues,
     persist_resource_bodies,
 } from '../../server/snapshots/page_snapshot_cdp.ts';
 import {
@@ -15,70 +16,50 @@ import {
 } from '../../js/utils/sidrapport_warning_labels.ts';
 
 describe('page_snapshot_cdp helpers', () => {
-    test('is_resource_body_capture_candidate inkluderar huvuddokument', () => {
+    test('is_resource_body_capture_candidate hoppar över huvuddokument', () => {
         expect(
-            is_resource_body_capture_candidate(
-                {
-                    failed: false,
-                    requestId: 'doc-1',
-                    mimeType: 'text/html',
-                    resourceType: 'Document',
-                },
-                'doc-1'
-            )
-        ).toBe(true);
+            is_resource_body_capture_candidate({
+                failed: false,
+                mimeType: 'text/html',
+                resourceType: 'Document',
+            })
+        ).toBe(false);
     });
 
     test('is_resource_body_capture_candidate inkluderar css och js', () => {
         expect(
-            is_resource_body_capture_candidate(
-                {
-                    failed: false,
-                    requestId: 'css-1',
-                    mimeType: 'text/css',
-                    resourceType: 'Stylesheet',
-                },
-                'doc-1'
-            )
+            is_resource_body_capture_candidate({
+                failed: false,
+                mimeType: 'text/css',
+                resourceType: 'Stylesheet',
+            })
         ).toBe(true);
         expect(
-            is_resource_body_capture_candidate(
-                {
-                    failed: false,
-                    requestId: 'js-1',
-                    mimeType: 'application/javascript',
-                    resourceType: 'Script',
-                },
-                'doc-1'
-            )
+            is_resource_body_capture_candidate({
+                failed: false,
+                mimeType: 'application/javascript',
+                resourceType: 'Script',
+            })
         ).toBe(true);
     });
 
     test('is_resource_body_capture_candidate hoppar över bilder', () => {
         expect(
-            is_resource_body_capture_candidate(
-                {
-                    failed: false,
-                    requestId: 'img-1',
-                    mimeType: 'image/png',
-                    resourceType: 'Image',
-                },
-                'doc-1'
-            )
+            is_resource_body_capture_candidate({
+                failed: false,
+                mimeType: 'image/png',
+                resourceType: 'Image',
+            })
         ).toBe(false);
     });
 
     test('is_resource_body_capture_candidate hoppar över iframe-dokument', () => {
         expect(
-            is_resource_body_capture_candidate(
-                {
-                    failed: false,
-                    requestId: 'iframe-doc',
-                    mimeType: 'text/html',
-                    resourceType: 'Document',
-                },
-                'main-doc'
-            )
+            is_resource_body_capture_candidate({
+                failed: false,
+                mimeType: 'text/html',
+                resourceType: 'Document',
+            })
         ).toBe(false);
     });
 
@@ -135,7 +116,7 @@ describe('page_snapshot_cdp helpers', () => {
         await fs.rm(temp_dir, { recursive: true, force: true });
     });
 
-    test('persist_resource_bodies räknar inte dubbelt när eager redan misslyckat', async () => {
+    test('persist_resource_bodies försöker CDP när eager misslyckat utan bodySkipReason', async () => {
         const temp_dir = await fs.mkdtemp(path.join(os.tmpdir(), 'snapshot-cdp-'));
         const state = create_network_capture_state();
         state.resources.push({
@@ -152,17 +133,113 @@ describe('page_snapshot_cdp helpers', () => {
             redirectChain: [],
             responseHeaders: {},
             bodyCaptured: false,
+            bodySkipReason: null,
+            archiveRelativePath: null,
+            pendingBodyBytes: null,
+        });
+
+        const cdp = {
+            send: jest.fn().mockRejectedValue(new Error('not ready')),
+        };
+        const result = await persist_resource_bodies(cdp as never, state, temp_dir);
+
+        expect(cdp.send).toHaveBeenCalledWith('Network.getResponseBody', { requestId: 'js-1' });
+        expect(result.body_unavailable_count).toBe(1);
+        expect(state.resources[0]?.bodySkipReason).toBe('network response body no longer available');
+        await fs.rm(temp_dir, { recursive: true, force: true });
+    });
+
+    test('count_body_capture_issues räknar inte huvuddokument utan CDP-kropp', () => {
+        const state = create_network_capture_state();
+        state.mainDocumentRequestId = 'doc-1';
+        state.resources.push({
+            requestId: 'doc-1',
+            url: 'https://example.com/',
+            method: 'GET',
+            resourceType: 'Document',
+            mimeType: 'text/html',
+            status: 200,
+            encodedSize: 100,
+            decodedSize: null,
+            failed: false,
+            failureReason: null,
+            redirectChain: [],
+            responseHeaders: {},
+            bodyCaptured: false,
             bodySkipReason: 'network response body no longer available',
             archiveRelativePath: null,
             pendingBodyBytes: null,
         });
 
-        const cdp = { send: jest.fn() };
-        const result = await persist_resource_bodies(cdp as never, state, temp_dir);
+        expect(count_body_capture_issues(state)).toEqual({
+            body_unavailable_count: 0,
+            resource_too_large_count: 0,
+        });
+    });
 
-        expect(cdp.send).not.toHaveBeenCalled();
-        expect(result.body_unavailable_count).toBe(1);
-        await fs.rm(temp_dir, { recursive: true, force: true });
+    test('count_body_capture_issues ignorerar sparade resurser och icke-kandidater', () => {
+        const state = create_network_capture_state();
+        state.resources.push(
+            {
+                requestId: 'doc-1',
+                url: 'https://example.com/',
+                method: 'GET',
+                resourceType: 'Document',
+                mimeType: 'text/html',
+                status: 200,
+                encodedSize: 100,
+                decodedSize: null,
+                failed: false,
+                failureReason: null,
+                redirectChain: [],
+                responseHeaders: {},
+                bodyCaptured: false,
+                bodySkipReason: 'network response body no longer available',
+                archiveRelativePath: null,
+                pendingBodyBytes: null,
+            },
+            {
+                requestId: 'js-1',
+                url: 'https://example.com/app.js',
+                method: 'GET',
+                resourceType: 'Script',
+                mimeType: 'application/javascript',
+                status: 200,
+                encodedSize: 12,
+                decodedSize: null,
+                failed: false,
+                failureReason: null,
+                redirectChain: [],
+                responseHeaders: {},
+                bodyCaptured: false,
+                bodySkipReason: 'network response body no longer available',
+                archiveRelativePath: null,
+                pendingBodyBytes: null,
+            },
+            {
+                requestId: 'iframe-doc',
+                url: 'https://example.com/widget',
+                method: 'GET',
+                resourceType: 'Document',
+                mimeType: 'text/html',
+                status: 200,
+                encodedSize: 50,
+                decodedSize: null,
+                failed: false,
+                failureReason: null,
+                redirectChain: [],
+                responseHeaders: {},
+                bodyCaptured: false,
+                bodySkipReason: 'network response body no longer available',
+                archiveRelativePath: null,
+                pendingBodyBytes: null,
+            }
+        );
+
+        expect(count_body_capture_issues(state)).toEqual({
+            body_unavailable_count: 1,
+            resource_too_large_count: 0,
+        });
     });
 
     test('push_body_unavailable_warning lägger till en varning', () => {
