@@ -130,9 +130,11 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         cdp = await page.createCDPSession();
         await prepare_capture_page(page);
         attach_console_listeners(page, console_entries);
-        const frame_tree = await cdp.send('Page.getFrameTree') as { frame: { id: string } };
+        const frame_tree = await cdp.send('Page.getFrameTree') as {
+            frameTree: { frame: { id: string } };
+        };
         await attach_network_listeners(cdp, network_state, {
-            main_frame_id: frame_tree.frame.id,
+            main_frame_id: frame_tree.frameTree.frame.id,
         });
 
         await navigate_for_initial_consent_observation(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
