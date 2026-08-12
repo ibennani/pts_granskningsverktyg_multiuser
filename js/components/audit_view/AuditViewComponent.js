@@ -57,7 +57,14 @@ import {
     JSON_MAX_UPLOAD_BYTES,
     format_json_max_upload_size_label,
 } from '../../../shared/constants/json_upload_limits.js';
+import {
+    AUDIT_BACKUP_ZIP_MAX_BYTES,
+    format_file_max_size_label,
+} from '../../../shared/constants/file_size_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
+import { parse_audit_upload_file, AuditUploadFileTooLargeError } from '../../logic/audit_upload_parse.js';
+import { import_audit_with_optional_media } from '../../logic/audit_import_with_media.js';
+import { build_audit_import_success_messages } from '../../logic/audit_backup_import_messages.js';
 import { audit_page_size_string_to_number } from '../../logic/table_pagination_logic.js';
 import { collect_audit_section_keys_from_container } from '../../logic/audit_list_section_transition.js';
 import { run_audit_list_filter_update_animation } from '../../logic/audit_list_view_transition.js';
@@ -884,86 +891,109 @@ export class AuditViewComponent {
         const t = this.get_t_func();
         const file = event.target.files?.[0];
         if (!file) return;
-        if (file.size > JSON_MAX_UPLOAD_BYTES) {
-            this.NotificationComponent?.show_global_message(
-                t('audit_upload_file_too_large', { max_size: format_json_max_upload_size_label() }),
-                'error'
-            );
-            if (event.target) event.target.value = '';
-            return;
-        }
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            let file_content_object = null;
-            try {
-                const json_content = JSON.parse(e.target.result);
-                const structure_check = check_json_structure_depth_and_size(json_content);
-                if (!structure_check.ok) {
-                    this.NotificationComponent?.show_global_message(t('audit_upload_json_structure_invalid'), 'error');
-                    if (event.target) event.target.value = '';
+        try {
+            const parsed_upload = await parse_audit_upload_file(file);
+            const json_content = parsed_upload.audit_json;
+            const structure_check = check_json_structure_depth_and_size(json_content);
+            if (!structure_check.ok) {
+                this.NotificationComponent?.show_global_message(t('audit_upload_json_structure_invalid'), 'error');
+                if (event.target) event.target.value = '';
+                return;
+            }
+            const audit_validation = this.ValidationLogic?.validate_saved_audit_file?.(json_content);
+            if (!audit_validation?.isValid) {
+                this.NotificationComponent?.show_global_message(
+                    t('audit_upload_invalid_file') + (audit_validation?.message ? ` (${audit_validation.message})` : ''),
+                    'error'
+                );
+                if (event.target) event.target.value = '';
+                return;
+            }
+            const file_content_object = { ...json_content };
+            if (file_content_object.ruleFileContent) {
+                file_content_object.ruleFileContent = migrate_rulefile_to_new_structure(
+                    file_content_object.ruleFileContent,
+                    { Translation: this.Translation }
+                );
+            }
+
+            const media_files = parsed_upload.kind === 'zip' ? parsed_upload.media_files : [];
+            const zip_missing_media = parsed_upload.kind === 'zip' ? parsed_upload.missing_media : [];
+            const import_extras = { media_files, zip_missing_media, input_element: event.target };
+
+            const file_id = file_content_object.auditId ?? file_content_object.audit_id ?? null;
+            const file_meta = file_content_object.auditMetadata || {};
+            const file_case = (file_meta.caseNumber ?? '').toString().trim();
+            const file_actor = (file_meta.actorName ?? '').toString().trim();
+            const file_updated = Number(file_content_object.updated_at ?? file_content_object.updatedAt ?? 0);
+
+            const existing = this.audits.find((a) => {
+                if (file_id !== null && file_id !== undefined && String(a.id) === String(file_id)) return true;
+                const sc = (a.metadata?.caseNumber ?? '').toString().trim();
+                const sa = (a.metadata?.actorName ?? '').toString().trim();
+                return sc === file_case && sa === file_actor;
+            });
+
+            if (existing) {
+                const server_updated = Number(existing.updated_at ?? 0);
+                if (server_updated > file_updated) {
+                    this._show_audit_server_newer_modal(
+                        file_content_object,
+                        () => this._do_import_audit_and_refresh(file_content_object, import_extras),
+                        () => { if (event.target) event.target.value = ''; }
+                    );
                     return;
                 }
-                const audit_validation = this.ValidationLogic?.validate_saved_audit_file?.(json_content);
-                if (!audit_validation?.isValid) {
-                    this.NotificationComponent?.show_global_message(
-                        t('audit_upload_invalid_file') + (audit_validation?.message ? ` (${audit_validation.message})` : ''),
-                        'error'
-                    );
-                    if (event.target) event.target.value = '';
-                    return;
-                }
-                file_content_object = { ...json_content };
-                if (file_content_object.ruleFileContent) {
-                    file_content_object.ruleFileContent = migrate_rulefile_to_new_structure(
-                        file_content_object.ruleFileContent,
-                        { Translation: this.Translation }
-                    );
-                }
+            }
 
-                const file_id = file_content_object.auditId ?? file_content_object.audit_id ?? null;
-                const file_meta = file_content_object.auditMetadata || {};
-                const file_case = (file_meta.caseNumber ?? '').toString().trim();
-                const file_actor = (file_meta.actorName ?? '').toString().trim();
-                const file_updated = Number(file_content_object.updated_at ?? file_content_object.updatedAt ?? 0);
-
-                const existing = this.audits.find((a) => {
-                    if (file_id !== null && file_id !== undefined && String(a.id) === String(file_id)) return true;
-                    const sc = (a.metadata?.caseNumber ?? '').toString().trim();
-                    const sa = (a.metadata?.actorName ?? '').toString().trim();
-                    return sc === file_case && sa === file_actor;
-                });
-
-                if (existing) {
-                    const server_updated = Number(existing.updated_at ?? 0);
-                    // Visa modal endast om servern har en strikt nyare version. Om filen är nyare eller samma tid → ladda upp direkt.
-                    if (server_updated > file_updated) {
-                        this._show_audit_server_newer_modal(
-                            file_content_object,
-                            () => this._do_import_audit_and_refresh(file_content_object, event.target),
-                            () => { if (event.target) event.target.value = ''; }
-                        );
-                        return;
-                    }
-                }
-
-                await this._do_import_audit_and_refresh(file_content_object, event.target);
-            } catch (err) {
+            await this._do_import_audit_and_refresh(file_content_object, import_extras);
+        } catch (err) {
+            if (err instanceof AuditUploadFileTooLargeError) {
+                const max_label = err.max_bytes === AUDIT_BACKUP_ZIP_MAX_BYTES
+                    ? format_file_max_size_label(AUDIT_BACKUP_ZIP_MAX_BYTES)
+                    : format_json_max_upload_size_label();
+                this.NotificationComponent?.show_global_message(
+                    t('audit_upload_file_too_large', { max_size: max_label }),
+                    'error'
+                );
+            } else if (err?.message === 'audit_backup_manifest_invalid' || err?.message === 'audit_backup_json_missing') {
+                this.NotificationComponent?.show_global_message(t('audit_backup_zip_invalid'), 'error');
+            } else {
                 this.NotificationComponent?.show_global_message(
                     t('audit_upload_invalid_file') + (err?.message ? ` (${err.message})` : ''),
                     'error'
                 );
-                if (event.target) event.target.value = '';
             }
-        };
-        reader.readAsText(file);
+            if (event.target) event.target.value = '';
+        }
     }
 
-    async _do_import_audit_and_refresh(file_content_object, input_element) {
+    _show_audit_import_messages(media_result, zip_missing_media = []) {
         const t = this.get_t_func();
+        const messages = build_audit_import_success_messages(t, media_result, zip_missing_media);
+        for (const entry of messages) {
+            this.NotificationComponent?.show_global_message(entry.message, entry.type);
+        }
+    }
+
+    async _do_import_audit_and_refresh(file_content_object, import_extras = {}) {
+        const t = this.get_t_func();
+        const input_element = import_extras.input_element ?? null;
+        const media_files = import_extras.media_files ?? [];
+        const zip_missing_media = import_extras.zip_missing_media ?? [];
+        const replace_existing_audit_id = import_extras.replace_existing_audit_id ?? null;
+
         try {
-            await import_audit(file_content_object);
-            this.NotificationComponent?.show_global_message(t('audit_audit_uploaded_success'), 'success');
+            const import_options = replace_existing_audit_id
+                ? { replace_existing_audit_id }
+                : {};
+            const { media_result } = await import_audit_with_optional_media(
+                file_content_object,
+                media_files,
+                import_options
+            );
+            this._show_audit_import_messages(media_result, zip_missing_media);
             await this.ensure_api_data();
             this.render();
             if (input_element) input_element.value = '';
@@ -973,12 +1003,13 @@ export class AuditViewComponent {
                     file_content_object,
                     err,
                     async () => {
-                        this.NotificationComponent?.show_global_message(t('audit_audit_uploaded_success'), 'success');
-                        await this.ensure_api_data();
-                        this.render();
-                        if (input_element) input_element.value = '';
+                        await this._do_import_audit_and_refresh(file_content_object, {
+                            ...import_extras,
+                            replace_existing_audit_id: err.existingAuditId
+                        });
                     },
-                    () => { if (input_element) input_element.value = ''; }
+                    () => { if (input_element) input_element.value = ''; },
+                    import_extras
                 );
                 return;
             }
@@ -1659,7 +1690,7 @@ export class AuditViewComponent {
         return t('audit_audit_duplicate_modal_value_missing');
     }
 
-    _show_audit_duplicate_modal(file_content_object, duplicate_err, on_after_overwrite, on_keep) {
+    _show_audit_duplicate_modal(file_content_object, duplicate_err, on_after_overwrite, on_keep, _import_extras = null) {
         const t = this.get_t_func();
         const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
@@ -1796,10 +1827,9 @@ export class AuditViewComponent {
                         return;
                     }
                     try {
-                        await import_audit(file_content_object, {
-                            replace_existing_audit_id: duplicate_err.existingAuditId
-                        });
-                        if (typeof on_after_overwrite === 'function') await on_after_overwrite();
+                        if (typeof on_after_overwrite === 'function') {
+                            await on_after_overwrite();
+                        }
                     } catch (e) {
                         this.NotificationComponent?.show_global_message(
                             e?.message || t('audit_upload_invalid_file'),

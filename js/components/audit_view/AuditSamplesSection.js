@@ -170,7 +170,7 @@ function build_audit_section_heading_row(ctx, config, section_heading_text, t) {
             class_name: 'audit-hidden-file-input',
             attributes: {
                 type: 'file',
-                accept: '.json,application/json',
+                accept: '.json,application/json,.zip,application/zip',
                 'aria-label': t('audit_upload_saved_audit'),
                 tabindex: '-1',
                 'aria-hidden': 'true'

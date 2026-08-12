@@ -17,6 +17,7 @@ describe('save_audit_logic', () => {
     let mock_anchor;
     let generate_audit_filename;
     let attach_export_integrity_to_audit_payload;
+    let build_audit_backup_zip;
     /** @type {typeof globalThis.fetch | undefined} */
     let saved_fetch;
     let create_element_spy;
@@ -29,13 +30,18 @@ describe('save_audit_logic', () => {
 
     const test_deps = () => ({
         generate_audit_filename,
-        attach_export_integrity_to_audit_payload
+        attach_export_integrity_to_audit_payload,
+        build_audit_backup_zip,
     });
 
     beforeEach(() => {
         show_notification = jest.fn();
         generate_audit_filename = jest.fn(() => 'export.json');
         attach_export_integrity_to_audit_payload = jest.fn(async (data) => ({ ...data, integrity: 'ok' }));
+        build_audit_backup_zip = jest.fn(async () => ({
+            blob: new Blob(['zip'], { type: 'application/zip' }),
+            missing_media: [],
+        }));
 
         saved_fetch = global.fetch;
         global.fetch = jest.fn(() => Promise.resolve({ ok: false, json: async () => ({}) }));
@@ -88,7 +94,7 @@ describe('save_audit_logic', () => {
         expect(mock_anchor.click).not.toHaveBeenCalled();
     });
 
-    test('lyckad sparning: filnamn, blob, klick och framgångsnotis', async () => {
+    test('lyckad sparning: zip-filnamn, blob, klick och framgångsnotis', async () => {
         const audit = { auditStatus: 'in_progress', samples: [] };
         generate_audit_filename.mockReturnValueOnce('min-granskning.json');
 
@@ -103,7 +109,8 @@ describe('save_audit_logic', () => {
             })
         );
         expect(attach_export_integrity_to_audit_payload).toHaveBeenCalledWith(audit);
-        expect(mock_anchor.download).toBe('min-granskning.json');
+        expect(build_audit_backup_zip).toHaveBeenCalled();
+        expect(mock_anchor.download).toBe('min-granskning.zip');
         expect(mock_anchor.href).toBe('blob:test-url');
         expect(mock_anchor.click).toHaveBeenCalledTimes(1);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-url');
@@ -111,6 +118,18 @@ describe('save_audit_logic', () => {
         expect(show_notification).toHaveBeenCalledWith(
             expect.stringContaining('audit_saved_as_file'),
             'success'
+        );
+    });
+
+    test('varnar när bilder saknas i zip-export', async () => {
+        build_audit_backup_zip.mockResolvedValueOnce({
+            blob: new Blob(['zip'], { type: 'application/zip' }),
+            missing_media: ['a.png', 'b.png'],
+        });
+        await save_audit_to_json_file({ samples: [] }, t, show_notification, undefined, test_deps());
+        expect(show_notification).toHaveBeenCalledWith(
+            expect.stringContaining('audit_backup_export_missing_media'),
+            'warning'
         );
     });
 
@@ -149,11 +168,11 @@ describe('save_audit_logic', () => {
         expect(mock_anchor.click).not.toHaveBeenCalled();
     });
 
-    test('misslyckad exportintegritet vid serverfel (500-liknande) visar error_internal', async () => {
-        attach_export_integrity_to_audit_payload.mockRejectedValueOnce(new Error('HTTP 500'));
-        const audit = { id: 'a-500' };
-        await save_audit_to_json_file(audit, t, show_notification, undefined, test_deps());
+    test('misslyckad zip-export visar error_internal', async () => {
+        build_audit_backup_zip.mockRejectedValueOnce(new Error('zip fail'));
+        await save_audit_to_json_file({ samples: [] }, t, show_notification, undefined, test_deps());
         expect(show_notification).toHaveBeenCalledWith('error_internal', 'error');
+        expect(mock_anchor.click).not.toHaveBeenCalled();
     });
 
     test('sparar utan auditId i payload när metadata finns (filnamn genereras)', async () => {
@@ -171,5 +190,6 @@ describe('save_audit_logic', () => {
             })
         );
         expect(mock_anchor.click).toHaveBeenCalled();
+        expect(mock_anchor.download).toBe('fil.zip');
     });
 });

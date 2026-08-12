@@ -8,6 +8,9 @@ export const FILE_MAX_BYTES = 50 * 1024 * 1024;
 /** Max storlek för zip med alla sidrapporter (100 MiB). */
 export const SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES = 100 * 1024 * 1024;
 
+/** Max storlek för uppladdad gransknings-säkerhetskopia (ZIP, 100 MiB). */
+export const AUDIT_BACKUP_ZIP_MAX_BYTES = 100 * 1024 * 1024;
+
 /**
  * Visningsetikett för max filstorlek i UI (t.ex. "50 MB").
  * @param {number} [bytes]

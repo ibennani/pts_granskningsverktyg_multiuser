@@ -3,21 +3,21 @@
 import { generate_audit_filename, type GenerateAuditFilenameOptions } from '../utils/filename_utils';
 import { attach_export_integrity_to_audit_payload } from '../utils/export_integrity.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { trigger_browser_blob_download, get_download_filename_datetime } from '../utils/download_filename_utils';
 import {
-    get_download_filename_datetime,
-    trigger_browser_blob_download,
-} from '../utils/download_filename_utils';
+    audit_backup_download_filename,
+    build_audit_backup_zip,
+} from './audit_backup_zip_export.js';
 
 /** Endast för enhetstest — produktion anropar utan detta femte argument. */
 export type SaveAuditToJsonFileDepsOverride = {
     generate_audit_filename?: typeof generate_audit_filename;
     attach_export_integrity_to_audit_payload?: typeof attach_export_integrity_to_audit_payload;
+    build_audit_backup_zip?: typeof build_audit_backup_zip;
 };
 
-/** Startar nedladdning av JSON i webbläsaren (Blob + temporär länk). */
-function perform_client_json_download(filename: string, payload_for_file: unknown): void {
-    const data_str = JSON.stringify(payload_for_file, null, 2);
-    const blob = new Blob([data_str], { type: 'application/json' });
+/** Startar nedladdning av säkerhetskopia (ZIP) i webbläsaren. */
+function perform_client_backup_download(filename: string, blob: Blob): void {
     trigger_browser_blob_download(blob, filename);
 }
 
@@ -42,8 +42,10 @@ export async function save_audit_to_json_file(
     };
     const gen_fn = deps_override?.generate_audit_filename ?? generate_audit_filename;
     const attach_fn = deps_override?.attach_export_integrity_to_audit_payload ?? attach_export_integrity_to_audit_payload;
+    const zip_fn = deps_override?.build_audit_backup_zip ?? build_audit_backup_zip;
 
-    const filename = gen_fn(current_audit_data, t_func, filename_options);
+    const json_filename = gen_fn(current_audit_data, t_func, filename_options);
+    const download_filename = audit_backup_download_filename(json_filename);
 
     let payload_for_file: unknown;
     try {
@@ -54,7 +56,19 @@ export async function save_audit_to_json_file(
         return;
     }
 
-    perform_client_json_download(filename, payload_for_file);
+    let zip_blob: Blob;
+    let missing_media: string[] = [];
+    try {
+        const zip_result = await zip_fn(payload_for_file as Record<string, unknown>);
+        zip_blob = zip_result.blob;
+        missing_media = zip_result.missing_media;
+    } catch (e) {
+        if (show_notification_func) show_notification_func(t_func('error_internal'), 'error');
+        if (w.ConsoleManager?.warn) w.ConsoleManager.warn('[SaveAuditLogic] ZIP-export misslyckades:', e);
+        return;
+    }
+
+    perform_client_backup_download(download_filename, zip_blob);
 
     try {
         if (w.DraftManager?.commitCurrentDraft) {
@@ -64,8 +78,16 @@ export async function save_audit_to_json_file(
         if (w.ConsoleManager?.warn) w.ConsoleManager.warn('[SaveAuditLogic] Could not commit draft after save:', e);
     }
 
-    if (show_notification_func) show_notification_func(t_func('audit_saved_as_file', { filename }), 'success');
-    consoleManager.log(`[SaveAuditLogic] Audit saved as ${filename}`);
+    if (show_notification_func) {
+        show_notification_func(t_func('audit_saved_as_file', { filename: download_filename }), 'success');
+        if (missing_media.length > 0) {
+            show_notification_func(
+                t_func('audit_backup_export_missing_media', { count: missing_media.length }),
+                'warning'
+            );
+        }
+    }
+    consoleManager.log(`[SaveAuditLogic] Audit saved as ${download_filename}`);
 }
 
 consoleManager.log('[save_audit_logic.ts] SaveAuditLogic loaded.');
