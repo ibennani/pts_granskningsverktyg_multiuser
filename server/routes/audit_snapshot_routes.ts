@@ -20,12 +20,16 @@ import {
 import { build_audit_snapshot_list } from '../services/audit_snapshot_list_service.js';
 import {
     get_audit_snapshot_by_id,
-    list_audit_snapshots_for_audit,
 } from '../repositories/audit_snapshot_repository.js';
 import {
     get_snapshot_archive_path,
-    ensure_audit_snapshot_dir,
 } from '../snapshots/audit_snapshot_storage.js';
+import {
+    append_snapshot_archive_to_zip,
+    build_snapshot_export_folder_name,
+    build_snapshots_download_all_index,
+    type SnapshotsDownloadAllIndexEntry,
+} from '../snapshots/audit_snapshots_download_all_bundle.js';
 import { sanitize_filename_segment } from '../../js/logic/backup_download_filename.js';
 import { format_filename_datetime_for_download } from '../../shared/datetime/filename_datetime.js';
 import JSZip from 'jszip';
@@ -113,29 +117,33 @@ export function register_audit_snapshot_routes(router: Router): void {
             }
 
             const zip = new JSZip();
-            const index_entries = [];
+            const index_entries: SnapshotsDownloadAllIndexEntry[] = [];
 
             for (const item of ready_items) {
                 const snap = item.currentReady!;
                 const archive_path = get_snapshot_archive_path(audit_id, snap.snapshotId);
                 const data = await fs.readFile(archive_path);
-                const desc = sanitize_filename_segment(item.sampleDescription || item.sampleId);
-                const ts = format_filename_datetime_for_download(snap.capturedAt);
-                const inner_name = `${desc}_${ts}.zip`;
-                zip.file(inner_name, data);
+                const folder = `snapshots/${build_snapshot_export_folder_name(
+                    item.sampleId,
+                    item.sampleDescription
+                )}`;
+                const files = await append_snapshot_archive_to_zip(zip, data, folder);
                 index_entries.push({
+                    folder,
                     snapshotId: snap.snapshotId,
                     sampleId: item.sampleId,
                     description: item.sampleDescription ?? null,
                     url: item.requestedUrl,
                     capturedAt: snap.capturedAt,
                     included: true,
+                    files,
                 });
             }
 
             for (const item of list) {
                 if (item.pendingAttempt && !item.currentReady) {
                     index_entries.push({
+                        folder: null,
                         snapshotId: item.pendingAttempt.snapshotId,
                         sampleId: item.sampleId,
                         description: item.sampleDescription ?? null,
@@ -147,7 +155,8 @@ export function register_audit_snapshot_routes(router: Router): void {
                 }
             }
 
-            zip.file('index.json', JSON.stringify({ snapshots: index_entries }, null, 2));
+            const index = build_snapshots_download_all_index(audit_id, index_entries);
+            zip.file('index.json', JSON.stringify(index, null, 2));
             const buffer = await zip.generateAsync({ type: 'nodebuffer' });
             const filename = `snapshots_all_${format_filename_datetime_for_download(new Date().toISOString())}.zip`;
             res.setHeader('Content-Type', 'application/zip');
