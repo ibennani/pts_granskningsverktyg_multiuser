@@ -100,11 +100,20 @@ function existing_proposal_types(state: any): Set<string> {
     );
 }
 
+function target_already_exists(state: any, proposal: RecurringProposal): boolean {
+    const target = resolve_recurring_sample_target(state?.ruleFileContent?.metadata, proposal.proposalType);
+    if (!target) return false;
+    return (state?.samples || []).some((sample: any) =>
+        String(sample?.sampleCategory || '') === target.sampleCategory &&
+        String(sample?.sampleType || '') === target.sampleType
+    );
+}
+
 function create_recurring_sample(host: Host, proposal: RecurringProposal, preview: RecurringProposalPreview | null): boolean {
     const state = host.getState?.();
     const metadata = state?.ruleFileContent?.metadata;
     const target = resolve_recurring_sample_target(metadata, proposal.proposalType);
-    if (!target) return false;
+    if (!target || target_already_exists(state, proposal)) return false;
     const detected = preview?.detectedContentTypeIds || [];
     const selected = [...new Set([...default_content_types(metadata), ...detected])];
     const id = host.Helpers?.generate_uuid_v4?.() || crypto.randomUUID();
@@ -151,17 +160,19 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
             section.appendChild(create_text('p', 'Inga tillräckligt säkra återkommande block har identifierats ännu.'));
             return;
         }
-        const existing = existing_proposal_types(host.getState?.());
+        const current_state = host.getState?.();
+        const existing = existing_proposal_types(current_state);
         const list = document.createElement('div');
         list.className = 'recurring-proposal-list';
         section.appendChild(list);
 
+        let rendered = 0;
         for (const proposal of result.proposals) {
-            if (existing.has(proposal.proposalType)) continue;
+            if (existing.has(proposal.proposalType) || target_already_exists(current_state, proposal)) continue;
+            rendered += 1;
             const card = document.createElement('section');
             card.className = 'recurring-proposal-card';
-            const title = create_text('h3', LABELS[proposal.proposalType]);
-            card.appendChild(title);
+            card.appendChild(create_text('h3', LABELS[proposal.proposalType]));
             card.appendChild(create_text(
                 'p',
                 `Identifierat på ${proposal.occurrenceCount} av ${proposal.pageCount} analyserade sidor. Bedömningsstyrka: ${proposal.confidence === 'high' ? 'hög' : proposal.confidence === 'medium' ? 'medel' : 'låg'} (${proposal.score}/100).`
@@ -190,7 +201,10 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
             }
             create.addEventListener('click', async () => {
                 const ok = create_recurring_sample(host, proposal, result.previews?.[proposal.proposalType] || null);
-                if (!ok) return;
+                if (!ok) {
+                    host.NotificationComponent?.show_global_message?.('Granskningsdelen finns redan eller kan inte skapas från den aktiva regelfilen.', 'info');
+                    return;
+                }
                 create.disabled = true;
                 try {
                     await sync_to_server_now(host.getState, host.dispatch);
@@ -205,11 +219,14 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
             const dismiss = document.createElement('button');
             dismiss.type = 'button';
             dismiss.className = 'button button-default';
-            dismiss.textContent = 'Dölj förslag';
+            dismiss.textContent = 'Dölj tills sidan laddas om';
             dismiss.addEventListener('click', () => card.remove());
             actions.append(create, dismiss);
             card.appendChild(actions);
             list.appendChild(card);
+        }
+        if (rendered === 0) {
+            list.appendChild(create_text('p', 'Alla identifierade återkommande block finns redan som granskningsdelar.'));
         }
     } catch (error) {
         status.textContent = `Återkommande innehåll kunde inte analyseras: ${error instanceof Error ? error.message : String(error)}`;
