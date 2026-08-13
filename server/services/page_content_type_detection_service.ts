@@ -37,9 +37,7 @@ export type PageContentTypeSelectorEvidence = {
 export type DetectPageContentTypesInput = {
     url: string;
     allowed_content_type_ids: string[];
-    /** Primärt namn för regler från aktiv regelfil. */
     selector_rules?: PageContentTypeSelectorRule[];
-    /** Bakåtkompatibel alias för tidiga implementationer på denna branch. */
     rules?: PageContentTypeSelectorRule[];
     timeout_ms?: number;
 };
@@ -180,8 +178,14 @@ export async function detect_page_content_types(
         const triggered_signals = await collect_triggered_signals(page, legacy_rules);
         const legacy_detected = map_dom_hits_to_content_type_ids(sanitized_allowed, triggered_signals);
         const selector_evidence = await collect_selector_evidence(page, configured_rules);
-        const detected = new Set(legacy_detected);
-        for (const evidence of selector_evidence) if (evidence.matched) detected.add(evidence.id);
+
+        // En explicit selector är auktoritativ för sitt innehållstyp-ID. Legacy-regler
+        // får endast fylla på ID:n som saknar explicit selector i den aktiva regelfilen.
+        const configured_ids = new Set(configured_rules.map((rule) => rule.id));
+        const detected = new Set(legacy_detected.filter((id) => !configured_ids.has(id)));
+        for (const evidence of selector_evidence) {
+            if (evidence.matched) detected.add(evidence.id);
+        }
 
         return {
             detected_content_type_ids: [...detected].sort(),
