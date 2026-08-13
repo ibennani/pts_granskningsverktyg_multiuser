@@ -61,18 +61,30 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-start;
     gap: 1rem;
     width: 100%;
+    margin-bottom: var(--heading-h1-after-gap);
 }
 
-.audit-header-heading-row h1 {
+.audit-header-heading-row h1,
+[data-theme="dark-experimental"] .audit-plate .audit-header-heading-row h1,
+[data-theme="winter-white"] .audit-plate .audit-header-heading-row h1 {
     margin: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
     flex: 0 1 auto;
     min-width: 0;
 }
 
 .audit-header-heading-row .audit-start-new-audit-btn {
     flex-shrink: 0;
+    height: 2.25rem;
+    min-height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
 }
 
 .audit-header--with-filter {

@@ -146,7 +146,6 @@ export class EditMetadataViewComponent {
         const monitoring_key =
             this.metadata_form_component_instance.monitoring_type_field_handles?.get_selected_monitoring_key?.()
             || this._form_pending_monitoring_key
-            || this.monitoring_type_options[0]?.key
             || '';
         const option = find_monitoring_option_by_key(this.monitoring_type_options, monitoring_key);
         if (!option) {
@@ -205,7 +204,7 @@ export class EditMetadataViewComponent {
                     form_rule,
                     '',
                     true,
-                    true
+                    false
                 );
                 const monitoring_select =
                     this.metadata_form_component_instance.monitoring_type_field_handles?.select_element;
@@ -741,22 +740,14 @@ export class EditMetadataViewComponent {
             ? this.Helpers.format_iso_for_locale_date_input(end_time_iso, lang_code)
             : '';
         const defer_rule_until_save = is_new_audit && !state_after_rule.ruleFileContent;
-        const use_fresh_new_audit_defaults =
-            is_new_audit && state_after_rule.freshNewAuditMetadata === true;
-        if (defer_rule_until_save && this.monitoring_type_options.length > 0) {
-            const default_monitoring_key =
-                this._form_pending_monitoring_key || this.monitoring_type_options[0].key;
-            await this._load_form_only_rule_for_monitoring_key(default_monitoring_key);
-            if (render_generation !== this._render_generation) return;
-        }
         const form_rule_file_content = defer_rule_until_save
             ? this._form_only_rule_file_content
             : state_after_rule.ruleFileContent;
         const monitoring_type_confirmed = defer_rule_until_save
-            ? Boolean(form_rule_file_content)
+            ? Boolean(this._form_pending_monitoring_key && form_rule_file_content)
             : this._monitoring_type_confirmed_by_user;
         const selected_monitoring_key = defer_rule_until_save
-            ? (this._form_pending_monitoring_key || this.monitoring_type_options[0]?.key || '')
+            ? (this._form_pending_monitoring_key || '')
             : resolve_metadata_form_monitoring_key(
                 this._monitoring_type_confirmed_by_user,
                 state_after_rule.ruleSetId,
@@ -782,9 +773,9 @@ export class EditMetadataViewComponent {
             monitoringTypeOptions: this.monitoring_type_options,
             selectedMonitoringKey: selected_monitoring_key,
             monitoringTypeConfirmed: monitoring_type_confirmed,
-            monitoringIncludeEmptyPlaceholder: !defer_rule_until_save,
-            monitoringDefaultToFirstOption: defer_rule_until_save,
-            auditTypeDefaultToFirstOption: defer_rule_until_save && Boolean(form_rule_file_content),
+            monitoringIncludeEmptyPlaceholder: defer_rule_until_save,
+            monitoringDefaultToFirstOption: false,
+            auditTypeDefaultToFirstOption: false,
             onMonitoringTypeChange: is_new_audit ? this.handle_monitoring_type_change : null,
             auditorNameOptions: auditor_name_options,
             caseHandlerOptions: case_handler_options,
