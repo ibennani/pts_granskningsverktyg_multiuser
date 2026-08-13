@@ -30,7 +30,7 @@ import { AuditGroupedListComponent } from '../AuditGroupedListComponent.js';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
 import { get_download_filename_datetime, sanitize_filename_segment, trigger_browser_blob_download, is_download_file_too_large_error, format_file_download_max_size_label } from '../../utils/download_filename_utils.js';
 import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.js';
-import { flush_sync_rulefile_to_server } from '../../logic/server_sync.js';
+import { cancel_scheduled_audit_sync, flush_sync_rulefile_to_server } from '../../logic/server_sync.js';
 import { build_rulefile_download_filename } from '../../logic/prepare_rulefile_content_for_persist.js';
 import { render_audit_header, mount_audit_filter_secondary_fields } from './AuditHeaderSection.js';
 import { create_audit_filter_skip_link } from './audit_filter_skip_link.js';
@@ -2204,16 +2204,50 @@ export class AuditViewComponent {
         );
     }
 
+    _remove_audit_from_local_list(audit_id) {
+        const id_str = String(audit_id);
+        this.audits = (this.audits || []).filter((a) => String(a.id) !== id_str);
+    }
+
+    _clear_session_state_for_deleted_audit(audit_id) {
+        const id_str = String(audit_id);
+        const current_state = typeof this.getState === 'function' ? this.getState() : null;
+        if (!current_state?.auditId || String(current_state.auditId) !== id_str) {
+            return;
+        }
+        cancel_scheduled_audit_sync();
+        this.dispatch({
+            type: this.StoreActionTypes.DISCARD_PREPARED_AUDIT
+        });
+    }
+
+    _refresh_audit_list_after_delete() {
+        if (!this.root) return;
+        if (this.audit_mode === 'audits' && this.api_available) {
+            this._sync_audit_lists_section();
+            return;
+        }
+        this.render();
+    }
+
     async handle_delete_audit(audit_id) {
         const t = this.get_t_func();
+        const id_str = String(audit_id);
         try {
+            cancel_scheduled_audit_sync();
             await delete_audit(audit_id);
+            this._clear_session_state_for_deleted_audit(id_str);
+            this._remove_audit_from_local_list(id_str);
             this.NotificationComponent?.show_global_message(
                 t('audit_audit_deleted_success'),
                 'success'
             );
-            await this.ensure_api_data();
-            this.render();
+            try {
+                this.audits = await get_audits();
+            } catch {
+                /* behåll optimistisk lista om omladdning misslyckas */
+            }
+            this._refresh_audit_list_after_delete();
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('audit_delete_error'),

@@ -128,6 +128,35 @@ describe('confirm_delete_modal_logic', () => {
             ).not.toThrow();
         });
 
+        test('anropar on_confirm direkt vid klick på bekräftelseknappen', () => {
+            let modal_container = null;
+            const close_spy = jest.fn();
+            const on_confirm = jest.fn();
+            const show_spy = jest.fn((config, on_render) => {
+                modal_container = document.createElement('div');
+                const modal = { close: close_spy };
+                on_render(modal_container, modal);
+            });
+            app_runtime_refs.modal_component = { show: show_spy };
+            global.window.Helpers = { create_element: mock_create_element };
+            global.window.Translation = { t: (k) => k };
+
+            const del = document.createElement('button');
+            document.body.appendChild(del);
+
+            show_confirm_delete_modal({
+                warning_text: 'Radera?',
+                delete_button: del,
+                on_confirm
+            });
+
+            const yes_btn = modal_container.querySelector('.button-danger');
+            yes_btn.click();
+
+            expect(on_confirm).toHaveBeenCalledTimes(1);
+            expect(close_spy).toHaveBeenCalledTimes(1);
+        });
+
         test('anropar ModalComponent.show och lägger till knappar i callback', () => {
             let modal_container = null;
             const show_spy = jest.fn((config, on_render) => {

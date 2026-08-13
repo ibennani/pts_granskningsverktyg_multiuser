@@ -760,6 +760,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
         await remove_audit_snapshot_dir_best_effort(id);
+        broadcast_audits_changed(id);
         res.status(204).send();
     } catch (err) {
         console.error('[audits] DELETE error:', err);

@@ -102,11 +102,10 @@ export function show_confirm_delete_modal({ h1_text, warning_text, delete_button
             });
             yes_btn.addEventListener('click', () => {
                 const focus_el = focusOnConfirm ? focus_on_confirm : previous_focusable;
-                modal.close(focus_el, {
-                    onClosed: () => {
-                        if (typeof on_confirm === 'function') on_confirm();
-                    }
-                });
+                if (typeof on_confirm === 'function') {
+                    on_confirm();
+                }
+                modal.close(focus_el);
             });
 
             const no_btn = Helpers.create_element('button', {
