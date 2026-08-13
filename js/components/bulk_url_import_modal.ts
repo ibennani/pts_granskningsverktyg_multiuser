@@ -20,7 +20,9 @@ import {
     run_full_bulk_url_import,
     type BulkImportPreparedRow,
     type BulkImportRowStatus,
+    type BulkImportCreatedItem,
 } from '../logic/bulk_sample_url_import_orchestrator.js';
+import { format_elapsed_duration_sv } from '../utils/format_elapsed_duration_sv.js';
 import {
     format_bulk_url_import_log_line,
     emit_bulk_url_import_log,
@@ -107,6 +109,80 @@ function format_bulk_import_error_message(
     return t('bulk_url_import_log_unexpected_error', { error: message });
 }
 
+function render_import_summary(
+    deps: BulkUrlImportModalDeps,
+    container_el: HTMLElement,
+    created_items: BulkImportCreatedItem[],
+    elapsed_ms: number,
+    failed_count: number,
+    modal: BulkUrlImportModalHandle,
+    trigger_button: HTMLButtonElement | null
+): void {
+    const summary_wrap = deps.Helpers.create_element('div', {
+        class_name: 'bulk-url-import-modal-summary',
+    });
+    summary_wrap.appendChild(deps.Helpers.create_element('h2', {
+        class_name: 'bulk-url-import-modal-summary__heading',
+        text_content: deps.t('bulk_url_import_summary_heading'),
+    }));
+
+    const duration_el = deps.Helpers.create_element('p', {
+        class_name: 'bulk-url-import-modal-summary__duration',
+        text_content: deps.t('bulk_url_import_summary_duration', {
+            duration: format_elapsed_duration_sv(elapsed_ms),
+        }),
+    });
+    summary_wrap.appendChild(duration_el);
+
+    if (created_items.length > 0) {
+        const list = deps.Helpers.create_element('ul', {
+            class_name: 'bulk-url-import-modal-summary__list',
+        });
+        for (const item of created_items) {
+            const li = deps.Helpers.create_element('li');
+            li.textContent = deps.t('bulk_url_import_summary_item', {
+                category: item.category_label,
+                label: item.label,
+            });
+            list.appendChild(li);
+        }
+        summary_wrap.appendChild(list);
+    } else {
+        summary_wrap.appendChild(deps.Helpers.create_element('p', {
+            text_content: deps.t('bulk_url_import_summary_none'),
+        }));
+    }
+
+    if (failed_count > 0) {
+        summary_wrap.appendChild(deps.Helpers.create_element('p', {
+            class_name: 'bulk-url-import-modal-summary__failed',
+            text_content: deps.t('bulk_url_import_summary_failed', { count: failed_count }),
+        }));
+    }
+
+    const finish_actions = deps.Helpers.create_element('div', {
+        class_name: 'bulk-url-import-modal-finish',
+    });
+    const finish_button = deps.Helpers.create_element('button', {
+        class_name: ['button', 'button-default'],
+        attributes: { type: 'button' },
+        text_content: created_items.length > 0
+            ? deps.t('bulk_url_import_modal_go_to_samples')
+            : deps.t('bulk_url_import_modal_close'),
+    }) as HTMLButtonElement;
+    finish_button.addEventListener('click', () => {
+        deps.on_finished({
+            saved_count: created_items.length,
+            failed_count,
+        });
+        modal.close(trigger_button);
+    });
+    finish_actions.appendChild(finish_button);
+    summary_wrap.appendChild(finish_actions);
+    container_el.appendChild(summary_wrap);
+    finish_button.focus();
+}
+
 async function run_import_in_modal(
     deps: BulkUrlImportModalDeps,
     rows: BulkImportPreparedRow[],
@@ -144,8 +220,11 @@ async function run_import_in_modal(
         );
     };
 
+    const started_at = Date.now();
+    let created_items: BulkImportCreatedItem[] = [];
+
     try {
-        await run_full_bulk_url_import(
+        const result = await run_full_bulk_url_import(
             {
                 getState: deps.getState,
                 dispatch: deps.dispatch,
@@ -154,6 +233,7 @@ async function run_import_in_modal(
                 add_protocol_if_missing: Helpers.add_protocol_if_missing,
                 on_row_updated: sync_row_ui,
                 wait_for_snapshot_ready: deps.wait_for_snapshot_ready,
+                t: deps.t,
                 log_import_step: (message_key, params, meta) => {
                     emit_bulk_url_import_log(
                         (event) => append_log_line(ui.log_list_el, event),
@@ -173,6 +253,7 @@ async function run_import_in_modal(
             rows,
             deps.sample_category_id
         );
+        created_items = result.created_items;
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         append_log_line(ui.log_list_el, {
@@ -189,30 +270,28 @@ async function run_import_in_modal(
     ui.task_list_el.setAttribute('aria-busy', 'false');
     ui.progress_live_el.setAttribute('aria-busy', 'false');
 
-    const saved_count = rows.filter((row) => row.status === 'saved').length;
     const failed_count = rows.filter((row) => row.status === 'failed').length;
+    const elapsed_ms = Date.now() - started_at;
 
-    if (saved_count > 0) {
-        deps.on_finished({ saved_count, failed_count });
-        modal.close(trigger_button);
-        return;
-    }
+    step_progress = {
+        ...step_progress,
+        phase: 'done',
+        current: step_progress.total,
+        activity_text: t('bulk_url_import_step_batch_done_ok', {
+            success: created_items.length,
+        }),
+    };
+    apply_step_progress(ui.progress_live_el, ui.progress_bar_el, t, step_progress);
 
-    const finish_actions = deps.Helpers.create_element('div', {
-        class_name: 'bulk-url-import-modal-finish',
-    });
-    const finish_button = deps.Helpers.create_element('button', {
-        class_name: ['button', 'button-default'],
-        attributes: { type: 'button' },
-        text_content: t('bulk_url_import_modal_close'),
-    }) as HTMLButtonElement;
-    finish_button.addEventListener('click', () => {
-        deps.on_finished({ saved_count, failed_count });
-        modal.close(trigger_button);
-    });
-    finish_actions.appendChild(finish_button);
-    ui.container_el.appendChild(finish_actions);
-    finish_button.focus();
+    render_import_summary(
+        deps,
+        ui.container_el,
+        created_items,
+        elapsed_ms,
+        failed_count,
+        modal,
+        trigger_button
+    );
 }
 
 export function show_bulk_url_import_modal(

@@ -19,10 +19,14 @@ import {
     type BulkImportLogFn,
 } from './bulk_sample_url_import_orchestrator_log.js';
 import { save_bulk_import_rows } from './bulk_sample_url_import_save.js';
+import {
+    run_bulk_recurring_import_phase,
+    type BulkImportCreatedItem,
+    type BulkRecurringImportDeps,
+} from './bulk_recurring_import.js';
+import { resolve_default_url_sample_category_id } from './bulk_url_import_category.js';
 
-export { save_bulk_import_rows };
-
-export type { BulkImportLogFn };
+export type { BulkImportLogFn, BulkImportCreatedItem };
 
 export type BulkImportRowStatus =
     | 'waiting'
@@ -76,6 +80,13 @@ export type BulkImportOrchestratorDeps = {
         timeout_ms: number
     ) => Promise<boolean>;
     signal?: AbortSignal;
+    t?: (key: string, params?: Record<string, unknown>) => string;
+};
+
+export type BulkImportRunResult = {
+    rows: BulkImportPreparedRow[];
+    created_items: BulkImportCreatedItem[];
+    recurring_skipped: number;
 };
 
 function update_row(
@@ -208,7 +219,7 @@ export async function run_full_bulk_url_import(
     deps: BulkImportOrchestratorDeps,
     rows: BulkImportPreparedRow[],
     sample_category_id: string
-): Promise<BulkImportPreparedRow[]> {
+): Promise<BulkImportRunResult> {
     log_import_step(deps, 'bulk_url_import_log_batch_start', { count: rows.length });
 
     const audit_id = await ensure_audit_id_for_server_sync(deps.getState, deps.dispatch);
@@ -217,7 +228,17 @@ export async function run_full_bulk_url_import(
     }
     log_import_step(deps, 'bulk_url_import_log_batch_audit', { auditId: audit_id });
 
+    const state = deps.getState();
+    const metadata = (state?.ruleFileContent as { metadata?: unknown } | undefined)?.metadata;
+    const url_category = resolve_default_url_sample_category_id(metadata);
+    const url_category_label = (() => {
+        const vocab = metadata as { samples?: { sampleCategories?: Array<{ id?: string; text?: string }> } } | undefined;
+        const match = vocab?.samples?.sampleCategories?.find((entry) => String(entry.id) === String(url_category));
+        return String(match?.text ?? 'Webbsida').trim();
+    })();
+
     const output: BulkImportPreparedRow[] = [];
+    const created_items: BulkImportCreatedItem[] = [];
     const total = rows.length;
     let index = 0;
     for (const source_row of rows) {
@@ -247,12 +268,35 @@ export async function run_full_bulk_url_import(
         }
         const [saved] = await save_bulk_import_rows(deps, [captured], sample_category_id, row_context);
         output.push(saved);
+        if (saved.status === 'saved') {
+            created_items.push({
+                kind: 'url_sample',
+                label: saved.page_title || saved.url,
+                category_label: url_category_label,
+            });
+        }
     }
 
     const failed = output.filter((row) => row.status === 'failed').length;
     const success = output.length - failed;
     log_import_step(deps, 'bulk_url_import_log_batch_done', { success, failed });
-    return output;
+
+    let recurring_skipped = 0;
+    if (deps.t && output.filter((row) => row.status === 'saved').length >= 2) {
+        const recurring = await run_bulk_recurring_import_phase({
+            getState: deps.getState as BulkRecurringImportDeps['getState'],
+            dispatch: deps.dispatch,
+            StoreActionTypes: deps.StoreActionTypes,
+            generate_uuid: deps.generate_uuid,
+            t: deps.t,
+            log_import_step: deps.log_import_step,
+            import_log_sink: deps.import_log_sink,
+        });
+        created_items.push(...recurring.created);
+        recurring_skipped = recurring.skipped;
+    }
+
+    return { rows: output, created_items, recurring_skipped };
 }
 
 export async function list_ready_snapshot_entries(

@@ -89,3 +89,34 @@ dialog.modal-dialog.modal-dialog--sample-url-analyze {
 .bulk-url-import-modal-log__line--error {
     color: var(--error-color, #b00020);
 }
+
+.bulk-url-import-modal-summary {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color, #ccc);
+}
+
+.bulk-url-import-modal-summary__heading {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.bulk-url-import-modal-summary__duration {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted-color, #555);
+}
+
+.bulk-url-import-modal-summary__list {
+    margin: 0 0 0.75rem 1.25rem;
+    padding: 0;
+}
+
+.bulk-url-import-modal-summary__failed {
+    margin: 0 0 0.75rem;
+    color: var(--warning-text-color, #8a6100);
+}
+
+.bulk-url-import-modal-finish {
+    margin-top: 0.75rem;
+}

@@ -29,6 +29,11 @@ const BATCH_STEP_KEYS = new Set([
     'bulk_url_import_log_batch_start',
     'bulk_url_import_log_batch_audit',
     'bulk_url_import_log_batch_done',
+    'bulk_url_import_log_recurring_start',
+    'bulk_url_import_log_recurring_created',
+    'bulk_url_import_log_recurring_sync',
+    'bulk_url_import_log_recurring_done',
+    'bulk_url_import_log_recurring_none',
 ]);
 
 const FAILURE_STEP_KEYS = new Set([
@@ -56,13 +61,20 @@ const LIVE_ACTIVITY_KEY_BY_LOG_KEY: Record<string, string> = {
     bulk_url_import_log_row_done: 'bulk_url_import_step_row_done',
     bulk_url_import_log_row_failed: 'bulk_url_import_step_row_failed',
     bulk_url_import_log_save_skip: 'bulk_url_import_step_save_skip',
+    bulk_url_import_log_recurring_start: 'bulk_url_import_step_recurring_start',
+    bulk_url_import_log_recurring_created: 'bulk_url_import_step_recurring_create',
+    bulk_url_import_log_recurring_sync: 'bulk_url_import_step_recurring_done',
+    bulk_url_import_log_recurring_done: 'bulk_url_import_step_recurring_done',
+    bulk_url_import_log_recurring_none: 'bulk_url_import_step_recurring_done',
 };
 
+const RECURRING_PHASE_STEPS = 4;
 const STEPS_PER_ROW = 11;
 const BATCH_PREP_STEPS = 2;
 
 export function calculate_bulk_import_total_steps(row_count: number): number {
-    return BATCH_PREP_STEPS + STEPS_PER_ROW * row_count + 1;
+    const recurring_steps = row_count >= 2 ? RECURRING_PHASE_STEPS : 0;
+    return BATCH_PREP_STEPS + STEPS_PER_ROW * row_count + recurring_steps + 1;
 }
 
 export function format_bulk_import_sample_label(

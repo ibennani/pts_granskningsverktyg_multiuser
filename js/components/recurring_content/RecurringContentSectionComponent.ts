@@ -4,6 +4,11 @@
 import './recurring_content_section_component.css';
 import { analyze_recurring_content } from '../../api/audit_snapshot_api.js';
 import { list_ready_snapshot_entries } from '../../logic/bulk_sample_url_import_orchestrator.js';
+import {
+    build_recurring_sample_payload,
+    recurring_sample_exists,
+    resolve_recurring_sample_category_id,
+} from '../../logic/recurring_sample_resolver.js';
 
 type RecurringDeps = {
     getState: () => {
@@ -87,20 +92,49 @@ export class RecurringContentSectionComponent {
     handle_create_sample(suggestion: Record<string, unknown>) {
         if (!this.deps) return;
         const t = this.deps.Translation.t;
-        const type_key = RECURRING_LABEL_KEYS[String(suggestion.candidateType || '')] || 'recurring_content_type_other';
-        const description = t(type_key);
+        const metadata = this.deps.getState().ruleFileContent as { metadata?: unknown } | undefined;
+        const category_id = resolve_recurring_sample_category_id(metadata?.metadata);
+        if (!category_id) return;
+
+        const suggestion_like = {
+            candidateType: String(suggestion.candidateType || ''),
+            structureFingerprint: String(suggestion.structureFingerprint || ''),
+            evidenceRefs: suggestion.evidenceRefs as { sampleIds?: string[]; captureIds?: string[] } | undefined,
+        };
+
+        if (recurring_sample_exists(this.deps.getState().samples, category_id, suggestion_like)) {
+            return;
+        }
+
+        const type_key = RECURRING_LABEL_KEYS[suggestion_like.candidateType] || 'recurring_content_type_other';
+        const payload = build_recurring_sample_payload(
+            metadata?.metadata,
+            suggestion_like,
+            t(type_key)
+        );
+        if (!payload) return;
+
         const sample_id = this.deps.Helpers.generate_uuid_v4();
         this.deps.dispatch({
             type: this.deps.StoreActionTypes.ADD_SAMPLE,
             payload: {
                 id: sample_id,
-                description,
-                sampleCategory: '',
-                sampleType: '',
-                recurringComponentType: suggestion.candidateType,
-                recurringEvidenceRefs: suggestion.evidenceRefs,
+                description: payload.description,
+                url: '',
+                sampleCategory: payload.sampleCategory,
+                sampleType: payload.sampleType,
+                selectedContentTypes: payload.selectedContentTypes,
+                attachedMediaFilenames: [],
+                requirementResults: {},
+                recurringComponentType: payload.recurringComponentType,
+                recurringStructureFingerprint: payload.recurringStructureFingerprint,
+                recurringEvidenceRefs: payload.recurringEvidenceRefs,
             },
         });
+        this.suggestions = this.suggestions.filter(
+            (entry) => String(entry.structureFingerprint ?? '') !== suggestion_like.structureFingerprint
+        );
+        this.render();
     }
 
     render() {
@@ -148,6 +182,16 @@ export class RecurringContentSectionComponent {
         for (const suggestion of this.suggestions) {
             const li = this.deps.Helpers.create_element('li', { class_name: 'recurring-content-list-item' });
             const type_key = RECURRING_LABEL_KEYS[String(suggestion.candidateType || '')] || 'recurring_content_type_other';
+            const category_id = resolve_recurring_sample_category_id(
+                (this.deps.getState().ruleFileContent as { metadata?: unknown } | undefined)?.metadata
+            );
+            const already_exists = category_id
+                ? recurring_sample_exists(this.deps.getState().samples, category_id, {
+                    candidateType: String(suggestion.candidateType || ''),
+                    structureFingerprint: String(suggestion.structureFingerprint || ''),
+                })
+                : false;
+
             li.appendChild(this.deps.Helpers.create_element('p', {
                 text_content: t('recurring_content_item_summary', {
                     type: t(type_key),
@@ -155,13 +199,21 @@ export class RecurringContentSectionComponent {
                     total: suggestion.totalPageCount,
                 }),
             }));
-            const create_btn = this.deps.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                attributes: { type: 'button' },
-                text_content: t('recurring_content_create_sample_button'),
-            });
-            create_btn.addEventListener('click', () => this.handle_create_sample(suggestion));
-            li.appendChild(create_btn);
+
+            if (!already_exists) {
+                const create_btn = this.deps.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    attributes: { type: 'button' },
+                    text_content: t('recurring_content_create_sample_button'),
+                });
+                create_btn.addEventListener('click', () => this.handle_create_sample(suggestion));
+                li.appendChild(create_btn);
+            } else {
+                li.appendChild(this.deps.Helpers.create_element('p', {
+                    class_name: 'recurring-content-list-item__exists',
+                    text_content: t('recurring_content_already_exists'),
+                }));
+            }
             list.appendChild(li);
         }
         section.appendChild(list);

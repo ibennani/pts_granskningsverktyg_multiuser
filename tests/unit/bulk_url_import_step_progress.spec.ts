@@ -19,7 +19,7 @@ const t = (key: string, params: Record<string, unknown> = {}) => {
 
 describe('bulk_url_import_step_progress', () => {
     test('calculate_bulk_import_total_steps', () => {
-        expect(calculate_bulk_import_total_steps(3)).toBe(36);
+        expect(calculate_bulk_import_total_steps(3)).toBe(40);
         expect(calculate_bulk_import_total_steps(1)).toBe(14);
     });
 
@@ -52,7 +52,7 @@ describe('bulk_url_import_step_progress', () => {
         );
         const text = build_bulk_import_live_status_text(t, state);
         expect(text).toContain('current=3');
-        expect(text).toContain('total=25');
+        expect(text).toContain('total=29');
         expect(text).toContain('bulk_url_import_step_row_start');
     });
 
