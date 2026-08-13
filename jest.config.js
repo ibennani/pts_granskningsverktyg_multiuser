@@ -180,6 +180,8 @@ export default {
     '^.+[\\\\/]bulk_import_content_types\\.js$': '<rootDir>/js/logic/bulk_import_content_types.ts',
     '^.+[\\\\/]recurring_sample_content_types\\.js$': '<rootDir>/js/logic/recurring_sample_content_types.ts',
     '^.+[\\\\/]recurring_sample_resolver\\.js$': '<rootDir>/js/logic/recurring_sample_resolver.ts',
+    '^.+[\\\\/]recurring_sample_screenshot\\.js$': '<rootDir>/js/logic/recurring_sample_screenshot.ts',
+    '^.+[\\\\/]recurring_block_screenshot_logic\\.js$': '<rootDir>/server/services/recurring_block_screenshot_logic.ts',
     '^.+/sample_bulk_pass_not_audited_gate\\.js$': '<rootDir>/js/logic/sample_bulk_pass_not_audited_gate.ts',
     '^.+/auditReducer\\.js$': '<rootDir>/js/state/auditReducer.ts',
     '^.+/audit_reducer_time\\.js$': '<rootDir>/js/state/audit_reducer_time.ts',

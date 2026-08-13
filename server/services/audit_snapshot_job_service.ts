@@ -26,9 +26,7 @@ import {
     run_snapshot_capture_job,
     type VisibleCaptureResult,
 } from './page_snapshot_capture_service.js';
-import { ensure_audit_media_dir, pick_upload_media_filename } from '../media/audit_media_storage.js';
-import { save_audit_media_original } from '../media/audit_media_originals.js';
-import { build_sample_screenshot_filename } from '../utils/sample_screenshot_filename.js';
+import { save_png_buffer_to_audit_media } from '../media/save_audit_media_png_buffer.js';
 import { load_content_type_groups_for_audit } from '../utils/audit_content_type_groups.js';
 import type {
     AuditSnapshotCaptureBody,
@@ -82,13 +80,7 @@ async function save_png_to_audit_media(
     page_title: string,
     filename_suffix?: string
 ): Promise<{ filename: string | null; skipped: boolean }> {
-    const requested_filename = build_sample_screenshot_filename(page_title, filename_suffix ?? '');
-    const pick = await pick_upload_media_filename(audit_id, requested_filename);
-    const dir = await ensure_audit_media_dir(audit_id);
-    const full_path = path.join(dir, pick.filename);
-    await fs.writeFile(full_path, png_buffer);
-    await save_audit_media_original(audit_id, pick.filename, full_path, pick.filename);
-    return { filename: pick.filename, skipped: false };
+    return save_png_buffer_to_audit_media(audit_id, png_buffer, page_title, filename_suffix);
 }
 
 async function process_capture_job(job: PendingCapture): Promise<void> {

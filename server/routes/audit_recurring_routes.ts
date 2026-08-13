@@ -7,6 +7,8 @@ import { query } from '../db.js';
 import { parse_body } from '../utils/zod_boundary.js';
 import { single_route_param } from '../utils/route_params.js';
 import { analyze_recurring_content_for_audit } from '../services/recurring_content_analysis_service.js';
+import { create_recurring_block_screenshot } from '../services/recurring_block_screenshot_service.js';
+import { RecurringBlockScreenshotBodySchema } from '../schemas/recurring_block_screenshot.js';
 
 const RecurringAnalyzeBodySchema = z.object({
     entries: z.array(
@@ -39,6 +41,25 @@ export function register_audit_recurring_routes(router: Router): void {
         } catch (err) {
             console.error('[audit_recurring] analyze error:', err);
             return res.status(500).json({ error: 'Kunde inte analysera återkommande innehåll' });
+        }
+    });
+
+    router.post('/:id/recurring-content/screenshot', async (req: Request, res: Response) => {
+        try {
+            const audit_id = single_route_param(req.params.id);
+            if (!(await audit_exists(audit_id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const body = parse_body(RecurringBlockScreenshotBodySchema, req.body, res);
+            if (!body) return;
+            const result = await create_recurring_block_screenshot({
+                audit_id,
+                ...body,
+            });
+            return res.json(result);
+        } catch (err) {
+            console.error('[audit_recurring] screenshot error:', err);
+            return res.status(500).json({ error: 'Kunde inte skapa skärmdump för återkommande block' });
         }
     });
 }

@@ -267,3 +267,34 @@ export async function analyze_recurring_content(
     }
     return res.json() as Promise<RecurringContentSuggestionResponse>;
 }
+
+export type RecurringBlockScreenshotResult = {
+    filename: string | null;
+    skipped: boolean;
+    skipReason?: string | null;
+};
+
+export async function create_recurring_block_screenshot(
+    audit_id: string,
+    body: {
+        captureId: string;
+        candidateType: string;
+        structureFingerprint: string;
+        rootIdentity?: string;
+        label: string;
+    }
+): Promise<RecurringBlockScreenshotResult> {
+    const base = get_base_url();
+    const res = await authorized_fetch(
+        `${base}/audits/${encodeURIComponent(audit_id)}/recurring-content/screenshot`,
+        {
+            method: 'POST',
+            body: JSON.stringify(body),
+        }
+    );
+    if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<RecurringBlockScreenshotResult>;
+}

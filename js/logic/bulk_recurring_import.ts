@@ -12,6 +12,7 @@ import {
     resolve_recurring_sample_category,
 } from './recurring_sample_resolver.js';
 import { resolve_recurring_sample_content_type_ids } from './recurring_sample_content_types.js';
+import { resolve_recurring_sample_screenshot_filename } from './recurring_sample_screenshot.js';
 
 export type BulkImportCreatedItem = {
     kind: 'url_sample' | 'recurring_sample';
@@ -99,6 +100,7 @@ export async function run_bulk_recurring_import_phase(
         const suggestion = {
             candidateType: String(raw.candidateType ?? ''),
             structureFingerprint: String(raw.structureFingerprint ?? ''),
+            rootIdentity: String(raw.rootIdentity ?? ''),
             evidenceRefs: raw.evidenceRefs as { sampleIds?: string[]; captureIds?: string[] } | undefined,
         };
 
@@ -126,6 +128,14 @@ export async function run_bulk_recurring_import_phase(
             suggestion.evidenceRefs?.captureIds
         );
 
+        const screenshot_filename = await resolve_recurring_sample_screenshot_filename(audit_id, {
+            label: payload.description,
+            candidateType: suggestion.candidateType,
+            structureFingerprint: suggestion.structureFingerprint,
+            rootIdentity: String(raw.rootIdentity ?? ''),
+            captureIds: suggestion.evidenceRefs?.captureIds,
+        });
+
         const sample_id = deps.generate_uuid();
         deps.dispatch({
             type: deps.StoreActionTypes.ADD_SAMPLE,
@@ -136,7 +146,7 @@ export async function run_bulk_recurring_import_phase(
                 sampleCategory: payload.sampleCategory,
                 sampleType: payload.sampleType,
                 selectedContentTypes: selected_content_types,
-                attachedMediaFilenames: [],
+                attachedMediaFilenames: screenshot_filename ? [screenshot_filename] : [],
                 requirementResults: {},
                 recurringComponentType: payload.recurringComponentType,
                 recurringStructureFingerprint: payload.recurringStructureFingerprint,
@@ -161,6 +171,7 @@ export async function run_bulk_recurring_import_phase(
 
         log_import_step(deps, 'bulk_url_import_log_recurring_created', {
             type: payload.description,
+            screenshot: screenshot_filename ? 'ja' : 'nej',
         });
     }
 
