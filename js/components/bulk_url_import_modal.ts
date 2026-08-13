@@ -23,6 +23,7 @@ import {
     emit_bulk_url_import_log,
     type BulkUrlImportLogEvent,
 } from '../logic/bulk_url_import_logger.js';
+import { get_default_content_type_ids } from '../../shared/rulefile/content_type_defaults.js';
 
 type BulkUrlImportModalDeps = {
     getState: () => Record<string, unknown>;
@@ -247,6 +248,10 @@ export function show_bulk_url_import_modal(
         return false;
     }
 
+    const state = deps.getState();
+    const rule_metadata = (state?.ruleFileContent as { metadata?: unknown } | undefined)?.metadata;
+    const default_content_type_ids = get_default_content_type_ids(rule_metadata);
+
     const rows: BulkImportPreparedRow[] = urls.map((url) => ({
         row_id: deps.Helpers.generate_uuid_v4(),
         url,
@@ -259,7 +264,7 @@ export function show_bulk_url_import_modal(
         suggested_sample_type_id: null,
         suggested_sample_type_confidence: 0,
         detected_content_type_ids: [],
-        selected_content_type_ids: [],
+        selected_content_type_ids: [...default_content_type_ids],
         include_in_save: true,
     }));
 
