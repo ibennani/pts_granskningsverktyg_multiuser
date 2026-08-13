@@ -25,11 +25,7 @@ const VIEWPORT_HEIGHT = 800;
 const DEVICE_SCALE_FACTOR = 2;
 const NAVIGATION_TIMEOUT_MS = 30_000;
 
-export type PageContentTypeSelectorRule = {
-    id: string;
-    selector: string;
-};
-
+export type PageContentTypeSelectorRule = { id: string; selector: string };
 export type PageContentTypeSelectorEvidence = {
     id: string;
     selector: string;
@@ -41,12 +37,10 @@ export type PageContentTypeSelectorEvidence = {
 export type DetectPageContentTypesInput = {
     url: string;
     allowed_content_type_ids: string[];
-    /**
-     * Frivilliga regler från aktiv regelfil. När de skickas in används de som
-     * auktoritativ DOM-detektor för respektive ID, samtidigt som legacy-signaler
-     * fortsätter fungera för andra ID:n.
-     */
+    /** Primärt namn för regler från aktiv regelfil. */
     selector_rules?: PageContentTypeSelectorRule[];
+    /** Bakåtkompatibel alias för tidiga implementationer på denna branch. */
+    rules?: PageContentTypeSelectorRule[];
     timeout_ms?: number;
 };
 
@@ -58,23 +52,12 @@ export type DetectPageContentTypesResult = {
 
 async function prepare_page(page: Page): Promise<void> {
     await configure_stealth_page(page);
-    await page.setViewport({
-        width: VIEWPORT_WIDTH,
-        height: VIEWPORT_HEIGHT,
-        deviceScaleFactor: DEVICE_SCALE_FACTOR,
-    });
+    await page.setViewport({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT, deviceScaleFactor: DEVICE_SCALE_FACTOR });
 }
 
 async function navigate_and_validate(page: Page, url: string, timeout_ms: number): Promise<void> {
-    const response = await page.goto(url, {
-        waitUntil: 'load',
-        timeout: timeout_ms,
-    });
-
-    if (!response) {
-        throw new Error('Ingen svar från sidan');
-    }
-
+    const response = await page.goto(url, { waitUntil: 'load', timeout: timeout_ms });
+    if (!response) throw new Error('Ingen svar från sidan');
     const status = response.status();
     const has_content = await page_has_renderable_content(page);
     assert_acceptable_navigation_status(status, has_content);
@@ -91,7 +74,6 @@ async function prepare_page_content(page: Page): Promise<void> {
 const COMMON_CONTENT_MARKER_SELECTOR =
     'form, table, nav, main, img, video, audio, h1, h2, h3, [role="navigation"], [role="table"], [role="main"]';
 
-/** Väntar kort på vanliga innehållselement (SPA) utan att avbryta om inget hittas. */
 async function wait_for_common_content_markers(page: Page): Promise<void> {
     try {
         await page.waitForSelector(COMMON_CONTENT_MARKER_SELECTOR, { timeout: 5000 });
@@ -118,9 +100,7 @@ async function collect_triggered_signals(
                     // Ogiltig legacy-selector — hoppa över.
                 }
             }
-            if (found && !triggered.includes(rule.signal)) {
-                triggered.push(rule.signal);
-            }
+            if (found && !triggered.includes(rule.signal)) triggered.push(rule.signal);
         }
         return triggered;
     }, rules);
@@ -154,13 +134,7 @@ async function collect_selector_evidence(
         return eval_rules.map((rule) => {
             try {
                 const count = document.querySelectorAll(rule.selector).length;
-                return {
-                    id: rule.id,
-                    selector: rule.selector,
-                    matched: count > 0,
-                    matchCount: count,
-                    error: null,
-                };
+                return { id: rule.id, selector: rule.selector, matched: count > 0, matchCount: count, error: null };
             } catch (error) {
                 return {
                     id: rule.id,
@@ -174,12 +148,6 @@ async function collect_selector_evidence(
     }, rules);
 }
 
-/**
- * Navigerar till URL och returnerar detekterade innehållstyp-ID:n från regelfilen.
- *
- * Legacy-reglerna finns kvar för bakåtkompatibilitet. selector_rules gör att
- * nya/ändrade innehållstyper kan styras helt från regelfilen utan kodändring.
- */
 export async function detect_page_content_types(
     input: DetectPageContentTypesInput
 ): Promise<DetectPageContentTypesResult> {
@@ -187,29 +155,21 @@ export async function detect_page_content_types(
         url,
         allowed_content_type_ids,
         selector_rules,
+        rules,
         timeout_ms = NAVIGATION_TIMEOUT_MS,
     } = input;
     const sanitized_allowed = [...new Set(
         allowed_content_type_ids.map((id) => String(id || '').trim()).filter(Boolean)
     )];
-
     if (sanitized_allowed.length === 0) {
-        return {
-            detected_content_type_ids: [],
-            triggered_signals: [],
-            selector_evidence: [],
-        };
+        return { detected_content_type_ids: [], triggered_signals: [], selector_evidence: [] };
     }
 
     const allowed_set = new Set(sanitized_allowed);
-    const configured_rules = sanitize_selector_rules(selector_rules, allowed_set);
+    const configured_rules = sanitize_selector_rules(selector_rules ?? rules, allowed_set);
     let browser: Browser | undefined;
-
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: PUPPETEER_LAUNCH_ARGS,
-        });
+        browser = await puppeteer.launch({ headless: true, args: PUPPETEER_LAUNCH_ARGS });
         const page = await browser.newPage();
         await prepare_page(page);
         await navigate_and_validate(page, url, timeout_ms);
@@ -218,15 +178,10 @@ export async function detect_page_content_types(
 
         const legacy_rules = get_serializable_detection_rules();
         const triggered_signals = await collect_triggered_signals(page, legacy_rules);
-        const legacy_detected = map_dom_hits_to_content_type_ids(
-            sanitized_allowed,
-            triggered_signals
-        );
+        const legacy_detected = map_dom_hits_to_content_type_ids(sanitized_allowed, triggered_signals);
         const selector_evidence = await collect_selector_evidence(page, configured_rules);
         const detected = new Set(legacy_detected);
-        for (const evidence of selector_evidence) {
-            if (evidence.matched) detected.add(evidence.id);
-        }
+        for (const evidence of selector_evidence) if (evidence.matched) detected.add(evidence.id);
 
         return {
             detected_content_type_ids: [...detected].sort(),
@@ -234,8 +189,6 @@ export async function detect_page_content_types(
             selector_evidence,
         };
     } finally {
-        if (browser) {
-            await browser.close();
-        }
+        if (browser) await browser.close();
     }
 }
