@@ -90,12 +90,27 @@ export class BulkSampleUrlImportViewComponent {
                 t,
                 sample_category_id,
                 wait_for_snapshot_ready: this.wait_for_snapshot_ready.bind(this),
-                on_complete: () => {
+                on_finished: ({ saved_count, failed_count }) => {
+                    if (saved_count > 0 && failed_count > 0) {
+                        this.deps?.NotificationComponent?.show_global_message(
+                            t('bulk_url_import_save_partial', { saved: saved_count, failed: failed_count }),
+                            'warning'
+                        );
+                        this.deps?.router('sample_management');
+                        return;
+                    }
+                    if (saved_count > 0) {
+                        this.deps?.NotificationComponent?.show_global_message(
+                            t('bulk_url_import_save_done'),
+                            'success'
+                        );
+                        this.deps?.router('sample_management');
+                        return;
+                    }
                     this.deps?.NotificationComponent?.show_global_message(
-                        t('bulk_url_import_save_done'),
-                        'success'
+                        t('bulk_url_import_save_none'),
+                        'error'
                     );
-                    this.deps?.router('sample_management');
                 },
             },
             urls,

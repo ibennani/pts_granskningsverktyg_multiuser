@@ -9,7 +9,10 @@ import {
 } from '../api/audit_snapshot_api.js';
 import { classify_sample_page_type } from '../../shared/logic/sample_page_type_classifier.js';
 import { queue_sidrapport_after_sample_save } from './queue_sidrapport_after_sample_save.js';
-import { sync_to_server_now } from './server_sync.js';
+import {
+    ensure_bulk_import_sample_on_server,
+    remove_bulk_import_stub_sample,
+} from './bulk_url_import_sample_register.js';
 import { type BulkUrlImportLogSink } from './bulk_url_import_logger.js';
 import {
     log_import_step,
@@ -51,9 +54,14 @@ export type BulkImportOrchestratorDeps = {
         auditId?: string | null;
         ruleFileContent?: unknown;
         auditStatus?: string;
+        samples?: Array<{ id?: string }>;
     } | null;
     dispatch: (action: { type: string; payload?: unknown }) => void;
-    StoreActionTypes: { ADD_SAMPLE: string; UPDATE_SAMPLE?: string };
+    StoreActionTypes: {
+        ADD_SAMPLE: string;
+        UPDATE_SAMPLE: string;
+        DELETE_SAMPLE?: string;
+    };
     generate_uuid: () => string;
     add_protocol_if_missing?: (url: string) => string;
     on_row_updated: (row: BulkImportPreparedRow) => void;
@@ -104,8 +112,8 @@ export async function run_bulk_url_capture_phase(
     for (const source_row of rows) {
         if (deps.signal?.aborted) break;
         let row = update_row(deps, source_row, { status: 'fetching', error_message: null });
-        const sample_id = deps.generate_uuid();
         const capture_id = deps.generate_uuid();
+        let registered_sample_id: string | null = null;
 
         log_import_step(deps, 'bulk_url_import_log_capture_start', {
             index: row_context?.index ?? 1,
@@ -113,11 +121,25 @@ export async function run_bulk_url_capture_phase(
         }, { row_id: source_row.row_id, url: row.url });
 
         try {
+            row = {
+                ...row,
+                ...(await ensure_bulk_import_sample_on_server(
+                    deps,
+                    row,
+                    sample_category_id,
+                    row_context
+                )),
+            };
+            registered_sample_id = row.sample_id;
+            if (!registered_sample_id) {
+                throw new Error('bulk_url_import_register_failed');
+            }
+
             const response: AuditSnapshotCaptureResponse = await start_audit_snapshot_capture(
                 audit_id,
                 {
                     captureId: capture_id,
-                    sampleId: sample_id,
+                    sampleId: registered_sample_id,
                     url: row.url,
                     attachScreenshotToSample: true,
                 },
@@ -136,7 +158,6 @@ export async function run_bulk_url_capture_phase(
             row = update_row(deps, row, {
                 status: page_title ? 'title_ready' : 'needs_action',
                 page_title,
-                sample_id,
                 capture_id,
             });
 
@@ -178,7 +199,10 @@ export async function run_bulk_url_capture_phase(
                 total: row_context?.total ?? rows.length,
                 error: message,
             }, { level: 'error', row_id: row.row_id, url: row.url });
-            row = update_row(deps, row, { status: 'failed', error_message: message });
+            if (registered_sample_id) {
+                await remove_bulk_import_stub_sample(deps, registered_sample_id);
+            }
+            row = update_row(deps, row, { status: 'failed', error_message: message, sample_id: null });
         }
 
         output.push(row);
@@ -200,11 +224,6 @@ export async function save_bulk_import_rows(
         throw new Error('bulk_url_import_no_audit');
     }
 
-    log_import_step(deps, 'bulk_url_import_log_sync', {});
-    await sync_to_server_now(
-        deps.getState as () => { auditId?: string } | null,
-        deps.dispatch as (action: unknown) => void
-    );
     const saved_rows: BulkImportPreparedRow[] = [];
 
     for (const source_row of rows) {
@@ -225,7 +244,6 @@ export async function save_bulk_import_rows(
         }, { row_id: source_row.row_id, url: source_row.url });
 
         const sample_payload = {
-            id: source_row.sample_id,
             description: source_row.page_title || source_row.url,
             url: source_row.url,
             sampleCategory: sample_category_id,
@@ -240,8 +258,12 @@ export async function save_bulk_import_rows(
         };
 
         deps.dispatch({
-            type: deps.StoreActionTypes.ADD_SAMPLE,
-            payload: sample_payload,
+            type: deps.StoreActionTypes.UPDATE_SAMPLE,
+            payload: {
+                sampleId: source_row.sample_id,
+                updatedSampleData: sample_payload,
+                skip_render: true,
+            },
         });
 
         let row = update_row(deps, source_row, { status: 'sidrapport_queued' });
@@ -256,7 +278,7 @@ export async function save_bulk_import_rows(
                 dispatch: deps.dispatch as (action: unknown) => void,
             },
             {
-                sampleId: source_row.sample_id,
+                sampleId: String(source_row.sample_id),
                 url: source_row.url,
                 sampleCategory: sample_category_id,
                 attachedMediaFilenames: sample_payload.attachedMediaFilenames,

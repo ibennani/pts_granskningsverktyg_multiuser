@@ -40,7 +40,7 @@ type BulkUrlImportModalDeps = {
         capture_id: string,
         timeout_ms: number
     ) => Promise<boolean>;
-    on_complete: () => void;
+    on_finished: (summary: { saved_count: number; failed_count: number }) => void;
 };
 
 type BulkUrlImportModalHandle = {
@@ -115,6 +115,7 @@ async function run_import_in_modal(
         progress_bar_el: HTMLDivElement;
         task_list_el: HTMLOListElement;
         log_list_el: HTMLOListElement;
+        container_el: HTMLElement;
     },
     modal: BulkUrlImportModalHandle,
     trigger_button: HTMLButtonElement | null
@@ -194,8 +195,30 @@ async function run_import_in_modal(
         build_progress_state(final_counts.completed, rows.length, final_counts.failed, 'done')
     );
 
-    deps.on_complete();
-    modal.close(trigger_button);
+    const saved_count = rows.filter((row) => row.status === 'saved').length;
+    const failed_count = rows.filter((row) => row.status === 'failed').length;
+
+    if (saved_count > 0) {
+        deps.on_finished({ saved_count, failed_count });
+        modal.close(trigger_button);
+        return;
+    }
+
+    const finish_actions = deps.Helpers.create_element('div', {
+        class_name: 'bulk-url-import-modal-finish',
+    });
+    const finish_button = deps.Helpers.create_element('button', {
+        class_name: ['button', 'button-default'],
+        attributes: { type: 'button' },
+        text_content: t('bulk_url_import_modal_close'),
+    }) as HTMLButtonElement;
+    finish_button.addEventListener('click', () => {
+        deps.on_finished({ saved_count, failed_count });
+        modal.close(trigger_button);
+    });
+    finish_actions.appendChild(finish_button);
+    ui.container_el.appendChild(finish_actions);
+    finish_button.focus();
 }
 
 export function show_bulk_url_import_modal(
@@ -296,6 +319,7 @@ export function show_bulk_url_import_modal(
                 progress_bar_el,
                 task_list_el,
                 log_list_el,
+                container_el: container,
             }, modal, trigger_button);
         }
     );
