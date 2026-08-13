@@ -201,7 +201,7 @@ async function main() {
             console.warn('[deploy:test-server] Kör manuellt på servern: npx puppeteer browsers install chrome');
         }
 
-        console.log('[deploy:test-server] Verifierar snapshot-capture mot Apohem...');
+        console.log('[deploy:test-server] Verifierar snapshot-capture mot Apohem (isolerad deploy-granskning)...');
         try {
             await exec(`cd '${rp_esc}' && npx tsx scripts/verify_snapshot_capture.ts`, { cwd: false });
         } catch (err) {

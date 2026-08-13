@@ -22,6 +22,9 @@ const BROWSER_SCRIPT_EXPORT_NAMES = [
     'browser_collect_target_sizes',
     'browser_collect_safe_interaction_candidates',
     'browser_detect_consent_banner',
+    'browser_collect_page_block_candidates',
+    'browser_find_menu_navigation_trigger',
+    'browser_read_menu_trigger_state',
 ] as const;
 
 type BrowserScriptExportName = (typeof BROWSER_SCRIPT_EXPORT_NAMES)[number];
@@ -59,3 +62,6 @@ export const BROWSER_COLLECT_CONTRAST_CANDIDATES = scripts.browser_collect_contr
 export const BROWSER_COLLECT_TARGET_SIZES = scripts.browser_collect_target_sizes;
 export const BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES = scripts.browser_collect_safe_interaction_candidates;
 export const BROWSER_DETECT_CONSENT_BANNER = scripts.browser_detect_consent_banner;
+export const BROWSER_COLLECT_PAGE_BLOCK_CANDIDATES = scripts.browser_collect_page_block_candidates;
+export const BROWSER_FIND_MENU_NAVIGATION_TRIGGER = scripts.browser_find_menu_navigation_trigger;
+export const BROWSER_READ_MENU_TRIGGER_STATE = scripts.browser_read_menu_trigger_state;

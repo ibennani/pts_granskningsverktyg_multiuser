@@ -6,38 +6,10 @@ import { randomUUID } from 'crypto';
 import pg from 'pg';
 import { initialize_snapshot_job_service, start_snapshot_capture } from '../server/services/audit_snapshot_job_service.ts';
 import { get_audit_snapshot_by_id } from '../server/repositories/audit_snapshot_repository.ts';
+import { ensure_snapshot_deploy_verify_context } from './snapshot_deploy_verify_fixture.ts';
 
 const DEFAULT_URL =
     'https://www.apohem.se/sar-bett-stick/sar/sartvatt/ekodes-smart-desinfektion-100-ml';
-
-type TestContext = {
-    audit_id: string;
-    sample_id: string;
-    url: string;
-};
-
-async function resolve_test_context(client: pg.Client): Promise<TestContext> {
-    const failed = await client.query<TestContext>(
-        `SELECT audit_id, sample_id, requested_url AS url
-         FROM audit_snapshots
-         WHERE status = 'failed'
-         ORDER BY created_at DESC
-         LIMIT 1`
-    );
-    if (failed.rows[0]) {
-        return failed.rows[0];
-    }
-    const any_row = await client.query<TestContext>(
-        `SELECT audit_id, sample_id, requested_url AS url
-         FROM audit_snapshots
-         ORDER BY created_at DESC
-         LIMIT 1`
-    );
-    if (!any_row.rows[0]) {
-        throw new Error('Ingen audit_snapshots-rad hittades för E2E-test');
-    }
-    return any_row.rows[0];
-}
 
 async function wait_for_terminal_status(
     audit_id: string,
@@ -65,7 +37,7 @@ async function main(): Promise<void> {
     let audit_id = '';
     let capture_id = '';
     try {
-        const ctx = await resolve_test_context(client);
+        const ctx = await ensure_snapshot_deploy_verify_context(client);
         audit_id = ctx.audit_id;
         capture_id = randomUUID();
 
@@ -91,6 +63,7 @@ async function main(): Promise<void> {
                     ok: true,
                     capture_id,
                     audit_id: ctx.audit_id,
+                    sample_id: ctx.sample_id,
                     snapshot_status: row.status,
                     warning_count: row.warning_count,
                     warnings_json_present: row.warnings_json !== null && row.warnings_json !== undefined,
