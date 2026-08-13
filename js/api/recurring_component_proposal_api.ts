@@ -23,6 +23,7 @@ export type RecurringProposalPreview = {
     counts?: Record<string, number> | null;
     matchedSignals?: string[] | null;
     domPath?: string | null;
+    detectedContentTypeIds?: string[];
 };
 
 export type RecurringProposalResponse = {
