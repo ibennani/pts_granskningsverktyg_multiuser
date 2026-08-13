@@ -12,6 +12,7 @@ export function should_skip_draft_restore_for_view(
     view_name: string,
     state: DraftRestoreAppState | null | undefined
 ): boolean {
+    if (view_name === 'bulk_sample_import') return true;
     if (!state || view_name !== 'metadata') return false;
     return state.auditStatus === 'not_started' && state.freshNewAuditMetadata === true;
 }

@@ -36,4 +36,13 @@ describe('should_skip_draft_restore_for_view', () => {
             })
         ).toBe(false);
     });
+
+    test('hoppar över utkast för bulkimport från URL-lista', () => {
+        expect(should_skip_draft_restore_for_view('bulk_sample_import', null)).toBe(true);
+        expect(
+            should_skip_draft_restore_for_view('bulk_sample_import', {
+                auditStatus: 'in_progress',
+            })
+        ).toBe(true);
+    });
 });

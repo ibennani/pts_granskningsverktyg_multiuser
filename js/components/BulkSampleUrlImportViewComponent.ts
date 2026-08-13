@@ -136,9 +136,6 @@ export class BulkSampleUrlImportViewComponent {
             this.root.appendChild(this.plate_element_ref);
         }
         const plate = this.plate_element_ref;
-        const saved_url_text = (
-            plate?.querySelector('#bulk-url-list-textarea') as HTMLTextAreaElement | null
-        )?.value;
         plate!.innerHTML = '';
 
         plate!.appendChild(this.deps.Helpers.create_element('h1', { text_content: t('bulk_url_import_title') }));
@@ -154,12 +151,13 @@ export class BulkSampleUrlImportViewComponent {
         plate!.appendChild(url_label);
         const textarea = this.deps.Helpers.create_element('textarea', {
             class_name: ['form-control', 'bulk-url-import-textarea'],
-            attributes: { id: 'bulk-url-list-textarea', rows: '8' },
+            attributes: {
+                id: 'bulk-url-list-textarea',
+                rows: '8',
+                'data-draft-ignore': 'true',
+            },
         }) as HTMLTextAreaElement;
         mark_textarea_without_markdown_toolbar(textarea);
-        if (saved_url_text) {
-            textarea.value = saved_url_text;
-        }
         plate!.appendChild(textarea);
 
         const actions = this.deps.Helpers.create_element('div', { class_name: 'bulk-url-import-actions' });
