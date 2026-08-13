@@ -25,6 +25,7 @@ type ModuleEnvelope = {
 
 type PageExtendedEvidence = RecurringPageEvidence & {
     detectedContentTypeIds: string[];
+    detectedContentTypeIdsByDomPath: Record<string, string[]>;
 };
 
 export type RecurringProposalPreview = {
@@ -34,6 +35,7 @@ export type RecurringProposalPreview = {
     counts: RecurringComponentCandidate['counts'];
     matchedSignals: RecurringComponentCandidate['matchedSignals'];
     domPath: string | null;
+    detectedContentTypeIds: string[];
 };
 
 async function read_json_from_zip<T>(zip: JSZip, filename: string): Promise<T | null> {
@@ -62,13 +64,32 @@ async function get_samples(audit_id: string): Promise<AuditSample[]> {
     return [];
 }
 
+function normalize_ids(value: unknown): string[] {
+    return Array.isArray(value)
+        ? [...new Set(value.map((id) => String(id || '').trim()).filter(Boolean))]
+        : [];
+}
+
 function read_detected_content_type_ids(recurring_data: Record<string, unknown>): string[] {
     const detection = recurring_data.contentTypeDetection;
     if (!detection || typeof detection !== 'object') return [];
-    const ids = (detection as { detectedContentTypeIds?: unknown }).detectedContentTypeIds;
-    return Array.isArray(ids)
-        ? [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))]
-        : [];
+    return normalize_ids((detection as { detectedContentTypeIds?: unknown }).detectedContentTypeIds);
+}
+
+function read_detected_content_type_ids_by_dom_path(
+    recurring_data: Record<string, unknown>
+): Record<string, string[]> {
+    const result: Record<string, string[]> = {};
+    const rows = recurring_data.contentTypeDetectionByCandidate;
+    if (!Array.isArray(rows)) return result;
+    for (const row of rows) {
+        if (!row || typeof row !== 'object') continue;
+        const record = row as Record<string, unknown>;
+        const dom_path = String(record.domPath || '').trim();
+        if (!dom_path) continue;
+        result[dom_path] = normalize_ids(record.detectedContentTypeIds);
+    }
+    return result;
 }
 
 function build_preview(
@@ -82,13 +103,15 @@ function build_preview(
         .filter((item) => item.candidateType === proposal.proposalType)
         .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))[0];
     if (!candidate) return null;
+    const dom_path = String(candidate.domPath || '').trim();
     return {
         sampleId: page.sampleId,
         captureId: page.captureId || null,
         boundingBox: candidate.boundingBox || null,
         counts: candidate.counts || null,
         matchedSignals: candidate.matchedSignals || null,
-        domPath: candidate.domPath || null,
+        domPath: dom_path || null,
+        detectedContentTypeIds: dom_path ? (page.detectedContentTypeIdsByDomPath[dom_path] || []) : [],
     };
 }
 
@@ -113,14 +136,8 @@ export async function build_recurring_proposals_for_audit(
         try {
             const archive = await fs.readFile(get_snapshot_archive_path(audit_id, ready.snapshotId));
             const zip = await JSZip.loadAsync(archive);
-            const recurring = await read_json_from_zip<ModuleEnvelope>(
-                zip,
-                'analysis/phase1/recurring-components.json'
-            );
-            const consent = await read_json_from_zip<ModuleEnvelope>(
-                zip,
-                'analysis/phase1/initial-consent.json'
-            );
+            const recurring = await read_json_from_zip<ModuleEnvelope>(zip, 'analysis/phase1/recurring-components.json');
+            const consent = await read_json_from_zip<ModuleEnvelope>(zip, 'analysis/phase1/initial-consent.json');
             const recurring_data = recurring?.data || {};
             const consent_data = consent?.data || {};
             evidence.push({
@@ -135,6 +152,7 @@ export async function build_recurring_proposals_for_audit(
                     ? 'analysis/phase1/initial-consent.json'
                     : null,
                 detectedContentTypeIds: read_detected_content_type_ids(recurring_data),
+                detectedContentTypeIdsByDomPath: read_detected_content_type_ids_by_dom_path(recurring_data),
             });
         } catch {
             // En trasig/äldre rapport ska inte stoppa förslag från övriga sidor.
@@ -146,14 +164,12 @@ export async function build_recurring_proposals_for_audit(
         evidence.map((page) => [page.sampleId, page.detectedContentTypeIds])
     );
     const previews: Record<string, RecurringProposalPreview | null> = {};
-    for (const proposal of proposals) {
-        previews[proposal.proposalType] = build_preview(proposal, evidence);
-    }
+    for (const proposal of proposals) previews[proposal.proposalType] = build_preview(proposal, evidence);
 
     return {
         pagesAnalyzed: evidence.length,
         proposals,
-        evidence: evidence.map(({ detectedContentTypeIds: _ids, ...page }) => page),
+        evidence: evidence.map(({ detectedContentTypeIds: _a, detectedContentTypeIdsByDomPath: _b, ...page }) => page),
         detectedContentTypesBySample,
         previews,
     };
