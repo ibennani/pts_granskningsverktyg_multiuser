@@ -1,3 +1,5 @@
+import { should_disable_text_field_autocomplete } from './text_field_autocomplete.ts';
+
 export function create_element(tag_name, options = {}) {
     const element = document.createElement(tag_name);
     if (options.class_name) {
@@ -14,6 +16,12 @@ export function create_element(tag_name, options = {}) {
             if (value === undefined || value === null) continue;
             element.setAttribute(attr, String(value));
         }
+    }
+    const input_type = String(tag_name).toLowerCase() === 'textarea'
+        ? null
+        : (options.attributes?.type ?? 'text');
+    if (should_disable_text_field_autocomplete(tag_name, input_type)) {
+        element.setAttribute('autocomplete', 'off');
     }
     if (options.event_listeners) {
         for (const type in options.event_listeners) {
