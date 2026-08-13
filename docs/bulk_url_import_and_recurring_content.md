@@ -22,7 +22,7 @@ Sidrapporten innehåller `analysis/content-types.json` med evidens från både r
 
 ## Återkommande innehåll
 
-När minst två färdiga sidrapporter finns kan du i **Granskningsdelar** använda sektionen **Återkommande innehåll**. Servern jämför blockkandidater från `analysis/phase1/page-blocks.json` med strukturfingeravtryck.
+Efter bulkimport av URL:er analyserar verktyget automatiskt återkommande block (sidhuvud, meny, sidfot med mera) när minst två sidrapporter är klara. Servern jämför blockkandidater från `analysis/phase1/page-blocks.json` med strukturfingeravtryck och skapar granskningsdelar i kategorin **Återkommande innehåll**. Innehållstyper sätts via samma sidrapportsanalys som för URL-granskningsdelar.
 
 Meny analyseras med begränsad automatisk interaktion i `analysis/phase1/menu-navigation.json`. Cookie-banner använder initial consent-evidens utan extra klick.
 

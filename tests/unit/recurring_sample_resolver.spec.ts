@@ -45,7 +45,7 @@ describe('recurring_sample_resolver', () => {
         expect(resolved.description).toBe('Sidhuvud');
     });
 
-    test('build_recurring_sample_payload sätter kategori, typ och innehållstyper', () => {
+    test('build_recurring_sample_payload sätter kategori och typ', () => {
         const payload = build_recurring_sample_payload(
             metadata,
             { candidateType: 'footer', structureFingerprint: 'fp-1' },
@@ -53,7 +53,6 @@ describe('recurring_sample_resolver', () => {
         );
         expect(payload?.sampleCategory).toBe('aterkommande');
         expect(payload?.sampleType).toBe('sidfot');
-        expect(payload?.selectedContentTypes).toEqual(['nav-lankar']);
     });
 
     test('recurring_sample_exists hittar befintlig del', () => {

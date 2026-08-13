@@ -7,8 +7,6 @@ import {
     read_page_types_dropdown_state,
     type SampleCategoryRecord,
 } from '../../shared/rulefile/page_types_dropdown_sync.js';
-import { get_default_content_type_ids } from '../../shared/rulefile/content_type_defaults.js';
-
 const ATERKOMMANDE_MATCH_HINTS = ['återkommande', 'aterkommande'];
 
 const CANDIDATE_TYPE_HINTS: Record<string, string[]> = {
@@ -30,7 +28,6 @@ export type RecurringSamplePayload = {
     description: string;
     sampleCategory: string;
     sampleType: string;
-    selectedContentTypes: string[];
     recurringComponentType: string;
     recurringStructureFingerprint: string;
     recurringEvidenceRefs: RecurringSuggestionLike['evidenceRefs'];
@@ -134,7 +131,6 @@ export function build_recurring_sample_payload(
         description,
         sampleCategory: category_id,
         sampleType: sample_type_id,
-        selectedContentTypes: get_default_content_type_ids(metadata),
         recurringComponentType: suggestion.candidateType,
         recurringStructureFingerprint: suggestion.structureFingerprint,
         recurringEvidenceRefs: suggestion.evidenceRefs ?? { sampleIds: [], captureIds: [] },

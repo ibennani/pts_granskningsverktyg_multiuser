@@ -11,6 +11,7 @@ import {
     recurring_sample_exists,
     resolve_recurring_sample_category,
 } from './recurring_sample_resolver.js';
+import { resolve_recurring_sample_content_type_ids } from './recurring_sample_content_types.js';
 
 export type BulkImportCreatedItem = {
     kind: 'url_sample' | 'recurring_sample';
@@ -54,7 +55,7 @@ export async function run_bulk_recurring_import_phase(
     const audit_id = state?.auditId ? String(state.auditId) : null;
     const metadata = state?.ruleFileContent?.metadata;
     const category = resolve_recurring_sample_category(metadata);
-    const category_label = String(category?.text ?? deps.t('recurring_content_section_title')).trim();
+    const category_label = String(category?.text ?? '').trim();
 
     if (!audit_id || !category) {
         log_import_step(deps, 'bulk_url_import_log_recurring_skip', {
@@ -119,6 +120,12 @@ export async function run_bulk_recurring_import_phase(
             continue;
         }
 
+        const selected_content_types = await resolve_recurring_sample_content_type_ids(
+            audit_id,
+            metadata,
+            suggestion.evidenceRefs?.captureIds
+        );
+
         const sample_id = deps.generate_uuid();
         deps.dispatch({
             type: deps.StoreActionTypes.ADD_SAMPLE,
@@ -128,7 +135,7 @@ export async function run_bulk_recurring_import_phase(
                 url: '',
                 sampleCategory: payload.sampleCategory,
                 sampleType: payload.sampleType,
-                selectedContentTypes: payload.selectedContentTypes,
+                selectedContentTypes: selected_content_types,
                 attachedMediaFilenames: [],
                 requirementResults: {},
                 recurringComponentType: payload.recurringComponentType,

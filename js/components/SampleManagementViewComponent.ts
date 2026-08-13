@@ -12,7 +12,6 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
-import { RecurringContentSectionComponent } from './recurring_content/RecurringContentSectionComponent.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -36,10 +35,6 @@ export class SampleManagementViewComponent {
     sample_list_component_instance = SampleListComponent;
 
     sample_list_container_element: HTMLElement | null = null;
-
-    recurring_section_root: HTMLElement | null = null;
-
-    recurring_section_component = new RecurringContentSectionComponent();
 
     plate_element_ref: HTMLElement | null = null;
 
@@ -82,20 +77,6 @@ export class SampleManagementViewComponent {
                 on_mark_sample_bulk_pass_fully_unreviewed: this.handle_mark_bulk_pass_fully_unreviewed_in_sample
             }
         });
-
-        this.recurring_section_root = this.Helpers.create_element('div', { id: 'recurring-content-section-root' });
-        if (this.recurring_section_root && this.getState && this.dispatch && this.StoreActionTypes && this.Translation && this.Helpers) {
-            await this.recurring_section_component.init({
-                root: this.recurring_section_root,
-                deps: {
-                    getState: this.getState,
-                    dispatch: this.dispatch,
-                    StoreActionTypes: this.StoreActionTypes as { ADD_SAMPLE: string },
-                    Translation: this.Translation,
-                    Helpers: this.Helpers,
-                },
-            });
-        }
     }
 
     handle_edit_sample_request_from_list(sample_id: string) {
@@ -323,11 +304,6 @@ export class SampleManagementViewComponent {
         this.sample_list_component_instance.render();
         plate.appendChild(this.sample_list_container_element!);
 
-        if (this.recurring_section_root) {
-            this.recurring_section_component.render();
-            plate.appendChild(this.recurring_section_root);
-        }
-
         if (current_state.auditStatus === 'not_started') {
             const bottom_actions_div = this.Helpers.create_element('div', {
                 class_name: ['form-actions', 'space-between-groups'],
@@ -368,7 +344,6 @@ export class SampleManagementViewComponent {
         if (this.sample_list_component_instance?.destroy) {
             this.sample_list_component_instance.destroy();
         }
-        this.recurring_section_component.destroy();
         this.root = null;
         this.plate_element_ref = null;
         this.previously_focused_element = null;
