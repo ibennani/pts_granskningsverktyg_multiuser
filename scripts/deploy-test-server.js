@@ -97,6 +97,7 @@ async function main() {
         await putFile(join(projectRoot, 'scripts', 'verify_snapshot_capture.ts'), `${remotePath}/scripts/verify_snapshot_capture.ts`);
         await putFile(join(projectRoot, 'scripts', 'verify_snapshot_db_schema.ts'), `${remotePath}/scripts/verify_snapshot_db_schema.ts`);
         await putFile(join(projectRoot, 'scripts', 'verify_snapshot_e2e.ts'), `${remotePath}/scripts/verify_snapshot_e2e.ts`);
+        await putFile(join(projectRoot, 'scripts', 'snapshot_deploy_verify_fixture.ts'), `${remotePath}/scripts/snapshot_deploy_verify_fixture.ts`);
         await putFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
         await putDirectory(join(projectRoot, 'scripts', 'lib'), `${remotePath}/scripts/lib`);
         await putDirectory(join(projectRoot, 'scripts', 'data'), `${remotePath}/scripts/data`);

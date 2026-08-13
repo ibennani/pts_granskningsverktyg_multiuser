@@ -262,9 +262,27 @@ async function exec_sudo(inner_cmd, opts = {}) {
     await exec(sudo_bash_cmd(inner_cmd), opts);
 }
 
+/**
+ * Kör kommando på servern och returnerar stdout (för parsning i skript).
+ */
+async function exec_capture(cmd, opts = {}) {
+    const useCwd = opts.cwd !== false;
+    const fullCmd = useCwd ? `cd ${remotePath} && ${cmd}` : cmd;
+    const wrappedCmd = `bash -l -c ${JSON.stringify(fullCmd)}`;
+    const client = await getSshClient();
+    if (client) {
+        const result = await client.execCommand(wrappedCmd, useCwd ? {} : { cwd: '/' });
+        if (result.stderr) process.stderr.write(result.stderr);
+        if (result.code !== 0) throw new Error(`Kommando misslyckades (kod ${result.code}): ${cmd}`);
+        return result.stdout || '';
+    }
+    throw new Error('exec_capture kräver node-ssh (sätt DEPLOY_SSH_PASSWORD eller SSH-nyckel).');
+}
+
 export {
     run,
     exec,
+    exec_capture,
     putFile,
     putDirectory,
     getSshClient,
