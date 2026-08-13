@@ -233,7 +233,8 @@ export function show_bulk_sample_url_modal(host: BulkHost, trigger: HTMLElement 
                     const sample = {
                         id,
                         sampleCategory: String(category.id || ''),
-                        sampleType: classified.sampleType,
+                        // Tom sträng följer befintlig samplemodell när granskaren ännu måste välja typ.
+                        sampleType: classified.sampleType || '',
                         description: title || url,
                         url,
                         selectedContentTypes: [...new Set([...content_types.defaults, ...detected])],
@@ -242,9 +243,7 @@ export function show_bulk_sample_url_modal(host: BulkHost, trigger: HTMLElement 
                         requirementResults: {},
                         autoCreation: {
                             source: 'bulk-url-list',
-                            contentTypeDetection: {
-                                detectedContentTypeIds: detected,
-                            },
+                            contentTypeDetection: { detectedContentTypeIds: detected },
                             pageTypeSuggestion: {
                                 kind: classified.classification.kind,
                                 score: classified.classification.score,
