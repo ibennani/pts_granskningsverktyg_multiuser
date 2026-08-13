@@ -14,6 +14,11 @@ function is_selector_syntax_valid(selector: unknown): boolean {
     }
 }
 
+function translate_or_fallback(t: any, key: string, fallback: string): string {
+    const value = t?.(key);
+    return value && value !== key && value !== `**${key}**` ? String(value) : fallback;
+}
+
 export function render_content_type_edit_form(
     ctx: any,
     container: HTMLElement,
@@ -35,12 +40,21 @@ export function render_content_type_edit_form(
     if (!(fields instanceof HTMLElement) || !child) return result;
 
     const t = ctx?.Translation?.t;
-    const label_text = t?.('rulefile_content_types_field_detection_selector') ||
-        'DOM-selector för automatisk identifiering';
-    const help_text = t?.('rulefile_content_types_field_detection_selector_help') ||
-        'CSS-selector som körs mot sidans renderade DOM. Exempel: h1,h2,h3,h4,h5,h6,[role="heading"].';
-    const invalid_text = t?.('rulefile_content_types_field_detection_selector_invalid') ||
-        'DOM-selectorn är inte en giltig CSS-selector.';
+    const label_text = translate_or_fallback(
+        t,
+        'rulefile_content_types_field_detection_selector',
+        'DOM-selector för automatisk identifiering'
+    );
+    const help_text = translate_or_fallback(
+        t,
+        'rulefile_content_types_field_detection_selector_help',
+        'CSS-selector som körs mot sidans renderade DOM. Exempel: h1,h2,h3,h4,h5,h6,[role="heading"].'
+    );
+    const invalid_text = translate_or_fallback(
+        t,
+        'rulefile_content_types_field_detection_selector_invalid',
+        'DOM-selectorn är inte en giltig CSS-selector.'
+    );
 
     const group = document.createElement('div');
     group.className = 'form-group';
