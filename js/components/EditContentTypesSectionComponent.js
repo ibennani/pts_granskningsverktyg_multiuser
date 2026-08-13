@@ -109,17 +109,21 @@ export const EditContentTypesSectionComponent = {
                         id: trim(child?.id),
                         text: trim(child?.text),
                         description: trim(child?.description),
-                        detectionPattern: trim(child?.detectionPattern)
+                        detectionPattern: trim(child?.detectionPattern),
+                        detectionSelector: trim(child?.detectionSelector)
                     };
                     if (!cleaned.detectionPattern) {
                         delete cleaned.detectionPattern;
+                    }
+                    if (!cleaned.detectionSelector) {
+                        delete cleaned.detectionSelector;
                     }
                     if (child?.defaultSelected === true) {
                         cleaned.defaultSelected = true;
                     }
                     return cleaned;
                 })
-                .filter(child => child.id || child.text || child.description || child.detectionPattern);
+                .filter(child => child.id || child.text || child.description || child.detectionPattern || child.detectionSelector);
             return cleanedParent;
         }).filter(parent => parent.id || parent.text || (parent.types && parent.types.length > 0));
 

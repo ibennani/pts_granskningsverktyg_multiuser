@@ -81,6 +81,14 @@ export default {
     '^.+[\\\\/]page_types_dropdown_editor_ui\\.js$':
       '<rootDir>/js/components/rulefile_sections/page_types_dropdown_editor_ui.ts',
     '^.+[\\\\/]content_type_defaults\\.js$': '<rootDir>/shared/rulefile/content_type_defaults.ts',
+    '^.+[\\\\/]content_type_detection_selector_web_catalog\\.js$':
+      '<rootDir>/shared/rulefile/content_type_detection_selector_web_catalog.ts',
+    '^.+[\\\\/]content_type_detection_selector\\.js$':
+      '<rootDir>/shared/rulefile/content_type_detection_selector.ts',
+    '^.+[\\\\/]content_type_detection_runtime\\.js$':
+      '<rootDir>/shared/rulefile/content_type_detection_runtime.ts',
+    '^.+[\\\\/]cmp_consent_detection\\.js$': '<rootDir>/server/services/cmp/cmp_consent_detection.ts',
+    '^.+[\\\\/]sample_page_type_classifier\\.js$': '<rootDir>/shared/logic/sample_page_type_classifier.ts',
     '^.+[\\\\/]page_types_dropdown_sync\\.js$': '<rootDir>/shared/rulefile/page_types_dropdown_sync.ts',
     '^.+[\\\\/]content_type_accordion\\.js$':
       '<rootDir>/js/components/add_sample_form/content_type_accordion.ts',
@@ -388,6 +396,10 @@ export default {
     '^.+[\\\\/]audit_snapshot_capture_url\\.js$': '<rootDir>/server/services/audit_snapshot_capture_url.ts',
     '^.+[\\\\/]audit_snapshot_job_service\\.js$': '<rootDir>/server/services/audit_snapshot_job_service.ts',
     '^.+[\\\\/]audit_snapshot_cleanup_service\\.js$': '<rootDir>/server/services/audit_snapshot_cleanup_service.ts',
+    '^.+[\\\\/]audit_snapshot_analysis_summary_service\\.js$': '<rootDir>/server/services/audit_snapshot_analysis_summary_service.ts',
+    '^.+[\\\\/]audit_snapshot_rulefile_loader\\.js$': '<rootDir>/server/services/audit_snapshot_rulefile_loader.ts',
+    '^.+[\\\\/]audit_snapshot_archive_read\\.js$': '<rootDir>/server/snapshots/audit_snapshot_archive_read.ts',
+    '^.+[\\\\/]audit_content_type_groups\\.js$': '<rootDir>/server/utils/audit_content_type_groups.ts',
     '^.+[\\\\/]page_snapshot_capture_service\\.js$': '<rootDir>/server/services/page_snapshot_capture_service.ts',
     '^.+[\\\\/]audit_snapshot_repository\\.js$': '<rootDir>/server/repositories/audit_snapshot_repository.ts',
     '^.+[\\\\/]network_redaction\\.js$': '<rootDir>/server/snapshots/network_redaction.ts',
@@ -413,6 +425,14 @@ export default {
     '^.+[\\\\/]target_size_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/target_size_analysis.ts',
     '^.+[\\\\/]safe_interaction_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/safe_interaction_analysis.ts',
     '^.+[\\\\/]initial_consent_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/initial_consent_analysis.ts',
+    '^.+[\\\\/]content_type_detection_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/content_type_detection_analysis.ts',
+    '^.+[\\\\/]page_block_detection_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/page_block_detection_analysis.ts',
+    '^.+[\\\\/]menu_navigation_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase1/menu_navigation_analysis.ts',
+    '^.+[\\\\/]structure_fingerprint\\.js$': '<rootDir>/shared/recurring/structure_fingerprint.ts',
+    '^.+[\\\\/]sample_page_type_classifier\\.js$': '<rootDir>/shared/logic/sample_page_type_classifier.ts',
+    '^.+[\\\\/]recurring_content_analysis_service\\.js$': '<rootDir>/server/services/recurring_content_analysis_service.ts',
+    '^.+[\\\\/]audit_snapshot_analysis_summary_service\\.js$': '<rootDir>/server/services/audit_snapshot_analysis_summary_service.ts',
+    '^.+[\\\\/]audit_content_type_groups\\.js$': '<rootDir>/server/utils/audit_content_type_groups.ts',
     '^.+[\\\\/]live_region_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase2/live_region_analysis.ts',
     '^.+[\\\\/]stateful_component_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase2/stateful_component_analysis.ts',
     '^.+[\\\\/]form_analysis\\.js$': '<rootDir>/server/snapshots/analysis/phase2/form_analysis.ts',

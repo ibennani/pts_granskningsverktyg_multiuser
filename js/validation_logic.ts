@@ -8,6 +8,7 @@ import {
     resolve_sample_vocab
 } from '../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { is_valid_content_type_detection_pattern } from '../shared/rulefile/content_type_detection_pattern.js';
+import { is_valid_content_type_detection_selector } from '../shared/rulefile/content_type_detection_selector.js';
 
 type TranslateFn = (key: string, replacements?: Record<string, string>) => string;
 
@@ -477,6 +478,14 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
                 return {
                     isValid: false,
                     message: t('rule_file_err_content_type_detection_pattern_invalid', {
+                        typeText: String(typ.text || typ.id)
+                    })
+                };
+            }
+            if (!is_valid_content_type_detection_selector(typ.detectionSelector)) {
+                return {
+                    isValid: false,
+                    message: t('rule_file_err_content_type_detection_selector_invalid', {
                         typeText: String(typ.text || typ.id)
                     })
                 };

@@ -25,6 +25,7 @@ const AUDIT_VIEWS = new Set([
     'edit_metadata',
     'audit_settings',
     'sample_management',
+    'bulk_sample_import',
     'sample_form',
     'audit_actions',
     'update_rulefile',

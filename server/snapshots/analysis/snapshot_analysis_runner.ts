@@ -33,6 +33,9 @@ import { run_text_spacing_analysis } from './phase1/text_spacing_analysis.js';
 import { run_contrast_analysis } from './phase1/contrast_analysis.js';
 import { run_target_size_analysis } from './phase1/target_size_analysis.js';
 import { run_safe_interaction_analysis } from './phase1/safe_interaction_analysis.js';
+import { run_content_type_detection_analysis } from './phase1/content_type_detection_analysis.js';
+import { run_page_block_detection_analysis } from './phase1/page_block_detection_analysis.js';
+import { run_menu_navigation_analysis } from './phase1/menu_navigation_analysis.js';
 import { run_live_region_analysis } from './phase2/live_region_analysis.js';
 import { run_stateful_component_analysis } from './phase2/stateful_component_analysis.js';
 import { run_form_analysis } from './phase2/form_analysis.js';
@@ -53,6 +56,9 @@ const PHASE1_MODULES: AnalysisModuleDef[] = [
     { name: 'contrast', phase: 1, version: 1, output_path: 'analysis/phase1/contrast.json', run: run_contrast_analysis },
     { name: 'target-size', phase: 1, version: 1, output_path: 'analysis/phase1/target-size.json', run: run_target_size_analysis },
     { name: 'interactions', phase: 1, version: 1, output_path: 'analysis/phase1/interactions.json', run: run_safe_interaction_analysis },
+    { name: 'content-types', phase: 1, version: 1, output_path: 'analysis/content-types.json', run: run_content_type_detection_analysis },
+    { name: 'page-blocks', phase: 1, version: 1, output_path: 'analysis/phase1/page-blocks.json', run: run_page_block_detection_analysis },
+    { name: 'menu-navigation', phase: 1, version: 1, output_path: 'analysis/phase1/menu-navigation.json', run: run_menu_navigation_analysis },
 ];
 
 const PHASE2_MODULES: AnalysisModuleDef[] = [
@@ -77,6 +83,7 @@ export type RunSnapshotAnalysisInput = {
     yield_on_queue: boolean;
     warnings: SnapshotWarning[];
     initial_consent_envelope?: AnalysisModuleEnvelope | null;
+    content_type_groups?: unknown[];
 };
 
 function envelope_to_index_entry(
@@ -106,6 +113,9 @@ export async function run_snapshot_analysis(
     const analysis_max_ms = get_snapshot_analysis_max_ms();
     let page_corrupted = false;
     const shared: AnalysisSharedState = {};
+    if (input.content_type_groups) {
+        shared.content_type_groups = input.content_type_groups;
+    }
     const screenshot_budget = { remaining: get_snapshot_analysis_screenshot_max() };
     const module_entries: AnalysisIndexModuleEntry[] = [];
 

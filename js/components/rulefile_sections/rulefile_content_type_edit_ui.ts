@@ -36,6 +36,7 @@ type EditFormState = {
     parent_id: string;
     description: string;
     detection_pattern: string;
+    detection_selector: string;
     default_selected: boolean;
 };
 
@@ -59,6 +60,9 @@ function read_form_state(form: HTMLFormElement): EditFormState {
     const pattern_input = form.querySelector(
         '[data-content-type-field="detectionPattern"]'
     ) as HTMLTextAreaElement | null;
+    const selector_input = form.querySelector(
+        '[data-content-type-field="detectionSelector"]'
+    ) as HTMLTextAreaElement | null;
     const default_selected_input = form.querySelector(
         '[data-content-type-field="defaultSelected"]'
     ) as HTMLInputElement | null;
@@ -67,6 +71,7 @@ function read_form_state(form: HTMLFormElement): EditFormState {
         parent_id: group_select?.value ?? '',
         description: description_input?.value ?? '',
         detection_pattern: pattern_input?.value ?? '',
+        detection_selector: selector_input?.value ?? '',
         default_selected: default_selected_input?.checked === true,
     };
 }
@@ -98,6 +103,12 @@ function apply_form_state_to_metadata(
         child.detectionPattern = pattern;
     } else {
         delete child.detectionPattern;
+    }
+    const selector = normalize(form_state.detection_selector);
+    if (selector) {
+        child.detectionSelector = selector;
+    } else {
+        delete child.detectionSelector;
     }
     if (form_state.default_selected) {
         child.defaultSelected = true;
@@ -337,6 +348,28 @@ export function render_content_type_edit_form(
     pattern_input.value = child.detectionPattern ?? '';
     pattern_group.appendChild(pattern_input);
     fields.appendChild(pattern_group);
+
+    const selector_group = Helpers.create_element('div', { class_name: 'form-group' });
+    const selector_id = `content-type-selector-${Math.random().toString(36).substring(2, 8)}`;
+    selector_group.appendChild(
+        Helpers.create_element('label', {
+            attributes: { for: selector_id },
+            text_content: t('rulefile_metadata_field_detection_selector'),
+        })
+    );
+    selector_group.appendChild(
+        Helpers.create_element('p', {
+            class_name: 'field-hint',
+            text_content: t('rulefile_metadata_field_detection_selector_help'),
+        })
+    );
+    const selector_input = Helpers.create_element('textarea', {
+        class_name: 'form-control content-type-edit-selector-input',
+        attributes: { id: selector_id, rows: '2', 'data-content-type-field': 'detectionSelector' },
+    }) as HTMLTextAreaElement;
+    selector_input.value = child.detectionSelector ?? '';
+    selector_group.appendChild(selector_input);
+    fields.appendChild(selector_group);
 
     const default_selected_group = Helpers.create_element('div', { class_name: 'form-group' });
     const default_selected_id = `content-type-default-selected-${Math.random().toString(36).substring(2, 8)}`;

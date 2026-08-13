@@ -96,6 +96,7 @@ export type AnalysisSharedState = {
     keyboard_steps?: unknown[];
     safe_interaction_candidates?: unknown[];
     initial_consent_data?: unknown;
+    content_type_groups?: unknown[];
 };
 
 export type AnalysisModuleDef = {

@@ -104,19 +104,27 @@ export async function navigate_for_screenshot_capture(
     await apply_cached_consent_and_settle(page, consent);
 }
 
-/** Navigation utan förapplicerad cached consent (för initial consent-evidens). */
-export async function navigate_for_initial_consent_observation(
+/** Ren navigation för initial cookieobservation (ingen CMP-blockering, cookies eller localStorage). */
+export async function navigate_for_clean_consent_observation(
     page: Page,
     url: string,
     timeout_ms: number
 ): Promise<void> {
-    await enable_cmp_request_block_for_screenshot(page);
     await navigate_and_validate_capture_page(page, url, timeout_ms);
     try {
         await page.waitForNetworkIdle({ idleTime: 300, timeout: 5000 });
     } catch {
         // fortsätt
     }
+}
+
+/** @deprecated Använd navigate_for_clean_consent_observation på separat observationspage. */
+export async function navigate_for_initial_consent_observation(
+    page: Page,
+    url: string,
+    timeout_ms: number
+): Promise<void> {
+    await navigate_for_clean_consent_observation(page, url, timeout_ms);
 }
 
 /** Applicerar cached consent efter initial observation, utan reload. */

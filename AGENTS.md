@@ -68,6 +68,13 @@ Projektet är organiserat enligt följande struktur:
 - I komponenter: använd `deps.getState()` och `deps.dispatch()` (från deps-objektet)
 - **Persistens, backup och serversynk:** `docs/state_and_persistence.md`
 
+### Bulkimport och återkommande innehåll
+- Vy `bulk_sample_import`: massimport från URL-lista via `BulkSampleUrlImportViewComponent` och `bulk_sample_url_import_orchestrator.ts`
+- Sidrapport-analys: `content-types`, `page-blocks`, `menu-navigation` i `snapshot_analysis_runner.ts`
+- API: `GET …/analysis-summary`, `POST …/recurring-content/analyze`
+- Pending innehållstyper under pågående granskning: `pending_detected_content_types.ts`
+- Mer: `docs/bulk_url_import_and_recurring_content.md`
+
 ### Översättningar
 - Använd `deps.Translation.t()` eller `window.Translation.t()` för översättningar
 - Översättningsfiler i `js/i18n/`

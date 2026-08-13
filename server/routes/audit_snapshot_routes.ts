@@ -29,6 +29,7 @@ import {
 import {
     get_snapshot_archive_path,
 } from '../snapshots/audit_snapshot_storage.js';
+import { build_snapshot_analysis_summary } from '../services/audit_snapshot_analysis_summary_service.js';
 import {
     append_snapshot_archive_to_zip,
     build_snapshot_export_folder_name,
@@ -232,6 +233,24 @@ export function register_audit_snapshot_routes(router: Router): void {
         }
     });
 
+    router.get('/:id/snapshots/:snapshotId/analysis-summary', async (req: Request, res: Response) => {
+        try {
+            const audit_id = single_route_param(req.params.id);
+            const snapshot_id = single_route_param(req.params.snapshotId);
+            if (!(await audit_exists(audit_id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const summary = await build_snapshot_analysis_summary(audit_id, snapshot_id);
+            if (!summary) {
+                return res.status(404).json({ error: 'Snapshot-analys hittades inte' });
+            }
+            return res.json(summary);
+        } catch (err) {
+            console.error('[audit_snapshot] analysis-summary error:', err);
+            return res.status(500).json({ error: 'Kunde inte hämta snapshot-analys' });
+        }
+    });
+
     router.get('/:id/snapshots/:snapshotId/download', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
@@ -275,6 +294,28 @@ export function register_audit_snapshot_routes(router: Router): void {
         } catch (err) {
             console.error('[audit_snapshot] delete-by-sample error:', err);
             return res.status(500).json({ error: 'Kunde inte ta bort snapshots' });
+        }
+    });
+
+    router.get('/:id/snapshots/:snapshotId/analysis-summary', async (req: Request, res: Response) => {
+        try {
+            const audit_id = single_route_param(req.params.id);
+            const snapshot_id = single_route_param(req.params.snapshotId);
+            if (!(await audit_exists(audit_id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const row = await get_audit_snapshot_by_id(audit_id, snapshot_id);
+            if (!row || row.status !== 'ready') {
+                return res.status(404).json({ error: 'Snapshot är inte färdig' });
+            }
+            const summary = await build_snapshot_analysis_summary(audit_id, snapshot_id);
+            if (!summary) {
+                return res.status(404).json({ error: 'Analysdata hittades inte' });
+            }
+            return res.json(summary);
+        } catch (err) {
+            console.error('[audit_snapshot] analysis-summary error:', err);
+            return res.status(500).json({ error: 'Kunde inte läsa analys-sammanfattning' });
         }
     });
 

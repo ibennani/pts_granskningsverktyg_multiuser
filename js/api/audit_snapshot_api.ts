@@ -203,3 +203,67 @@ export async function delete_audit_snapshot(
         throw new Error(payload.error || `HTTP ${res.status}`);
     }
 }
+
+export type SnapshotAnalysisSummaryResponse = {
+    captureId: string;
+    source?: 'temp' | 'archive' | null;
+    contentTypes: unknown;
+    pageBlocks: unknown;
+    menuNavigation: unknown;
+    initialConsent: unknown;
+    analysisIndex?: unknown;
+    pageTypeClassification?: {
+        suggestedTypeId: string | null;
+        score: number;
+        confidence: number;
+        reasons: string[];
+        alternatives: Array<{ typeId: string; label: string; score: number; reasons: string[] }>;
+    } | null;
+};
+
+export async function fetch_snapshot_analysis_summary(
+    audit_id: string,
+    capture_id: string
+): Promise<SnapshotAnalysisSummaryResponse> {
+    const base = get_base_url();
+    const res = await authorized_fetch(
+        `${base}/audits/${encodeURIComponent(audit_id)}/snapshots/${encodeURIComponent(capture_id)}/analysis-summary`
+    );
+    if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<SnapshotAnalysisSummaryResponse>;
+}
+
+export type RecurringContentSuggestionResponse = {
+    suggestions: Array<{
+        id: string;
+        candidateType: string;
+        occursOnPageCount: number;
+        totalPageCount: number;
+        matchedSignals: string[];
+        rootIdentity: string;
+        structureFingerprint: string;
+        evidenceRefs: { sampleIds: string[]; captureIds: string[] };
+    }>;
+};
+
+export async function analyze_recurring_content(
+    audit_id: string,
+    entries: Array<{ sampleId: string; captureId: string }>
+): Promise<RecurringContentSuggestionResponse> {
+    const base = get_base_url();
+    const res = await authorized_fetch(
+        `${base}/audits/${encodeURIComponent(audit_id)}/recurring-content/analyze`,
+        {
+            method: 'POST',
+            body: JSON.stringify({ entries }),
+        }
+    );
+    if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<RecurringContentSuggestionResponse>;
+}

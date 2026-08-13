@@ -5,6 +5,7 @@
 import { AuditSettingsViewComponent } from '../components/AuditSettingsViewComponent.js';
 import { EditMetadataViewComponent } from '../components/EditMetadataViewComponent.js';
 import { SampleManagementViewComponent } from '../components/SampleManagementViewComponent.js';
+import { BulkSampleUrlImportViewComponent } from '../components/BulkSampleUrlImportViewComponent.js';
 import { SampleFormViewComponent } from '../components/SampleFormViewComponent.js';
 import { ConfirmSampleEditViewComponent } from '../components/ConfirmSampleEditViewComponent.js';
 import { AuditOverviewComponent } from '../components/AuditOverviewComponent.js';
@@ -48,6 +49,7 @@ const auditActionsViewComponent = new AuditActionsViewComponent();
 const auditImagesViewComponent = new AuditImagesViewComponent();
 const auditProblemsViewComponent = new AuditProblemsViewComponent();
 const sampleManagementViewComponent = new SampleManagementViewComponent();
+const bulkSampleUrlImportViewComponent = new BulkSampleUrlImportViewComponent();
 const sampleFormViewComponent = new SampleFormViewComponent();
 const editMetadataViewComponent = new EditMetadataViewComponent();
 const auditSettingsViewComponent = new AuditSettingsViewComponent();
@@ -91,6 +93,7 @@ export function get_component_class(view_name) {
         case 'edit_metadata': return editMetadataViewComponent;
         case 'audit_settings': return auditSettingsViewComponent;
         case 'sample_management': return sampleManagementViewComponent;
+        case 'bulk_sample_import': return bulkSampleUrlImportViewComponent;
         case 'sample_form': return sampleFormViewComponent;
         case 'confirm_sample_edit': return confirmSampleEditViewComponent;
         case 'audit_overview': return auditOverviewComponent;

@@ -199,6 +199,9 @@ export function get_page_title_prefix(
                 case 'sample_management':
                     title_prefix = t('manage_samples_title');
                     break;
+                case 'bulk_sample_import':
+                    title_prefix = t('bulk_url_import_title');
+                    break;
                 case 'sample_form':
                     title_prefix = params.editSampleId ? t('edit_sample') : t('add_new_sample');
                     break;

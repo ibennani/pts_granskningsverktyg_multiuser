@@ -7,7 +7,8 @@ import type { Browser, Page, CDPSession } from 'puppeteer';
 import {
     launch_capture_browser,
     prepare_capture_page,
-    navigate_for_initial_consent_observation,
+    navigate_for_clean_consent_observation,
+    navigate_for_screenshot_capture,
     apply_cached_consent_and_settle,
     capture_viewport_png_with_adjustments,
     CAPTURE_NAVIGATION_TIMEOUT_MS,
@@ -39,7 +40,7 @@ import {
 import { restore_baseline_viewport } from '../snapshots/analysis/snapshot_viewport_baseline.js';
 import { capture_initial_consent_evidence } from '../snapshots/analysis/phase1/initial_consent_analysis.js';
 import { run_snapshot_analysis } from '../snapshots/analysis/snapshot_analysis_runner.js';
-import { load_consent_for_domain, apply_consent_cookies } from './page_screenshot_consent_cache.js';
+import { load_consent_for_domain } from './page_screenshot_consent_cache.js';
 import type { AuditSnapshotCaptureResponse } from '../schemas/audit_snapshot.js';
 
 export type VisibleCaptureResult = AuditSnapshotCaptureResponse & {
@@ -54,6 +55,7 @@ export type RunCaptureJobContext = {
     capture_id: string;
     url: string;
     attach_screenshot_to_sample: boolean;
+    content_type_groups?: unknown[];
     save_screenshot_to_media: (
         png_buffer: Buffer,
         page_title: string
@@ -127,6 +129,23 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
 
         browser = await launch_capture_browser();
+
+        const observation_page = await browser.newPage();
+        await prepare_capture_page(observation_page);
+        await navigate_for_clean_consent_observation(
+            observation_page,
+            ctx.url,
+            CAPTURE_NAVIGATION_TIMEOUT_MS
+        );
+        if (ctx.is_cancelled()) throw new Error('Capture cancelled');
+
+        const initial_consent_envelope = await capture_initial_consent_evidence(
+            observation_page,
+            temp_dir,
+            screenshot_budget
+        );
+        await observation_page.close();
+
         page = await browser.newPage();
         cdp = await page.createCDPSession();
         await prepare_capture_page(page);
@@ -138,17 +157,10 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             main_frame_id: frame_tree.frameTree.frame.id,
         });
 
-        await navigate_for_initial_consent_observation(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
+        await navigate_for_screenshot_capture(page, ctx.url, CAPTURE_NAVIGATION_TIMEOUT_MS);
         if (ctx.is_cancelled()) throw new Error('Capture cancelled');
 
-        const initial_consent_envelope = await capture_initial_consent_evidence(
-            page,
-            temp_dir,
-            screenshot_budget
-        );
-
         const consent = await load_consent_for_domain(ctx.url);
-        await apply_consent_cookies(page, consent);
         await apply_cached_consent_and_settle(page, consent);
 
         body_counters = await run_persist_resource_bodies_pass(
@@ -272,6 +284,7 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
             yield_on_queue: get_snapshot_yield_on_queue(),
             warnings,
             initial_consent_envelope,
+            content_type_groups: ctx.content_type_groups,
         });
 
         const metadata = {

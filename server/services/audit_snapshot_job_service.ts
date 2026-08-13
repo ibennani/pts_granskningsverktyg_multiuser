@@ -29,6 +29,7 @@ import {
 import { ensure_audit_media_dir, pick_upload_media_filename } from '../media/audit_media_storage.js';
 import { save_audit_media_original } from '../media/audit_media_originals.js';
 import { build_sample_screenshot_filename } from '../utils/sample_screenshot_filename.js';
+import { load_content_type_groups_for_audit } from '../utils/audit_content_type_groups.js';
 import type {
     AuditSnapshotCaptureBody,
     AuditSnapshotCaptureResponse,
@@ -106,11 +107,13 @@ async function process_capture_job(job: PendingCapture): Promise<void> {
     let visible_resolved = false;
 
     try {
+        const content_type_groups = await load_content_type_groups_for_audit(job.audit_id);
         const archive = await run_snapshot_capture_job({
             audit_id: job.audit_id,
             capture_id: job.captureId,
             url: job.url,
             attach_screenshot_to_sample: job.attachScreenshotToSample !== false,
+            content_type_groups,
             save_screenshot_to_media: (png, title) =>
                 save_png_to_audit_media(job.audit_id, png, title, job.filenameSuffix),
             is_cancelled: () => is_snapshot_cancelled(job.captureId),

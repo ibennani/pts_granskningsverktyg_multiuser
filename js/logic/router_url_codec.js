@@ -27,6 +27,7 @@ const CANONICAL_VIEW_TO_COMPACT = Object.freeze({
     rulefile_metadata_view: 'jv',
     rulefile_sections: 'rs',
     sample_management: 'sm',
+    bulk_sample_import: 'bi',
     sample_form: 'sf',
     confirm_sample_edit: 'ce',
     metadata: 'md',

@@ -1,9 +1,9 @@
 /**
- * @fileoverview Fas 1.8 – initial consent-evidens (körs före cached consent).
+ * @fileoverview Fas 1.8 – initial consent-evidens (körs före cached consent på separat page).
  */
 import type { Page } from 'puppeteer';
 import type { AnalysisModuleEnvelope } from '../snapshot_analysis_types.js';
-import { BROWSER_DETECT_CONSENT_BANNER } from '../snapshot_analysis_browser_scripts_loader.js';
+import { detect_consent_ui_in_page } from '../../../services/cmp/cmp_consent_detection.js';
 import { get_snapshot_analysis_consent_wait_ms } from '../snapshot_analysis_config.js';
 import { write_analysis_png } from '../snapshot_analysis_io.js';
 
@@ -15,10 +15,10 @@ export async function capture_initial_consent_evidence(
     const started = Date.now();
     const wait_ms = get_snapshot_analysis_consent_wait_ms();
     const deadline = Date.now() + wait_ms;
-    let banners: Array<Record<string, unknown>> = [];
+    let banners: Awaited<ReturnType<typeof detect_consent_ui_in_page>> = [];
 
     while (Date.now() < deadline) {
-        banners = await page.evaluate(BROWSER_DETECT_CONSENT_BANNER);
+        banners = await detect_consent_ui_in_page(page);
         if (banners.length > 0) break;
         await new Promise((r) => setTimeout(r, 250));
     }

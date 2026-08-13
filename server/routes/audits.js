@@ -13,6 +13,7 @@ import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter, media_upload_rate_limiter } from '../middleware/rateLimiter.js';
 import { register_audit_media_routes } from './audit_media_routes.js';
 import { register_audit_snapshot_routes } from './audit_snapshot_routes.js';
+import { register_audit_recurring_routes } from './audit_recurring_routes.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
@@ -747,6 +748,7 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
 });
 
 register_audit_snapshot_routes(router);
+register_audit_recurring_routes(router);
 register_audit_media_routes(router, media_upload_rate_limiter);
 
 router.delete('/:id', requireAdmin, async (req, res) => {

@@ -10,6 +10,7 @@ export type ContentTypeChild = {
     text?: string;
     description?: string;
     detectionPattern?: string;
+    detectionSelector?: string;
     defaultSelected?: boolean;
 };
 
