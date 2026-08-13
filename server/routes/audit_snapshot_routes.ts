@@ -16,6 +16,7 @@ import {
 } from '../services/audit_snapshot_job_service.js';
 import { detect_page_content_types } from '../services/page_content_type_detection_service.js';
 import { get_audit_content_type_detection_rules } from '../services/audit_content_type_detection_rules.js';
+import { build_recurring_proposals_for_audit } from '../services/recurring_component_proposal_service.js';
 import {
     purge_audit_snapshot_by_id,
     purge_audit_snapshots_for_sample,
@@ -58,12 +59,8 @@ function safe_user_error(err: unknown): string {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('cancelled')) return 'Capture avbruten';
     if (message.includes('SSRF') || message.includes('Ogiltig URL')) return 'Ogiltig URL';
-    if (message.includes('Timeout') || message.includes('timeout')) {
-        return 'Sidan svarade inte i tid';
-    }
-    if (message.includes('HTTP ')) {
-        return 'Sidan kunde inte läsas in';
-    }
+    if (message.includes('Timeout') || message.includes('timeout')) return 'Sidan svarade inte i tid';
+    if (message.includes('HTTP ')) return 'Sidan kunde inte läsas in';
     if (message.includes('webbläsare') || message.includes('Chrome') || message.includes('Chromium')) {
         return 'Kunde inte starta webbläsare på servern';
     }
@@ -72,10 +69,7 @@ function safe_user_error(err: unknown): string {
 
 function build_capture_error_payload(err: unknown): { error: string; detail: string } {
     const detail = err instanceof Error ? err.message : String(err);
-    return {
-        error: safe_user_error(err),
-        detail: detail.trim() || 'Okänt fel',
-    };
+    return { error: safe_user_error(err), detail: detail.trim() || 'Okänt fel' };
 }
 
 export function register_audit_snapshot_routes(router: Router): void {
@@ -84,13 +78,9 @@ export function register_audit_snapshot_routes(router: Router): void {
     router.post('/:id/detect-content-types', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
-
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const body = parse_body(UrlContentTypeDetectionBodySchema, req.body, res);
             if (!body) return;
-
             let safe_url: URL;
             try {
                 safe_url = assert_public_http_url(body.url);
@@ -98,12 +88,10 @@ export function register_audit_snapshot_routes(router: Router): void {
                 const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
                 return res.status(422).json({ error: message });
             }
-
             const allowed_ids = [...new Set(body.allowedContentTypeIds.map((id) => id.trim()).filter(Boolean))];
             const allowed_set = new Set(allowed_ids);
             const configured_rules = (await get_audit_content_type_detection_rules(audit_id))
                 .filter((rule) => allowed_set.size === 0 || allowed_set.has(rule.id));
-
             try {
                 const result = await detect_page_content_types({
                     url: safe_url.href,
@@ -130,41 +118,23 @@ export function register_audit_snapshot_routes(router: Router): void {
     router.post('/:id/snapshots/capture', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
-
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const body = parse_body(AuditSnapshotCaptureBodySchema, req.body, res);
             if (!body) return;
-
             let capture_url: string;
             try {
-                const resolved = await resolve_snapshot_capture_url_for_audit(
-                    audit_id,
-                    body.sampleId,
-                    body.url
-                );
+                const resolved = await resolve_snapshot_capture_url_for_audit(audit_id, body.sampleId, body.url);
                 capture_url = resolved.url;
                 if (resolved.client_url_ignored) {
-                    console.info(
-                        `[audit_snapshot] Använder granskningsdelens URL för sample ${body.sampleId} (ignorerar avvikande klient-URL).`
-                    );
+                    console.info(`[audit_snapshot] Använder granskningsdelens URL för sample ${body.sampleId} (ignorerar avvikande klient-URL).`);
                 }
             } catch (err) {
-                if (err instanceof SnapshotSampleNotFoundError) {
-                    return res.status(404).json({ error: err.message });
-                }
-                if (err instanceof SnapshotSampleMissingUrlError) {
-                    return res.status(422).json({ error: err.message });
-                }
+                if (err instanceof SnapshotSampleNotFoundError) return res.status(404).json({ error: err.message });
+                if (err instanceof SnapshotSampleMissingUrlError) return res.status(422).json({ error: err.message });
                 const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
                 return res.status(422).json({ error: message });
             }
-
-            const response = await start_snapshot_capture(audit_id, {
-                ...body,
-                url: capture_url,
-            });
+            const response = await start_snapshot_capture(audit_id, { ...body, url: capture_url });
             return res.status(202).json(response);
         } catch (err) {
             const payload = build_capture_error_payload(err);
@@ -176,29 +146,18 @@ export function register_audit_snapshot_routes(router: Router): void {
     router.get('/:id/snapshots/download-all', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
-
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const samples = await get_audit_samples(audit_id);
             const list = await build_audit_snapshot_list(audit_id, samples);
             const ready_items = list.filter((item) => item.currentReady);
-
-            if (ready_items.length === 0) {
-                return res.status(404).json({ error: 'Inga färdiga snapshots att ladda ner' });
-            }
-
+            if (ready_items.length === 0) return res.status(404).json({ error: 'Inga färdiga snapshots att ladda ner' });
             const zip = new JSZip();
             const index_entries: SnapshotsDownloadAllIndexEntry[] = [];
-
             for (const item of ready_items) {
                 const snap = item.currentReady!;
                 const archive_path = get_snapshot_archive_path(audit_id, snap.snapshotId);
                 const data = await fs.readFile(archive_path);
-                const folder = `snapshots/${build_snapshot_export_folder_name(
-                    item.sampleId,
-                    item.sampleDescription
-                )}`;
+                const folder = `snapshots/${build_snapshot_export_folder_name(item.sampleId, item.sampleDescription)}`;
                 const files = await append_snapshot_archive_to_zip(zip, data, folder);
                 index_entries.push({
                     folder,
@@ -211,7 +170,6 @@ export function register_audit_snapshot_routes(router: Router): void {
                     files,
                 });
             }
-
             for (const item of list) {
                 if (item.pendingAttempt && !item.currentReady) {
                     index_entries.push({
@@ -226,7 +184,6 @@ export function register_audit_snapshot_routes(router: Router): void {
                     });
                 }
             }
-
             const index = build_snapshots_download_all_index(audit_id, index_entries);
             zip.file('index.json', JSON.stringify(index, null, 2));
             const buffer = await zip.generateAsync({ type: 'nodebuffer' });
@@ -240,12 +197,22 @@ export function register_audit_snapshot_routes(router: Router): void {
         }
     });
 
+    router.get('/:id/snapshots/recurring-proposals', async (req: Request, res: Response) => {
+        try {
+            const audit_id = single_route_param(req.params.id);
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
+            const result = await build_recurring_proposals_for_audit(audit_id);
+            return res.json(result);
+        } catch (err) {
+            console.error('[audit_snapshot] recurring-proposals error:', err);
+            return res.status(500).json({ error: 'Kunde inte analysera återkommande innehåll' });
+        }
+    });
+
     router.get('/:id/snapshots', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const samples = await get_audit_samples(audit_id);
             const items = await build_audit_snapshot_list(audit_id, samples);
             return res.json({ items });
@@ -259,9 +226,7 @@ export function register_audit_snapshot_routes(router: Router): void {
         try {
             const audit_id = single_route_param(req.params.id);
             const snapshot_id = single_route_param(req.params.snapshotId);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const row = await get_audit_snapshot_by_id(audit_id, snapshot_id);
             if (!row) return res.status(404).json({ error: 'Snapshot hittades inte' });
             return res.json({
@@ -287,20 +252,14 @@ export function register_audit_snapshot_routes(router: Router): void {
         try {
             const audit_id = single_route_param(req.params.id);
             const snapshot_id = single_route_param(req.params.snapshotId);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const row = await get_audit_snapshot_by_id(audit_id, snapshot_id);
-            if (!row || row.status !== 'ready') {
-                return res.status(404).json({ error: 'Snapshot är inte färdig' });
-            }
+            if (!row || row.status !== 'ready') return res.status(404).json({ error: 'Snapshot är inte färdig' });
             const archive_path = get_snapshot_archive_path(audit_id, snapshot_id);
             const samples = await get_audit_samples(audit_id);
             const sample = samples.find((s) => String(s.id) === row.sample_id);
             const desc = sanitize_filename_segment(sample?.description || row.sample_id);
-            const ts = format_filename_datetime_for_download(
-                (row.completed_at ?? row.created_at).toISOString()
-            );
+            const ts = format_filename_datetime_for_download((row.completed_at ?? row.created_at).toISOString());
             const filename = `snapshot_${desc}_${ts}.zip`;
             res.setHeader('Content-Type', 'application/zip');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -315,13 +274,9 @@ export function register_audit_snapshot_routes(router: Router): void {
         try {
             const audit_id = single_route_param(req.params.id);
             const sample_id = single_route_param(req.params.sampleId);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const removed = await purge_audit_snapshots_for_sample(audit_id, sample_id);
-            if (removed === 0) {
-                return res.status(404).json({ error: 'Ingen snapshot hittades för granskningsdelen' });
-            }
+            if (removed === 0) return res.status(404).json({ error: 'Ingen snapshot hittades för granskningsdelen' });
             return res.status(204).send();
         } catch (err) {
             console.error('[audit_snapshot] delete-by-sample error:', err);
@@ -333,17 +288,11 @@ export function register_audit_snapshot_routes(router: Router): void {
         try {
             const audit_id = single_route_param(req.params.id);
             const snapshot_id = single_route_param(req.params.snapshotId);
-            if (!(await audit_exists(audit_id))) {
-                return res.status(404).json({ error: 'Granskning hittades inte' });
-            }
+            if (!(await audit_exists(audit_id))) return res.status(404).json({ error: 'Granskning hittades inte' });
             const purged = await purge_audit_snapshot_by_id(audit_id, snapshot_id);
-            if (purged) {
-                return res.status(204).send();
-            }
+            if (purged) return res.status(204).send();
             const cancelled = await delete_snapshot_job(audit_id, snapshot_id);
-            if (!cancelled) {
-                return res.status(404).json({ error: 'Snapshot hittades inte' });
-            }
+            if (!cancelled) return res.status(404).json({ error: 'Snapshot hittades inte' });
             return res.status(204).send();
         } catch (err) {
             console.error('[audit_snapshot] delete error:', err);
