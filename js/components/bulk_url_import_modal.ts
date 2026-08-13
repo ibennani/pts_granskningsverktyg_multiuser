@@ -202,14 +202,17 @@ export function show_bulk_url_import_modal(
     deps: BulkUrlImportModalDeps,
     urls: string[],
     trigger_button: HTMLButtonElement | null
-): void {
+): boolean {
     const ModalComponent = app_runtime_refs.modal_component as {
         show?: (
             opts: { h1_text: string; message_text: string },
             render: (container: HTMLElement, modal: BulkUrlImportModalHandle) => void
         ) => void;
     } | null;
-    if (!ModalComponent?.show) return;
+    if (!ModalComponent?.show) {
+        emit_bulk_url_import_log(undefined, 'ModalComponent.show saknas', { level: 'warn' });
+        return false;
+    }
 
     const rows: BulkImportPreparedRow[] = urls.map((url) => ({
         row_id: deps.Helpers.generate_uuid_v4(),
@@ -277,7 +280,7 @@ export function show_bulk_url_import_modal(
 
             const log_heading = deps.Helpers.create_element('h2', {
                 class_name: 'bulk-url-import-modal-log__heading',
-                text_content: t('bulk_url_import_modal_log_heading'),
+                text_content: deps.t('bulk_url_import_modal_log_heading'),
             });
             const log_list_el = deps.Helpers.create_element('ol', {
                 class_name: 'bulk-url-import-modal-log',
@@ -296,4 +299,5 @@ export function show_bulk_url_import_modal(
             }, modal, trigger_button);
         }
     );
+    return true;
 }

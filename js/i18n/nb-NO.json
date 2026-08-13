@@ -39,6 +39,7 @@
   "bulk_url_import_log_row_failed": "[{index}/{total}] Mislyktes",
   "bulk_url_import_log_batch_done": "Import ferdig: {success} lyktes, {failed} mislyktes.",
   "bulk_url_import_log_unexpected_error": "Uventet feil under import: {error}",
+  "bulk_url_import_modal_unavailable": "Kunne ikke åpne importvinduet. Last inn siden på nytt og prøv igjen.",
   "bulk_url_import_no_url_category": "Regelfilen mangler en webkategori for granskningsdeler med URL.",
   "bulk_url_import_no_valid_urls": "Ingen gyldige URL-er ble funnet i listen.",
   "bulk_url_import_save_done": "Granskningsdelene er opprettet.",

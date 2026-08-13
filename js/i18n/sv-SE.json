@@ -39,6 +39,7 @@
   "bulk_url_import_log_row_failed": "[{index}/{total}] Misslyckades",
   "bulk_url_import_log_batch_done": "Import klar: {success} lyckades, {failed} misslyckades.",
   "bulk_url_import_log_unexpected_error": "Oväntat fel under import: {error}",
+  "bulk_url_import_modal_unavailable": "Kunde inte öppna importfönstret. Ladda om sidan och försök igen.",
   "bulk_url_import_no_url_category": "Regelfilen saknar en webbkategori för granskningsdelar med URL.",
   "bulk_url_import_no_valid_urls": "Ingen giltig URL hittades i listan.",
   "bulk_url_import_save_done": "Granskningsdelarna har skapats.",

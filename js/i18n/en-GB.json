@@ -39,6 +39,7 @@
   "bulk_url_import_log_row_failed": "[{index}/{total}] Failed",
   "bulk_url_import_log_batch_done": "Import complete: {success} succeeded, {failed} failed.",
   "bulk_url_import_log_unexpected_error": "Unexpected error during import: {error}",
+  "bulk_url_import_modal_unavailable": "Could not open the import dialog. Reload the page and try again.",
   "bulk_url_import_no_url_category": "The rule file has no web category for audit sections with a URL.",
   "bulk_url_import_no_valid_urls": "No valid URLs were found in the list.",
   "bulk_url_import_save_done": "Audit sections have been created.",

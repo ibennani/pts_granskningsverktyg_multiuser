@@ -80,7 +80,7 @@ export class BulkSampleUrlImportViewComponent {
             return;
         }
 
-        show_bulk_url_import_modal(
+        const modal_opened = show_bulk_url_import_modal(
             {
                 getState: this.deps.getState,
                 dispatch: this.deps.dispatch,
@@ -100,6 +100,12 @@ export class BulkSampleUrlImportViewComponent {
             urls,
             this.start_button_ref
         );
+        if (!modal_opened) {
+            this.deps.NotificationComponent?.show_global_message(
+                t('bulk_url_import_modal_unavailable'),
+                'error'
+            );
+        }
     }
 
     render() {
@@ -114,6 +120,9 @@ export class BulkSampleUrlImportViewComponent {
             this.root.appendChild(this.plate_element_ref);
         }
         const plate = this.plate_element_ref;
+        const saved_url_text = (
+            plate?.querySelector('#bulk-url-list-textarea') as HTMLTextAreaElement | null
+        )?.value;
         plate!.innerHTML = '';
 
         plate!.appendChild(this.deps.Helpers.create_element('h1', { text_content: t('bulk_url_import_title') }));
@@ -131,6 +140,9 @@ export class BulkSampleUrlImportViewComponent {
             class_name: ['form-control', 'bulk-url-import-textarea'],
             attributes: { id: 'bulk-url-list-textarea', rows: '8' },
         }) as HTMLTextAreaElement;
+        if (saved_url_text) {
+            textarea.value = saved_url_text;
+        }
         plate!.appendChild(textarea);
 
         const actions = this.deps.Helpers.create_element('div', { class_name: 'bulk-url-import-actions' });
