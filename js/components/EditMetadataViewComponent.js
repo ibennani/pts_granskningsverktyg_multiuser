@@ -14,12 +14,11 @@ import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_l
 import {
     build_published_monitoring_rule_options,
     find_monitoring_option_by_key,
-    resolve_metadata_form_monitoring_key,
-    resolve_selected_monitoring_key
+    resolve_metadata_form_monitoring_key
 } from '../logic/published_monitoring_rule_options.js';
 import { load_published_rule_content } from '../logic/new_audit_rule_loader.js';
 import {
-    build_default_new_audit_metadata_form_data,
+    build_empty_new_audit_metadata_form_data,
     new_audit_metadata_differs_from_reference_form
 } from '../logic/new_audit_empty_metadata.js';
 
@@ -55,6 +54,10 @@ export class EditMetadataViewComponent {
         this.monitoring_type_options = [];
         this._monitoring_type_change_in_progress = false;
         this._monitoring_type_confirmed_by_user = false;
+        /** Regelfil enbart för formuläret – sparas inte i state förrän metadata sparas. */
+        this._form_only_rule_file_content = null;
+        this._form_only_rule_set_id = null;
+        this._form_pending_monitoring_key = '';
         /** Avbryter inaktuella async render()-anrop (samma mönster som RulefileSectionsViewComponent). */
         this._render_generation = 0;
         
@@ -99,6 +102,74 @@ export class EditMetadataViewComponent {
         return true;
     }
 
+    _should_defer_rule_load_until_metadata_save() {
+        const state = this.getState();
+        return state.auditStatus === 'not_started' && !state.ruleFileContent;
+    }
+
+    async _load_form_only_rule_for_monitoring_key(monitoring_key) {
+        const key = String(monitoring_key ?? '').trim();
+        if (!key) {
+            this._form_only_rule_file_content = null;
+            this._form_only_rule_set_id = null;
+            this._form_pending_monitoring_key = '';
+            return null;
+        }
+        const option = find_monitoring_option_by_key(this.monitoring_type_options, key);
+        if (!option) return null;
+        if (
+            this._form_only_rule_set_id === option.rule_id
+            && this._form_only_rule_file_content
+        ) {
+            this._form_pending_monitoring_key = key;
+            return this._form_only_rule_file_content;
+        }
+        const loaded = await load_published_rule_content(option.rule_id, {
+            get_rule,
+            migrate: migrate_rulefile_to_new_structure,
+            validate: (content) => this._get_validation_logic()?.validate_rule_file_json?.(content) ?? { isValid: false },
+            Translation: this.Translation
+        });
+        if (!loaded.ok) {
+            this.NotificationComponent?.show_global_message(loaded.error, 'error');
+            return null;
+        }
+        this._form_only_rule_file_content = loaded.content;
+        this._form_only_rule_set_id = loaded.rule_id;
+        this._form_pending_monitoring_key = key;
+        return loaded.content;
+    }
+
+    async _load_rule_for_metadata_submit() {
+        const monitoring_key =
+            this.metadata_form_component_instance.monitoring_type_field_handles?.get_selected_monitoring_key?.()
+            || this._form_pending_monitoring_key
+            || this.monitoring_type_options[0]?.key
+            || '';
+        const option = find_monitoring_option_by_key(this.monitoring_type_options, monitoring_key);
+        if (!option) {
+            this.NotificationComponent?.show_global_message(
+                this.Translation.t('audit_load_rule_error'),
+                'error'
+            );
+            return null;
+        }
+        const loaded = await load_published_rule_content(option.rule_id, {
+            get_rule,
+            migrate: migrate_rulefile_to_new_structure,
+            validate: (content) => this._get_validation_logic()?.validate_rule_file_json?.(content) ?? { isValid: false },
+            Translation: this.Translation
+        });
+        if (!loaded.ok) {
+            this.NotificationComponent?.show_global_message(
+                loaded.error || this.Translation.t('audit_load_rule_error'),
+                'error'
+            );
+            return null;
+        }
+        return loaded;
+    }
+
     async handle_monitoring_type_change(monitoring_key) {
         if (this._monitoring_type_change_in_progress) return;
         const monitoring_key_trimmed = String(monitoring_key ?? '').trim();
@@ -108,6 +179,40 @@ export class EditMetadataViewComponent {
 
         this._monitoring_type_change_in_progress = true;
         try {
+            if (this._should_defer_rule_load_until_metadata_save()) {
+                this.metadata_form_component_instance.autosave_session?.flush({
+                    should_trim: true,
+                    skip_render: true
+                });
+                const form_data = this.metadata_form_component_instance.collect_current_form_data(true);
+                await this.dispatch({
+                    type: this.StoreActionTypes.UPDATE_METADATA,
+                    payload: {
+                        ...form_data,
+                        auditTypeId: '',
+                        auditTypeLabel: '',
+                        skip_render: true,
+                        skip_server_sync: true,
+                        preserve_fresh_new_audit_metadata: true
+                    }
+                });
+                const form_rule = await this._load_form_only_rule_for_monitoring_key(monitoring_key_trimmed);
+                if (!form_rule) return;
+                this.metadata_form_component_instance.rule_file_content_ref = form_rule;
+                this.metadata_form_component_instance.refresh_rule_dependent_fields(
+                    form_rule,
+                    '',
+                    true,
+                    true
+                );
+                const monitoring_select =
+                    this.metadata_form_component_instance.monitoring_type_field_handles?.select_element;
+                if (monitoring_select) {
+                    monitoring_select.value = monitoring_key_trimmed;
+                }
+                return;
+            }
+
             this._monitoring_type_confirmed_by_user = true;
             this.metadata_form_component_instance.autosave_session?.flush({
                 should_trim: true,
@@ -180,10 +285,50 @@ export class EditMetadataViewComponent {
         window.customFocusApplied = true;
     }
 
+    async _ensure_global_rule_for_new_audit() {
+        const state = this.getState();
+        if (state.auditStatus !== 'not_started' || state.ruleFileContent) {
+            return true;
+        }
+        const loaded = await this._load_rule_for_metadata_submit();
+        if (!loaded) return false;
+        try {
+            await this.dispatch({
+                type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
+                payload: {
+                    ruleFileContent: loaded.content,
+                    ruleSetId: loaded.rule_id,
+                    skip_render: true
+                }
+            });
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error?.message || this.Translation.t('audit_load_rule_error'),
+                'error'
+            );
+            return false;
+        }
+        this._form_only_rule_file_content = null;
+        this._form_only_rule_set_id = null;
+        this._form_pending_monitoring_key = '';
+        return true;
+    }
+
     async _submit_metadata(form_data) {
+        const state_before = this.getState();
+        if (state_before.auditStatus === 'not_started' && !state_before.ruleFileContent) {
+            const rule_ready = await this._ensure_global_rule_for_new_audit();
+            if (!rule_ready) return;
+        }
+
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
-            payload: form_data
+            payload: {
+                ...form_data,
+                ...(state_before.auditStatus === 'not_started'
+                    ? { clear_fresh_new_audit_metadata: true }
+                    : {})
+            }
         });
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
@@ -345,9 +490,17 @@ export class EditMetadataViewComponent {
     }
 
     async _save_and_go_to_list(form_data) {
+        const state_before = this.getState();
+        if (state_before.auditStatus === 'not_started' && !state_before.ruleFileContent) {
+            const rule_ready = await this._ensure_global_rule_for_new_audit();
+            if (!rule_ready) return;
+        }
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
-            payload: form_data
+            payload: {
+                ...form_data,
+                clear_fresh_new_audit_metadata: true
+            }
         });
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
@@ -427,9 +580,11 @@ export class EditMetadataViewComponent {
         const current_state = this.getState();
         const is_new_audit = current_state.auditStatus === 'not_started';
 
-        // metadata→metadata snabbrender kör inte init/destroy; bekräfta första regelfil vid ny granskning.
         if (is_new_audit && current_state.freshNewAuditMetadata === true) {
-            this._monitoring_type_confirmed_by_user = true;
+            this._monitoring_type_confirmed_by_user = false;
+            this._form_only_rule_file_content = null;
+            this._form_only_rule_set_id = null;
+            this._form_pending_monitoring_key = '';
         }
 
         if (!is_new_audit) {
@@ -485,30 +640,24 @@ export class EditMetadataViewComponent {
         });
 
         const metadata = await (async () => {
-            const use_default_form = is_new_audit && state_after_rule.freshNewAuditMetadata === true;
+            const use_empty_form = is_new_audit && state_after_rule.freshNewAuditMetadata === true;
             const from = state_after_rule.auditMetadata || {};
             const str = (v) => (v !== null && v !== undefined && String(v).trim() !== '' ? String(v).trim() : '');
             const auditor_name = get_current_user_name() || '';
-            const case_handler_options = await load_metadata_case_handler_options('');
-            if (render_generation !== this._render_generation) return from;
-            if (use_default_form) {
-                const defaults = build_default_new_audit_metadata_form_data(
-                    auditor_name,
-                    state_after_rule.ruleFileContent,
-                    case_handler_options
-                );
-                if (new_audit_metadata_differs_from_reference_form(from, defaults)) {
+            if (use_empty_form) {
+                const empty = build_empty_new_audit_metadata_form_data(auditor_name);
+                if (new_audit_metadata_differs_from_reference_form(from, empty)) {
                     await this.dispatch({
                         type: this.StoreActionTypes.UPDATE_METADATA,
                         payload: {
-                            ...defaults,
+                            ...empty,
                             skip_render: true,
                             skip_server_sync: true,
                             preserve_fresh_new_audit_metadata: true
                         }
                     });
                 }
-                return defaults;
+                return empty;
             }
             const cleaned = {
                 caseNumber: str(from.caseNumber),
@@ -583,13 +732,25 @@ export class EditMetadataViewComponent {
         const end_date_input_value = end_time_iso && this.Helpers?.format_iso_for_locale_date_input
             ? this.Helpers.format_iso_for_locale_date_input(end_time_iso, lang_code)
             : '';
+        const defer_rule_until_save = is_new_audit && !state_after_rule.ruleFileContent;
         const use_fresh_new_audit_defaults =
             is_new_audit && state_after_rule.freshNewAuditMetadata === true;
-        const monitoring_type_confirmed = this._monitoring_type_confirmed_by_user;
-        const selected_monitoring_key = use_fresh_new_audit_defaults
-            ? resolve_selected_monitoring_key(this.monitoring_type_options, state_after_rule.ruleSetId)
+        if (defer_rule_until_save && this.monitoring_type_options.length > 0) {
+            const default_monitoring_key =
+                this._form_pending_monitoring_key || this.monitoring_type_options[0].key;
+            await this._load_form_only_rule_for_monitoring_key(default_monitoring_key);
+            if (render_generation !== this._render_generation) return;
+        }
+        const form_rule_file_content = defer_rule_until_save
+            ? this._form_only_rule_file_content
+            : state_after_rule.ruleFileContent;
+        const monitoring_type_confirmed = defer_rule_until_save
+            ? Boolean(form_rule_file_content)
+            : this._monitoring_type_confirmed_by_user;
+        const selected_monitoring_key = defer_rule_until_save
+            ? (this._form_pending_monitoring_key || this.monitoring_type_options[0]?.key || '')
             : resolve_metadata_form_monitoring_key(
-                monitoring_type_confirmed,
+                this._monitoring_type_confirmed_by_user,
                 state_after_rule.ruleSetId,
                 this.monitoring_type_options
             );
@@ -607,12 +768,15 @@ export class EditMetadataViewComponent {
             showStartDate: !is_new_audit,
             showEndDate: is_locked,
             effectiveStartIso: start_time_iso,
-            ruleFileContent: state_after_rule.ruleFileContent,
+            ruleFileContent: form_rule_file_content,
             auditStatus: state_after_rule.auditStatus,
             showMonitoringTypeSelection: is_new_audit && this.monitoring_type_options.length > 0,
             monitoringTypeOptions: this.monitoring_type_options,
             selectedMonitoringKey: selected_monitoring_key,
             monitoringTypeConfirmed: monitoring_type_confirmed,
+            monitoringIncludeEmptyPlaceholder: !defer_rule_until_save,
+            monitoringDefaultToFirstOption: defer_rule_until_save,
+            auditTypeDefaultToFirstOption: defer_rule_until_save && Boolean(form_rule_file_content),
             onMonitoringTypeChange: is_new_audit ? this.handle_monitoring_type_change : null,
             auditorNameOptions: auditor_name_options,
             caseHandlerOptions: case_handler_options,
@@ -640,6 +804,9 @@ export class EditMetadataViewComponent {
         this.ValidationLogic = null;
         this.monitoring_type_options = [];
         this._monitoring_type_confirmed_by_user = false;
+        this._form_only_rule_file_content = null;
+        this._form_only_rule_set_id = null;
+        this._form_pending_monitoring_key = '';
         this._render_generation += 1;
     }
 }

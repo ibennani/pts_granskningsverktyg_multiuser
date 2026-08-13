@@ -89,7 +89,8 @@ export function metadata_form_create_audit_type_field(
     rule_file_content: unknown,
     audit_status: string | null | undefined,
     initial_audit_type_id: string,
-    initial_audit_type_label = ''
+    initial_audit_type_label = '',
+    field_options: { default_to_first_option?: boolean } = {}
 ): MetadataAuditTypeFieldHandles {
     const types = resolve_available_audit_types(rule_file_content);
     const t = Translation.t;
@@ -152,9 +153,12 @@ export function metadata_form_create_audit_type_field(
 
     const initial = String(initial_audit_type_id ?? '').trim();
     const has_initial = Boolean(initial && types.some((row) => row.id === initial));
+    const default_to_first = field_options.default_to_first_option === true && types.length > 0;
 
     if (types.length === 0) {
         append_audit_type_placeholder(Helpers, Translation, select, !has_initial);
+    } else if (default_to_first && !has_initial) {
+        append_audit_type_options(Helpers, select, types);
     } else {
         append_audit_type_placeholder(Helpers, Translation, select, !has_initial);
         append_audit_type_options(Helpers, select, types);
@@ -162,6 +166,8 @@ export function metadata_form_create_audit_type_field(
 
     if (has_initial) {
         select.value = initial;
+    } else if (default_to_first) {
+        select.value = types[0].id;
     } else {
         select.value = '';
     }

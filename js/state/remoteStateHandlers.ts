@@ -19,8 +19,8 @@ import {
     resolve_available_audit_types
 } from '../../shared/audit/audit_type_metadata.js';
 
-function build_fresh_new_audit_metadata(rule_file_content?: unknown) {
-    const meta = {
+function build_fresh_new_audit_metadata() {
+    return {
         caseNumber: '',
         actorName: '',
         actorLink: '',
@@ -30,12 +30,6 @@ function build_fresh_new_audit_metadata(rule_file_content?: unknown) {
         auditTypeId: '',
         auditTypeLabel: ''
     };
-    const types = resolve_available_audit_types(rule_file_content);
-    if (types.length > 0) {
-        meta.auditTypeId = types[0].id;
-        meta.auditTypeLabel = types[0].label;
-    }
-    return meta;
 }
 
 function with_audit_type_defaults(state: Record<string, unknown>): Record<string, unknown> {
@@ -50,7 +44,7 @@ export function reduce_initialize_new_audit (_current_state: any, action: any) {
         saveFileVersion: APP_STATE_VERSION,
         ruleFileContent: action.payload.ruleFileContent,
         ruleSetId: action.payload.ruleSetId ?? null,
-        auditMetadata: build_fresh_new_audit_metadata(action.payload.ruleFileContent),
+        auditMetadata: build_fresh_new_audit_metadata(),
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
         auditStatus: 'not_started',
         freshNewAuditMetadata: true

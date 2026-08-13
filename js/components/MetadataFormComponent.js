@@ -250,14 +250,15 @@ export const MetadataFormComponent = {
         this.form_element_ref.appendChild(form_group);
     },
 
-    _append_audit_type_field(initialData, ruleFileContent, auditStatus) {
+    _append_audit_type_field(initialData, ruleFileContent, auditStatus, auditTypeDefaultToFirstOption = false) {
         const audit_type_field = metadata_form_create_audit_type_field(
             this.Helpers,
             this.Translation,
             ruleFileContent,
             auditStatus,
             initialData.auditTypeId || '',
-            initialData.auditTypeLabel || ''
+            initialData.auditTypeLabel || '',
+            { default_to_first_option: auditTypeDefaultToFirstOption === true }
         );
         this.audit_type_field_handles = audit_type_field;
         this._insert_audit_type_form_group(audit_type_field.form_group);
@@ -266,7 +267,12 @@ export const MetadataFormComponent = {
         }
     },
 
-    refresh_rule_dependent_fields(ruleFileContent, auditTypeId, monitoringTypeConfirmed = false) {
+    refresh_rule_dependent_fields(
+        ruleFileContent,
+        auditTypeId,
+        monitoringTypeConfirmed = false,
+        auditTypeDefaultToFirstOption = false
+    ) {
         this.rule_file_content_ref = ruleFileContent;
         const audit_type_rule_content = metadata_form_audit_type_rule_content(
             ruleFileContent,
@@ -280,7 +286,8 @@ export const MetadataFormComponent = {
         this._append_audit_type_field(
             { auditTypeId: auditTypeId || '' },
             audit_type_rule_content,
-            'not_started'
+            'not_started',
+            auditTypeDefaultToFirstOption
         );
     },
 
@@ -472,7 +479,10 @@ export const MetadataFormComponent = {
             onMonitoringTypeChange = null,
             monitoringTypeConfirmed = false,
             auditorNameOptions = [],
-            caseHandlerOptions = []
+            caseHandlerOptions = [],
+            monitoringIncludeEmptyPlaceholder = true,
+            monitoringDefaultToFirstOption = false,
+            auditTypeDefaultToFirstOption = false
         } = options;
 
         this.rule_file_content_ref = ruleFileContent;
@@ -522,7 +532,10 @@ export const MetadataFormComponent = {
                         this.on_monitoring_type_change_callback(monitoring_key);
                     }
                 },
-                { include_empty_placeholder: true }
+                {
+                    include_empty_placeholder: monitoringIncludeEmptyPlaceholder === true,
+                    default_to_first_option: monitoringDefaultToFirstOption === true
+                }
             );
             if (monitoring_field) {
                 this.monitoring_type_field_handles = monitoring_field;
@@ -538,7 +551,12 @@ export const MetadataFormComponent = {
             this._set_monitoring_type_readonly_handles(readonly_group, selectedMonitoringKey);
         }
 
-        this._append_audit_type_field(initialData, audit_type_rule_content, auditStatus);
+        this._append_audit_type_field(
+            initialData,
+            audit_type_rule_content,
+            auditStatus,
+            auditTypeDefaultToFirstOption
+        );
 
         const case_field = this.create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
         this.case_number_input = case_field.input_element;

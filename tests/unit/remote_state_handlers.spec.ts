@@ -59,23 +59,6 @@ describe('reduce_initialize_new_audit', () => {
         expect(next.auditMetadata.appendix1SectionOverrides).toEqual({});
         expect(next.auditMetadata.appendix1PrincipleIntroOverrides).toEqual({});
     });
-
-    test('sätter första granskningstypen som standard vid ny granskning', () => {
-        const next = reduce_initialize_new_audit({}, {
-            payload: {
-                ruleFileContent: {
-                    metadata: {
-                        auditTypes: [
-                            { id: 'tillsyn-lptt', label: 'Tillsyn', taxonomyId: 'wcag22-pour' },
-                            { id: 'marknadskontroll-lptt', label: 'Marknadskontroll', taxonomyId: 'wcag22-pour' },
-                        ],
-                    },
-                },
-            },
-        });
-        expect(next.auditMetadata.auditTypeId).toBe('tillsyn-lptt');
-        expect(next.auditMetadata.auditTypeLabel).toBe('Tillsyn');
-    });
 });
 
 describe('reduce_discard_prepared_audit', () => {

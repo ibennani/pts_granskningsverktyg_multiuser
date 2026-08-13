@@ -27,6 +27,7 @@ export type MetadataMonitoringTypeFieldHandles = {
 
 export type MetadataMonitoringTypeFieldOptions = {
     include_empty_placeholder?: boolean;
+    default_to_first_option?: boolean;
 };
 
 /** Läsbar etikett för vad som granskas (Webb/PDF) från regelfilens metadata. */
@@ -127,15 +128,18 @@ export function metadata_form_create_monitoring_type_field(
     });
 
     const initial = String(selected_key ?? '').trim();
+    const default_to_first = field_options.default_to_first_option === true;
     if (field_options.include_empty_placeholder === true) {
         if (initial && options.some((option) => option.key === initial)) {
             select.value = initial;
+        } else if (default_to_first && options.length > 0) {
+            select.value = options[0].key;
         } else {
             select.value = '';
         }
     } else if (initial && options.some((option) => option.key === initial)) {
         select.value = initial;
-    } else if (options.length === 1) {
+    } else if ((default_to_first || options.length === 1) && options.length > 0) {
         select.value = options[0].key;
     } else {
         select.value = '';
