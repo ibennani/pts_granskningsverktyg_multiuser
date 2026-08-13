@@ -7,12 +7,15 @@ import path from 'path';
 import { query } from '../db.js';
 import { parse_body } from '../utils/zod_boundary.js';
 import { AuditSnapshotCaptureBodySchema } from '../schemas/audit_snapshot.js';
-import { SsrfUrlRejectedError } from '../utils/ssrf_url_guard.js';
+import { UrlContentTypeDetectionBodySchema } from '../schemas/url_content_type_detection.js';
+import { assert_public_http_url, SsrfUrlRejectedError } from '../utils/ssrf_url_guard.js';
 import { single_route_param } from '../utils/route_params.js';
 import {
     start_snapshot_capture,
     delete_snapshot_job,
 } from '../services/audit_snapshot_job_service.js';
+import { detect_page_content_types } from '../services/page_content_type_detection_service.js';
+import { get_audit_content_type_detection_rules } from '../services/audit_content_type_detection_rules.js';
 import {
     purge_audit_snapshot_by_id,
     purge_audit_snapshots_for_sample,
@@ -76,6 +79,54 @@ function build_capture_error_payload(err: unknown): { error: string; detail: str
 }
 
 export function register_audit_snapshot_routes(router: Router): void {
+    // Registreras före audit_media_routes och ersätter därför den äldre hårdkodade
+    // detektorn på samma URL. Äldre regelfiler utan detectionSelector faller tillbaka.
+    router.post('/:id/detect-content-types', async (req: Request, res: Response) => {
+        try {
+            const audit_id = single_route_param(req.params.id);
+            if (!(await audit_exists(audit_id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+
+            const body = parse_body(UrlContentTypeDetectionBodySchema, req.body, res);
+            if (!body) return;
+
+            let safe_url: URL;
+            try {
+                safe_url = assert_public_http_url(body.url);
+            } catch (err) {
+                const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
+                return res.status(422).json({ error: message });
+            }
+
+            const allowed_ids = [...new Set(body.allowedContentTypeIds.map((id) => id.trim()).filter(Boolean))];
+            const allowed_set = new Set(allowed_ids);
+            const configured_rules = (await get_audit_content_type_detection_rules(audit_id))
+                .filter((rule) => allowed_set.size === 0 || allowed_set.has(rule.id));
+
+            try {
+                const result = await detect_page_content_types({
+                    url: safe_url.href,
+                    allowed_content_type_ids: allowed_ids,
+                    rules: configured_rules.length ? configured_rules : null,
+                });
+                return res.json({
+                    detectedContentTypeIds: result.detected_content_type_ids,
+                    triggeredSignals: result.triggered_signals,
+                    selectorEvidence: result.selector_evidence ?? [],
+                    detectionMode: configured_rules.length ? 'rulefile-dom-selectors' : 'legacy-deterministic-signals',
+                });
+            } catch (err) {
+                const detail = err instanceof Error ? err.message : String(err);
+                console.error('[audit_snapshot] detect-content-types error:', safe_url.href, detail);
+                return res.status(422).json({ error: 'Kunde inte analysera sidans innehåll' });
+            }
+        } catch (err) {
+            console.error('[audit_snapshot] detect-content-types route error:', err);
+            return res.status(500).json({ error: 'Kunde inte analysera sidans innehåll' });
+        }
+    });
+
     router.post('/:id/snapshots/capture', async (req: Request, res: Response) => {
         try {
             const audit_id = single_route_param(req.params.id);
