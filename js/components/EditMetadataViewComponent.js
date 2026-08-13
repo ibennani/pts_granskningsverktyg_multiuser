@@ -14,12 +14,13 @@ import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_l
 import {
     build_published_monitoring_rule_options,
     find_monitoring_option_by_key,
-    resolve_metadata_form_monitoring_key
+    resolve_metadata_form_monitoring_key,
+    resolve_selected_monitoring_key
 } from '../logic/published_monitoring_rule_options.js';
 import { load_published_rule_content } from '../logic/new_audit_rule_loader.js';
 import {
-    build_empty_new_audit_metadata_form_data,
-    new_audit_metadata_differs_from_empty_form
+    build_default_new_audit_metadata_form_data,
+    new_audit_metadata_differs_from_reference_form
 } from '../logic/new_audit_empty_metadata.js';
 
 export class EditMetadataViewComponent {
@@ -426,9 +427,9 @@ export class EditMetadataViewComponent {
         const current_state = this.getState();
         const is_new_audit = current_state.auditStatus === 'not_started';
 
-        // metadata→metadata snabbrender kör inte init/destroy; nollställ bekräftelse vid ny granskning.
+        // metadata→metadata snabbrender kör inte init/destroy; bekräfta första regelfil vid ny granskning.
         if (is_new_audit && current_state.freshNewAuditMetadata === true) {
-            this._monitoring_type_confirmed_by_user = false;
+            this._monitoring_type_confirmed_by_user = true;
         }
 
         if (!is_new_audit) {
@@ -484,23 +485,30 @@ export class EditMetadataViewComponent {
         });
 
         const metadata = await (async () => {
-            const use_empty_form = is_new_audit && state_after_rule.freshNewAuditMetadata === true;
+            const use_default_form = is_new_audit && state_after_rule.freshNewAuditMetadata === true;
             const from = state_after_rule.auditMetadata || {};
             const str = (v) => (v !== null && v !== undefined && String(v).trim() !== '' ? String(v).trim() : '');
-            if (use_empty_form) {
-                const empty = build_empty_new_audit_metadata_form_data(get_current_user_name() || '');
-                if (new_audit_metadata_differs_from_empty_form(from, get_current_user_name() || '')) {
+            const auditor_name = get_current_user_name() || '';
+            const case_handler_options = await load_metadata_case_handler_options('');
+            if (render_generation !== this._render_generation) return from;
+            if (use_default_form) {
+                const defaults = build_default_new_audit_metadata_form_data(
+                    auditor_name,
+                    state_after_rule.ruleFileContent,
+                    case_handler_options
+                );
+                if (new_audit_metadata_differs_from_reference_form(from, defaults)) {
                     await this.dispatch({
                         type: this.StoreActionTypes.UPDATE_METADATA,
                         payload: {
-                            ...empty,
+                            ...defaults,
                             skip_render: true,
                             skip_server_sync: true,
                             preserve_fresh_new_audit_metadata: true
                         }
                     });
                 }
-                return empty;
+                return defaults;
             }
             const cleaned = {
                 caseNumber: str(from.caseNumber),
@@ -575,12 +583,16 @@ export class EditMetadataViewComponent {
         const end_date_input_value = end_time_iso && this.Helpers?.format_iso_for_locale_date_input
             ? this.Helpers.format_iso_for_locale_date_input(end_time_iso, lang_code)
             : '';
+        const use_fresh_new_audit_defaults =
+            is_new_audit && state_after_rule.freshNewAuditMetadata === true;
         const monitoring_type_confirmed = this._monitoring_type_confirmed_by_user;
-        const selected_monitoring_key = resolve_metadata_form_monitoring_key(
-            monitoring_type_confirmed,
-            state_after_rule.ruleSetId,
-            this.monitoring_type_options
-        );
+        const selected_monitoring_key = use_fresh_new_audit_defaults
+            ? resolve_selected_monitoring_key(this.monitoring_type_options, state_after_rule.ruleSetId)
+            : resolve_metadata_form_monitoring_key(
+                monitoring_type_confirmed,
+                state_after_rule.ruleSetId,
+                this.monitoring_type_options
+            );
         const auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
         const case_handler_options = await load_metadata_case_handler_options(
             metadata.caseHandler || ''

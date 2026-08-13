@@ -1089,13 +1089,35 @@ export class AuditViewComponent {
             this.NotificationComponent?.show_global_message(t('server_no_rules'), 'error');
             return;
         }
+        const first_option = options[0];
+        const loaded = await load_published_rule_content(first_option.rule_id, {
+            get_rule,
+            migrate: migrate_rulefile_to_new_structure,
+            validate: (content) => this.ValidationLogic?.validate_rule_file_json?.(content) ?? { isValid: false },
+            Translation: this.Translation
+        });
+        if (!loaded.ok) {
+            this.NotificationComponent?.show_global_message(
+                loaded.error || t('audit_load_rule_error'),
+                'error'
+            );
+            return;
+        }
         try {
             await this.dispatch({
-                type: this.StoreActionTypes.DISCARD_PREPARED_AUDIT,
-                payload: { skip_render: true }
+                type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
+                payload: {
+                    ruleFileContent: loaded.content,
+                    ruleSetId: loaded.rule_id,
+                    skip_render: true
+                }
             });
-        } catch {
-            // Ignoreras medvetet
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error?.message || t('audit_load_rule_error'),
+                'error'
+            );
+            return;
         }
         this.router('metadata');
     }

@@ -4,7 +4,9 @@
 import { describe, expect, test } from '@jest/globals';
 import {
     build_empty_new_audit_metadata_form_data,
-    new_audit_metadata_differs_from_empty_form
+    build_default_new_audit_metadata_form_data,
+    new_audit_metadata_differs_from_empty_form,
+    new_audit_metadata_differs_from_reference_form
 } from '../../js/logic/new_audit_empty_metadata.js';
 import { reduce_update_metadata } from '../../js/state/metadataHandlers.ts';
 
@@ -20,6 +22,34 @@ describe('new_audit_empty_metadata', () => {
             auditTypeId: '',
             auditTypeLabel: '',
         });
+    });
+
+    test('build_default_new_audit_metadata_form_data sätter första granskningstyp och handläggare', () => {
+        const defaults = build_default_new_audit_metadata_form_data(
+            'Anna',
+            {
+                metadata: {
+                    auditTypes: [
+                        { id: 'tillsyn-lptt', label: 'Tillsyn', taxonomyId: 'wcag22-pour' },
+                        { id: 'marknadskontroll-lptt', label: 'Marknadskontroll', taxonomyId: 'wcag22-pour' },
+                    ],
+                },
+            },
+            [{ value: 'Erik' }, { value: 'Sara' }]
+        );
+        expect(defaults).toMatchObject({
+            auditorName: 'Anna',
+            actorName: '',
+            auditTypeId: 'tillsyn-lptt',
+            auditTypeLabel: 'Tillsyn',
+            caseHandler: 'Erik',
+        });
+    });
+
+    test('new_audit_metadata_differs_from_reference_form upptäcker avvikelse mot standard', () => {
+        const reference = build_empty_new_audit_metadata_form_data('Anna');
+        expect(new_audit_metadata_differs_from_reference_form({ actorName: 'AB' }, reference)).toBe(true);
+        expect(new_audit_metadata_differs_from_reference_form({ auditorName: 'Anna' }, reference)).toBe(false);
     });
 
     test('new_audit_metadata_differs_from_empty_form upptäcker gammal metadata', () => {
