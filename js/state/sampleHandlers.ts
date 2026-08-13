@@ -41,7 +41,11 @@ export function reduce_clear_sample_edit_draft(current_state: any) {
 
 export function reduce_add_sample(current_state: any, action: any) {
     if (audit_status_blocks_sample_and_requirement_edits(current_state.auditStatus)) return current_state;
-    const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...action.payload };
+    const payload = action?.payload && typeof action.payload === 'object' ? action.payload : {};
+    // `skip_render` is an action-level rendering hint used by bulk/manual creation flows.
+    // It must never become persisted sample data.
+    const { skip_render: _skip_render, ...sample_payload } = payload;
+    const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...sample_payload };
     const out = {
         ...current_state,
         samples: [...current_state.samples, new_sample_with_defaults]
