@@ -3,10 +3,13 @@
  */
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import {
-    build_sample_url_analyze_progress_message,
-    build_sample_url_analyze_progress_value_text,
-    type SampleUrlAnalyzeProgressState,
-} from './add_sample_form/sample_url_analyze_progress.js';
+    advance_bulk_import_step_progress,
+    build_bulk_import_live_status_text,
+    calculate_bulk_import_total_steps,
+    create_bulk_import_step_progress,
+    format_bulk_import_sample_label,
+    type BulkImportStepProgressState,
+} from '../logic/bulk_url_import_step_progress.js';
 import {
     create_bulk_url_import_modal_row,
     set_bulk_url_import_modal_row_state,
@@ -56,43 +59,30 @@ function row_status_to_ui(status: BulkImportRowStatus): BulkUrlImportRowUiState 
     return 'loading';
 }
 
-function build_progress_state(
-    completed: number,
-    total: number,
-    failed: number,
-    phase: SampleUrlAnalyzeProgressState['phase']
-): SampleUrlAnalyzeProgressState {
-    return { completed, total, failed, phase };
+function resolve_sample_label(
+    rows: BulkImportPreparedRow[],
+    meta?: { row_id?: string; url?: string }
+): string {
+    const row = meta?.row_id
+        ? rows.find((entry) => entry.row_id === meta.row_id)
+        : rows.find((entry) => entry.url === meta?.url);
+    const url = row?.url || meta?.url || '';
+    return format_bulk_import_sample_label(url, row?.page_title);
 }
 
-function apply_progress(
+function apply_step_progress(
     progress_live_el: HTMLParagraphElement,
     progress_bar_el: HTMLDivElement,
     t: BulkUrlImportModalDeps['t'],
-    state: SampleUrlAnalyzeProgressState
+    state: BulkImportStepProgressState
 ): void {
-    progress_live_el.textContent = build_sample_url_analyze_progress_message(t, state);
+    const message = build_bulk_import_live_status_text(t, state);
+    progress_live_el.textContent = message;
+    const current = state.phase === 'done' ? state.total : Math.max(state.current, 0);
     progress_bar_el.setAttribute('aria-valuemin', '0');
     progress_bar_el.setAttribute('aria-valuemax', String(state.total));
-    progress_bar_el.setAttribute('aria-valuenow', String(state.completed));
-    progress_bar_el.setAttribute(
-        'aria-valuetext',
-        build_sample_url_analyze_progress_value_text(t, state)
-    );
-}
-
-function count_finished_rows(rows: BulkImportPreparedRow[]): { completed: number; failed: number } {
-    let completed = 0;
-    let failed = 0;
-    for (const row of rows) {
-        if (row.status === 'saved') {
-            completed += 1;
-        } else if (row.status === 'failed') {
-            completed += 1;
-            failed += 1;
-        }
-    }
-    return { completed, failed };
+    progress_bar_el.setAttribute('aria-valuenow', String(current));
+    progress_bar_el.setAttribute('aria-valuetext', message);
 }
 
 function append_log_line(
@@ -133,12 +123,11 @@ async function run_import_in_modal(
 ): Promise<void> {
     const { Helpers, t } = deps;
     ui.task_list_el.setAttribute('aria-busy', 'true');
-    apply_progress(
-        ui.progress_live_el,
-        ui.progress_bar_el,
-        t,
-        build_progress_state(0, rows.length, 0, 'running')
-    );
+    let step_progress: BulkImportStepProgressState = {
+        ...create_bulk_import_step_progress(rows.length, t),
+        phase: 'running',
+    };
+    apply_step_progress(ui.progress_live_el, ui.progress_bar_el, t, step_progress);
 
     const sync_row_ui = (row: BulkImportPreparedRow) => {
         const index = rows.findIndex((entry) => entry.row_id === row.row_id);
@@ -152,14 +141,6 @@ async function run_import_in_modal(
             row_status_to_ui(row.status),
             Helpers,
             t
-        );
-        const counts = count_finished_rows(rows);
-        const all_done = counts.completed >= rows.length;
-        apply_progress(
-            ui.progress_live_el,
-            ui.progress_bar_el,
-            t,
-            build_progress_state(counts.completed, rows.length, counts.failed, all_done ? 'done' : 'running')
         );
     };
 
@@ -179,6 +160,14 @@ async function run_import_in_modal(
                         t(message_key, params),
                         meta
                     );
+                    step_progress = advance_bulk_import_step_progress(
+                        step_progress,
+                        t,
+                        message_key,
+                        params,
+                        resolve_sample_label(rows, meta)
+                    );
+                    apply_step_progress(ui.progress_live_el, ui.progress_bar_el, t, step_progress);
                 },
             },
             rows,
@@ -198,13 +187,7 @@ async function run_import_in_modal(
     }
 
     ui.task_list_el.setAttribute('aria-busy', 'false');
-    const final_counts = count_finished_rows(rows);
-    apply_progress(
-        ui.progress_live_el,
-        ui.progress_bar_el,
-        t,
-        build_progress_state(final_counts.completed, rows.length, final_counts.failed, 'done')
-    );
+    ui.progress_live_el.setAttribute('aria-busy', 'false');
 
     const saved_count = rows.filter((row) => row.status === 'saved').length;
     const failed_count = rows.filter((row) => row.status === 'failed').length;
@@ -303,15 +286,20 @@ export function show_bulk_url_import_modal(
                 attributes: {
                     role: 'progressbar',
                     'aria-valuemin': '0',
-                    'aria-valuemax': String(rows.length),
+                    'aria-valuemax': String(calculate_bulk_import_total_steps(rows.length)),
                     'aria-valuenow': '0',
-                    'aria-valuetext': deps.t('sample_url_analyze_progress_waiting', { total: rows.length }),
+                    'aria-valuetext': '',
                 },
             }) as HTMLDivElement;
 
             const progress_live_el = deps.Helpers.create_element('p', {
                 class_name: 'sample-url-analyze-modal-progress',
-                attributes: { role: 'status' },
+                attributes: {
+                    role: 'status',
+                    'aria-live': 'polite',
+                    'aria-atomic': 'true',
+                    'aria-busy': 'true',
+                },
             }) as HTMLParagraphElement;
 
             container.append(progress_bar_el, progress_live_el);
@@ -322,10 +310,6 @@ export function show_bulk_url_import_modal(
             });
             const log_list_el = deps.Helpers.create_element('ol', {
                 class_name: 'bulk-url-import-modal-log',
-                attributes: {
-                    'aria-live': 'polite',
-                    'aria-relevant': 'additions',
-                },
             }) as HTMLOListElement;
             container.append(log_heading, log_list_el);
 
