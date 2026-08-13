@@ -2,6 +2,7 @@ import { parse_bulk_sample_urls } from '../../js/logic/bulk_sample_url_input.ts'
 import { classify_page_type, resolve_sample_type_id_for_classification } from '../../shared/sample/page_type_classifier.ts';
 import { build_recurring_component_proposals, recurring_candidate_similarity } from '../../shared/recurring/recurring_component_compare.ts';
 import { resolve_recurring_sample_target } from '../../shared/sample/recurring_sample_type_resolver.ts';
+import { apply_detection_patterns_to_content_types } from '../../shared/rulefile/content_type_detection_pattern_rulefile_apply.ts';
 
 describe('deterministiskt granskningsdelsflöde', () => {
     test('URL-lista normaliserar protokoll och markerar dubbletter', () => {
@@ -107,5 +108,33 @@ describe('deterministiskt granskningsdelsflöde', () => {
             categoryLabel: 'Återkommande innehåll',
             typeLabel: 'Sidhuvud'
         });
+    });
+
+    test('explicit regexp och DOM-selector överlever katalogdefaults', () => {
+        const result = apply_detection_patterns_to_content_types([
+            {
+                id: 'group',
+                text: 'Struktur',
+                types: [{
+                    id: 'headings',
+                    text: 'Rubriker',
+                    detectionPattern: 'MIN-EGEN-REGEXP',
+                    detectionSelector: '.min-egna-rubrik'
+                }]
+            }
+        ], 'web');
+        expect(result[0]?.types?.[0]?.detectionPattern).toBe('MIN-EGEN-REGEXP');
+        expect(result[0]?.types?.[0]?.detectionSelector).toBe('.min-egna-rubrik');
+    });
+
+    test('saknad DOM-selector får webb-default från katalogen', () => {
+        const result = apply_detection_patterns_to_content_types([
+            {
+                id: 'group',
+                text: 'Struktur',
+                types: [{ id: 'headings', text: 'Rubriker' }]
+            }
+        ], 'web');
+        expect(result[0]?.types?.[0]?.detectionSelector).toBe('h1,h2,h3,h4,h5,h6,[role="heading"]');
     });
 });
