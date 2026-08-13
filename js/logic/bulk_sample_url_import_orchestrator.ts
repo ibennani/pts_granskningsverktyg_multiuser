@@ -235,6 +235,21 @@ export async function save_bulk_import_rows(
     return saved_rows;
 }
 
+export async function run_full_bulk_url_import(
+    deps: BulkImportOrchestratorDeps,
+    rows: BulkImportPreparedRow[],
+    sample_category_id: string
+): Promise<BulkImportPreparedRow[]> {
+    const output: BulkImportPreparedRow[] = [];
+    for (const source_row of rows) {
+        if (deps.signal?.aborted) break;
+        const [captured] = await run_bulk_url_capture_phase(deps, [source_row], sample_category_id);
+        const [saved] = await save_bulk_import_rows(deps, [captured], sample_category_id);
+        output.push(saved);
+    }
+    return output;
+}
+
 export async function list_ready_snapshot_entries(
     audit_id: string
 ): Promise<Array<{ sampleId: string; captureId: string }>> {

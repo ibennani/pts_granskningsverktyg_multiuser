@@ -3,17 +3,6 @@
     min-height: 10rem;
 }
 
-.bulk-url-import-category-fieldset {
-    margin: 1rem 0;
-    border: 1px solid var(--border-color, #ccc);
-    padding: 0.75rem 1rem;
-}
-
-.bulk-url-import-category-label {
-    display: block;
-    margin: 0.35rem 0;
-}
-
 .bulk-url-import-actions {
     display: flex;
     flex-wrap: wrap;
@@ -21,12 +10,48 @@
     margin: 1rem 0;
 }
 
-.bulk-url-import-progress {
-    min-height: 1.25rem;
-    color: var(--text-color-muted);
+/* Progressmodal: samma uppgiftslista som Hämta information */
+dialog.modal-dialog.modal-dialog--sample-url-analyze {
+    width: min(560px, var(--modal-max-viewport-width));
 }
 
-.bulk-url-import-table {
-    width: 100%;
-    margin-top: 1rem;
+.modal-body--sample-url-analyze .sample-url-analyze-task-list {
+    margin: 1rem 0 1rem;
+    padding-left: 1.35rem;
+}
+
+.bulk-url-import-modal-task.sample-url-analyze-task__label {
+    word-break: break-word;
+}
+
+.sample-url-analyze-task {
+    padding: 0.1rem 0;
+}
+
+.sample-url-analyze-task__content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sample-url-analyze-task__label {
+    flex: 0 1 auto;
+}
+
+.sample-url-analyze-task__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 1rem;
+    min-height: 1rem;
+}
+
+.sample-url-analyze-task__status .generic-tooltip__icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.sample-url-analyze-modal-progress:empty {
+    display: none;
 }
