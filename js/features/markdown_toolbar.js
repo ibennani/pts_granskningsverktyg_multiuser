@@ -1,4 +1,5 @@
 import { marked } from '../utils/markdown.js';
+import { is_markdown_toolbar_excluded } from '../utils/markdown_toolbar_exclusions.js';
 import "../../css/features/markdown_toolbar.css";
 
 const instanceMap = new Map();
@@ -42,10 +43,7 @@ export const MarkdownToolbar = {
         if (textarea.closest('.markdown-editor-wrapper')) {
             return;
         }
-        if (textarea.dataset.skipMarkdownToolbar === 'true') {
-            return;
-        }
-        if (textarea.closest('.manage-users-plate') || textarea.id === 'manage-users-textarea') {
+        if (is_markdown_toolbar_excluded(textarea)) {
             return;
         }
         if (!textarea.parentNode) {

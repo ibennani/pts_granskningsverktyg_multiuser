@@ -6,6 +6,7 @@ import { parse_bulk_url_list } from '../logic/bulk_url_import_parse.js';
 import { resolve_default_url_sample_category_id } from '../logic/bulk_url_import_category.js';
 import { show_bulk_url_import_modal } from './bulk_url_import_modal.js';
 import { subscribe_audit_snapshots } from '../logic/list_push_service.js';
+import { mark_textarea_without_markdown_toolbar } from '../utils/markdown_toolbar_exclusions.js';
 
 type BulkViewDeps = {
     router: (view: string, params?: Record<string, unknown>) => void;
@@ -140,6 +141,7 @@ export class BulkSampleUrlImportViewComponent {
             class_name: ['form-control', 'bulk-url-import-textarea'],
             attributes: { id: 'bulk-url-list-textarea', rows: '8' },
         }) as HTMLTextAreaElement;
+        mark_textarea_without_markdown_toolbar(textarea);
         if (saved_url_text) {
             textarea.value = saved_url_text;
         }
