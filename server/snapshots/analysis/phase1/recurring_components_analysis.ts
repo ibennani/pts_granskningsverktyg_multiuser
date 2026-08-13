@@ -7,6 +7,8 @@ import { BROWSER_COLLECT_RECURRING_COMPONENT_CANDIDATES } from '../recurring/rec
 import {
     collect_content_type_selector_evidence,
     collect_content_type_selector_evidence_by_root,
+    type ContentTypeSelectorDetectionResult,
+    type ContentTypeDetectionByRoot,
 } from './content_type_selector_evidence.js';
 
 function sha256(value: string): string {
@@ -34,12 +36,12 @@ export async function run_recurring_components_analysis(
         by_type[type] = (by_type[type] || 0) + 1;
     }
 
-    let content_type_detection = {
-        detectedContentTypeIds: [] as string[],
-        evidence: [] as Array<Record<string, unknown>>,
+    let content_type_detection: ContentTypeSelectorDetectionResult = {
+        detectedContentTypeIds: [],
+        evidence: [],
         ruleCount: 0,
     };
-    let content_type_detection_by_candidate: Array<Record<string, unknown>> = [];
+    let content_type_detection_by_candidate: ContentTypeDetectionByRoot[] = [];
     try {
         content_type_detection = await collect_content_type_selector_evidence(ctx.page, ctx.temp_dir);
         const roots = candidates
