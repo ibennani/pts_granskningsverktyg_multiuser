@@ -22,6 +22,7 @@ export default {
     '^.+/audit_logic_problems_media\\.js$': '<rootDir>/js/logic/audit_logic_problems_media.ts',
     '^.+/ScoreCalculator\\.js$': '<rootDir>/js/logic/ScoreCalculator.ts',
     '^.+/score_calculator_passed_check_failures\\.js$': '<rootDir>/js/logic/score_calculator_passed_check_failures.ts',
+    '^.+/score_calculator_requirement_inclusion\\.js$': '<rootDir>/js/logic/score_calculator_requirement_inclusion.ts',
     '^.+/export_logic\\.js$': '<rootDir>/js/export_logic.ts',
     '^.+[\\\\/]export_format_helpers\\.js$': '<rootDir>/js/export/export_format_helpers.ts',
     '^.+[\\\\/]export_taxonomy_mapping\\.js$': '<rootDir>/js/export/export_taxonomy_mapping.ts',
