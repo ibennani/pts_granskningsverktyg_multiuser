@@ -18,6 +18,11 @@ import {
     type BulkImportPreparedRow,
     type BulkImportRowStatus,
 } from '../logic/bulk_sample_url_import_orchestrator.js';
+import {
+    format_bulk_url_import_log_line,
+    emit_bulk_url_import_log,
+    type BulkUrlImportLogEvent,
+} from '../logic/bulk_url_import_logger.js';
 
 type BulkUrlImportModalDeps = {
     getState: () => Record<string, unknown>;
@@ -89,6 +94,18 @@ function count_finished_rows(rows: BulkImportPreparedRow[]): { completed: number
     return { completed, failed };
 }
 
+function append_log_line(
+    log_list_el: HTMLOListElement,
+    event: BulkUrlImportLogEvent
+): void {
+    const line = format_bulk_url_import_log_line(event);
+    const item = document.createElement('li');
+    item.className = `bulk-url-import-modal-log__line bulk-url-import-modal-log__line--${event.level}`;
+    item.textContent = line;
+    log_list_el.appendChild(item);
+    log_list_el.scrollTop = log_list_el.scrollHeight;
+}
+
 async function run_import_in_modal(
     deps: BulkUrlImportModalDeps,
     rows: BulkImportPreparedRow[],
@@ -97,6 +114,7 @@ async function run_import_in_modal(
         progress_live_el: HTMLParagraphElement;
         progress_bar_el: HTMLDivElement;
         task_list_el: HTMLOListElement;
+        log_list_el: HTMLOListElement;
     },
     modal: BulkUrlImportModalHandle,
     trigger_button: HTMLButtonElement | null
@@ -143,11 +161,23 @@ async function run_import_in_modal(
                 add_protocol_if_missing: Helpers.add_protocol_if_missing,
                 on_row_updated: sync_row_ui,
                 wait_for_snapshot_ready: deps.wait_for_snapshot_ready,
+                log_import_step: (message_key, params, meta) => {
+                    emit_bulk_url_import_log(
+                        (event) => append_log_line(ui.log_list_el, event),
+                        t(message_key, params),
+                        meta
+                    );
+                },
             },
             rows,
             deps.sample_category_id
         );
-    } catch {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        append_log_line(ui.log_list_el, {
+            level: 'error',
+            message: t('bulk_url_import_log_unexpected_error', { error: message }),
+        });
         for (const row of rows) {
             if (row.status !== 'saved' && row.status !== 'failed') {
                 sync_row_ui({ ...row, status: 'failed' });
@@ -245,10 +275,24 @@ export function show_bulk_url_import_modal(
 
             container.append(progress_bar_el, progress_live_el);
 
+            const log_heading = deps.Helpers.create_element('h2', {
+                class_name: 'bulk-url-import-modal-log__heading',
+                text_content: t('bulk_url_import_modal_log_heading'),
+            });
+            const log_list_el = deps.Helpers.create_element('ol', {
+                class_name: 'bulk-url-import-modal-log',
+                attributes: {
+                    'aria-live': 'polite',
+                    'aria-relevant': 'additions',
+                },
+            }) as HTMLOListElement;
+            container.append(log_heading, log_list_el);
+
             void run_import_in_modal(deps, rows, row_elements, {
                 progress_live_el,
                 progress_bar_el,
                 task_list_el,
+                log_list_el,
             }, modal, trigger_button);
         }
     );

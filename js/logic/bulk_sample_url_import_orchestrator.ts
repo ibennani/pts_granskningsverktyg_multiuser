@@ -10,6 +10,14 @@ import {
 import { classify_sample_page_type } from '../../shared/logic/sample_page_type_classifier.js';
 import { queue_sidrapport_after_sample_save } from './queue_sidrapport_after_sample_save.js';
 import { sync_to_server_now } from './server_sync.js';
+import { type BulkUrlImportLogSink } from './bulk_url_import_logger.js';
+import {
+    log_import_step,
+    outcome_label,
+    type BulkImportLogFn,
+} from './bulk_sample_url_import_orchestrator_log.js';
+
+export type { BulkImportLogFn };
 
 export type BulkImportRowStatus =
     | 'waiting'
@@ -50,6 +58,8 @@ export type BulkImportOrchestratorDeps = {
     add_protocol_if_missing?: (url: string) => string;
     on_row_updated: (row: BulkImportPreparedRow) => void;
     on_progress_message?: (message: string) => void;
+    log_import_step?: BulkImportLogFn;
+    import_log_sink?: BulkUrlImportLogSink;
     wait_for_snapshot_ready: (
         audit_id: string,
         capture_id: string,
@@ -81,7 +91,8 @@ function update_row(
 export async function run_bulk_url_capture_phase(
     deps: BulkImportOrchestratorDeps,
     rows: BulkImportPreparedRow[],
-    sample_category_id: string
+    sample_category_id: string,
+    row_context?: { index: number; total: number }
 ): Promise<BulkImportPreparedRow[]> {
     const state = deps.getState();
     const audit_id = state?.auditId ? String(state.auditId) : null;
@@ -95,6 +106,11 @@ export async function run_bulk_url_capture_phase(
         let row = update_row(deps, source_row, { status: 'fetching', error_message: null });
         const sample_id = deps.generate_uuid();
         const capture_id = deps.generate_uuid();
+
+        log_import_step(deps, 'bulk_url_import_log_capture_start', {
+            index: row_context?.index ?? 1,
+            total: row_context?.total ?? rows.length,
+        }, { row_id: source_row.row_id, url: row.url });
 
         try {
             const response: AuditSnapshotCaptureResponse = await start_audit_snapshot_capture(
@@ -110,6 +126,13 @@ export async function run_bulk_url_capture_phase(
 
             const page_title =
                 response.pageTitle.outcome === 'success' ? (response.pageTitle.value || null) : null;
+            log_import_step(deps, 'bulk_url_import_log_capture_title', {
+                index: row_context?.index ?? 1,
+                total: row_context?.total ?? rows.length,
+                outcome: outcome_label(page_title ? 'success' : 'missing'),
+                title: page_title || '—',
+            }, { row_id: row.row_id, url: row.url });
+
             row = update_row(deps, row, {
                 status: page_title ? 'title_ready' : 'needs_action',
                 page_title,
@@ -119,6 +142,14 @@ export async function run_bulk_url_capture_phase(
 
             const screenshot_filename =
                 response.screenshot.outcome === 'success' ? (response.screenshot.filename || null) : null;
+            log_import_step(deps, 'bulk_url_import_log_capture_screenshot', {
+                index: row_context?.index ?? 1,
+                total: row_context?.total ?? rows.length,
+                outcome: outcome_label(
+                    response.screenshot.outcome === 'success' ? 'success' : 'failed'
+                ),
+            }, { row_id: row.row_id, url: row.url });
+
             row = update_row(deps, row, {
                 status: screenshot_filename ? 'screenshot_ready' : row.status,
                 screenshot_filename,
@@ -134,8 +165,19 @@ export async function run_bulk_url_capture_phase(
                 suggested_sample_type_id: classification.suggestedTypeId,
                 suggested_sample_type_confidence: classification.confidence,
             });
+            log_import_step(deps, 'bulk_url_import_log_capture_classify', {
+                index: row_context?.index ?? 1,
+                total: row_context?.total ?? rows.length,
+                typeId: classification.suggestedTypeId || '—',
+                confidence: Math.round(classification.confidence * 100),
+            }, { row_id: row.row_id, url: row.url });
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
+            log_import_step(deps, 'bulk_url_import_log_capture_failed', {
+                index: row_context?.index ?? 1,
+                total: row_context?.total ?? rows.length,
+                error: message,
+            }, { level: 'error', row_id: row.row_id, url: row.url });
             row = update_row(deps, row, { status: 'failed', error_message: message });
         }
 
@@ -149,7 +191,8 @@ export async function run_bulk_url_capture_phase(
 export async function save_bulk_import_rows(
     deps: BulkImportOrchestratorDeps,
     rows: BulkImportPreparedRow[],
-    sample_category_id: string
+    sample_category_id: string,
+    row_context?: { index: number; total: number }
 ): Promise<BulkImportPreparedRow[]> {
     const state = deps.getState();
     const audit_id = state?.auditId ? String(state.auditId) : null;
@@ -157,6 +200,7 @@ export async function save_bulk_import_rows(
         throw new Error('bulk_url_import_no_audit');
     }
 
+    log_import_step(deps, 'bulk_url_import_log_sync', {});
     await sync_to_server_now(
         deps.getState as () => { auditId?: string } | null,
         deps.dispatch as (action: unknown) => void
@@ -165,10 +209,20 @@ export async function save_bulk_import_rows(
 
     for (const source_row of rows) {
         if (!source_row.include_in_save || source_row.status === 'failed') {
+            log_import_step(deps, 'bulk_url_import_log_save_skip', {
+                index: row_context?.index ?? 1,
+                total: row_context?.total ?? rows.length,
+                reason: source_row.status === 'failed' ? 'hämtning misslyckades' : 'ej vald',
+            }, { row_id: source_row.row_id, url: source_row.url, level: 'warn' });
             saved_rows.push(source_row);
             continue;
         }
         if (!source_row.sample_id) continue;
+
+        log_import_step(deps, 'bulk_url_import_log_save_dispatch', {
+            index: row_context?.index ?? 1,
+            total: row_context?.total ?? rows.length,
+        }, { row_id: source_row.row_id, url: source_row.url });
 
         const sample_payload = {
             id: source_row.sample_id,
@@ -191,6 +245,11 @@ export async function save_bulk_import_rows(
         });
 
         let row = update_row(deps, source_row, { status: 'sidrapport_queued' });
+        log_import_step(deps, 'bulk_url_import_log_sidrapport_queue', {
+            index: row_context?.index ?? 1,
+            total: row_context?.total ?? rows.length,
+        }, { row_id: row.row_id, url: row.url });
+
         await queue_sidrapport_after_sample_save(
             {
                 getState: deps.getState,
@@ -205,10 +264,28 @@ export async function save_bulk_import_rows(
         );
 
         if (row.capture_id) {
-            const ready = await deps.wait_for_snapshot_ready(audit_id, row.capture_id, 120000);
+            const timeout_ms = 120000;
+            log_import_step(deps, 'bulk_url_import_log_sidrapport_wait', {
+                index: row_context?.index ?? 1,
+                total: row_context?.total ?? rows.length,
+                timeoutSec: Math.round(timeout_ms / 1000),
+            }, { row_id: row.row_id, url: row.url });
+
+            const ready = await deps.wait_for_snapshot_ready(audit_id, row.capture_id, timeout_ms);
             if (ready) {
+                log_import_step(deps, 'bulk_url_import_log_sidrapport_ready', {
+                    index: row_context?.index ?? 1,
+                    total: row_context?.total ?? rows.length,
+                }, { row_id: row.row_id, url: row.url });
+
                 const summary = await fetch_snapshot_analysis_summary(audit_id, row.capture_id);
                 const detected = extract_detected_content_type_ids(summary);
+                log_import_step(deps, 'bulk_url_import_log_summary', {
+                    index: row_context?.index ?? 1,
+                    total: row_context?.total ?? rows.length,
+                    detectedCount: detected.length,
+                }, { row_id: row.row_id, url: row.url });
+
                 const refined_type_id =
                     summary.pageTypeClassification?.suggestedTypeId || row.suggested_sample_type_id;
                 row = update_row(deps, row, {
@@ -224,11 +301,19 @@ export async function save_bulk_import_rows(
                             : detected,
                 });
             } else {
+                log_import_step(deps, 'bulk_url_import_log_sidrapport_timeout', {
+                    index: row_context?.index ?? 1,
+                    total: row_context?.total ?? rows.length,
+                }, { level: 'warn', row_id: row.row_id, url: row.url });
                 row = update_row(deps, row, { status: 'needs_action' });
             }
         }
 
         row = update_row(deps, row, { status: 'saved' });
+        log_import_step(deps, 'bulk_url_import_log_row_done', {
+            index: row_context?.index ?? 1,
+            total: row_context?.total ?? rows.length,
+        }, { row_id: row.row_id, url: row.url });
         saved_rows.push(row);
     }
 
@@ -240,13 +325,46 @@ export async function run_full_bulk_url_import(
     rows: BulkImportPreparedRow[],
     sample_category_id: string
 ): Promise<BulkImportPreparedRow[]> {
+    const state = deps.getState();
+    const audit_id = state?.auditId ? String(state.auditId) : '—';
+    log_import_step(deps, 'bulk_url_import_log_batch_start', { count: rows.length });
+    log_import_step(deps, 'bulk_url_import_log_batch_audit', { auditId: audit_id });
+
     const output: BulkImportPreparedRow[] = [];
+    const total = rows.length;
+    let index = 0;
     for (const source_row of rows) {
         if (deps.signal?.aborted) break;
-        const [captured] = await run_bulk_url_capture_phase(deps, [source_row], sample_category_id);
-        const [saved] = await save_bulk_import_rows(deps, [captured], sample_category_id);
+        index += 1;
+        log_import_step(deps, 'bulk_url_import_log_row_start', {
+            index,
+            total,
+            url: source_row.url,
+        }, { row_id: source_row.row_id, url: source_row.url });
+
+        const row_context = { index, total };
+        const [captured] = await run_bulk_url_capture_phase(
+            deps,
+            [source_row],
+            sample_category_id,
+            row_context
+        );
+        if (captured.status === 'failed') {
+            log_import_step(deps, 'bulk_url_import_log_row_failed', { index, total }, {
+                level: 'error',
+                row_id: captured.row_id,
+                url: captured.url,
+            });
+            output.push(captured);
+            continue;
+        }
+        const [saved] = await save_bulk_import_rows(deps, [captured], sample_category_id, row_context);
         output.push(saved);
     }
+
+    const failed = output.filter((row) => row.status === 'failed').length;
+    const success = output.length - failed;
+    log_import_step(deps, 'bulk_url_import_log_batch_done', { success, failed });
     return output;
 }
 

@@ -55,3 +55,37 @@ dialog.modal-dialog.modal-dialog--sample-url-analyze {
 .sample-url-analyze-modal-progress:empty {
     display: none;
 }
+
+.bulk-url-import-modal-log__heading {
+    margin: 1rem 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.bulk-url-import-modal-log {
+    max-height: 10rem;
+    overflow-y: auto;
+    margin: 0 0 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 4px;
+    background: var(--plate-background-color, #f8f8f8);
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    list-style: none;
+}
+
+.bulk-url-import-modal-log__line {
+    padding: 0.1rem 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.bulk-url-import-modal-log__line--warn {
+    color: var(--warning-text-color, #8a6100);
+}
+
+.bulk-url-import-modal-log__line--error {
+    color: var(--error-color, #b00020);
+}
