@@ -24,6 +24,7 @@ import {
     persist_resource_bodies,
     push_body_unavailable_warning,
     push_cmp_banner_remaining_warning,
+    push_intrusive_overlay_remaining_warning,
     push_resource_too_large_warning,
     sha256_buffer,
     to_network_json_entries,
@@ -176,6 +177,9 @@ export async function run_snapshot_capture_job(ctx: RunCaptureJobContext): Promi
         });
         if (capture.adjustments.cookieBannerVisibleAfterCapture) {
             push_cmp_banner_remaining_warning(warnings);
+        }
+        if (capture.adjustments.intrusiveOverlayVisibleAfterCapture) {
+            push_intrusive_overlay_remaining_warning(warnings);
         }
         await write_temp_file(temp_dir, 'screenshot.png', capture.png_buffer);
 

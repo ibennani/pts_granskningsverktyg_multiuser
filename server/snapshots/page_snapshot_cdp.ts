@@ -145,6 +145,13 @@ export function push_cmp_banner_remaining_warning(warnings: SnapshotWarning[]): 
     });
 }
 
+export function push_intrusive_overlay_remaining_warning(warnings: SnapshotWarning[]): void {
+    warnings.push({
+        code: 'intrusive_overlay_remaining',
+        message: 'Intrusive overlay may still be visible after capture adjustments',
+    });
+}
+
 export async function attach_network_listeners(
     cdp: CDPSession,
     state: NetworkCaptureState,

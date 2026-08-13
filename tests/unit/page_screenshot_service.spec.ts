@@ -52,6 +52,20 @@ jest.unstable_mockModule('../../server/services/page_screenshot_cookie_consent.j
     settle_after_consent_apply: settle_consent_mock,
 }));
 
+const dismiss_intrusive_overlay_mock = jest.fn(async () => ({
+    clicked: false,
+    overlay_gone: true,
+    matched_selector: null,
+}));
+const hide_intrusive_overlay_mock = jest.fn(async () => 0);
+const is_intrusive_overlay_visible_mock = jest.fn(async () => false);
+
+jest.unstable_mockModule('../../server/services/page_screenshot_intrusive_overlay.js', () => ({
+    dismiss_intrusive_overlays_before_screenshot: dismiss_intrusive_overlay_mock,
+    hide_intrusive_overlays_visually_for_screenshot: hide_intrusive_overlay_mock,
+    is_intrusive_overlay_visible: is_intrusive_overlay_visible_mock,
+}));
+
 jest.unstable_mockModule('puppeteer', () => ({
     default: {
         launch: jest.fn(async () => ({
@@ -112,6 +126,9 @@ describe('page_screenshot_service', () => {
         hide_cookie_mock.mockClear();
         is_banner_visible_mock.mockClear();
         settle_consent_mock.mockClear();
+        dismiss_intrusive_overlay_mock.mockClear();
+        hide_intrusive_overlay_mock.mockClear();
+        is_intrusive_overlay_visible_mock.mockClear();
         mock_evaluate_with_scroll_height(2000);
     });
 

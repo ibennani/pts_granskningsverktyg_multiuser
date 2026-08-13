@@ -14,7 +14,9 @@ export async function run_safe_interaction_analysis(
     const started = Date.now();
     const max = get_snapshot_analysis_interaction_max();
     const initial_url = ctx.page.url();
-    const candidates = await ctx.page.evaluate(BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES);
+    const candidates = (await ctx.page.evaluate(
+        BROWSER_COLLECT_SAFE_INTERACTION_CANDIDATES
+    )) as Array<Record<string, unknown>>;
     const records: Array<Record<string, unknown>> = [];
     let stopped_reason: string | null = null;
 

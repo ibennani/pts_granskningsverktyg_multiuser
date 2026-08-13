@@ -242,8 +242,7 @@ describe('rulefile_deficiency_types', () => {
         const lines = Array.from(section.querySelectorAll('.deficiency-types-part-line')).map(
             (line) => line.textContent
         );
-        expect(lines).toContain('Krav del 1');
-        expect(lines).toContain('Krav del 2');
+        expect(lines).toContain('Krav del 1 Krav del 2');
         expect(lines).not.toContain('Karta del 1');
         expect(lines).not.toContain('Karta del 2');
         expect(lines.filter((line) => line === 'rulefile_metadata_empty_value')).toHaveLength(1);

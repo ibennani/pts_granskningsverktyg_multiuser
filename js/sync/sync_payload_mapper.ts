@@ -10,7 +10,7 @@ export type ServerAuditStatus = (typeof SERVER_STATUS_VALUES)[number];
 
 /** Minsta state som state_to_patch / state_to_import behöver. */
 export type SyncPayloadState = {
-    auditId?: string;
+    auditId?: string | null;
     ruleSetId?: string | null;
     auditMetadata?: Record<string, unknown> & { audit_edit_log?: unknown[] };
     auditStatus?: string;

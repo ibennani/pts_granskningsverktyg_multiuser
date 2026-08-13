@@ -51,16 +51,19 @@ export async function run_focus_visibility_analysis(
         await ctx.page.keyboard.press('Tab');
         await new Promise((r) => setTimeout(r, 25));
         const before = await ctx.page.evaluate(BROWSER_GET_COMPUTED_FOCUS_STYLES);
-        const info = await ctx.page.evaluate(BROWSER_GET_FOCUSED_ELEMENT_INFO);
+        const info = (await ctx.page.evaluate(BROWSER_GET_FOCUSED_ELEMENT_INFO)) as Record<
+            string,
+            unknown
+        > | null;
         const after = await ctx.page.evaluate(BROWSER_GET_COMPUTED_FOCUS_STYLES);
         if (!info || !before || !after) continue;
         const changed = diff_styles(before as Record<string, string>, after as Record<string, string>);
         records.push({
             elementIdentity: build_element_identity_from_eval({
-                id: info.id,
-                tagName: info.tagName,
-                role: info.role,
-                domPath: info.domPath,
+                id: info.id as string | null,
+                tagName: info.tagName as string,
+                role: info.role as string | null,
+                domPath: info.domPath as string | null,
             }),
             before,
             focused: after,

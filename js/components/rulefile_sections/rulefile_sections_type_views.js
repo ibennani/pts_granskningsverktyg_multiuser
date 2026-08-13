@@ -213,7 +213,7 @@ export function render_rulefile_appendix_templates_hub_section(ctx) {
 /**
  * @param {{ Helpers: object, Translation: object, router?: function, getState?: function }} ctx
  * @param {object} ruleFileContent
- * @param {{ body_text?: string, page_header_action?: HTMLElement, deficiency_intros_hint_key?: string }} [options]
+ * @param {{ body_text?: string, page_header_action?: HTMLElement, deficiency_intros_hint_key?: string, deficiency_view_data?: object }} [options]
  */
 export function render_rulefile_appendix1_template_section(ctx, ruleFileContent, options = {}) {
     const Helpers = ctx.Helpers;

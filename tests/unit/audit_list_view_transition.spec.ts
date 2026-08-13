@@ -22,7 +22,7 @@ import {
 
 describe('audit_list_view_transition', () => {
     test('AUDIT_LIST_TOGGLE_TRANSITION_MS är halva totala listväxlingstiden', () => {
-        expect(AUDIT_LIST_TOGGLE_TRANSITION_MS).toBe(250);
+        expect(AUDIT_LIST_TOGGLE_TRANSITION_MS).toBe(125);
     });
 
     test('TABLE_PAGE timing: layout och fade in parallellt efter kort fade out', () => {

@@ -19,7 +19,9 @@ export async function run_text_spacing_analysis(ctx: AnalysisContext): Promise<A
     try {
         await with_baseline_viewport(ctx.page, async () => {
             await ctx.page.evaluate(BROWSER_APPLY_TEXT_SPACING_CSS);
-            issues = await ctx.page.evaluate(BROWSER_COLLECT_TEXT_SPACING_ISSUES);
+            issues = (await ctx.page.evaluate(
+                BROWSER_COLLECT_TEXT_SPACING_ISSUES
+            )) as Array<Record<string, unknown>>;
             if (issues.length > 0 && ctx.screenshot_budget.remaining > 0) {
                 const png = await ctx.page.screenshot({ type: 'png', fullPage: false });
                 await write_analysis_png(
@@ -32,7 +34,7 @@ export async function run_text_spacing_analysis(ctx: AnalysisContext): Promise<A
             }
         });
     } finally {
-        cleanup_ok = await ctx.page.evaluate(BROWSER_REMOVE_TEXT_SPACING_CSS);
+        cleanup_ok = (await ctx.page.evaluate(BROWSER_REMOVE_TEXT_SPACING_CSS)) as boolean;
         if (!cleanup_ok) {
             ctx.warnings.push({
                 code: 'analysis_cleanup_failed',

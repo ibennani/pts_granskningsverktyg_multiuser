@@ -16,7 +16,9 @@ export async function run_menu_navigation_analysis(
     const started = Date.now();
     const records: Array<Record<string, unknown>> = [];
 
-    const trigger = await ctx.page.evaluate(BROWSER_FIND_MENU_NAVIGATION_TRIGGER);
+    const trigger = (await ctx.page.evaluate(BROWSER_FIND_MENU_NAVIGATION_TRIGGER)) as {
+        id?: string;
+    } | null;
 
     if (!trigger?.id) {
         return {

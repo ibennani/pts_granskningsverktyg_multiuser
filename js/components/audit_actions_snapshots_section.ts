@@ -36,7 +36,7 @@ export type AuditActionsSnapshotsDeps = {
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
         format_iso_to_local_datetime?: (iso: string, lang: string) => string;
-        get_icon_svg?: (name: string, classes: string[], size: number) => string;
+        get_icon_svg?: (name: string, colors?: string[], size?: number) => string;
         add_protocol_if_missing?: (url: string) => string;
         get_external_link_icon_html?: (t: (key: string) => string) => string;
         escape_html?: (text: string) => string;

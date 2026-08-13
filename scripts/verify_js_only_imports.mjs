@@ -48,7 +48,10 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/logic/test_server_indicator.js',
     'js/logic/appendix1_sections.js',
     'js/logic/appendix1_summary_text.js',
-    'js/logic/audit_list_group_display_names.js'
+    'js/logic/audit_list_group_display_names.js',
+    'js/logic/draft_restore_policy.js',
+    'js/dom/text_field_autocomplete.js',
+    'js/logic/queue_sidrapport_after_sample_save.js'
 ];
 
 const importReStatic = /(?:from|import)\s+['"](\.\.?\/[^'"]+\.js)['"]/g;

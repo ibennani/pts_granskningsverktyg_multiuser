@@ -397,6 +397,7 @@
   "audit_sidrapport_warning_body_unavailable": "Minst en nettverksressurs kunne ikke lagres.",
   "audit_sidrapport_warning_extended_truncated": "Den tekniske innsamlingen ble stoppet tidlig pa grunn av hoy belastning.",
   "audit_sidrapport_warning_cmp_banner_remaining": "Cookie-banneren kan fortsatt synes i skjermbildet etter at sidrapporten ble opprettet.",
+  "audit_sidrapport_warning_intrusive_overlay_remaining": "En forstyrrende boks (for eksempel nyhetsbrev eller chat) kan fortsatt synes i skjermbildet etter at sidrapporten ble opprettet.",
   "audit_snapshots_size_kb": "kB",
   "audit_snapshots_size_mb": "MB",
   "audit_actions_downloads_locked_title": "Du kan ennå ikke laste ned",

@@ -33,7 +33,11 @@ import { get_default_content_type_ids } from '../../shared/rulefile/content_type
 type BulkUrlImportModalDeps = {
     getState: () => Record<string, unknown>;
     dispatch: (action: { type: string; payload?: unknown }) => void;
-    StoreActionTypes: Record<string, string>;
+    StoreActionTypes: {
+        ADD_SAMPLE: string;
+        UPDATE_SAMPLE: string;
+        DELETE_SAMPLE?: string;
+    };
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
         generate_uuid_v4: () => string;
@@ -238,7 +242,7 @@ async function run_import_in_modal(
                     emit_bulk_url_import_log(
                         (event) => append_log_line(ui.log_list_el, event),
                         t(message_key, params),
-                        meta
+                        { level: meta?.level ?? 'info', row_id: meta?.row_id, url: meta?.url }
                     );
                     step_progress = advance_bulk_import_step_progress(
                         step_progress,

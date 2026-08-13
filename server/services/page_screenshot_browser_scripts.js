@@ -412,3 +412,334 @@ export function browser_hide_cookie_banners_for_screenshot(config) {
 
     return hidden_count;
 }
+
+/**
+ * @param {object} config
+ * @returns {HTMLElement[]}
+ */
+export function browser_find_intrusive_overlay_roots(config) {
+    const detection = config.overlay_detection || {};
+    const context_keywords = detection.context_keywords || [];
+    const consent_exclusion = detection.consent_exclusion_keywords || [];
+    const generic_keywords = detection.generic_context_keywords || [];
+    const min_z = detection.min_z_index ?? 50;
+    const backdrop_ratio = detection.backdrop_min_coverage_ratio ?? 0.25;
+    const dialog_min_ratio = detection.dialog_min_width_ratio ?? 0.15;
+    const positions = detection.positions || ['fixed', 'sticky', 'absolute'];
+
+    const is_visible = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 4 && rect.height > 4;
+    };
+
+    const normalize_text = (text) => String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+    const text_suggests_consent = (text) => {
+        const normalized = normalize_text(text);
+        if (!normalized) return false;
+        return consent_exclusion.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    const text_suggests_intrusive = (text) => {
+        const normalized = normalize_text(text);
+        if (!normalized || text_suggests_consent(normalized)) return false;
+        return context_keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    const text_suggests_generic_popup = (text) => {
+        const normalized = normalize_text(text);
+        if (!normalized) return false;
+        return generic_keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    const is_dialog_like = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const role = element.getAttribute('role');
+        const aria_modal = element.getAttribute('aria-modal');
+        if (role === 'dialog' || aria_modal === 'true') return true;
+        return element.tagName === 'DIALOG' && element.hasAttribute('open');
+    };
+
+    const is_backdrop_like = (element) => {
+        if (!is_visible(element)) return false;
+        const style = window.getComputedStyle(element);
+        if (!positions.includes(style.position)) return false;
+        const z_index = Number.parseInt(style.zIndex, 10);
+        if (!Number.isNaN(z_index) && z_index < min_z) return false;
+        const rect = element.getBoundingClientRect();
+        const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+        const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+        return rect.width / vw >= backdrop_ratio && rect.height / vh >= backdrop_ratio;
+    };
+
+    const read_clickable_label = (element) => {
+        if (!(element instanceof HTMLElement)) return '';
+        const aria = element.getAttribute('aria-label') || '';
+        const title = element.getAttribute('title') || '';
+        const text = (element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim();
+        return [text, aria, title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    };
+
+    const has_visible_close_control = (root) => {
+        for (const selector of config.close_selectors || []) {
+            try {
+                const match = root.querySelector(selector);
+                if (is_visible(match)) return true;
+            } catch {
+                // Ogiltig selector.
+            }
+        }
+        const reject_patterns = config.reject_text_patterns || [];
+        const close_patterns = config.close_text_patterns || [];
+        const candidates = root.querySelectorAll(
+            'button, a[role="button"], input[type="button"], [role="button"]'
+        );
+        for (const candidate of candidates) {
+            if (!is_visible(candidate)) continue;
+            const label = read_clickable_label(candidate);
+            const normalized = normalize_text(label);
+            if (!normalized) continue;
+            if (reject_patterns.some((p) => normalized.includes(String(p).toLowerCase()))) continue;
+            if (close_patterns.some((p) => normalized.includes(String(p).toLowerCase()))) return true;
+        }
+        return false;
+    };
+
+    const is_intrusive_overlay_candidate = (element) => {
+        if (!is_visible(element)) return false;
+        const text = element.innerText || element.textContent || '';
+        if (text_suggests_consent(text)) return false;
+
+        const intrusive = text_suggests_intrusive(text);
+        const dialog = is_dialog_like(element);
+        const backdrop = is_backdrop_like(element);
+
+        if (intrusive) {
+            return dialog || backdrop || has_visible_close_control(element);
+        }
+
+        if (dialog && text_suggests_generic_popup(text) && has_visible_close_control(element)) {
+            return true;
+        }
+
+        if (dialog && has_visible_close_control(element)) {
+            const rect = element.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+            if (rect.width / vw >= dialog_min_ratio) return true;
+        }
+
+        return false;
+    };
+
+    const roots = [];
+    const seen = new Set();
+
+    const add_root = (element) => {
+        if (!(element instanceof HTMLElement) || seen.has(element)) return;
+        if (!is_intrusive_overlay_candidate(element)) return;
+        seen.add(element);
+        roots.push(element);
+    };
+
+    for (const selector of config.container_selectors || []) {
+        let containers = [];
+        try {
+            containers = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const container of containers) {
+            add_root(container);
+        }
+    }
+
+    document.querySelectorAll('body *').forEach((node) => {
+        if (node instanceof HTMLElement) {
+            add_root(node);
+        }
+    });
+
+    return roots;
+}
+
+/**
+ * @param {object} config
+ * @returns {boolean}
+ */
+export function browser_dismiss_intrusive_overlays(config) {
+    const is_visible = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 4 && rect.height > 4;
+    };
+
+    const read_clickable_label = (element) => {
+        if (!(element instanceof HTMLElement)) return '';
+        const aria = element.getAttribute('aria-label') || '';
+        const title = element.getAttribute('title') || '';
+        const text = (element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim();
+        return [text, aria, title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    };
+
+    const label_matches_close = (label) => {
+        const normalized = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (!normalized) return false;
+        const reject = config.reject_text_patterns || [];
+        for (const pattern of reject) {
+            if (normalized.includes(String(pattern).toLowerCase())) return false;
+        }
+        const close_patterns = config.close_text_patterns || [];
+        return close_patterns.some((pattern) => normalized.includes(String(pattern).toLowerCase()));
+    };
+
+    const try_click = (element) => {
+        if (!(element instanceof HTMLElement) || !is_visible(element)) return false;
+        element.click();
+        return true;
+    };
+
+    const find_close_in_root = (root) => {
+        for (const selector of config.close_selectors || []) {
+            try {
+                const match = root.querySelector(selector);
+                if (try_click(match)) return true;
+            } catch {
+                // Ogiltig selector.
+            }
+        }
+
+        const candidates = root.querySelectorAll(
+            'button, a[role="button"], input[type="button"], [role="button"]'
+        );
+        for (const candidate of candidates) {
+            const label = read_clickable_label(candidate);
+            if (label_matches_close(label) && try_click(candidate)) return true;
+        }
+        return false;
+    };
+
+    const overlay_roots = browser_find_intrusive_overlay_roots(config);
+    for (const overlay of overlay_roots) {
+        if (find_close_in_root(overlay)) return true;
+    }
+
+    if (overlay_roots.length > 0) {
+        document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true })
+        );
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * @param {object} config
+ * @returns {boolean}
+ */
+export function browser_is_intrusive_overlay_visible(config) {
+    const detection = config.overlay_detection || {};
+    const context_keywords = detection.context_keywords || [];
+    const consent_exclusion = detection.consent_exclusion_keywords || [];
+
+    const is_visible = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 4 && rect.height > 4;
+    };
+
+    const normalize_text = (text) => String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+    const text_suggests_consent = (text) => {
+        const normalized = normalize_text(text);
+        if (!normalized) return false;
+        return consent_exclusion.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    const text_suggests_intrusive = (text) => {
+        const normalized = normalize_text(text);
+        if (!normalized || text_suggests_consent(normalized)) return false;
+        return context_keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    for (const selector of config.chat_hide_only_selectors || []) {
+        let elements = [];
+        try {
+            elements = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const element of elements) {
+            if (is_visible(element)) return true;
+        }
+    }
+
+    for (const container_selector of config.container_selectors || []) {
+        let containers = [];
+        try {
+            containers = Array.from(document.querySelectorAll(container_selector));
+        } catch {
+            continue;
+        }
+        for (const container of containers) {
+            if (!is_visible(container)) continue;
+            const text = container.innerText || container.textContent || '';
+            if (text_suggests_intrusive(text)) return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param {object} config
+ * @returns {number}
+ */
+export function browser_hide_intrusive_overlays_for_screenshot(config) {
+    let hidden_count = 0;
+
+    const hide_element = (element) => {
+        if (!(element instanceof HTMLElement)) return;
+        element.style.setProperty('display', 'none', 'important');
+        element.style.setProperty('visibility', 'hidden', 'important');
+        element.style.setProperty('opacity', '0', 'important');
+        element.style.setProperty('pointer-events', 'none', 'important');
+        hidden_count += 1;
+    };
+
+    for (const selector of config.hide_selectors || []) {
+        let elements = [];
+        try {
+            elements = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const element of elements) {
+            hide_element(element);
+        }
+    }
+
+    for (const overlay of browser_find_intrusive_overlay_roots(config)) {
+        hide_element(overlay);
+    }
+
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.classList.remove('overflow-hidden', 'no-scroll', 'modal-open');
+
+    return hidden_count;
+}

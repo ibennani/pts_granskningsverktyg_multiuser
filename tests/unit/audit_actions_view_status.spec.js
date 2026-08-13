@@ -142,6 +142,17 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
 
     test('snapshots visar endast rubrik', async () => {
         const { root, component } = await render_with('in_progress', 'snapshots');
+        await new Promise((resolve) => {
+            const deadline = Date.now() + 2000;
+            const wait_for_heading = () => {
+                if (root.querySelector('h1') || Date.now() >= deadline) {
+                    resolve(undefined);
+                    return;
+                }
+                setTimeout(wait_for_heading, 10);
+            };
+            wait_for_heading();
+        });
         expect(heading_texts(root)).toEqual(['audit_actions_snapshots_title']);
         expect(root.querySelector('.audit-actions__content')).toBeFalsy();
         component.destroy();

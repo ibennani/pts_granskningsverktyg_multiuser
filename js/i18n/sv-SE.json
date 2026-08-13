@@ -397,6 +397,7 @@
   "audit_sidrapport_warning_body_unavailable": "Minst en nätverksresurs kunde inte sparas.",
   "audit_sidrapport_warning_extended_truncated": "Den tekniska insamlingen avbröts tidigt på grund av hög belastning.",
   "audit_sidrapport_warning_cmp_banner_remaining": "Cookie-bannern kan fortfarande synas i skärmdumpen efter att sidrapporten skapats.",
+  "audit_sidrapport_warning_intrusive_overlay_remaining": "En störande ruta (till exempel nyhetsbrev eller chatt) kan fortfarande synas i skärmdumpen efter att sidrapporten skapats.",
   "audit_snapshots_size_kb": "kB",
   "audit_snapshots_size_mb": "MB",
   "audit_actions_downloads_locked_title": "Du kan ännu inte ladda ner granskningens bilagor",

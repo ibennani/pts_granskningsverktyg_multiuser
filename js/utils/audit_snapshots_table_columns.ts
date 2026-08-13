@@ -21,7 +21,7 @@ type SnapshotTableDeps = {
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
         format_iso_to_local_datetime?: (iso: string, lang: string) => string;
-        get_icon_svg?: (name: string, classes: string[], size: number) => string;
+        get_icon_svg?: (name: string, colors?: string[], size?: number) => string;
     };
     Translation: { get_current_language_code?: () => string };
     t: (key: string, opts?: Record<string, unknown>) => string;

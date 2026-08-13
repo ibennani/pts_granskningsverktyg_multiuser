@@ -15,7 +15,7 @@ type EditorHelpers = {
 };
 
 type EditorTranslation = {
-    t: (key: string) => string;
+    t: (key: string, params?: Record<string, unknown>) => string;
 };
 
 const SHEET_LABEL_HEADING_KEYS: Record<Appendix2SheetKey, string> = {

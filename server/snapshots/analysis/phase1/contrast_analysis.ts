@@ -13,7 +13,9 @@ import { build_element_identity_from_eval } from '../snapshot_element_identity.j
 
 export async function run_contrast_analysis(ctx: AnalysisContext): Promise<AnalysisModuleEnvelope> {
     const started = Date.now();
-    const raw = await ctx.page.evaluate(BROWSER_COLLECT_CONTRAST_CANDIDATES);
+    const raw = (await ctx.page.evaluate(BROWSER_COLLECT_CONTRAST_CANDIDATES)) as Array<
+        Record<string, unknown>
+    >;
     const records: Array<Record<string, unknown>> = [];
 
     for (const item of raw) {

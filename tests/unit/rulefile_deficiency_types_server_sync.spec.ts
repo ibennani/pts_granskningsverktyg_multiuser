@@ -1,22 +1,28 @@
 /**
  * @jest-environment node
  */
-import { merge_deficiency_types_from_server_if_missing } from '../../js/logic/rulefile_deficiency_types_server_sync.ts';
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-jest.mock('../../js/api/client.js', () => ({
-    get_rule: jest.fn(),
+const spec_dir = path.dirname(fileURLToPath(import.meta.url));
+const client_path = path.join(spec_dir, '../../js/api/client.js');
+const sync_logic_path = path.join(spec_dir, '../../js/logic/rulefile_deficiency_types_server_sync.ts');
+
+const get_rule_mock = jest.fn();
+
+jest.unstable_mockModule(client_path, () => ({
+    get_rule: get_rule_mock,
 }));
 
-import { get_rule } from '../../js/api/client.js';
-
-const mocked_get_rule = get_rule as jest.MockedFunction<typeof get_rule>;
+const { merge_deficiency_types_from_server_if_missing } = await import(sync_logic_path);
 
 describe('merge_deficiency_types_from_server_if_missing', () => {
     beforeEach(() => {
-        mocked_get_rule.mockReset();
+        get_rule_mock.mockReset();
     });
 
-    it('returnerar oförändrat utan rule_set_id', async () => {
+    test('returnerar oförändrat utan rule_set_id', async () => {
         const local = {
             requirements: {
                 req1: { title: 'Krav 1' },
@@ -27,11 +33,11 @@ describe('merge_deficiency_types_from_server_if_missing', () => {
 
         expect(result.changed).toBe(false);
         expect(result.content).toBe(local);
-        expect(mocked_get_rule).not.toHaveBeenCalled();
+        expect(get_rule_mock).not.toHaveBeenCalled();
     });
 
-    it('fyller i DeficiencyType från servern när lokalt utkast saknar PrimaryText', async () => {
-        mocked_get_rule.mockResolvedValue({
+    test('fyller i DeficiencyType från servern när lokalt utkast saknar PrimaryText', async () => {
+        get_rule_mock.mockResolvedValue({
             content: {
                 requirements: {
                     req1: {
@@ -60,8 +66,8 @@ describe('merge_deficiency_types_from_server_if_missing', () => {
         });
     });
 
-    it('skriver inte över lokala bristtyper som redan har PrimaryText', async () => {
-        mocked_get_rule.mockResolvedValue({
+    test('skriver inte över lokala bristtyper som redan har PrimaryText', async () => {
+        get_rule_mock.mockResolvedValue({
             content: {
                 requirements: {
                     req1: {

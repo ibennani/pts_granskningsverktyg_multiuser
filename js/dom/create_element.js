@@ -1,4 +1,4 @@
-import { should_disable_text_field_autocomplete } from './text_field_autocomplete.ts';
+import { should_disable_text_field_autocomplete } from './text_field_autocomplete.js';
 
 export function create_element(tag_name, options = {}) {
     const element = document.createElement(tag_name);

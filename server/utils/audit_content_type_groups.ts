@@ -32,7 +32,12 @@ export async function load_content_type_groups_for_audit(audit_id: string): Prom
     const rule = parse_rule_file_content(result.rows[0].rule_file_content);
     if (!rule) return [];
     const metadata = rule.metadata;
-    const groups = resolve_content_types(metadata) as Parameters<typeof apply_detection_patterns_to_content_types>[0];
+    const groups = resolve_content_types(metadata) as Parameters<
+        typeof apply_detection_patterns_to_content_types
+    >[0];
+    if (!groups) {
+        return [];
+    }
     if (resolve_rulefile_monitoring_kind(metadata) === 'pdf') {
         return groups;
     }

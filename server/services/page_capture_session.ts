@@ -21,6 +21,11 @@ import {
     is_cookie_banner_visible,
     settle_after_consent_apply,
 } from './page_screenshot_cookie_consent.js';
+import {
+    dismiss_intrusive_overlays_before_screenshot,
+    hide_intrusive_overlays_visually_for_screenshot,
+    is_intrusive_overlay_visible,
+} from './page_screenshot_intrusive_overlay.js';
 import { compute_screenshot_clip_height_css, compute_full_document_screenshot_height_css } from './page_screenshot_capture_height.js';
 import { get_snapshot_full_page_max_height_css } from '../snapshots/audit_snapshot_config.js';
 import {
@@ -49,6 +54,9 @@ export type CaptureAdjustments = {
     cookieBannerClicked: boolean;
     cookieBannerElementsHidden: number;
     cookieBannerVisibleAfterCapture: boolean;
+    intrusiveOverlayClicked: boolean;
+    intrusiveOverlayElementsHidden: number;
+    intrusiveOverlayVisibleAfterCapture: boolean;
     cmpRequestsBlocked: number;
     lazyLoadScrollPerformed: boolean;
 };
@@ -161,6 +169,14 @@ async function ensure_banner_dismissed(
     return { banner_gone: result.banner_gone, clicked: result.clicked };
 }
 
+async function ensure_intrusive_overlays_dismissed(
+    page: Page,
+    options: { wait_for_overlay?: boolean } = {}
+): Promise<{ overlay_gone: boolean; clicked: boolean }> {
+    const result = await dismiss_intrusive_overlays_before_screenshot(page, options);
+    return { overlay_gone: result.overlay_gone, clicked: result.clicked };
+}
+
 export type CaptureScreenshotHeightMode = 'viewport_capped' | 'full_document';
 
 export async function capture_viewport_png_with_adjustments(
@@ -169,12 +185,14 @@ export async function capture_viewport_png_with_adjustments(
     options: { height_mode?: CaptureScreenshotHeightMode } = {}
 ): Promise<{ png_buffer: Buffer; page_title: string; adjustments: CaptureAdjustments }> {
     let dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: true });
+    let overlay_state = await ensure_intrusive_overlays_dismissed(page, { wait_for_overlay: true });
 
     await auto_scroll_lazy_content(page);
     await settle_after_lazy_load(page);
     await scroll_to_top(page);
 
     dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
+    overlay_state = await ensure_intrusive_overlays_dismissed(page, { wait_for_overlay: false });
 
     const page_title = await read_capture_page_title(page);
     const scroll_height_css = await read_document_scroll_height(page);
@@ -198,7 +216,12 @@ export async function capture_viewport_png_with_adjustments(
         dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
     }
 
+    if (!overlay_state.overlay_gone || (await is_intrusive_overlay_visible(page))) {
+        overlay_state = await ensure_intrusive_overlays_dismissed(page, { wait_for_overlay: false });
+    }
+
     const hidden_count = await hide_cookie_banners_visually_for_screenshot(page);
+    const intrusive_hidden_count = await hide_intrusive_overlays_visually_for_screenshot(page);
     await settle_after_consent_apply(page);
 
     if (dismiss_state.clicked || dismiss_state.banner_gone) {
@@ -206,6 +229,7 @@ export async function capture_viewport_png_with_adjustments(
     }
 
     const banner_still_visible = await is_cookie_banner_visible(page);
+    const overlay_still_visible = await is_intrusive_overlay_visible(page);
     const blocked_count = read_cmp_blocked_count(page);
     const png_buffer = Buffer.from(
         await page.screenshot({
@@ -222,6 +246,9 @@ export async function capture_viewport_png_with_adjustments(
             cookieBannerClicked: dismiss_state.clicked,
             cookieBannerElementsHidden: hidden_count,
             cookieBannerVisibleAfterCapture: banner_still_visible,
+            intrusiveOverlayClicked: overlay_state.clicked,
+            intrusiveOverlayElementsHidden: intrusive_hidden_count,
+            intrusiveOverlayVisibleAfterCapture: overlay_still_visible,
             cmpRequestsBlocked: blocked_count,
             lazyLoadScrollPerformed: true,
         },

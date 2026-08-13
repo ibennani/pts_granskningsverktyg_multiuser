@@ -12,7 +12,11 @@ type BulkViewDeps = {
     router: (view: string, params?: Record<string, unknown>) => void;
     getState: () => Record<string, unknown>;
     dispatch: (action: { type: string; payload?: unknown }) => void;
-    StoreActionTypes: Record<string, string>;
+    StoreActionTypes: {
+        ADD_SAMPLE: string;
+        UPDATE_SAMPLE: string;
+        DELETE_SAMPLE?: string;
+    };
     Translation: { t: (key: string, params?: Record<string, unknown>) => string };
     Helpers: {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;

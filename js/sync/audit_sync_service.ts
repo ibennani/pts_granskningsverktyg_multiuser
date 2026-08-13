@@ -11,7 +11,7 @@ import {
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
 
 type SyncPayloadState = {
-    auditId?: string;
+    auditId?: string | null;
     auditStatus?: string;
     ruleFileContent?: unknown;
 };

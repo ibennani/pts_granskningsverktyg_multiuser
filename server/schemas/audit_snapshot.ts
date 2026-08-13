@@ -95,6 +95,7 @@ export const AuditSnapshotListItemSchema = z.object({
             capturedAt: z.string(),
             status: z.literal('ready'),
             warningCount: z.number().int(),
+            warnings: z.array(z.object({ code: z.string(), message: z.string() })).optional(),
             sizeBytes: z.number().nullable(),
         })
         .nullable(),

@@ -7,7 +7,9 @@ import { build_element_identity_from_eval } from '../snapshot_element_identity.j
 
 export async function run_target_size_analysis(ctx: AnalysisContext): Promise<AnalysisModuleEnvelope> {
     const started = Date.now();
-    const raw = await ctx.page.evaluate(BROWSER_COLLECT_TARGET_SIZES);
+    const raw = (await ctx.page.evaluate(BROWSER_COLLECT_TARGET_SIZES)) as Array<
+        Record<string, unknown>
+    >;
     const records = raw.map((item, index) => {
         const record = {
             elementIdentity: build_element_identity_from_eval({

@@ -12,7 +12,10 @@ export async function run_reflow_analysis(ctx: AnalysisContext): Promise<Analysi
 
     const result = await with_baseline_viewport(ctx.page, async () => {
         await ctx.page.setViewport({ width: 320, height: 800, deviceScaleFactor: 2 });
-        const data = await ctx.page.evaluate(BROWSER_COLLECT_REFLOW_CANDIDATES);
+        const data = (await ctx.page.evaluate(BROWSER_COLLECT_REFLOW_CANDIDATES)) as {
+            hasHorizontalOverflow?: boolean;
+            candidates: unknown[];
+        };
         if (data.hasHorizontalOverflow && ctx.screenshot_budget.remaining > 0) {
             const png = await ctx.page.screenshot({ type: 'png', fullPage: false });
             await write_analysis_png(ctx.temp_dir, 'analysis/phase1/reflow-320.png', Buffer.from(png));

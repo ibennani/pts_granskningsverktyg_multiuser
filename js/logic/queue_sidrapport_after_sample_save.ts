@@ -34,9 +34,9 @@ function sample_category_has_url(
         return false;
     }
     const vocab = resolve_sample_vocab(rule_file_content);
-    const category = vocab.sampleCategories?.find(
-        (entry) => String(entry.id) === String(category_id)
-    );
+    type SampleCategoryEntry = { id?: unknown; hasUrl?: boolean };
+    const categories = vocab.sampleCategories as SampleCategoryEntry[] | undefined;
+    const category = categories?.find((entry) => String(entry.id) === String(category_id));
     return Boolean(category?.hasUrl);
 }
 

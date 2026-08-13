@@ -36,7 +36,10 @@ export async function run_keyboard_analysis(ctx: AnalysisContext): Promise<Analy
             break;
         }
 
-        const info = await ctx.page.evaluate(BROWSER_GET_FOCUSED_ELEMENT_INFO);
+        const info = (await ctx.page.evaluate(BROWSER_GET_FOCUSED_ELEMENT_INFO)) as Record<
+            string,
+            unknown
+        > | null;
         if (!info) {
             steps.push({
                 index: i,
@@ -47,11 +50,11 @@ export async function run_keyboard_analysis(ctx: AnalysisContext): Promise<Analy
         }
 
         const identity = build_element_identity_from_eval({
-            id: info.id,
-            tagName: info.tagName,
-            role: info.role,
-            name: info.name,
-            domPath: info.domPath,
+            id: info.id as string | null,
+            tagName: info.tagName as string,
+            role: info.role as string | null,
+            name: info.name as string | null,
+            domPath: info.domPath as string | null,
         });
         const key = identity_key(identity);
         if (seen_keys.has(key)) {
@@ -76,7 +79,7 @@ export async function run_keyboard_analysis(ctx: AnalysisContext): Promise<Analy
             accessibleName: info.accessibleName,
             id: info.id,
             name: info.name,
-            href: sanitize_href(info.href),
+            href: sanitize_href(info.href as string | null),
             tabindex: info.tabIndex,
             disabled: info.disabled,
             ariaDisabled: info.ariaDisabled,
@@ -100,7 +103,10 @@ export async function run_keyboard_analysis(ctx: AnalysisContext): Promise<Analy
         await ctx.page.keyboard.press('Tab');
         await ctx.page.keyboard.up('Shift');
         await new Promise((r) => setTimeout(r, 20));
-        const info = await ctx.page.evaluate(BROWSER_GET_FOCUSED_ELEMENT_INFO);
+        const info = (await ctx.page.evaluate(BROWSER_GET_FOCUSED_ELEMENT_INFO)) as Record<
+            string,
+            unknown
+        > | null;
         backward_steps.push({ index: i, hasFocus: Boolean(info) });
     }
 
