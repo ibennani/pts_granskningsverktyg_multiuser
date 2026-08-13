@@ -6,6 +6,7 @@ import {
     type RecurringProposal,
     type RecurringProposalPreview,
 } from '../api/recurring_component_proposal_api.js';
+import { append_detected_content_type_suggestions } from './detected_content_type_suggestion_ui.js';
 import { resolve_recurring_sample_target } from '../../shared/sample/recurring_sample_type_resolver.js';
 import { resolve_content_types } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
@@ -148,7 +149,7 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
     const audit_id = String(state?.auditId || '').trim();
     if (!audit_id) return;
     section.innerHTML = '';
-    section.appendChild(create_text('h2', 'Återkommande innehåll'));
+    section.appendChild(create_text('h2', 'Automatiska förslag från sidrapporter'));
     const status = create_text('p', 'Analyserar färdiga sidrapporter…');
     status.setAttribute('role', 'status');
     section.appendChild(status);
@@ -156,6 +157,11 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
     try {
         const result = await fetch_recurring_component_proposals(audit_id);
         status.textContent = `${result.pagesAnalyzed} färdiga sidrapporter har jämförts.`;
+
+        await append_detected_content_type_suggestions(host, result, section);
+
+        const recurring_heading = create_text('h3', 'Återkommande innehåll');
+        section.appendChild(recurring_heading);
         if (!result.proposals.length) {
             section.appendChild(create_text('p', 'Inga tillräckligt säkra återkommande block har identifierats ännu.'));
             return;
@@ -172,7 +178,7 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
             rendered += 1;
             const card = document.createElement('section');
             card.className = 'recurring-proposal-card';
-            card.appendChild(create_text('h3', LABELS[proposal.proposalType]));
+            card.appendChild(create_text('h4', LABELS[proposal.proposalType]));
             card.appendChild(create_text(
                 'p',
                 `Identifierat på ${proposal.occurrenceCount} av ${proposal.pageCount} analyserade sidor. Bedömningsstyrka: ${proposal.confidence === 'high' ? 'hög' : proposal.confidence === 'medium' ? 'medel' : 'låg'} (${proposal.score}/100).`
@@ -229,6 +235,6 @@ export async function render_recurring_proposal_section(host: Host, section: HTM
             list.appendChild(create_text('p', 'Alla identifierade återkommande block finns redan som granskningsdelar.'));
         }
     } catch (error) {
-        status.textContent = `Återkommande innehåll kunde inte analyseras: ${error instanceof Error ? error.message : String(error)}`;
+        status.textContent = `Sidrapporterna kunde inte analyseras: ${error instanceof Error ? error.message : String(error)}`;
     }
 }
