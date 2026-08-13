@@ -2,7 +2,6 @@
  * @fileoverview Sparfas för bulkimport: sidrapport, innehållstyper och UPDATE_SAMPLE.
  */
 import { fetch_snapshot_analysis_summary } from '../api/audit_snapshot_api.js';
-import { queue_sidrapport_after_sample_save } from './queue_sidrapport_after_sample_save.js';
 import {
     build_bulk_import_sidrapport_sample_patch,
 } from './bulk_import_content_types.js';
@@ -42,6 +41,9 @@ function dispatch_sample_update(
     });
 }
 
+/** Sidrapport pågår ofta längre än 2 min på testservern. */
+const BULK_SIDRAPPORT_WAIT_MS = 180000;
+
 async function wait_and_apply_sidrapport(
     deps: BulkImportOrchestratorDeps,
     row: BulkImportPreparedRow,
@@ -51,7 +53,7 @@ async function wait_and_apply_sidrapport(
 ): Promise<BulkImportPreparedRow> {
     if (!row.capture_id) return row;
 
-    const timeout_ms = 120000;
+    const timeout_ms = BULK_SIDRAPPORT_WAIT_MS;
     log_import_step(deps, 'bulk_url_import_log_sidrapport_wait', {
         index: row_context?.index ?? 1,
         total: row_context?.total ?? 1,
@@ -147,23 +149,6 @@ export async function save_bulk_import_rows(
         dispatch_sample_update(deps, source_row.sample_id, sample_payload);
 
         let row = update_row(deps, source_row, { status: 'sidrapport_queued' });
-        log_import_step(deps, 'bulk_url_import_log_sidrapport_queue', {
-            index: row_context?.index ?? 1,
-            total: row_context?.total ?? rows.length,
-        }, { row_id: row.row_id, url: row.url });
-
-        await queue_sidrapport_after_sample_save(
-            {
-                getState: deps.getState,
-                dispatch: deps.dispatch as (action: unknown) => void,
-            },
-            {
-                sampleId: String(source_row.sample_id),
-                url: source_row.url,
-                sampleCategory: sample_category_id,
-                attachedMediaFilenames: sample_payload.attachedMediaFilenames as string[],
-            }
-        );
 
         row = await wait_and_apply_sidrapport(
             deps,

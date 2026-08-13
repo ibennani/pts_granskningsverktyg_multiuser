@@ -5,7 +5,7 @@ import './bulk_sample_url_import_view_component.css';
 import { parse_bulk_url_list } from '../logic/bulk_url_import_parse.js';
 import { resolve_default_url_sample_category_id } from '../logic/bulk_url_import_category.js';
 import { show_bulk_url_import_modal } from './bulk_url_import_modal.js';
-import { subscribe_audit_snapshots } from '../logic/list_push_service.js';
+import { wait_for_audit_snapshot_ready } from '../logic/wait_for_audit_snapshot_ready.js';
 import { mark_textarea_without_markdown_toolbar } from '../utils/markdown_toolbar_exclusions.js';
 
 type BulkViewDeps = {
@@ -47,21 +47,7 @@ export class BulkSampleUrlImportViewComponent {
     }
 
     wait_for_snapshot_ready(audit_id: string, capture_id: string, timeout_ms: number): Promise<boolean> {
-        return new Promise((resolve) => {
-            const timer = window.setTimeout(() => {
-                unsub();
-                resolve(false);
-            }, timeout_ms);
-            const unsub = subscribe_audit_snapshots((payload) => {
-                if (String(payload.auditId) !== String(audit_id)) return;
-                if (String(payload.snapshotId) !== String(capture_id)) return;
-                if (payload.status === 'ready' || payload.status === 'failed') {
-                    window.clearTimeout(timer);
-                    unsub();
-                    resolve(payload.status === 'ready');
-                }
-            });
-        });
+        return wait_for_audit_snapshot_ready(audit_id, capture_id, timeout_ms);
     }
 
     handle_start_click() {

@@ -34,6 +34,7 @@ export class RecurringContentSectionComponent {
     deps: RecurringDeps | null = null;
     suggestions: Array<Record<string, unknown>> = [];
     loading = false;
+    auto_load_started = false;
 
     init({ root, deps }: { root: HTMLElement; deps: RecurringDeps }) {
         this.root = root;
@@ -44,6 +45,21 @@ export class RecurringContentSectionComponent {
         this.root = null;
         this.deps = null;
         this.suggestions = [];
+        this.auto_load_started = false;
+    }
+
+    count_url_samples(): number {
+        if (!this.deps) return 0;
+        const samples = this.deps.getState().samples;
+        if (!Array.isArray(samples)) return 0;
+        return samples.filter((sample) => String(sample.url ?? '').trim()).length;
+    }
+
+    maybe_auto_load_suggestions() {
+        if (this.auto_load_started || this.loading || !this.deps) return;
+        if (this.count_url_samples() < 2) return;
+        this.auto_load_started = true;
+        void this.load_suggestions();
     }
 
     async load_suggestions() {
@@ -89,6 +105,7 @@ export class RecurringContentSectionComponent {
 
     render() {
         if (!this.root || !this.deps) return;
+        this.maybe_auto_load_suggestions();
         const t = this.deps.Translation.t;
         this.root.innerHTML = '';
 
