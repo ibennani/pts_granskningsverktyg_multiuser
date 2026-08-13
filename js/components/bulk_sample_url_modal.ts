@@ -3,7 +3,10 @@
  * Använder samma samplemodell och samma sidrapportflöde som manuellt skapade delar.
  */
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { fetch_audit_url_page_title } from '../api/audit_media_api.js';
+import {
+    fetch_audit_url_page_title,
+    detect_content_types_from_url,
+} from '../api/audit_media_api.js';
 import { resolve_content_types, resolve_sample_vocab } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { classify_page_type, resolve_sample_type_id_for_classification } from '../../shared/sample/page_type_classifier.js';
 import { parse_bulk_sample_urls, type BulkSampleUrlEntry } from '../logic/bulk_sample_url_input.js';
@@ -37,19 +40,25 @@ function find_url_sample_category(state: any): any | null {
     return categories.find((category: any) => category?.hasUrl === true) || null;
 }
 
-function collect_default_content_type_ids(state: any): string[] {
-    const groups = resolve_content_types(state?.ruleFileContent?.metadata) as Array<{ types?: Array<{ id?: string; defaultSelected?: boolean }> }>;
-    const ids: string[] = [];
+function collect_content_type_ids(state: any): { defaults: string[]; all: string[] } {
+    const groups = resolve_content_types(state?.ruleFileContent?.metadata) as Array<{
+        types?: Array<{ id?: string; defaultSelected?: boolean }>;
+    }>;
+    const defaults: string[] = [];
+    const all: string[] = [];
     for (const group of groups) {
         for (const child of group.types || []) {
             const id = String(child?.id || '').trim();
-            if (id && child?.defaultSelected === true) ids.push(id);
+            if (!id) continue;
+            all.push(id);
+            if (child?.defaultSelected === true) defaults.push(id);
         }
     }
-    return [...new Set(ids)];
+    return { defaults: [...new Set(defaults)], all: [...new Set(all)] };
 }
 
-function create_sample_id(): string {
+function create_sample_id(host: BulkHost): string {
+    if (typeof host.Helpers?.generate_uuid_v4 === 'function') return host.Helpers.generate_uuid_v4();
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
     return `bulk-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 }
@@ -63,7 +72,20 @@ async function fetch_title(audit_id: string, url: string): Promise<string> {
     }
 }
 
-function build_sample_type(category: any, url: string, title: string): { sampleType: string | null; classification: ReturnType<typeof classify_page_type> } {
+async function detect_content_types(audit_id: string, url: string, allowed_ids: string[]): Promise<string[]> {
+    if (!allowed_ids.length) return [];
+    try {
+        const result = await detect_content_types_from_url(audit_id, url, allowed_ids);
+        return Array.isArray(result?.detectedContentTypeIds) ? result.detectedContentTypeIds : [];
+    } catch {
+        return [];
+    }
+}
+
+function build_sample_type(category: any, url: string, title: string): {
+    sampleType: string | null;
+    classification: ReturnType<typeof classify_page_type>;
+} {
     const classification = classify_page_type({ requestedUrl: url, finalUrl: url, pageTitle: title });
     const options = Array.isArray(category?.categories) ? category.categories : [];
     return {
@@ -196,30 +218,33 @@ export function show_bulk_sample_url_modal(host: BulkHost, trigger: HTMLElement 
                 run.disabled = true;
                 textarea.disabled = true;
 
-                const defaults = collect_default_content_type_ids(state);
+                const content_types = collect_content_type_ids(state);
                 const created: Array<{ id: string; url: string }> = [];
 
-                // Sekventiell titelhämtning ger kontrollerad belastning och stabil statusordning.
                 for (const row of rows) {
                     const url = row.entry.normalizedUrl!;
                     row.status = 'fetching';
-                    row.message = t_fallback(host, 'bulk_sample_urls_status_fetching', 'Hämtar sidtitel');
+                    row.message = t_fallback(host, 'bulk_sample_urls_status_fetching', 'Hämtar sidtitel och analyserar innehåll');
                     render_rows(row_list, rows);
                     const title = await fetch_title(audit_id, url);
+                    const detected = await detect_content_types(audit_id, url, content_types.all);
                     const classified = build_sample_type(category, url, title);
-                    const id = create_sample_id();
+                    const id = create_sample_id(host);
                     const sample = {
                         id,
                         sampleCategory: String(category.id || ''),
                         sampleType: classified.sampleType,
                         description: title || url,
                         url,
-                        selectedContentTypes: defaults,
+                        selectedContentTypes: [...new Set([...content_types.defaults, ...detected])],
                         attachedMediaFilenames: [],
                         urlAutoScreenshotFilename: null,
                         requirementResults: {},
                         autoCreation: {
                             source: 'bulk-url-list',
+                            contentTypeDetection: {
+                                detectedContentTypeIds: detected,
+                            },
                             pageTypeSuggestion: {
                                 kind: classified.classification.kind,
                                 score: classified.classification.score,
@@ -249,7 +274,6 @@ export function show_bulk_sample_url_modal(host: BulkHost, trigger: HTMLElement 
                     // Delarna finns fortfarande i lokalt state. Sidrapporterna markeras som misslyckade nedan.
                 }
 
-                // Köa de vanliga sidrapporterna. De använder samma screenshot-policy som manuella delar.
                 for (const item of created) {
                     const row = rows.find((candidate) => candidate.sampleId === item.id);
                     if (!row) continue;
