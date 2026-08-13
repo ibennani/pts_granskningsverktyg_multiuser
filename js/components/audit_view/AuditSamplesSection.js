@@ -180,15 +180,6 @@ function build_audit_section_heading_row(ctx, config, section_heading_text, t) {
         heading_row.appendChild(upload_audit_btn);
         heading_row.appendChild(ctx.upload_audit_file_input);
     }
-    if (config.heading_key === 'start_view_new_audits_heading') {
-        const start_new_btn = ctx.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
-            text_content: t('start_new_audit'),
-            attributes: { type: 'button', 'aria-label': t('start_new_audit') }
-        });
-        start_new_btn.addEventListener('click', ctx.handle_start_new_audit);
-        heading_row.appendChild(start_new_btn);
-    }
     return heading_row;
 }
 

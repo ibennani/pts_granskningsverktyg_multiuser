@@ -55,6 +55,24 @@
     margin: 0;
 }
 
+.audit-header-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.audit-header-heading-row h1 {
+    margin: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.audit-header-heading-row .audit-start-new-audit-btn {
+    flex-shrink: 0;
+}
+
 .audit-header--with-filter {
     flex-direction: column;
     align-items: flex-start;

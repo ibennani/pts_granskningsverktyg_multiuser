@@ -30,6 +30,7 @@ import {
 import { render_view_not_found, handle_view_lifecycle_error } from '../view/view_error_handler.js';
 import { set_current_view_tracking, get_restore_position_via_hook } from '../app/browser_globals.js';
 import { sync_version_reload_banner_in_host } from './version_reload_banner_mount.js';
+import { should_skip_draft_restore_for_view } from './draft_restore_policy.js';
 
 /**
  * Renderar en vy utifrån namn och parametrar.
@@ -245,7 +246,13 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             updatePageTitle(view_name_mut, params_mut);
         }
         ensure_skip_link_target(view_init_root);
-        if (DraftManager?.restoreIntoDom) {
+        const skip_draft_restore = should_skip_draft_restore_for_view(
+            view_name_mut,
+            getState?.()
+        );
+        if (skip_draft_restore && DraftManager?.clearCurrentDraft) {
+            DraftManager.clearCurrentDraft();
+        } else if (DraftManager?.restoreIntoDom) {
             DraftManager.restoreIntoDom(view_init_root);
         }
         update_restore_position(view_name_mut, params_mut, null);

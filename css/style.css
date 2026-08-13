@@ -449,6 +449,7 @@ h2 + * {
 /* Rubrikrader med knappar/ikoner bredvid titeln, inte brödtext under */
 :is(
     .audit-overview-heading-row,
+    .audit-header-heading-row,
     .start-view-section-heading-row,
     .audit-column-heading-row,
     .backup-status-heading-row,

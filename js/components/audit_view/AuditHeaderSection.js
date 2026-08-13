@@ -1,5 +1,5 @@
 // js/components/audit_view/AuditHeaderSection.js
-// Bygger header: titel, filter (vid audits), filuppladdning, knapp "Starta ny granskning".
+// Bygger header: titel, filter (vid audits), filuppladdning.
 
 import { create_audit_filter_reset_button } from './audit_filter_reset_button.js';
 import { render_audit_filter_search_and_accordion } from './audit_filter_accordion.js';
@@ -181,8 +181,21 @@ export function render_audit_header(ctx) {
         : 'audit-header';
     const header = ctx.Helpers.create_element('div', { class_name: header_class_name });
     const title_text = ctx.audit_mode === 'rules' ? t('audit_title_rules') : ctx.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
-    const title = ctx.Helpers.create_element('h1', { text_content: title_text });
-    header.appendChild(title);
+    if (ctx.audit_mode === 'audits') {
+        const heading_row = ctx.Helpers.create_element('div', { class_name: 'audit-header-heading-row' });
+        heading_row.appendChild(ctx.Helpers.create_element('h1', { text_content: title_text }));
+        const start_new_btn = ctx.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
+            text_content: t('start_new_audit'),
+            attributes: { type: 'button', 'aria-label': t('start_new_audit') }
+        });
+        start_new_btn.addEventListener('click', ctx.handle_start_new_audit);
+        heading_row.appendChild(start_new_btn);
+        header.appendChild(heading_row);
+    } else {
+        const title = ctx.Helpers.create_element('h1', { text_content: title_text });
+        header.appendChild(title);
+    }
     if (ctx.audit_mode === 'both') {
         const page_row = ctx.Helpers.create_element('div', { class_name: 'audit-header-page-size-row' });
         page_row.appendChild(render_audit_page_size_field(ctx));

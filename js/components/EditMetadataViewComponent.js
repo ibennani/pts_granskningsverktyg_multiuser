@@ -21,6 +21,8 @@ import {
     build_empty_new_audit_metadata_form_data,
     new_audit_metadata_differs_from_reference_form
 } from '../logic/new_audit_empty_metadata.js';
+import { should_skip_draft_restore_for_view } from '../logic/draft_restore_policy.js';
+import { DraftManager } from '../draft_manager.js';
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -581,6 +583,12 @@ export class EditMetadataViewComponent {
         const is_new_audit = current_state.auditStatus === 'not_started';
 
         if (is_new_audit && current_state.freshNewAuditMetadata === true) {
+            if (
+                should_skip_draft_restore_for_view('metadata', current_state)
+                && DraftManager?.clearCurrentDraft
+            ) {
+                DraftManager.clearCurrentDraft();
+            }
             this._monitoring_type_confirmed_by_user = false;
             this._form_only_rule_file_content = null;
             this._form_only_rule_set_id = null;
