@@ -44,6 +44,7 @@
   "bulk_url_import_modal_unavailable": "Could not open the import dialog. Reload the page and try again.",
   "bulk_url_import_no_url_category": "The rule file has no web category for audit sections with a URL.",
   "bulk_url_import_no_valid_urls": "No valid URLs were found in the list.",
+  "bulk_url_import_no_audit": "The audit could not be saved on the server. Check that you are signed in and the audit has been started, then try again.",
   "bulk_url_import_save_done": "Audit sections have been created.",
   "bulk_url_import_save_none": "No audit section could be created. Check the URLs and try again.",
   "bulk_url_import_save_partial": "{saved} audit sections were created. {failed} failed.",

@@ -13,6 +13,7 @@ import {
     ensure_bulk_import_sample_on_server,
     remove_bulk_import_stub_sample,
 } from './bulk_url_import_sample_register.js';
+import { ensure_audit_id_for_server_sync } from './ensure_audit_id_for_server_sync.js';
 import { type BulkUrlImportLogSink } from './bulk_url_import_logger.js';
 import {
     log_import_step,
@@ -347,9 +348,12 @@ export async function run_full_bulk_url_import(
     rows: BulkImportPreparedRow[],
     sample_category_id: string
 ): Promise<BulkImportPreparedRow[]> {
-    const state = deps.getState();
-    const audit_id = state?.auditId ? String(state.auditId) : '—';
     log_import_step(deps, 'bulk_url_import_log_batch_start', { count: rows.length });
+
+    const audit_id = await ensure_audit_id_for_server_sync(deps.getState, deps.dispatch);
+    if (!audit_id) {
+        throw new Error('bulk_url_import_no_audit');
+    }
     log_import_step(deps, 'bulk_url_import_log_batch_audit', { auditId: audit_id });
 
     const output: BulkImportPreparedRow[] = [];

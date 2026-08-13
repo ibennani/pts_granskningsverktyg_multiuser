@@ -106,6 +106,16 @@ function append_log_line(
     log_list_el.scrollTop = log_list_el.scrollHeight;
 }
 
+function format_bulk_import_error_message(
+    t: BulkUrlImportModalDeps['t'],
+    message: string
+): string {
+    if (message === 'bulk_url_import_no_audit') {
+        return t('bulk_url_import_no_audit');
+    }
+    return t('bulk_url_import_log_unexpected_error', { error: message });
+}
+
 async function run_import_in_modal(
     deps: BulkUrlImportModalDeps,
     rows: BulkImportPreparedRow[],
@@ -177,7 +187,7 @@ async function run_import_in_modal(
         const message = err instanceof Error ? err.message : String(err);
         append_log_line(ui.log_list_el, {
             level: 'error',
-            message: t('bulk_url_import_log_unexpected_error', { error: message }),
+            message: format_bulk_import_error_message(t, message),
         });
         for (const row of rows) {
             if (row.status !== 'saved' && row.status !== 'failed') {

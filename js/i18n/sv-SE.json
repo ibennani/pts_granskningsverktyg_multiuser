@@ -44,6 +44,7 @@
   "bulk_url_import_modal_unavailable": "Kunde inte öppna importfönstret. Ladda om sidan och försök igen.",
   "bulk_url_import_no_url_category": "Regelfilen saknar en webbkategori för granskningsdelar med URL.",
   "bulk_url_import_no_valid_urls": "Ingen giltig URL hittades i listan.",
+  "bulk_url_import_no_audit": "Granskningen kunde inte sparas på servern. Kontrollera att du är inloggad och att granskningen är startad, försök sedan igen.",
   "bulk_url_import_save_done": "Granskningsdelarna har skapats.",
   "bulk_url_import_save_none": "Ingen granskningsdel kunde skapas. Kontrollera URL:erna och försök igen.",
   "bulk_url_import_save_partial": "{saved} granskningsdelar skapades. {failed} misslyckades.",
