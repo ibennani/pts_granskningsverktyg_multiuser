@@ -20,6 +20,9 @@ E2E_RULE_CONTENT_OBJECT.metadata.samples.sampleCategories = [
         categories: [{ id: 'stype1', text: 'Webbsida' }]
     }
 ];
+E2E_RULE_CONTENT_OBJECT.metadata.auditTypes = [
+    { id: 'tillsyn-lptt', label: 'Tillsyn LPTT', taxonomyId: 'wcag22-pour' }
+];
 
 const RULE_ROW = {
     id: E2E_RULE_ID,
@@ -75,10 +78,21 @@ async function setupAuditFlowApiMocks(page) {
                 status: 200,
                 contentType: 'application/json',
                 body: JSON.stringify({
+                    id: 'u2',
                     name: 'E2E-användare',
                     is_admin: true,
                     language_preference: 'sv-SE'
                 })
+            });
+        }
+        if (url.includes('/users/auditor-options') && method === 'GET') {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([
+                    { id: 'u1', name: 'Testgranskare', username: 'testgranskare' },
+                    { id: 'u2', name: 'E2E-användare', username: 'e2e' }
+                ])
             });
         }
         if (url.includes('/users') && method === 'GET' && !url.includes('/users/me')) {
@@ -147,9 +161,9 @@ test.describe('Granskningsflöde (mockat API)', () => {
         await page.locator('#login-password-input').fill('secret');
         await page.getByRole('button', { name: 'Logga in', exact: true }).click();
 
-        await expect(page.getByRole('heading', { name: 'Alla ärenden' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Alla granskningar' })).toBeVisible();
 
-        await page.goto('/v2/#audit');
+        await page.goto('/v2/#audit_audits');
         await ensureSwedishAndDismissRestore(page);
 
         await page.waitForSelector('button.audit-start-new-audit-btn', { timeout: 25000 });
@@ -160,7 +174,16 @@ test.describe('Granskningsflöde (mockat API)', () => {
 
         const meta_form = page.locator('#metadata-form-container-in-view form');
         await meta_form.waitFor({ state: 'visible' });
-        await page.locator('#auditorName').selectOption('Testgranskare');
+
+        await page.locator('#monitoringTypeKey').selectOption('E2E-typ');
+        await expect(page.locator('#auditTypeId option[value="tillsyn-lptt"]')).toBeAttached({
+            timeout: 15000
+        });
+        await page.locator('#auditTypeId').selectOption('tillsyn-lptt');
+
+        const auditor_select = page.locator('#auditorUserId');
+        await expect(auditor_select).toBeVisible({ timeout: 15000 });
+        await auditor_select.selectOption('u1');
         await meta_form.evaluate((form) => {
             const fire_input = (el) => {
                 el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -178,7 +201,7 @@ test.describe('Granskningsflöde (mockat API)', () => {
             }
         });
         await expect(page.locator('#actorName')).toHaveValue('Testaktör', { timeout: 15000 });
-        await expect(page.locator('#auditorName')).toHaveValue('Testgranskare');
+        await expect(auditor_select).toHaveValue('u1');
 
         await meta_form.locator('button[type="submit"]').click();
 
