@@ -36,11 +36,12 @@ describe('page_screenshot_lazy_load integration', () => {
         if (browser) await browser.close();
     }, 30_000);
 
-    test('apohem produktsida har inga synliga trasiga bilder efter capture', async () => {
+    test('apohem produktsida har inga synliga trasiga eller lågupplösta bilder efter capture', async () => {
         const page = await browser.newPage();
         try {
             await prepare_capture_page(page);
-            const url = 'https://www.apohem.se/harvard/bjorn-axen-salt-water-spray-150-ml';
+            const url =
+                'https://www.apohem.se/sar-bett-stick/sar/sartvatt/ekodes-smart-desinfektion-100-ml';
             await navigate_for_screenshot_capture(page, url, 60_000);
             await capture_viewport_png_with_adjustments(page, url);
             const broken = await count_broken_visible_images(page);

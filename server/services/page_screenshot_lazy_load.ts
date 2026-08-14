@@ -5,6 +5,7 @@
 import type { Page } from 'puppeteer';
 import {
     browser_auto_scroll_lazy_content,
+    browser_finalize_images_for_fullpage_screenshot,
     browser_prepare_lazy_images_for_screenshot,
     browser_read_document_scroll_height,
     browser_scroll_to_top,
@@ -73,6 +74,12 @@ export async function prepare_and_wait_for_visible_images(
 ): Promise<void> {
     await page.evaluate(browser_prepare_lazy_images_for_screenshot);
     await wait_for_lazy_images(page, timeout_ms);
+    await page.evaluate(browser_prepare_lazy_images_for_screenshot);
+    await wait_for_lazy_images(page, Math.min(timeout_ms, 3000));
+}
+
+export async function finalize_images_for_fullpage_screenshot(page: Page): Promise<void> {
+    await page.evaluate(browser_finalize_images_for_fullpage_screenshot);
 }
 
 export async function settle_after_lazy_load(page: Page): Promise<void> {

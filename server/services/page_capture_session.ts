@@ -8,6 +8,7 @@ import {
     scroll_to_top,
     settle_after_lazy_load,
     prepare_and_wait_for_visible_images,
+    finalize_images_for_fullpage_screenshot,
 } from './page_screenshot_lazy_load.js';
 import { get_snapshot_post_navigation_settle_ms, get_snapshot_pre_screenshot_intrusive_wait_ms } from '../snapshots/audit_snapshot_config.js';
 import {
@@ -238,7 +239,6 @@ export async function capture_viewport_png_with_adjustments(
     const blocked_count = read_cmp_blocked_count(page);
     await hide_intrusive_overlays_visually_for_screenshot(page, { url });
 
-    await prepare_and_wait_for_visible_images(page);
     await page.setViewport({
         width: CAPTURE_VIEWPORT_WIDTH,
         height: CAPTURE_VIEWPORT_HEIGHT,
@@ -246,6 +246,10 @@ export async function capture_viewport_png_with_adjustments(
     });
     await scroll_to_top(page);
     await wait_for_screenshot_content_ready(page);
+    await prepare_and_wait_for_visible_images(page);
+    await scroll_to_top(page);
+    await finalize_images_for_fullpage_screenshot(page);
+    await scroll_to_top(page);
 
     const raw_png_buffer = Buffer.from(
         await page.screenshot({

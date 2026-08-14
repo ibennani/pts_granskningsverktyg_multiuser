@@ -87,11 +87,26 @@ export async function browser_wait_for_lazy_images(max_wait_ms) {
         return count;
     };
 
+    const count_undersized_visible_images = () => {
+        let count = 0;
+        for (const img of document.images) {
+            const rect = img.getBoundingClientRect();
+            if (rect.width < 48 || rect.height < 48) continue;
+            if (img.naturalWidth < 2) continue;
+            const min_side = Math.min(rect.width, rect.height);
+            const dpr = window.devicePixelRatio || 1;
+            const min_expected = Math.max(min_side * 0.72, min_side * dpr * 0.35);
+            if (img.naturalWidth < min_expected) count += 1;
+        }
+        return count;
+    };
+
     const deadline = Date.now() + max_wait_ms;
     while (Date.now() < deadline) {
         const pending = Array.from(document.images).filter((img) => !img.complete);
         const broken_visible = count_visible_broken_images();
-        if (pending.length === 0 && broken_visible === 0) {
+        const undersized_visible = count_undersized_visible_images();
+        if (pending.length === 0 && broken_visible === 0 && undersized_visible === 0) {
             return;
         }
         await sleep(100);
@@ -122,6 +137,104 @@ export async function browser_prepare_lazy_images_for_screenshot() {
         new Promise((resolve) => {
             window.setTimeout(resolve, ms);
         });
+
+    const parse_srcset_entries = (srcset) => {
+        if (!srcset) return [];
+        const entries = [];
+        const width_pattern = /\s(\d+)w/g;
+        let url_start = 0;
+        let match = width_pattern.exec(srcset);
+        while (match) {
+            const width = Number.parseInt(match[1], 10);
+            const url = srcset.slice(url_start, match.index).trim().replace(/^,+/, '').trim();
+            if (url.startsWith('http')) {
+                entries.push({ url, width: Number.isFinite(width) ? width : 0 });
+            }
+            url_start = width_pattern.lastIndex;
+            match = width_pattern.exec(srcset);
+        }
+        return entries;
+    };
+
+    const collect_best_image_url = (img) => {
+        let best_url = null;
+        let best_score = 0;
+        const consider_srcset = (srcset) => {
+            for (const entry of parse_srcset_entries(srcset)) {
+                if (!entry.url || !entry.url.startsWith('http')) continue;
+                const capped_width = Math.min(entry.width, 1920);
+                const quality_bonus = entry.url.includes('quality=80') ? 10_000 : 0;
+                const score = capped_width + quality_bonus;
+                if (score > best_score) {
+                    best_score = score;
+                    best_url = entry.url;
+                }
+            }
+        };
+        const picture = img.closest('picture');
+        if (picture) {
+            picture.querySelectorAll('source[srcset]').forEach((source) => {
+                consider_srcset(source.getAttribute('srcset'));
+            });
+        }
+        consider_srcset(img.getAttribute('srcset'));
+        const current_src = img.currentSrc || img.src || '';
+        if (!best_url && current_src) best_url = current_src;
+        return best_url;
+    };
+
+    const is_undersized_visible_image = (img) => {
+        const rect = img.getBoundingClientRect();
+        if (rect.width < 48 || rect.height < 48) return false;
+        if (img.naturalWidth < 2) return false;
+        const min_side = Math.min(rect.width, rect.height);
+        const dpr = window.devicePixelRatio || 1;
+        const min_expected = Math.max(min_side * 0.72, min_side * dpr * 0.35);
+        return img.naturalWidth < min_expected;
+    };
+
+    const replace_img_with_resolved_url = async (img, target_url) => {
+        const picture = img.closest('picture');
+        if (picture) picture.querySelectorAll('source').forEach((source) => source.remove());
+        const replacement = document.createElement('img');
+        for (const attr of ['class', 'alt', 'style', 'itemprop', 'fetchpriority']) {
+            const value = img.getAttribute(attr);
+            if (value != null) replacement.setAttribute(attr, value);
+        }
+        replacement.loading = 'eager';
+        replacement.removeAttribute('srcset');
+        replacement.removeAttribute('sizes');
+        replacement.src = target_url;
+        img.replaceWith(replacement);
+        const previous_natural = img.naturalWidth;
+        await new Promise((resolve) => {
+            const finish = () => resolve();
+            const check_loaded = () => {
+                if (replacement.naturalWidth > Math.max(previous_natural, 120)) {
+                    finish();
+                }
+            };
+            replacement.addEventListener('load', check_loaded, { once: true });
+            replacement.addEventListener('error', finish, { once: true });
+            window.setTimeout(finish, 8000);
+            if (replacement.complete) check_loaded();
+        });
+        await sleep(40);
+    };
+
+    const upgrade_undersized_responsive_images = async () => {
+        const undersized = Array.from(document.images).filter((img) => is_undersized_visible_image(img));
+        undersized.sort((a, b) => {
+            const area_a = a.getBoundingClientRect().width * a.getBoundingClientRect().height;
+            const area_b = b.getBoundingClientRect().width * b.getBoundingClientRect().height;
+            return area_b - area_a;
+        });
+        for (const img of undersized.slice(0, 24)) {
+            const best_url = collect_best_image_url(img);
+            if (!best_url) continue;
+            await replace_img_with_resolved_url(img, best_url);
+        }
+    };
 
     document.querySelectorAll('img[loading="lazy"]').forEach((img) => {
         img.loading = 'eager';
@@ -169,6 +282,117 @@ export async function browser_prepare_lazy_images_for_screenshot() {
 
     window.dispatchEvent(new Event('scroll'));
     await sleep(150);
+    await upgrade_undersized_responsive_images();
+}
+
+/**
+ * Slutlig bildfix utan scroll — anropas direkt före fullPage-skärmdump så att
+ * Puppeteers intern scroll inte triggar lågupplösta picture/srcset-val.
+ */
+export async function browser_finalize_images_for_fullpage_screenshot() {
+    const sleep = (ms) =>
+        new Promise((resolve) => {
+            window.setTimeout(resolve, ms);
+        });
+
+    const parse_srcset_entries = (srcset) => {
+        if (!srcset) return [];
+        const entries = [];
+        const width_pattern = /\s(\d+)w/g;
+        let url_start = 0;
+        let match = width_pattern.exec(srcset);
+        while (match) {
+            const width = Number.parseInt(match[1], 10);
+            const url = srcset.slice(url_start, match.index).trim().replace(/^,+/, '').trim();
+            if (url.startsWith('http')) {
+                entries.push({ url, width: Number.isFinite(width) ? width : 0 });
+            }
+            url_start = width_pattern.lastIndex;
+            match = width_pattern.exec(srcset);
+        }
+        return entries;
+    };
+
+    const collect_best_image_url = (img) => {
+        let best_url = null;
+        let best_score = 0;
+        const consider_srcset = (srcset) => {
+            for (const entry of parse_srcset_entries(srcset)) {
+                if (!entry.url || !entry.url.startsWith('http')) continue;
+                const capped_width = Math.min(entry.width, 1920);
+                const quality_bonus = entry.url.includes('quality=80') ? 10_000 : 0;
+                const score = capped_width + quality_bonus;
+                if (score > best_score) {
+                    best_score = score;
+                    best_url = entry.url;
+                }
+            }
+        };
+        const picture = img.closest('picture');
+        if (picture) {
+            picture.querySelectorAll('source[srcset]').forEach((source) => {
+                consider_srcset(source.getAttribute('srcset'));
+            });
+        }
+        consider_srcset(img.getAttribute('srcset'));
+        const current_src = img.currentSrc || img.src || '';
+        if (!best_url && current_src) best_url = current_src;
+        return best_url;
+    };
+
+    const is_undersized_visible_image = (img) => {
+        const rect = img.getBoundingClientRect();
+        if (rect.width < 48 || rect.height < 48) return false;
+        if (img.naturalWidth < 2) return false;
+        const min_side = Math.min(rect.width, rect.height);
+        const dpr = window.devicePixelRatio || 1;
+        const min_expected = Math.max(min_side * 0.72, min_side * dpr * 0.35);
+        return img.naturalWidth < min_expected;
+    };
+
+    const replace_img_with_resolved_url = async (img, target_url) => {
+        const picture = img.closest('picture');
+        if (picture) picture.querySelectorAll('source').forEach((source) => source.remove());
+        const replacement = document.createElement('img');
+        for (const attr of ['class', 'alt', 'style', 'itemprop', 'fetchpriority']) {
+            const value = img.getAttribute(attr);
+            if (value != null) replacement.setAttribute(attr, value);
+        }
+        replacement.loading = 'eager';
+        replacement.removeAttribute('srcset');
+        replacement.removeAttribute('sizes');
+        replacement.src = target_url;
+        img.replaceWith(replacement);
+        const previous_natural = img.naturalWidth;
+        await new Promise((resolve) => {
+            const finish = () => resolve();
+            const check_loaded = () => {
+                if (replacement.naturalWidth > Math.max(previous_natural, 120)) finish();
+            };
+            replacement.addEventListener('load', check_loaded, { once: true });
+            replacement.addEventListener('error', finish, { once: true });
+            window.setTimeout(finish, 8000);
+            if (replacement.complete) check_loaded();
+        });
+        await sleep(20);
+    };
+
+    document.querySelectorAll('img').forEach((img) => {
+        img.loading = 'eager';
+    });
+    document.querySelectorAll('picture source').forEach((source) => source.remove());
+
+    const undersized = Array.from(document.images).filter((img) => is_undersized_visible_image(img));
+    undersized.sort((a, b) => {
+        const area_a = a.getBoundingClientRect().width * a.getBoundingClientRect().height;
+        const area_b = b.getBoundingClientRect().width * b.getBoundingClientRect().height;
+        return area_b - area_a;
+    });
+    for (const img of undersized.slice(0, 24)) {
+        const best_url = collect_best_image_url(img);
+        if (!best_url) continue;
+        await replace_img_with_resolved_url(img, best_url);
+    }
 }
 
 export function browser_scroll_to_top() {
