@@ -3,6 +3,7 @@
  */
 import { fetch_snapshot_capacity, type SnapshotCapacity } from '../api/snapshot_capacity_api.js';
 import { subscribe_snapshot_capacity } from './list_push_service.js';
+import { format_snapshot_capacity_line } from './snapshot_capacity_line_format.js';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -22,31 +23,7 @@ function format_capacity_line(
     capacity: SnapshotCapacity,
     queue_position: number | null
 ): string {
-    const active = capacity.active_count;
-    const queued = capacity.queued_count;
-    const other_users = Math.max(0, capacity.active_user_count - 1);
-
-    let main_line: string;
-    if (other_users > 0 && queued > 0) {
-        main_line = t('snapshot_capacity_active_users_queue', {
-            active,
-            users: other_users,
-            queued,
-        });
-    } else if (other_users > 0) {
-        main_line = t('snapshot_capacity_active_users', { active, users: other_users });
-    } else if (queued > 0) {
-        main_line = t('snapshot_capacity_active_queue', { active, queued });
-    } else if (active > 0) {
-        main_line = t('snapshot_capacity_active_only', { active });
-    } else {
-        main_line = t('snapshot_capacity_idle');
-    }
-
-    if (queue_position !== null && queue_position > 0) {
-        return `${main_line} ${t('snapshot_queue_position', { position: queue_position })}`;
-    }
-    return main_line;
+    return format_snapshot_capacity_line(t, capacity, queue_position);
 }
 
 function format_elapsed_seconds(total_seconds: number): string {
