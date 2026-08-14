@@ -475,6 +475,94 @@ function has_icon_close_in_corner(root, is_visible_fn) {
     return false;
 }
 
+const INTRUSIVE_CLOSE_LABEL_EXCLUSIONS = [
+    'stäng menyn',
+    'stäng meny',
+    'stäng navigering',
+    'stäng navigation',
+    'close menu',
+    'close navigation',
+    'lukk meny',
+    'lukk navigering',
+    'öppna menyn',
+    'open menu',
+    'öppna navigering',
+    'open navigation',
+];
+
+/**
+ * @param {string} label
+ * @returns {boolean}
+ */
+function label_is_close_label_excluded(label) {
+    const normalized = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!normalized) return false;
+    return INTRUSIVE_CLOSE_LABEL_EXCLUSIONS.some((pattern) => normalized.includes(pattern));
+}
+
+/**
+ * @param {string} normalized_text
+ * @param {string} keyword
+ * @returns {boolean}
+ */
+function intrusive_context_keyword_matches(normalized_text, keyword) {
+    const kw = String(keyword || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!kw || !normalized_text) return false;
+    if (kw.length <= 2 || /[%$@#]/.test(kw) || kw.includes(' ')) {
+        return normalized_text.includes(kw);
+    }
+    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const boundary = '(?:^|[\\s,.:;!?()"\'«»\\[\\]-])';
+    const re = new RegExp(`${boundary}${escaped}(?:$|[\\s,.:;!?()"\'«»\\[\\]-]|s)`, 'i');
+    return re.test(normalized_text);
+}
+
+/**
+ * @param {HTMLElement} element
+ * @returns {boolean}
+ */
+function is_dialog_like_overlay_element(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    const role = element.getAttribute('role');
+    const aria_modal = element.getAttribute('aria-modal');
+    if (role === 'dialog' || aria_modal === 'true') return true;
+    return element.tagName === 'DIALOG' && element.hasAttribute('open');
+}
+
+/**
+ * @param {HTMLElement} element
+ * @returns {boolean}
+ */
+function is_inside_primary_content_landmark(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    let parent = element.parentElement;
+    while (parent) {
+        const tag = parent.tagName;
+        if (
+            tag === 'MAIN' ||
+            tag === 'HEADER' ||
+            tag === 'NAV' ||
+            tag === 'FOOTER' ||
+            tag === 'ARTICLE'
+        ) {
+            if (is_dialog_like_overlay_element(parent)) return false;
+            return true;
+        }
+        parent = parent.parentElement;
+    }
+    return false;
+}
+
+/**
+ * @param {HTMLElement[]} roots
+ * @returns {HTMLElement[]}
+ */
+function minimize_overlay_roots_to_outermost(roots) {
+    return roots.filter((root) => {
+        return !roots.some((other) => other !== root && other.contains(root));
+    });
+}
+
 const SHADOW_MARKETING_CLOSE_SELECTORS = [
     '.close',
     '.modal-close',
@@ -578,22 +666,16 @@ export function browser_find_intrusive_overlay_roots(config) {
     const text_suggests_intrusive = (text) => {
         const normalized = normalize_text(text);
         if (!normalized || text_suggests_consent(normalized)) return false;
-        return context_keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+        return context_keywords.some((keyword) => intrusive_context_keyword_matches(normalized, keyword));
     };
 
     const text_suggests_generic_popup = (text) => {
         const normalized = normalize_text(text);
         if (!normalized) return false;
-        return generic_keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+        return generic_keywords.some((keyword) => intrusive_context_keyword_matches(normalized, keyword));
     };
 
-    const is_dialog_like = (element) => {
-        if (!(element instanceof HTMLElement)) return false;
-        const role = element.getAttribute('role');
-        const aria_modal = element.getAttribute('aria-modal');
-        if (role === 'dialog' || aria_modal === 'true') return true;
-        return element.tagName === 'DIALOG' && element.hasAttribute('open');
-    };
+    const is_dialog_like = (element) => is_dialog_like_overlay_element(element);
 
     const is_backdrop_like = (element) => {
         if (!is_visible(element)) return false;
@@ -634,6 +716,7 @@ export function browser_find_intrusive_overlay_roots(config) {
             const label = read_clickable_label(candidate);
             const normalized = normalize_text(label);
             if (!normalized) continue;
+            if (label_is_close_label_excluded(normalized)) continue;
             if (reject_patterns.some((p) => normalized.includes(String(p).toLowerCase()))) continue;
             if (close_patterns.some((p) => normalized.includes(String(p).toLowerCase()))) return true;
         }
@@ -648,6 +731,9 @@ export function browser_find_intrusive_overlay_roots(config) {
             (tag === 'FOOTER' || tag === 'MAIN' || tag === 'NAV' || tag === 'HEADER') &&
             !is_dialog_like(element)
         ) {
+            return false;
+        }
+        if (is_inside_primary_content_landmark(element) && !is_dialog_like(element)) {
             return false;
         }
         const text = element.innerText || element.textContent || '';
@@ -705,14 +791,32 @@ export function browser_find_intrusive_overlay_roots(config) {
     }
 
     if (roots.length === 0) {
-        document.querySelectorAll('body *').forEach((node) => {
-            if (node instanceof HTMLElement) {
+        const fallback_selectors = ['[role="dialog"]', '[aria-modal="true"]', 'dialog[open]', 'body > *'];
+        for (const selector of fallback_selectors) {
+            let nodes = [];
+            try {
+                nodes = Array.from(document.querySelectorAll(selector));
+            } catch {
+                continue;
+            }
+            for (const node of nodes) {
+                if (!(node instanceof HTMLElement)) continue;
+                if (selector === 'body > *') {
+                    const style = window.getComputedStyle(node);
+                    if (!['fixed', 'sticky'].includes(style.position)) continue;
+                    const z_index = Number.parseInt(style.zIndex, 10);
+                    if (!Number.isNaN(z_index) && z_index < min_z) continue;
+                    const rect = node.getBoundingClientRect();
+                    const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+                    const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+                    if (rect.width / vw < 0.2 || rect.height / vh < 0.15) continue;
+                }
                 add_root(node);
             }
-        });
+        }
     }
 
-    return roots;
+    return minimize_overlay_roots_to_outermost(roots);
 }
 
 /**
@@ -751,6 +855,7 @@ export function browser_dismiss_intrusive_overlays(config) {
     const label_matches_close = (label) => {
         const normalized = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
         if (!normalized) return false;
+        if (label_is_close_label_excluded(normalized)) return false;
         const reject = config.reject_text_patterns || [];
         for (const pattern of reject) {
             if (normalized.includes(String(pattern).toLowerCase())) return false;
@@ -849,7 +954,7 @@ export function browser_is_intrusive_overlay_visible(config) {
     const text_suggests_intrusive = (text) => {
         const normalized = normalize_text(text);
         if (!normalized || text_suggests_consent(normalized)) return false;
-        return context_keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+        return context_keywords.some((keyword) => intrusive_context_keyword_matches(normalized, keyword));
     };
 
     for (const selector of config.chat_hide_only_selectors || []) {
@@ -964,6 +1069,8 @@ export function browser_hide_intrusive_overlays_for_screenshot(config) {
 
     if (hidden_count > 0) {
         document.querySelectorAll('body *').forEach((node) => {
+            if (!(node instanceof HTMLElement)) return;
+            if (is_inside_primary_content_landmark(node)) return;
             if (is_backdrop_like(node)) hide_element(node);
         });
     }

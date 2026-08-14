@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8" />
+    <title>E-handel startsida fixture</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; }
+        header { padding: 1rem; background: #e8f4f4; }
+        main { padding: 1rem; min-height: 1200px; background: #fff; }
+        footer { padding: 1rem; background: #1a3a4a; color: #fff; }
+        .promo { font-size: 1.25rem; margin: 1rem 0; }
+        .carousel-btn { margin: 0.25rem; }
+        #newsletter-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.45);
+        }
+        #newsletter-modal .dialog {
+            background: #fff;
+            padding: 2rem;
+            width: 360px;
+            position: relative;
+        }
+        #newsletter-modal .dialog button.close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <button type="button">Sök</button>
+            <button type="button">Sortiment</button>
+            <button type="button">Erbjudanden</button>
+            <button type="button">Stäng menyn</button>
+        </nav>
+    </header>
+    <main>
+        <h1>Apotek online</h1>
+        <p class="promo">Upp till 25% rabatt Beauty Weeks. Använd kod: SOMMAR20 för 20% vid köp över 649 kr.</p>
+        <div>
+            <button type="button" class="carousel-btn">Föregående bild</button>
+            <button type="button" class="carousel-btn">Nästa bild</button>
+        </div>
+        <p>Produktlista med kampanjer och erbjudanden på hudvård.</p>
+    </main>
+    <footer>
+        <p>Prenumerera på vårt nyhetsbrev i sidfoten (inte popup).</p>
+    </footer>
+    <div id="newsletter-modal" role="dialog" aria-modal="true">
+        <div class="dialog">
+            <button type="button" class="close" aria-label="Stäng">×</button>
+            <h2>Prenumerera på vårt nyhetsbrev</h2>
+            <p>Få personliga erbjudanden och rabatt på nästa köp.</p>
+            <button type="button">Prenumerera</button>
+        </div>
+    </div>
+</body>
+</html>

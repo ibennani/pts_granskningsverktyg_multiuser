@@ -87,4 +87,26 @@ describe('intrusive overlay integration fixtures', () => {
             expect(await is_intrusive_overlay_visible(page)).toBe(false);
         });
     }, 90_000);
+
+    test('e-handelsstartsida med kampanjer döljer inte huvudinnehåll', async () => {
+        await with_page(async (page) => {
+            await page.goto(`${fixture_server.base_url}/ecommerce-home.html`, { waitUntil: 'load' });
+            const main_text_before = await page.$eval('main', (el) => (el.textContent || '').trim());
+            expect(main_text_before.length).toBeGreaterThan(20);
+
+            const hidden = await hide_intrusive_overlays_visually_for_screenshot(page);
+            expect(hidden).toBeLessThanOrEqual(2);
+
+            const main_visible = await page.$eval('main', (el) => {
+                const style = window.getComputedStyle(el);
+                return style.visibility !== 'hidden' && style.display !== 'none';
+            });
+            expect(main_visible).toBe(true);
+
+            const scroll_h = await page.evaluate(() =>
+                Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+            );
+            expect(scroll_h).toBeGreaterThan(600);
+        });
+    }, 90_000);
 });

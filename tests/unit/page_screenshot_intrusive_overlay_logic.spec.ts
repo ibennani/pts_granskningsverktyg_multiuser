@@ -8,7 +8,9 @@ import {
     element_text_suggests_consent_exclusion,
     element_text_suggests_intrusive_overlay,
     get_intrusive_close_label_priority,
+    intrusive_context_keyword_matches,
     is_intrusive_close_button_label,
+    is_intrusive_close_label_excluded,
     is_intrusive_reject_button_label,
 } from '../../server/services/page_screenshot_intrusive_overlay_logic.ts';
 
@@ -32,6 +34,24 @@ describe('page_screenshot_intrusive_overlay_logic', () => {
         expect(is_intrusive_close_button_label('Stäng')).toBe(true);
         expect(is_intrusive_close_button_label('Nej tack')).toBe(true);
         expect(is_intrusive_close_button_label('Close')).toBe(true);
+    });
+
+    test('is_intrusive_close_label_excluded ignorerar meny-stäng', () => {
+        expect(is_intrusive_close_label_excluded('Stäng menyn')).toBe(true);
+        expect(is_intrusive_close_label_excluded('Close menu')).toBe(true);
+        expect(is_intrusive_close_button_label('Stäng menyn')).toBe(false);
+    });
+
+    test('intrusive_context_keyword_matches skiljer Erbjudanden från erbjudande', () => {
+        const nav = 'sortiment erbjudanden magazine community';
+        expect(intrusive_context_keyword_matches(nav, 'erbjudande')).toBe(false);
+        expect(intrusive_context_keyword_matches('få ett erbjudande nu', 'erbjudande')).toBe(true);
+        expect(intrusive_context_keyword_matches('upp till 25% rabatt', '% rabatt')).toBe(true);
+    });
+
+    test('element_text_suggests_intrusive_overlay ignorerar navigering Erbjudanden', () => {
+        expect(element_text_suggests_intrusive_overlay('Sortiment Erbjudanden Magazine')).toBe(false);
+        expect(element_text_suggests_intrusive_overlay('Upp till 25% rabatt på beauty')).toBe(true);
     });
 
     test('is_intrusive_reject_button_label blockerar prenumerera', () => {

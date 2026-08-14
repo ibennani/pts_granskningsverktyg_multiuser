@@ -110,6 +110,31 @@ export const INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS = [
     'fermer',
 ] as const;
 
+/** Meny-/navigationsknappar som inte ska räknas som popup-stäng. */
+export const INTRUSIVE_OVERLAY_CLOSE_LABEL_EXCLUSION_PATTERNS = [
+    'stäng menyn',
+    'stäng meny',
+    'stäng navigering',
+    'stäng navigation',
+    'close menu',
+    'close navigation',
+    'lukk meny',
+    'lukk navigering',
+    'öppna menyn',
+    'open menu',
+    'öppna navigering',
+    'open navigation',
+] as const;
+
+/** Sidlandmärken där vanligt innehåll inte ska klassas som overlay. */
+export const INTRUSIVE_OVERLAY_PRIMARY_LANDMARK_TAGS = [
+    'MAIN',
+    'HEADER',
+    'NAV',
+    'FOOTER',
+    'ARTICLE',
+] as const;
+
 export const INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS = [
     'prenumerera',
     'subscribe',

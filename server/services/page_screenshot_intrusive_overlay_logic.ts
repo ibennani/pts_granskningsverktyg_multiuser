@@ -6,6 +6,7 @@ import { CMP_CONSENT_CONTEXT_KEYWORDS } from './cmp/cmp_generic_patterns.js';
 import {
     INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS,
     INTRUSIVE_OVERLAY_CLOSE_BUTTON_SELECTORS,
+    INTRUSIVE_OVERLAY_CLOSE_LABEL_EXCLUSION_PATTERNS,
     INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS,
     INTRUSIVE_OVERLAY_CONTAINER_SELECTORS,
     INTRUSIVE_OVERLAY_CONTEXT_KEYWORDS,
@@ -47,11 +48,28 @@ export function element_text_suggests_consent_exclusion(text: string): boolean {
     return CMP_CONSENT_CONTEXT_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
+/**
+ * Matchar kontextnyckelord utan att «Erbjudanden» ska trigga «erbjudande».
+ */
+export function intrusive_context_keyword_matches(normalized_text: string, keyword: string): boolean {
+    const kw = normalize_intrusive_text(keyword);
+    if (!kw || !normalized_text) return false;
+    if (kw.length <= 2 || /[%$@#]/.test(kw) || kw.includes(' ')) {
+        return normalized_text.includes(kw);
+    }
+    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const boundary = '(?:^|[\\s,.:;!?()"\'«»\\[\\]-])';
+    const re = new RegExp(`${boundary}${escaped}(?:$|[\\s,.:;!?()"\'«»\\[\\]-]|s)`, 'i');
+    return re.test(normalized_text);
+}
+
 export function element_text_suggests_intrusive_overlay(text: string): boolean {
     const normalized = normalize_intrusive_text(text);
     if (!normalized) return false;
     if (element_text_suggests_consent_exclusion(normalized)) return false;
-    return INTRUSIVE_OVERLAY_CONTEXT_KEYWORDS.some((keyword) => normalized.includes(keyword));
+    return INTRUSIVE_OVERLAY_CONTEXT_KEYWORDS.some((keyword) =>
+        intrusive_context_keyword_matches(normalized, keyword)
+    );
 }
 
 export function element_text_suggests_generic_popup_context(text: string): boolean {
@@ -66,9 +84,18 @@ export function is_intrusive_reject_button_label(label: string): boolean {
     return INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS.some((pattern) => normalized.includes(pattern));
 }
 
+export function is_intrusive_close_label_excluded(label: string): boolean {
+    const normalized = normalize_intrusive_text(label);
+    if (!normalized) return false;
+    return INTRUSIVE_OVERLAY_CLOSE_LABEL_EXCLUSION_PATTERNS.some((pattern) =>
+        normalized.includes(pattern)
+    );
+}
+
 export function is_intrusive_close_button_label(label: string): boolean {
     const normalized = normalize_intrusive_text(label);
     if (!normalized) return false;
+    if (is_intrusive_close_label_excluded(normalized)) return false;
     if (is_intrusive_reject_button_label(normalized)) return false;
     return INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS.some((pattern) => normalized.includes(pattern));
 }
