@@ -364,6 +364,50 @@ describe('export_deficiency_rows', () => {
         expect(rows[0].taxonomy_operable).toBe('');
     });
 
+    test('build_deficiencies_data sätter deficiencyType från requirement.DeficiencyType när pc_obj saknar den', () => {
+        const primary_text = 'Rubrikerna förekommer i icke-hierarkisk ordning.';
+        const audit = {
+            ruleFileContent: {
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Krav 1',
+                        DeficiencyType: {
+                            PrimaryText: primary_text,
+                            SecondaryText: 'Till exempel hopp över nivåer.',
+                        },
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [{ id: 'pc1', requirement: 'Kravtext', failureStatementTemplate: '' }]
+                            }
+                        ]
+                    }
+                }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: { status: 'failed', deficiencyId: 'B001' }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const rows = build_deficiencies_data(audit, t);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].deficiencyType).toBe(primary_text);
+    });
+
     test('build_deficiencies_data lämnar deficiencyType tom utan DeficiencyType-nod', () => {
         const audit = {
             ruleFileContent: {

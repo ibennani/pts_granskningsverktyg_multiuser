@@ -17,6 +17,7 @@ import {
     format_media_filenames_for_export,
     type ExportMediaFilenameContext
 } from './export_media_naming.js';
+import { read_deficiency_type_node } from './export_deficiency_types_collect.js';
 import { resolve_appendix2_excel_labels_for_audit } from '../logic/audit_appendix_overrides.js';
 import type { Appendix1AuditSlice } from '../logic/appendix1_sections_types.js';
 import {
@@ -112,12 +113,17 @@ export async function prepare_deficiencies_for_export(
 }
 
 /**
- * Läser PrimaryText från passCriteria.DeficiencyType på ett sparat godkännandekriterium.
+ * Löser bristtyp för export: sparat kriterieresultat först, annars kravnivå i regelfilen.
  */
-function get_deficiency_type_primary_text(pc_obj: unknown): string {
-    const node = (pc_obj as { DeficiencyType?: { PrimaryText?: unknown } })?.DeficiencyType;
-    const text = node?.PrimaryText;
-    return typeof text === 'string' ? text.trim() : '';
+function resolve_deficiency_type_primary_text_for_export(
+    pc_obj: unknown,
+    req_definition: unknown
+): string {
+    return (
+        read_deficiency_type_node(pc_obj)?.primary
+        || read_deficiency_type_node(req_definition)?.primary
+        || ''
+    );
 }
 
 function build_single_deficiency_row(
@@ -191,7 +197,9 @@ function build_single_deficiency_row(
         reference: reference_obj,
         sampleName: strip_markdown_for_excel(String(sample.description || '')),
         sampleUrl: url_obj,
-        deficiencyType: strip_markdown_for_excel(get_deficiency_type_primary_text(pc_obj)),
+        deficiencyType: strip_markdown_for_excel(
+            resolve_deficiency_type_primary_text_for_export(pc_obj, req_definition)
+        ),
         observation: final_observation,
         screenshotReference: format_media_filenames_for_export(
             pc_obj.attachedMediaFilenames,
