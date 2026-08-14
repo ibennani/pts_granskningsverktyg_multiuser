@@ -50,4 +50,87 @@ describe('requirement_list_incremental_dom', () => {
 
         expect(li.querySelector('button[data-action="mark-requirement-passed-all"]')).toBeNull();
     });
+
+    test('sync_requirement_mark_all_passed_button behåller knappen när audit_status saknas', async () => {
+        const { sync_requirement_mark_all_passed_button } = await import(
+            '../../js/components/requirements_list/requirement_list_incremental_dom.js'
+        );
+
+        const li = document.createElement('li');
+        li.className = 'requirement-item-with-actions';
+        li.innerHTML = '<button data-action="mark-requirement-passed-all" data-requirement-id="req-1">Markera</button>';
+
+        const Helpers = {
+            create_element: (tag, opts = {}) => {
+                const el = document.createElement(tag);
+                if (opts.class_name) {
+                    el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
+                }
+                if (opts.text_content) el.textContent = opts.text_content;
+                if (opts.attributes) {
+                    Object.entries(opts.attributes).forEach(([k, v]) => el.setAttribute(k, String(v)));
+                }
+                return el;
+            }
+        };
+        const Translation = { t: (key) => key };
+
+        sync_requirement_mark_all_passed_button(
+            li,
+            'req-1',
+            { key: 'req-1', title: 'Testkrav' },
+            [{
+                id: 's1',
+                requirementResults: {}
+            }],
+            new Map([['s1', new Set(['req-1'])]]),
+            { 'req-1': { key: 'req-1', checks: [] } },
+            undefined,
+            { Helpers, Translation }
+        );
+
+        expect(li.querySelector('button[data-action="mark-requirement-passed-all"]')).not.toBeNull();
+    });
+
+    test('sync_requirement_mark_all_passed_button skapar knappen vid in_progress och ogranskade krav', async () => {
+        const { sync_requirement_mark_all_passed_button } = await import(
+            '../../js/components/requirements_list/requirement_list_incremental_dom.js'
+        );
+
+        const li = document.createElement('li');
+        li.className = 'requirement-item-with-actions';
+
+        const Helpers = {
+            create_element: (tag, opts = {}) => {
+                const el = document.createElement(tag);
+                if (opts.class_name) {
+                    el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
+                }
+                if (opts.text_content) el.textContent = opts.text_content;
+                if (opts.attributes) {
+                    Object.entries(opts.attributes).forEach(([k, v]) => el.setAttribute(k, String(v)));
+                }
+                return el;
+            }
+        };
+        const Translation = { t: (key) => key };
+
+        sync_requirement_mark_all_passed_button(
+            li,
+            'req-1',
+            { key: 'req-1', title: 'Testkrav' },
+            [{
+                id: 's1',
+                requirementResults: {}
+            }],
+            new Map([['s1', new Set(['req-1'])]]),
+            { 'req-1': { key: 'req-1', checks: [] } },
+            'in_progress',
+            { Helpers, Translation }
+        );
+
+        const btn = li.querySelector('button[data-action="mark-requirement-passed-all"]');
+        expect(btn).not.toBeNull();
+        expect(btn.getAttribute('data-requirement-id')).toBe('req-1');
+    });
 });

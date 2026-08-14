@@ -114,6 +114,7 @@ export function sync_requirement_mark_all_passed_button(
 
     const existing_btn = req_li.querySelector('button[data-action="mark-requirement-passed-all"]');
     const req_key = String(req?.key || req?.id || req_id);
+    const audit_status_known = audit_status !== undefined && audit_status !== null;
 
     if (audit_status === 'in_progress' && has_unreviewed) {
         if (!existing_btn) {
@@ -130,7 +131,7 @@ export function sync_requirement_mark_all_passed_button(
             });
             req_li.appendChild(mark_btn);
         }
-    } else if (existing_btn) {
+    } else if (existing_btn && audit_status_known) {
         existing_btn.remove();
     }
 }

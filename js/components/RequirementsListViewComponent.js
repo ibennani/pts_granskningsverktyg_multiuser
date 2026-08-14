@@ -402,7 +402,8 @@ export class RequirementsListViewComponent {
                 {
                     Helpers: this.Helpers,
                     Translation: this.Translation,
-                    requirements: rule_file_content?.requirements
+                    requirements: rule_file_content?.requirements,
+                    getState: () => this.getState()
                 }
             );
         } else {
