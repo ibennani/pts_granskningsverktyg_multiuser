@@ -86,6 +86,16 @@ describe('audit_sync_prepare', () => {
         expect(dispatch).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'REPLACE_STATE_FROM_REMOTE' })
         );
+        expect(dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'UPDATE_METADATA',
+                payload: expect.objectContaining({
+                    last_server_sync_at: expect.any(String),
+                    skip_server_sync: true,
+                    skip_render: true
+                })
+            })
+        );
         expect(clear_audit_sync_pending).toHaveBeenCalled();
     });
 

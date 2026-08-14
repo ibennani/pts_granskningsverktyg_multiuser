@@ -23,6 +23,8 @@ let success_clear_timer = null;
 let pending_sync_retry_timer = null;
 /** @type {boolean} */
 let pending_sync_flush_in_flight = false;
+/** @type {boolean} */
+let boot_sync_reconciliation_done = false;
 
 /** Intervall för omförsök när synk misslyckats eller lokalt är nyare än server. */
 export const PENDING_SYNC_RETRY_INTERVAL_MS = 30000;
@@ -130,6 +132,10 @@ export function refresh_connectivity_banner() {
     const needs_unsynced =
         has_pending_server_sync() || has_unsynced_local_audit_changes(state);
 
+    if (needs_unsynced && !boot_sync_reconciliation_done) {
+        return;
+    }
+
     if (needs_unsynced) {
         show_unsynced_local_banner_if_needed();
         return;
@@ -232,6 +238,13 @@ function handle_offline_event() {
     refresh_connectivity_banner();
 }
 
+function run_boot_sync_reconciliation() {
+    void attempt_pending_sync_flush({ show_success_on_cleared_pending: false }).finally(() => {
+        boot_sync_reconciliation_done = true;
+        refresh_connectivity_banner();
+    });
+}
+
 /**
  * @param {{ getState: function(): Object, dispatch: function(Object): void }} options
  */
@@ -249,9 +262,11 @@ export function init_connectivity_service(options) {
         NotificationComponent.init().then(() => {
             NotificationComponent.append_global_message_areas_to(main_el);
             refresh_connectivity_banner();
+            run_boot_sync_reconciliation();
         });
     } else {
         refresh_connectivity_banner();
+        run_boot_sync_reconciliation();
     }
 
     window.addEventListener('online', () => {
@@ -269,6 +284,11 @@ export function init_connectivity_service(options) {
 }
 
 /** Endast för enhetstester. */
+export function complete_boot_sync_reconciliation_for_testing() {
+    boot_sync_reconciliation_done = true;
+}
+
+/** Endast för enhetstester. */
 export function reset_connectivity_service_for_testing() {
     pending_audit_sync = false;
     pending_rulefile_sync = false;
@@ -282,4 +302,5 @@ export function reset_connectivity_service_for_testing() {
     }
     stop_pending_sync_retry_interval();
     pending_sync_flush_in_flight = false;
+    boot_sync_reconciliation_done = false;
 }

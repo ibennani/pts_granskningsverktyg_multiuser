@@ -109,6 +109,7 @@ describe('connectivity_service', () => {
                 }),
                 dispatch: jest.fn()
             });
+            mod.complete_boot_sync_reconciliation_for_testing();
             refresh_connectivity_banner();
             expect(show).toHaveBeenCalledWith('connectivity_unsynced_local_message', 'warning');
 
@@ -244,22 +245,21 @@ describe('connectivity_service', () => {
                 dispatch: jest.fn()
             });
 
-            expect(flush_sync_to_server).not.toHaveBeenCalled();
-
             await jest.advanceTimersByTimeAsync(PENDING_SYNC_RETRY_INTERVAL_MS);
             await Promise.resolve();
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(flush_sync_to_server).toHaveBeenCalledTimes(1);
-            expect(flush_sync_rulefile_to_server).toHaveBeenCalledTimes(1);
-
-            await jest.advanceTimersByTimeAsync(PENDING_SYNC_RETRY_INTERVAL_MS);
-            await Promise.resolve();
-            await Promise.resolve();
-            await Promise.resolve();
-
+            // En gång vid start (boot) + en gång på intervallet
             expect(flush_sync_to_server).toHaveBeenCalledTimes(2);
+            expect(flush_sync_rulefile_to_server).toHaveBeenCalledTimes(2);
+
+            await jest.advanceTimersByTimeAsync(PENDING_SYNC_RETRY_INTERVAL_MS);
+            await Promise.resolve();
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(flush_sync_to_server).toHaveBeenCalledTimes(3);
 
             reset_connectivity_service_for_testing();
             window.addEventListener.mockRestore();

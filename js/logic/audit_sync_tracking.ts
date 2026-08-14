@@ -123,3 +123,23 @@ export function build_last_local_change_metadata_patch(
 export function build_last_server_sync_metadata_patch(now_iso: string): { last_server_sync_at: string } {
     return { last_server_sync_at: now_iso };
 }
+
+type MetadataDispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
+
+/**
+ * Markerar att lokalt state stämmer med servern (t.ex. efter omladdning från remote).
+ */
+export function dispatch_mark_audit_server_sync_baseline(
+    dispatch_fn: MetadataDispatchFn | undefined,
+    now_iso?: string
+): void {
+    if (!dispatch_fn) return;
+    dispatch_fn({
+        type: 'UPDATE_METADATA',
+        payload: {
+            ...build_last_server_sync_metadata_patch(now_iso ?? new Date().toISOString()),
+            skip_server_sync: true,
+            skip_render: true
+        }
+    });
+}

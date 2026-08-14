@@ -1,7 +1,7 @@
 /**
  * Tester för audit_sync_tracking.ts
  */
-import { describe, test, expect } from '@jest/globals';
+import { jest, describe, test, expect } from '@jest/globals';
 import {
     get_latest_requirement_status_update_iso,
     is_local_audit_content_newer_than,
@@ -9,6 +9,7 @@ import {
     has_unsynced_local_audit_changes,
     build_last_local_change_metadata_patch,
     build_last_server_sync_metadata_patch,
+    dispatch_mark_audit_server_sync_baseline,
     should_touch_last_local_change_at,
     with_last_local_change_at
 } from '../../js/logic/audit_sync_tracking.js';
@@ -98,6 +99,19 @@ describe('audit_sync_tracking', () => {
             .toEqual({ last_local_change_at: 'now' });
         expect(build_last_server_sync_metadata_patch('2026-05-20T09:00:00.000Z'))
             .toEqual({ last_server_sync_at: '2026-05-20T09:00:00.000Z' });
+    });
+
+    test('dispatch_mark_audit_server_sync_baseline sätter last_server_sync_at utan serversynk', () => {
+        const dispatch = jest.fn();
+        dispatch_mark_audit_server_sync_baseline(dispatch, '2026-05-22T10:00:00.000Z');
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'UPDATE_METADATA',
+            payload: {
+                last_server_sync_at: '2026-05-22T10:00:00.000Z',
+                skip_server_sync: true,
+                skip_render: true
+            }
+        });
     });
 
     test('should_touch_last_local_change_at hoppar över intern synk och låst/arkiverad', () => {

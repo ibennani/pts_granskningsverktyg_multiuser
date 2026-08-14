@@ -5,6 +5,7 @@
 import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
 import { clear_audit_sync_pending } from '../logic/connectivity_service.js';
 import {
+    dispatch_mark_audit_server_sync_baseline,
     has_unsynced_local_audit_changes,
     should_push_local_audit_to_server,
     type AuditStateLike
@@ -42,6 +43,17 @@ function dispatch_replace_state_from_remote(
     });
 }
 
+function complete_server_authoritative_reload(
+    dispatch_fn: DispatchFn | undefined,
+    full_state: Record<string, unknown>
+): void {
+    dispatch_replace_state_from_remote(dispatch_fn, full_state);
+    update_baseline_from_server_full_state(full_state);
+    mark_rule_file_synced_from_state(full_state.ruleFileContent);
+    clear_audit_sync_pending();
+    dispatch_mark_audit_server_sync_baseline(dispatch_fn);
+}
+
 async function apply_remote_state_when_server_ahead(
     state: SyncPayloadState,
     dispatch_fn: DispatchFn | undefined,
@@ -60,10 +72,7 @@ async function apply_remote_state_when_server_ahead(
         prefer_local_full_push && audit_status_rank(local_status) > audit_status_rank(remote_status);
 
     if (!local_intends_status_push && server_status_should_win_over_local(local_status, remote_status)) {
-        dispatch_replace_state_from_remote(dispatch_fn, full_state);
-        update_baseline_from_server_full_state(full_state);
-        mark_rule_file_synced_from_state(full_state.ruleFileContent);
-        clear_audit_sync_pending();
+        complete_server_authoritative_reload(dispatch_fn, full_state);
         return 'reload';
     }
 
@@ -74,10 +83,7 @@ async function apply_remote_state_when_server_ahead(
         && remote_status !== local_status
         && remote_version > Number(audit_state.version ?? 0)
     ) {
-        dispatch_replace_state_from_remote(dispatch_fn, full_state);
-        update_baseline_from_server_full_state(full_state);
-        mark_rule_file_synced_from_state(full_state.ruleFileContent);
-        clear_audit_sync_pending();
+        complete_server_authoritative_reload(dispatch_fn, full_state);
         return 'reload';
     }
 
@@ -99,10 +105,7 @@ async function apply_remote_state_when_server_ahead(
         return 'proceed';
     }
 
-    dispatch_replace_state_from_remote(dispatch_fn, full_state);
-    update_baseline_from_server_full_state(full_state);
-    mark_rule_file_synced_from_state(full_state.ruleFileContent);
-    clear_audit_sync_pending();
+    complete_server_authoritative_reload(dispatch_fn, full_state);
     return 'reload';
 }
 
