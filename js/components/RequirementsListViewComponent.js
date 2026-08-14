@@ -10,6 +10,7 @@ import { build_all_mode_data } from './requirements_list/requirement_list_all_mo
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.js';
 import { parse_deficiency_search_number } from '../utils/requirement_deficiency_search.js';
 import { prepare_deficiency_observation_focus_before_audit_navigation } from './requirements_list/requirement_list_audit_navigation.js';
+import { audit_status_blocks_requirement_navigation } from '../utils/audit_status_helpers.js';
 import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
@@ -103,6 +104,9 @@ export class RequirementsListViewComponent {
     }
 
     navigate_to_requirement_audit(requirement_id, sample_id) {
+        if (audit_status_blocks_requirement_navigation(this.getState?.()?.auditStatus)) {
+            return;
+        }
         if (sample_id && requirement_id && this.router) {
             prepare_deficiency_observation_focus_before_audit_navigation({
                 getState: () => this.getState(),

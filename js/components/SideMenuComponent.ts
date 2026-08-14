@@ -464,7 +464,8 @@ export class SideMenuComponent {
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('audit_metadata_title'), view_name: 'metadata' },
-                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count }
+                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count },
+                    { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements', count_id: 'requirement_count', count_value: requirement_count }
                 ]
             };
         }
@@ -498,7 +499,8 @@ export class SideMenuComponent {
             aria_label: t('side_menu_aria_label'),
             items: [
                 { label: t('audit_metadata_title'), view_name: 'metadata' },
-                { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count }
+                { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count },
+                { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements', count_id: 'requirement_count', count_value: requirement_count }
             ]
         };
     }

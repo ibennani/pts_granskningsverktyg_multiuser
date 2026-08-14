@@ -23,3 +23,8 @@ export function audit_status_blocks_sample_and_requirement_edits(status) {
 export function audit_status_blocks_rulefile_update_offer(status) {
     return status !== 'in_progress';
 }
+
+/** Sant om användaren inte ska kunna öppna enskilda krav (förberedd granskning, ej startad). */
+export function audit_status_blocks_requirement_navigation(status) {
+    return status === 'not_started';
+}

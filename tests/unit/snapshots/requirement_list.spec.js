@@ -144,4 +144,67 @@ describe('RequirementListComponent snapshot', () => {
 
         expect(root.innerHTML).toMatchSnapshot();
     });
+
+    test('renderar kravtitlar utan länkar när granskningen inte är startad', async () => {
+        const HelpersNs = await import('../../../js/utils/helpers.js');
+        const Helpers = {
+            ...HelpersNs,
+            load_css: jest.fn().mockResolvedValue(undefined),
+        };
+
+        const { RequirementListComponent } = await import('../../../js/components/RequirementListComponent.js');
+
+        const mock_state = {
+            auditStatus: 'not_started',
+            ruleFileContent: rule_two_req,
+            samples: [
+                {
+                    id: 'sp-1',
+                    description: 'Granskningsdel A',
+                    sampleType: 'Webbsida',
+                    sampleCategory: 'cat1',
+                    selectedContentTypes: [],
+                    requirementResults: {},
+                },
+            ],
+            uiSettings: {
+                requirementListFilter: {
+                    searchText: '',
+                    sortBy: 'ref_asc',
+                },
+            },
+        };
+
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+
+        const comp = new RequirementListComponent();
+        window.Helpers = Helpers;
+        window.Translation = build_translation();
+        await comp.init({
+            root,
+            deps: {
+                router: jest.fn(),
+                getState: () => mock_state,
+                dispatch: jest.fn(),
+                StoreActionTypes,
+                subscribe: (fn) => () => {},
+                Translation: build_translation(),
+                Helpers,
+                AuditLogic,
+                NotificationComponent: {
+                    append_global_message_areas_to: jest.fn(),
+                    show_global_message: jest.fn(),
+                    clear_global_message: jest.fn(),
+                },
+                params: { sampleId: 'sp-1' },
+            },
+        });
+        await comp.render();
+
+        expect(root.querySelectorAll('a.list-title-link[data-requirement-id]').length).toBe(0);
+        expect(root.querySelectorAll('h3.requirement-header-nested').length).toBe(2);
+        expect(root.textContent).toContain('Krav ett');
+        expect(root.textContent).toContain('Krav två');
+    });
 });

@@ -222,6 +222,12 @@
     font-size: 0.95rem;
 }
 
+.requirements-list-content .requirement-sample-item .requirement-sample-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: inherit;
+}
+
 .requirements-list-content .requirement-sample-item .status-icons-wrapper {
     flex-shrink: 0;
 }

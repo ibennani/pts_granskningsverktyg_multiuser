@@ -12,6 +12,7 @@ import { get_status_icon } from './requirement_list_status_icons.js';
 import { wrap_with_static_tooltip } from '../../utils/generic_tooltip.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 import { sample_has_deficiency_search_for_requirement } from '../../utils/requirement_deficiency_search.js';
+import { audit_status_blocks_requirement_navigation } from '../../utils/audit_status_helpers.js';
 
 /**
  * @param {string|number} req_id
@@ -107,6 +108,8 @@ export function create_all_requirement_list_item(
 
     const samples_ol = Helpers.create_element('ol', { class_name: 'requirement-samples-list' });
 
+    const audit_status = getState()?.auditStatus;
+    const blocks_navigation = audit_status_blocks_requirement_navigation(audit_status);
     const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (AuditLogic?.requirement_needs_help || (() => false));
     for (const sample of matching_samples) {
         const req_result = get_stored_requirement_result_for_def(
@@ -161,24 +164,29 @@ export function create_all_requirement_list_item(
                 wrap_with_static_tooltip(Helpers, updated_icon, t('status_updated_tooltip'), { use_overlay: true })
             );
         }
-        const sample_link = Helpers.create_element('a', {
-            class_name: 'list-title-link',
-            text_content: sample_name,
-            attributes: {
-                'data-requirement-id': requirement_id,
-                'data-sample-id': sample?.id || '',
-                href: '#',
-                'aria-label': `${sample_name} – ${status_text}`
-            }
-        });
+        const sample_title = blocks_navigation
+            ? Helpers.create_element('span', {
+                class_name: 'requirement-sample-name',
+                text_content: sample_name,
+                attributes: { 'aria-label': `${sample_name} – ${status_text}` }
+            })
+            : Helpers.create_element('a', {
+                class_name: 'list-title-link',
+                text_content: sample_name,
+                attributes: {
+                    'data-requirement-id': requirement_id,
+                    'data-sample-id': sample?.id || '',
+                    href: '#',
+                    'aria-label': `${sample_name} – ${status_text}`
+                }
+            });
         sample_li.appendChild(icons_wrapper);
-        sample_li.appendChild(sample_link);
+        sample_li.appendChild(sample_title);
         samples_ol.appendChild(sample_li);
     }
 
     li.appendChild(samples_ol);
 
-    const audit_status = getState()?.auditStatus;
     const all_samples_for_req = samples.filter((sample: any) => {
         const sample_set = sample?.id ? relevant_ids_by_sample.get(sample.id) : null;
         if (!sample_set) return false;
@@ -227,7 +235,7 @@ export function create_all_requirement_list_item(
  * @param {object} Translation
  * @returns {HTMLElement}
  */
-export function create_requirement_list_item(req: any, sample: any, requirements: any, AuditLogic: any, Helpers: any, Translation: any) {
+export function create_requirement_list_item(req: any, sample: any, requirements: any, AuditLogic: any, Helpers: any, Translation: any, getState: any = null) {
     const t = Translation.t;
     const req_result = get_stored_requirement_result_for_def(sample.requirementResults, requirements, req);
     const requirement_needs_help_fn = AuditLogic?.requirement_needs_help || (() => false);
@@ -248,17 +256,25 @@ export function create_requirement_list_item(req: any, sample: any, requirements
     const status_label = status_parts.join(', ');
     const aria_label = `${req.title}. ${status_label}`;
 
-    const h3 = Helpers.create_element('h3', { class_name: 'requirement-header-nested requirement-title-container' });
-    const title_link = Helpers.create_element('a', {
-        class_name: 'list-title-link',
-        text_content: req.title,
-        attributes: {
-            'data-requirement-id': req.key,
-            'href': '#',
-            'aria-label': aria_label
-        }
+    const blocks_navigation = audit_status_blocks_requirement_navigation(getState?.()?.auditStatus);
+    const h3 = Helpers.create_element('h3', {
+        class_name: blocks_navigation
+            ? 'requirement-header-nested'
+            : 'requirement-header-nested requirement-title-container',
+        ...(blocks_navigation ? { text_content: req.title } : {})
     });
-    h3.appendChild(title_link);
+    if (!blocks_navigation) {
+        const title_link = Helpers.create_element('a', {
+            class_name: 'list-title-link',
+            text_content: req.title,
+            attributes: {
+                'data-requirement-id': req.key,
+                'href': '#',
+                'aria-label': aria_label
+            }
+        });
+        h3.appendChild(title_link);
+    }
     li.appendChild(h3);
 
     const details_row_div = Helpers.create_element('div', { class_name: 'requirement-details-row' });

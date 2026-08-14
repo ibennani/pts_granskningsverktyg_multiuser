@@ -93,7 +93,8 @@ export function render_requirements_content(ctx, items, params) {
                     ctx.requirements,
                     ctx.AuditLogic,
                     ctx.Helpers,
-                    ctx.Translation
+                    ctx.Translation,
+                    ctx.getState
                 ));
             });
             if (ctx.content_div_for_delegation) {

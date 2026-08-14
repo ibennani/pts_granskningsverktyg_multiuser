@@ -20,7 +20,7 @@ import {
     is_same_hash_render_scheduled,
     set_same_hash_render_scheduled
 } from '../app/browser_globals.js';
-import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
+import { audit_status_blocks_sample_and_requirement_edits, audit_status_blocks_requirement_navigation } from '../utils/audit_status_helpers.js';
 
 if (typeof window !== 'undefined' && is_debug_nav()) {
     consoleManager.log('[router] Debug-navigering aktiv.');
@@ -216,6 +216,24 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
             options
         );
     }
+    if (
+        target_view_name === 'requirement_audit' &&
+        audit_status_blocks_requirement_navigation(current_state_for_nav?.auditStatus)
+    ) {
+        nav_debug('navigate_and_set_hash blockerad: kravgranskning innan granskning startats');
+        const t = window.Translation?.t || ((k) => k);
+        app_runtime_refs.notification_component?.show_global_message?.(
+            t('audit_not_started_yet'),
+            'warning'
+        );
+        const fallback_view = safe_params.sampleId ? 'requirement_list' : 'all_requirements';
+        const fallback_params = safe_params.sampleId ? { sampleId: safe_params.sampleId } : {};
+        return navigate_and_set_hash(
+            fallback_view,
+            merge_audit_id_from_state_into_params(fallback_view, fallback_params, getState),
+            options
+        );
+    }
     if (allow_new_audit_exit) {
         delete safe_params.allow_new_audit_exit;
     }
@@ -335,6 +353,23 @@ export async function handle_hash_change(options) {
         target_view = 'start';
         target_params = {};
         history.replaceState(null, '', '#start');
+    }
+    if (
+        target_view === 'requirement_audit' &&
+        audit_status_blocks_requirement_navigation(get_state_safe()?.auditStatus)
+    ) {
+        const t = window.Translation?.t || ((k) => k);
+        app_runtime_refs.notification_component?.show_global_message?.(
+            t('audit_not_started_yet'),
+            'warning'
+        );
+        target_view = target_params.sampleId ? 'requirement_list' : 'all_requirements';
+        if (!target_params.sampleId) {
+            target_params = { ...target_params };
+            delete target_params.requirementId;
+        }
+        const target_hash_part = build_compact_hash_fragment(target_view, target_params);
+        history.replaceState(null, '', `#${target_hash_part}`);
     }
     nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
     if (is_skip_link_anchor || !effective_view_name) {
