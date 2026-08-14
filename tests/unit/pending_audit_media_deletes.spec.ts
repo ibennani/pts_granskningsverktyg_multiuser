@@ -3,6 +3,7 @@
  */
 
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { scope_storage_key } from '../helpers/scoped_session_storage.ts';
 
 jest.unstable_mockModule('../../js/api/audit_media_api.js', () => ({
     delete_audit_media: jest.fn()
@@ -35,7 +36,7 @@ describe('pending_audit_media_deletes', () => {
         enqueue_pending_media_deletes('audit-1', ['a.png', 'b.jpg']);
         enqueue_pending_media_deletes('audit-1', ['a.png', 'c.gif']);
 
-        const raw = sessionStorage.getItem(STORAGE_KEY);
+        const raw = sessionStorage.getItem(scope_storage_key(STORAGE_KEY));
         expect(raw).toBeTruthy();
         const map = JSON.parse(raw!);
         expect(map['audit-1'].sort()).toEqual(['a.png', 'b.jpg', 'c.gif']);
@@ -49,7 +50,7 @@ describe('pending_audit_media_deletes', () => {
         expect(delete_audit_media).toHaveBeenCalledTimes(1);
         expect(delete_audit_media).toHaveBeenCalledWith('audit-2', 'gone.png');
 
-        const map_after = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}');
+        const map_after = JSON.parse(sessionStorage.getItem(scope_storage_key(STORAGE_KEY)) || '{}');
         expect(map_after['audit-2']).toEqual(['kept.jpg']);
     });
 });

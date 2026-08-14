@@ -4,6 +4,7 @@ import {
     enrich_audit_state_with_audit_type_overlay,
     fetch_published_rule_content_for_audit,
 } from '../logic/audit_type_rule_overlay.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
@@ -15,19 +16,19 @@ const AUTH_REFRESH_PATH = '/auth/refresh';
 
 export function is_current_user_admin() {
     if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem(AUTH_USER_IS_ADMIN_KEY) === '1';
+    return app_session_storage.getItem(AUTH_USER_IS_ADMIN_KEY) === '1';
 }
 
 export function set_current_user_admin(is_admin) {
     if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem(AUTH_USER_IS_ADMIN_KEY, is_admin ? '1' : '0');
+        app_session_storage.setItem(AUTH_USER_IS_ADMIN_KEY, is_admin ? '1' : '0');
     }
 }
 
 export function get_current_user_id() {
     if (typeof window === 'undefined') return null;
     try {
-        const raw = sessionStorage.getItem(AUTH_USER_ID_KEY);
+        const raw = app_session_storage.getItem(AUTH_USER_ID_KEY);
         return raw && String(raw).trim() ? String(raw).trim() : null;
     } catch {
         return null;
@@ -37,7 +38,7 @@ export function get_current_user_id() {
 export function set_current_user_id(user_id) {
     if (typeof sessionStorage === 'undefined' || !user_id) return;
     try {
-        sessionStorage.setItem(AUTH_USER_ID_KEY, String(user_id));
+        app_session_storage.setItem(AUTH_USER_ID_KEY, String(user_id));
     } catch {
         /* ignoreras */
     }
@@ -52,7 +53,7 @@ export const get_base_url = () => {
 export function get_auth_token() {
     if (typeof window === 'undefined') return null;
     try {
-        return sessionStorage.getItem(AUTH_TOKEN_KEY);
+        return app_session_storage.getItem(AUTH_TOKEN_KEY);
     } catch (_) {
         /* T.ex. privat läge eller blockerad lagring — behandla som utloggad */
         return null;
@@ -62,7 +63,7 @@ export function get_auth_token() {
 export function set_auth_token(token) {
     if (typeof window === 'undefined' || !token) return;
     try {
-        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+        app_session_storage.setItem(AUTH_TOKEN_KEY, token);
     } catch (_) {
         /* T.ex. kvot eller blockerad lagring */
     }
@@ -71,9 +72,9 @@ export function set_auth_token(token) {
 export function clear_auth_token() {
     if (typeof window === 'undefined') return;
     try {
-        sessionStorage.removeItem(AUTH_TOKEN_KEY);
-        sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
-        sessionStorage.removeItem(AUTH_USER_ID_KEY);
+        app_session_storage.removeItem(AUTH_TOKEN_KEY);
+        app_session_storage.removeItem(AUTH_USER_IS_ADMIN_KEY);
+        app_session_storage.removeItem(AUTH_USER_ID_KEY);
     } catch (_) {
         /* ignoreras medvetet */
     }
@@ -87,10 +88,8 @@ function handle_unauthorized_response(res) {
         // ignoreras medvetet
     }
     try {
-        if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem('gv_current_user_name');
-            sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
-        }
+        app_session_storage.removeItem('gv_current_user_name');
+        app_session_storage.removeItem(AUTH_USER_IS_ADMIN_KEY);
     } catch (_) {
         // ignoreras medvetet
     }

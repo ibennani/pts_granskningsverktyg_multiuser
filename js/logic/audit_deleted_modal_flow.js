@@ -1,5 +1,5 @@
 /**
- * Visar modal när granskning saknas på servern (404) och navigerar till översikten.
+ * Visar modal när granskning verifierat saknas på servern (GET 404) och navigerar till översikten.
  */
 
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';

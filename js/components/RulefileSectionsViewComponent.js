@@ -1,5 +1,6 @@
 // js/components/RulefileSectionsViewComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { get_section_config } from './rulefile_sections/rulefile_sections_config.js';
 import { create_rulefile_section_header } from './rulefile_sections/rulefile_sections_header.js';
 import {
@@ -579,9 +580,9 @@ export class RulefileSectionsViewComponent {
     }
 
     _apply_focus_after_load() {
-        const focusSelector = sessionStorage.getItem('focusAfterLoad');
+        const focusSelector = app_session_storage.getItem('focusAfterLoad');
         if (focusSelector) {
-            sessionStorage.removeItem('focusAfterLoad');
+            app_session_storage.removeItem('focusAfterLoad');
             setTimeout(() => {
                 const elementToFocus = this.root?.querySelector(focusSelector);
                 if (elementToFocus) {

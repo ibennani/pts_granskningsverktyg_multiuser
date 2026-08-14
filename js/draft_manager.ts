@@ -2,8 +2,9 @@
  * @fileoverview Fältutkast (session/localStorage) med debounced flush och konflikt mellan flikar.
  * Typer för DOM/storage lämnas lösa; filen migrerad från JS.
  */
+import { get_draft_storage_prefix } from './utils/scoped_browser_storage.js';
+
 const SCHEMA_VERSION = 1;
-const STORAGE_PREFIX = 'draft:';
 const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_AUTO_RESTORE_MS = 2 * 60 * 60 * 1000;
 const FLUSH_DEBOUNCE_MS = 1000;
@@ -39,6 +40,10 @@ function normalize_string(value: unknown): string {
     return value;
 }
 
+function get_storage_prefix(): string {
+    return get_draft_storage_prefix();
+}
+
 type StorageEntry = { key: string; value: { schemaVersion?: number; updatedAt?: number } };
 
 function get_storage_entries(storage: Storage | null): StorageEntry[] {
@@ -46,7 +51,7 @@ function get_storage_entries(storage: Storage | null): StorageEntry[] {
     if (!storage) return entries;
     for (let i = 0; i < storage.length; i += 1) {
         const key = storage.key(i);
-        if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+        if (!key || !key.startsWith(get_storage_prefix())) continue;
         const raw = storage.getItem(key);
         const parsed = safe_json_parse(raw) as { schemaVersion?: number; updatedAt?: number } | null;
         if (!parsed || parsed.schemaVersion !== SCHEMA_VERSION) continue;
@@ -400,8 +405,8 @@ export const DraftManager: DraftManagerSingleton = {
     },
 
     handleStorageEvent(event: StorageEvent) {
-        if (!event || !event.key || !event.key.startsWith(STORAGE_PREFIX)) return;
-        const current_key = `${STORAGE_PREFIX}${this.get_current_draft_key()}`;
+        if (!event || !event.key || !event.key.startsWith(get_storage_prefix())) return;
+        const current_key = `${get_storage_prefix()}${this.get_current_draft_key()}`;
         if (event.key !== current_key) return;
         const incoming = safe_json_parse(event.newValue) as { schemaVersion?: number; tabId?: string; updatedAt?: number } | null;
         if (!incoming || incoming.schemaVersion !== SCHEMA_VERSION) return;
@@ -433,7 +438,7 @@ export const DraftManager: DraftManagerSingleton = {
     _persist_current_draft(reason: string) {
         if (!this.current_draft) return;
         const draft_key = this.current_draft.draftKey;
-        const storage_key = `${STORAGE_PREFIX}${draft_key}`;
+        const storage_key = `${get_storage_prefix()}${draft_key}`;
 
         this.memory_store[draft_key] = { ...this.current_draft };
 
@@ -478,7 +483,7 @@ export const DraftManager: DraftManagerSingleton = {
 
     _read_from_storage(storage: Storage | null, draft_key: string): Record<string, unknown> | null {
         if (!storage) return null;
-        const raw = storage.getItem(`${STORAGE_PREFIX}${draft_key}`);
+        const raw = storage.getItem(`${get_storage_prefix()}${draft_key}`);
         const parsed = safe_json_parse(raw) as { schemaVersion?: number; updatedAt?: number } | null;
         if (!parsed || parsed.schemaVersion !== SCHEMA_VERSION) return null;
         if (parsed.updatedAt && now_ms() - parsed.updatedAt > DRAFT_TTL_MS) return null;
@@ -487,7 +492,7 @@ export const DraftManager: DraftManagerSingleton = {
 
     _remove_from_storage(storage: Storage | null, draft_key: string): void {
         if (!storage) return;
-        storage.removeItem(`${STORAGE_PREFIX}${draft_key}`);
+        storage.removeItem(`${get_storage_prefix()}${draft_key}`);
     },
 
     _strip_sensitive_fields(draft: Record<string, unknown> | null | undefined): Record<string, unknown> | null {

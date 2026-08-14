@@ -1,6 +1,7 @@
 // js/components/RequirementAuditComponent.ts
 // @ts-nocheck
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { get_current_user_id } from '../api/client.js';
 import { get_current_user_actor_ref } from '../logic/current_user_actor.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
@@ -1555,7 +1556,7 @@ export class RequirementAuditComponent {
         switch (action) {
             case 'back_to_list':
                 try {
-                    window.sessionStorage?.setItem('gv_return_focus_all_requirements_v1', JSON.stringify({
+                    app_session_storage.setItem('gv_return_focus_all_requirements_v1', JSON.stringify({
                         sampleId: this.params.sampleId,
                         requirementId: this.requirement_public_key || this.params.requirementId,
                         createdAt: Date.now()

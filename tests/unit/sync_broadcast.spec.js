@@ -31,6 +31,7 @@ describe('sync_broadcast', () => {
     test('broadcast_audit_updated skickar originId från samma flik', async () => {
         const { broadcast_audit_updated } = await import('../../js/sync/sync_broadcast.js');
         const { get_tab_origin_id } = await import('../../js/utils/tab_origin_id.js');
+        const { scope_broadcast_channel_name } = await import('../../js/utils/scoped_browser_storage.ts');
 
         broadcast_audit_updated('audit-42');
 
@@ -40,5 +41,19 @@ describe('sync_broadcast', () => {
             originId: get_tab_origin_id()
         });
         expect(close).toHaveBeenCalled();
+    });
+
+    test('broadcast_audit_updated använder miljö-scopat kanalnamn', async () => {
+        const { broadcast_audit_updated } = await import('../../js/sync/sync_broadcast.js');
+        const { scope_broadcast_channel_name } = await import('../../js/utils/scoped_browser_storage.ts');
+        let channel_name = '';
+        global.BroadcastChannel = class extends MockBroadcastChannel {
+            constructor(name) {
+                super(name);
+                channel_name = name;
+            }
+        };
+        broadcast_audit_updated('audit-1');
+        expect(channel_name).toBe(scope_broadcast_channel_name('granskningsverktyget-audit-updates'));
     });
 });

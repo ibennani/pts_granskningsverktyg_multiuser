@@ -2,6 +2,7 @@
  * @fileoverview Enhetstester för filterlogik i granskningslistans sektioner.
  */
 
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import {
     build_audit_list_section_configs,
     collect_granskningstyp_filter_options,
@@ -93,7 +94,7 @@ describe('build_audit_list_section_configs', () => {
     });
 
     it('visar bara inloggad användares granskningar i läget mine', () => {
-        sessionStorage.setItem('gv_current_user_name', 'Anna Granskare');
+        app_session_storage.setItem('gv_current_user_name', 'Anna Granskare');
         const ctx = {
             audit_filter_query: '',
             audit_type_filter: '',
@@ -107,33 +108,33 @@ describe('build_audit_list_section_configs', () => {
         const result = build_audit_list_section_configs(ctx);
         expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1]);
         expect(result.section_configs[1].audits.map((a) => a.id)).toEqual([3]);
-        sessionStorage.removeItem('gv_current_user_name');
+        app_session_storage.removeItem('gv_current_user_name');
     });
 });
 
 describe('filter_audits_by_current_user', () => {
     it('matchar granskare case-insensitive mot sessionStorage', () => {
-        sessionStorage.setItem('gv_current_user_name', 'Anna Granskare');
+        app_session_storage.setItem('gv_current_user_name', 'Anna Granskare');
         const list = [
             make_audit(1, 'in_progress', { auditorName: 'anna granskare' }),
             make_audit(2, 'in_progress', { auditorName: 'Bob' })
         ];
         expect(filter_audits_by_current_user(list).map((a) => a.id)).toEqual([1]);
-        sessionStorage.removeItem('gv_current_user_name');
+        app_session_storage.removeItem('gv_current_user_name');
     });
 
     it('matchar responsibleUserId mot inloggad användare', () => {
-        sessionStorage.setItem('gv_current_user_id', 'user-anna');
+        app_session_storage.setItem('gv_current_user_id', 'user-anna');
         const list = [
             { ...make_audit(1, 'in_progress', { auditorName: 'Anna' }), responsibleUserId: 'user-anna' },
             { ...make_audit(2, 'in_progress', { auditorName: 'Bob' }), responsibleUserId: 'user-bob' }
         ];
         expect(filter_audits_by_current_user(list).map((a) => a.id)).toEqual([1]);
-        sessionStorage.removeItem('gv_current_user_id');
+        app_session_storage.removeItem('gv_current_user_id');
     });
 
     it('returnerar tom lista utan inloggad användare', () => {
-        sessionStorage.removeItem('gv_current_user_name');
+        app_session_storage.removeItem('gv_current_user_name');
         const list = [make_audit(1, 'in_progress', { auditorName: 'Anna' })];
         expect(filter_audits_by_current_user(list)).toEqual([]);
     });

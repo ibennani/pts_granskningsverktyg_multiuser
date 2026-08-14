@@ -1,3 +1,4 @@
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { load_metadata_auditor_options } from '../logic/metadata_auditor_name_field.js';
@@ -276,7 +277,7 @@ export class EditMetadataViewComponent {
         // "Granskningsinformation" (h2) i föregående vy.
         try {
             if (window.sessionStorage) {
-                window.sessionStorage.setItem(this.RETURN_FOCUS_SESSION_KEY, JSON.stringify({ focus: 'audit_info_h2' }));
+                app_session_storage.setItem(this.RETURN_FOCUS_SESSION_KEY, JSON.stringify({ focus: 'audit_info_h2' }));
             }
         } catch (e) {
             // Ignorera om sessionStorage inte är tillgängligt.

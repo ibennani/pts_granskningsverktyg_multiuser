@@ -1,5 +1,6 @@
 // js/components/EditContentTypesSectionComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { ensure_metadata_defaults, clone_metadata } from '../logic/rulefile_metadata_model.js';
 import {
     resolve_content_types,
@@ -250,7 +251,7 @@ export const EditContentTypesSectionComponent = {
         this._dispatch_rulefile(payload);
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending?.();
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', content_type_list_route_params());
     },
 
@@ -258,7 +259,7 @@ export const EditContentTypesSectionComponent = {
         this._restore_initial_state();
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending?.();
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', content_type_list_route_params());
     },
 
@@ -269,7 +270,7 @@ export const EditContentTypesSectionComponent = {
             this.Translation.t('rulefile_metadata_edit_saved'),
             'success'
         );
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', content_type_list_route_params());
     },
 

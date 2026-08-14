@@ -34,6 +34,7 @@ import { get_translation_t } from '../utils/translation_access.js';
 import { is_debug_autosave_focus, is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { get_restore_position_via_hook } from '../app/browser_globals.js';
 import { sanitize_persisted_app_state_shape } from '../logic/sanitize_persisted_app_state.js';
+import { app_local_storage, app_session_storage } from '../utils/scoped_browser_storage.js';
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
 
@@ -385,7 +386,7 @@ function has_restorable_state(state: InternalState | null | undefined): boolean 
 
 function loadStateFromLocalStorageBackup(): { state: InternalState; restorePosition: unknown } | null {
     try {
-        const serialized = localStorage.getItem(APP_STATE_BACKUP_KEY);
+        const serialized = app_local_storage.getItem(APP_STATE_BACKUP_KEY);
         if (serialized === null) return null;
         const stored = JSON.parse(serialized) as Record<string, unknown> | null;
         if (!stored) return null;
@@ -401,7 +402,7 @@ function loadStateFromLocalStorageBackup(): { state: InternalState; restorePosit
         }
         if (typeof state_to_merge !== 'object' || state_to_merge === null || Array.isArray(state_to_merge)) {
             try {
-                localStorage.removeItem(APP_STATE_BACKUP_KEY);
+                app_local_storage.removeItem(APP_STATE_BACKUP_KEY);
             } catch (_) {
                 // ignoreras medvetet
             }
@@ -409,7 +410,7 @@ function loadStateFromLocalStorageBackup(): { state: InternalState; restorePosit
         }
         const stm = state_to_merge as Record<string, unknown>;
         if (!stm.saveFileVersion || !String(stm.saveFileVersion).startsWith(APP_STATE_VERSION.split('.')[0])) {
-            localStorage.removeItem(APP_STATE_BACKUP_KEY);
+            app_local_storage.removeItem(APP_STATE_BACKUP_KEY);
             return null;
         }
         const merged = {
@@ -422,7 +423,7 @@ function loadStateFromLocalStorageBackup(): { state: InternalState; restorePosit
         return { state: safe_merged, restorePosition: restore_position };
     } catch {
         try {
-            localStorage.removeItem(APP_STATE_BACKUP_KEY);
+            app_local_storage.removeItem(APP_STATE_BACKUP_KEY);
         } catch (_) {
             // ignoreras medvetet
         }
@@ -432,7 +433,7 @@ function loadStateFromLocalStorageBackup(): { state: InternalState; restorePosit
 
 function clearLocalStorageBackup() {
     try {
-        localStorage.removeItem(APP_STATE_BACKUP_KEY);
+        app_local_storage.removeItem(APP_STATE_BACKUP_KEY);
     } catch (e) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Could not clear localStorage backup:', e);
     }
@@ -440,26 +441,26 @@ function clearLocalStorageBackup() {
 
 function updateBackupRestorePosition(restore_position: unknown) {
     try {
-        const serialized = localStorage.getItem(APP_STATE_BACKUP_KEY);
+        const serialized = app_local_storage.getItem(APP_STATE_BACKUP_KEY);
         if (serialized === null) return;
         const backup = JSON.parse(serialized) as Record<string, unknown>;
         if (!backup || !backup.state) return;
         backup.restorePosition = restore_position;
-        localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
+        app_local_storage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
     } catch (e) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Could not update backup restore position:', e);
     }
 }
 
 function loadStateFromSessionStorage(): InternalState {
-    const serializedState = sessionStorage.getItem(APP_STATE_KEY);
+    const serializedState = app_session_storage.getItem(APP_STATE_KEY);
     if (serializedState === null) {
         return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
     }
     try {
         const storedState = JSON.parse(serializedState) as unknown;
         if (!storedState || typeof storedState !== 'object' || Array.isArray(storedState)) {
-            sessionStorage.removeItem(APP_STATE_KEY);
+            app_session_storage.removeItem(APP_STATE_KEY);
             return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
         }
         const ss = storedState as Record<string, unknown>;
@@ -471,10 +472,10 @@ function loadStateFromSessionStorage(): InternalState {
             };
             return sanitize_persisted_app_state_shape(merged) as InternalState;
         }
-        sessionStorage.removeItem(APP_STATE_KEY);
+        app_session_storage.removeItem(APP_STATE_KEY);
         return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
     } catch {
-        sessionStorage.removeItem(APP_STATE_KEY);
+        app_session_storage.removeItem(APP_STATE_KEY);
         return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
     }
 }
@@ -483,12 +484,12 @@ function saveStateToSessionStorage(state_to_save: InternalState) {
     try {
         const complete_state_to_save = { ...state_to_save, saveFileVersion: APP_STATE_VERSION };
         const serializedState = JSON.stringify(complete_state_to_save);
-        sessionStorage.setItem(APP_STATE_KEY, serializedState);
+        app_session_storage.setItem(APP_STATE_KEY, serializedState);
         if (has_restorable_state(complete_state_to_save)) {
             try {
                 const restore_position = get_restore_position_via_hook();
                 const backup = { state: complete_state_to_save, restorePosition: restore_position };
-                localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
+                app_local_storage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
             } catch (localE) {
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Could not save state backup to localStorage:', localE);
             }

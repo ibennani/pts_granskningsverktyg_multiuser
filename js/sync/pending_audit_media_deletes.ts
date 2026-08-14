@@ -7,6 +7,7 @@ import { is_browser_online } from '../utils/browser_online.js';
 import { mark_audit_sync_pending } from '../logic/connectivity_service.js';
 import { revoke_audit_media_blob_url } from '../components/media/render_audit_media_list_item.js';
 import { filenames_safe_to_delete_from_server } from '../logic/audit_attached_media_references.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 const STORAGE_KEY = 'gv_pending_audit_media_deletes';
 
@@ -15,7 +16,7 @@ type PendingDeletesMap = Record<string, string[]>;
 function read_map(): PendingDeletesMap {
     if (typeof sessionStorage === 'undefined') return {};
     try {
-        const raw = sessionStorage.getItem(STORAGE_KEY);
+        const raw = app_session_storage.getItem(STORAGE_KEY);
         if (!raw) return {};
         const parsed = JSON.parse(raw) as PendingDeletesMap;
         return parsed && typeof parsed === 'object' ? parsed : {};
@@ -28,10 +29,10 @@ function write_map(map: PendingDeletesMap): void {
     if (typeof sessionStorage === 'undefined') return;
     const keys = Object.keys(map);
     if (keys.length === 0) {
-        sessionStorage.removeItem(STORAGE_KEY);
+        app_session_storage.removeItem(STORAGE_KEY);
         return;
     }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    app_session_storage.setItem(STORAGE_KEY, JSON.stringify(map));
 }
 
 /**

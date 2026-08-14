@@ -1,5 +1,6 @@
 // js/components/EditPageTypesSectionComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { ensure_metadata_defaults, clone_metadata } from '../logic/rulefile_metadata_model.js';
 import { normalize_rulefile_metadata_vocabularies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import {
@@ -171,7 +172,7 @@ export class EditPageTypesSectionComponent {
             this.Translation.t('rulefile_metadata_edit_saved'),
             'success'
         );
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', { section: 'page_types' });
     }
 
@@ -179,7 +180,7 @@ export class EditPageTypesSectionComponent {
         this._restore_initial_state();
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', { section: 'page_types' });
     }
 

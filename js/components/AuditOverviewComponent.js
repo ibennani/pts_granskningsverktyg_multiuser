@@ -1,3 +1,4 @@
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import { SampleTypeDeficiencyChartComponent } from './SampleTypeDeficiencyChartComponent.js';
 import { AuditInfoComponent } from './AuditInfoComponent.js';
@@ -271,7 +272,7 @@ export class AuditOverviewComponent {
             current_global_state.ruleSetId
         );
         const dismissed_version = typeof sessionStorage !== 'undefined'
-            ? sessionStorage.getItem(dismissal_key)
+            ? app_session_storage.getItem(dismissal_key)
             : null;
         const show_newer_banner = current_global_state.auditStatus === 'in_progress'
             && newer?.ruleId
@@ -309,7 +310,7 @@ export class AuditOverviewComponent {
                             aria_label: t('audit_overview_newer_rule_update_later_aria'),
                             on_click: () => {
                                 if (typeof sessionStorage !== 'undefined' && newer?.version) {
-                                    sessionStorage.setItem(dismissal_key, newer.version);
+                                    app_session_storage.setItem(dismissal_key, newer.version);
                                 }
                                 this.render();
                             }

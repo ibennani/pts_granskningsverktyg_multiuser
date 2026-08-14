@@ -1,4 +1,5 @@
 // js/components/audit_view/AuditViewComponent.js
+import { app_session_storage } from '../../utils/scoped_browser_storage.js';
 import { show_confirm_delete_modal } from '../../logic/confirm_delete_modal_logic.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import { migrate_rulefile_to_new_structure } from '../../logic/rulefile_migration_logic.js';
@@ -77,9 +78,9 @@ const AUDIT_LIST_GROUP_MODES = ['all', 'mine', 'case', 'auditor'];
 function read_audit_list_group_mode_pref() {
     try {
         if (typeof sessionStorage === 'undefined') return 'all';
-        const stored = sessionStorage.getItem(AUDIT_LIST_GROUP_MODE_STORAGE_KEY);
+        const stored = app_session_storage.getItem(AUDIT_LIST_GROUP_MODE_STORAGE_KEY);
         if (AUDIT_LIST_GROUP_MODES.includes(stored)) return stored;
-        if (sessionStorage.getItem(LEGACY_AUDIT_GROUP_BY_CASE_STORAGE_KEY) === '1') return 'case';
+        if (app_session_storage.getItem(LEGACY_AUDIT_GROUP_BY_CASE_STORAGE_KEY) === '1') return 'case';
     } catch {
         /* ignorera */
     }
@@ -89,7 +90,7 @@ function read_audit_list_group_mode_pref() {
 function write_audit_list_group_mode_pref(mode) {
     try {
         if (typeof sessionStorage !== 'undefined' && AUDIT_LIST_GROUP_MODES.includes(mode)) {
-            sessionStorage.setItem(AUDIT_LIST_GROUP_MODE_STORAGE_KEY, mode);
+            app_session_storage.setItem(AUDIT_LIST_GROUP_MODE_STORAGE_KEY, mode);
         }
     } catch {
         /* ignorera */

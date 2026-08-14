@@ -4,6 +4,7 @@
  */
 // @ts-nocheck
 
+import { app_session_storage } from '../../utils/scoped_browser_storage.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
 import { patch_rule_content_part } from '../../api/client.js';
 import { subscribe_rule_locks } from '../../logic/list_push_service.js';
@@ -1790,9 +1791,9 @@ export class EditRulefileRequirementComponent {
         this.root.appendChild(plate_element);
 
         setTimeout(() => {
-            const focusSelector = sessionStorage.getItem('focusAfterLoad');
+            const focusSelector = app_session_storage.getItem('focusAfterLoad');
             if (focusSelector) {
-                sessionStorage.removeItem('focusAfterLoad');
+                app_session_storage.removeItem('focusAfterLoad');
                 const elementToFocus = this.form_element_ref.querySelector(focusSelector);
                 if (elementToFocus) {
                     try {

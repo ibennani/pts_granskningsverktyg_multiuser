@@ -8,6 +8,7 @@ import {
     get_rule_locks
 } from '../api/client.js';
 import { generate_uuid_v4 } from '../utils/helpers.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 const DEFAULT_TTL_SECONDS = 30;
 const HEARTBEAT_EVERY_MS = 15000;
@@ -27,7 +28,7 @@ export function ensure_client_lock_id_for_part(part_key) {
     const tab_id = typeof window !== 'undefined' ? window.name : 'fallback';
     const key = `gv_rule_lock_id\0${String(part_key)}\0${tab_id}`;
 
-    const existing = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
+    const existing = app_session_storage.getItem(key);
     if (existing) {
         // Om ett gammalt ogiltigt lock-id ligger kvar (innan vi tvingade UUID v4), kasta det
         if (!existing.startsWith('lock-')) return existing;
@@ -35,7 +36,7 @@ export function ensure_client_lock_id_for_part(part_key) {
 
     const id = generate_uuid_v4();
     try {
-        sessionStorage.setItem(key, id);
+        app_session_storage.setItem(key, id);
     } catch (_) {
         // ignoreras
     }

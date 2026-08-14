@@ -3,6 +3,7 @@
  * fetch och sessionStorage används via globala mocks / jsdom.
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import {
     get_auth_token,
     set_auth_token,
@@ -107,7 +108,7 @@ describe('api/client – token och bas-URL', () => {
     });
 
     test('is_current_user_admin och set_current_user_admin', () => {
-        sessionStorage.removeItem('gv_current_user_is_admin');
+        app_session_storage.removeItem('gv_current_user_is_admin');
         expect(is_current_user_admin()).toBe(false);
         set_current_user_admin(true);
         expect(is_current_user_admin()).toBe(true);

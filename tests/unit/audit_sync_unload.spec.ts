@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import {
     clear_rule_file_sync_baseline_for_testing,
@@ -14,7 +15,7 @@ beforeEach(() => {
     clear_rule_file_sync_baseline_for_testing();
     fetch_mock.mockClear();
     global.fetch = fetch_mock;
-    sessionStorage.setItem('gv_auth_token', 'test-jwt');
+    app_session_storage.setItem('gv_auth_token', 'test-jwt');
 });
 
 function build_state() {
@@ -46,7 +47,7 @@ describe('send_audit_sync_keepalive', () => {
     });
 
     test('returnerar false utan inloggning', () => {
-        sessionStorage.removeItem('gv_auth_token');
+        app_session_storage.removeItem('gv_auth_token');
         expect(send_audit_sync_keepalive(build_state())).toBe(false);
         expect(fetch_mock).not.toHaveBeenCalled();
     });

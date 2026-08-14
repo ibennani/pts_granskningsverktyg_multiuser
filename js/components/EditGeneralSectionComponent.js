@@ -1,5 +1,6 @@
 // js/components/EditGeneralSectionComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import './edit_rulefile_metadata_view.css';
 import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
 
@@ -209,7 +210,7 @@ export class EditGeneralSectionComponent {
             this._restore_initial_state();
             this.skip_autosave_on_destroy = true;
             this.autosave_session?.cancel_pending();
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+            app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'general' });
         });
 
@@ -292,7 +293,7 @@ export class EditGeneralSectionComponent {
         this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
         
         // Navigera tillbaka till rulefile_sections med section=general (utan edit=true)
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+        app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', { section: 'general' });
     }
 

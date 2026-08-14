@@ -1,5 +1,6 @@
 // js/components/EditSampleTypesSectionComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { resolve_sample_vocab, normalize_rulefile_metadata_vocabularies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
 import './edit_rulefile_metadata_view.css';
@@ -189,7 +190,7 @@ export const EditSampleTypesSectionComponent = {
                 t('rulefile_sections_sample_types_saved') || 'Granskningsdelstyper sparade',
                 'success'
             );
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+            app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
             this.router('rulefile_sections', { section: 'sample_types' });
         });
 
@@ -205,7 +206,7 @@ export const EditSampleTypesSectionComponent = {
             this._restore_initial_state();
             this.skip_autosave_on_destroy = true;
             this.autosave_session?.cancel_pending?.();
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+            app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
             this.router('rulefile_sections', { section: 'sample_types' });
         });
 

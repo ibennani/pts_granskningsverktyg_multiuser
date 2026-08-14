@@ -138,15 +138,35 @@ test.describe('Granskning: fältlås och del-sparning (mockat API)', () => {
         const state2 = buildAuditState({ user_name: 'Användare 2' });
 
         await page1.addInitScript(({ key, state_json, token }) => {
-            sessionStorage.setItem(key, state_json);
-            sessionStorage.setItem('gv_auth_token', token);
-            sessionStorage.setItem('gv_current_user_is_admin', '0');
+            const gv_scope_storage_key = (base_key) => {
+            const ns = 'v2';
+            return `gv:${ns}:${String(base_key || '').trim()}`;
+        };
+
+            const gv_scope_storage_key = (base_key) => {
+            const ns = 'v2';
+            return `gv:${ns}:${String(base_key || '').trim()}`;
+        };
+
+            sessionStorage.setItem(gv_scope_storage_key(key), state_json);
+            sessionStorage.setItem(gv_scope_storage_key('gv_auth_token'), token);
+            sessionStorage.setItem(gv_scope_storage_key('gv_current_user_is_admin'), '0');
         }, { key: 'digitalTillsynAppCentralState', state_json: JSON.stringify(state1), token: 'e2e-audit-jwt' });
 
         await page2.addInitScript(({ key, state_json, token }) => {
-            sessionStorage.setItem(key, state_json);
-            sessionStorage.setItem('gv_auth_token', token);
-            sessionStorage.setItem('gv_current_user_is_admin', '0');
+            const gv_scope_storage_key = (base_key) => {
+            const ns = 'v2';
+            return `gv:${ns}:${String(base_key || '').trim()}`;
+        };
+
+            const gv_scope_storage_key = (base_key) => {
+            const ns = 'v2';
+            return `gv:${ns}:${String(base_key || '').trim()}`;
+        };
+
+            sessionStorage.setItem(gv_scope_storage_key(key), state_json);
+            sessionStorage.setItem(gv_scope_storage_key('gv_auth_token'), token);
+            sessionStorage.setItem(gv_scope_storage_key('gv_current_user_is_admin'), '0');
         }, { key: 'digitalTillsynAppCentralState', state_json: JSON.stringify(state2), token: 'e2e-audit-jwt' });
 
         await setupMocks(page1, 'Användare 1');

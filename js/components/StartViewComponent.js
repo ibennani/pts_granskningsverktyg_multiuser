@@ -1,5 +1,6 @@
 // js/components/StartViewComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { check_api_available, get_audits } from '../api/client.js';
 import './start_view_component.css';
 import { GenericTableComponent } from './GenericTableComponent.js';
@@ -11,7 +12,7 @@ const GV_AUDITS_LIST_CACHE_KEY = 'gv_audits_list_cache_v1';
 
 function read_cached_audits_list() {
     try {
-        const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(GV_AUDITS_LIST_CACHE_KEY) : null;
+        const raw = typeof sessionStorage !== 'undefined' ? app_session_storage.getItem(GV_AUDITS_LIST_CACHE_KEY) : null;
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         return Array.isArray(parsed?.audits) ? parsed.audits : null;
@@ -23,7 +24,7 @@ function read_cached_audits_list() {
 function write_cached_audits_list(audits) {
     try {
         if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem(GV_AUDITS_LIST_CACHE_KEY, JSON.stringify({ audits: audits || [] }));
+            app_session_storage.setItem(GV_AUDITS_LIST_CACHE_KEY, JSON.stringify({ audits: audits || [] }));
         }
     } catch {
         /* ignorera quota m.m. */

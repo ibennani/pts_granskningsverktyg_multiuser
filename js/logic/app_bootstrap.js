@@ -15,6 +15,7 @@ import {
     apply_test_server_viewport_indicator,
     update_test_server_banner_text
 } from './test_server_indicator.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -110,7 +111,7 @@ export async function init_app(deps) {
     update_landmarks_and_skip_link();
     document.addEventListener('languageChanged', update_landmarks_and_skip_link);
 
-    const had_session_storage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(APP_STATE_KEY) !== null;
+    const had_session_storage = app_session_storage.getItem(APP_STATE_KEY) !== null;
     initState();
     init_draft_manager();
 
@@ -118,7 +119,7 @@ export async function init_app(deps) {
         if (is_auth_required_in_progress()) return;
         set_auth_required_in_progress(true);
         try {
-            if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(AUTH_REQUIRED_MESSAGE_KEY, '1');
+            app_session_storage.setItem(AUTH_REQUIRED_MESSAGE_KEY, '1');
         } catch (_) {
             // ignoreras medvetet
         }
@@ -244,7 +245,7 @@ export async function init_app(deps) {
         const has_token = !!get_auth_token();
         if (!has_token) {
             try {
-                if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
+                app_session_storage.removeItem('gv_current_user_name');
             } catch (_) {
                 // ignoreras medvetet
             }
@@ -265,9 +266,9 @@ export async function init_app(deps) {
             side_menu_root().classList.add('hidden');
         }
         try {
-            const should_show = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AUTH_REQUIRED_MESSAGE_KEY) === '1';
+            const should_show = app_session_storage.getItem(AUTH_REQUIRED_MESSAGE_KEY) === '1';
             if (should_show) {
-                sessionStorage.removeItem(AUTH_REQUIRED_MESSAGE_KEY);
+                app_session_storage.removeItem(AUTH_REQUIRED_MESSAGE_KEY);
                 const t = window.Translation?.t ?? ((k) => k);
                 notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
             }
@@ -296,15 +297,15 @@ export async function init_app(deps) {
         return;
     }
 
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) {
-        set_current_user_name_window(sessionStorage.getItem('gv_current_user_name'));
+    if (app_session_storage.getItem('gv_current_user_name')) {
+        set_current_user_name_window(app_session_storage.getItem('gv_current_user_name'));
     }
     const has_token = get_auth_token();
     if (has_token) {
         get_current_user_preferences().then((user) => {
             if (user?.name) {
                 set_current_user_name_window(user.name);
-                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                app_session_storage.setItem('gv_current_user_name', user.name);
             }
             set_current_user_admin(!!user?.is_admin);
             set_current_user_id(user?.id || null);
@@ -316,7 +317,7 @@ export async function init_app(deps) {
         get_current_user_preferences().then((user) => {
             if (user?.name) {
                 set_current_user_name_window(user.name);
-                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                app_session_storage.setItem('gv_current_user_name', user.name);
             }
             set_current_user_admin(!!user?.is_admin);
             set_current_user_id(user?.id || null);

@@ -2,6 +2,7 @@
  * @fileoverview Enhetstester för backup-läge i sessionStorage.
  */
 
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { jest } from '@jest/globals';
 import {
     load_backup_mode_from_storage,
@@ -23,7 +24,7 @@ describe('backup_mode_storage', () => {
     });
 
     it('ignorerar ogiltigt värde i sessionStorage', () => {
-        sessionStorage.setItem('gv_backup_mode', 'invalid');
+        app_session_storage.setItem('gv_backup_mode', 'invalid');
         expect(load_backup_mode_from_storage()).toBe('audits');
     });
 

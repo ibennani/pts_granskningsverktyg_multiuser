@@ -25,6 +25,10 @@ import {
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { show_audit_deleted_modal_and_navigate } from '../logic/audit_deleted_modal_flow.js';
+import {
+    confirm_audit_missing_on_server,
+    is_audit_not_found_api_error
+} from '../logic/confirm_audit_missing_on_server.js';
 import { update_baseline_from_server_full_state } from '../logic/audit_collaboration_notice.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import {
@@ -288,6 +292,56 @@ async function sync_full_audit_patch(
     });
 }
 
+async function handle_audit_not_found_sync_error(
+    e: ApiError,
+    state: SyncPayloadState,
+    krav_vy_sync: KravVySyncTracker
+): Promise<boolean> {
+    if (e.status !== 404 || !is_audit_not_found_api_error(e) || !state.auditId) {
+        return false;
+    }
+    const missing_check = await confirm_audit_missing_on_server(state.auditId);
+    if (missing_check.confirmed) {
+        show_audit_deleted_modal_and_navigate();
+        krav_vy_sync_fel(krav_vy_sync, {
+            http_status: 404,
+            meddelande: e.message,
+            anledning: 'Granskningen finns inte på servern (bekräftad via GET)'
+        });
+        return true;
+    }
+    if (missing_check.reason === 'network') {
+        mark_audit_sync_pending();
+        notify_network_unreachable_for_sync();
+        krav_vy_sync_fel(krav_vy_sync, {
+            http_status: 404,
+            meddelande: e.message,
+            anledning: 'Kunde inte verifiera om granskningen finns (nätverksfel)'
+        });
+        return true;
+    }
+    mark_audit_sync_pending();
+    krav_vy_sync_fel(krav_vy_sync, {
+        http_status: 404,
+        meddelande: e.message,
+        anledning:
+            missing_check.reason === 'audit_exists'
+                ? 'PATCH gav 404 men granskningen finns på servern'
+                : 'PATCH gav 404 men saknad granskning kunde inte bekräftas'
+    });
+    if (window.Translation?.t) {
+        const nc_missing = get_notification_component();
+        if (nc_missing?.show_global_message) {
+            nc_missing.show_global_message(
+                window.Translation.t('server_sync_error', { message: e.message }) ||
+                    `Kunde inte spara till servern: ${e.message}`,
+                'error'
+            );
+        }
+    }
+    return true;
+}
+
 async function handle_sync_error(
     err: unknown,
     state: SyncPayloadState,
@@ -326,13 +380,7 @@ async function handle_sync_error(
         await handle_version_conflict_409(state, dispatch_fn, e, krav_vy_sync);
         return;
     }
-    if (e.status === 404 && e.message?.toLowerCase().includes('granskning hittades inte')) {
-        show_audit_deleted_modal_and_navigate();
-        krav_vy_sync_fel(krav_vy_sync, {
-            http_status: 404,
-            meddelande: e.message,
-            anledning: 'Granskningen finns inte på servern'
-        });
+    if (await handle_audit_not_found_sync_error(e, state, krav_vy_sync)) {
         return;
     }
     if (e.status === 401) {

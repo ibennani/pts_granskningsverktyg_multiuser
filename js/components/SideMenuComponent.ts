@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import '../../css/components/side_menu_component.css';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { consoleManager } from '../utils/console_manager.js';
@@ -420,7 +421,7 @@ export class SideMenuComponent {
             : requirement_ids_in_samples.size;
 
         if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'statistics' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_rulefile_detail' || this.current_view_name === 'backup_settings') {
-            const is_admin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === '1';
+            const is_admin = typeof sessionStorage !== 'undefined' && app_session_storage.getItem('gv_current_user_is_admin') === '1';
             const items = [
                 { label: this.get_view_heading_label('start'), view_name: 'start' },
                 { label: this.get_view_heading_label('audit_rules'), view_name: 'audit_rules' },

@@ -3,11 +3,12 @@
  */
 /// <reference types="vite/client" />
 
+import { app_session_storage } from './scoped_browser_storage.js';
 import { VITE_DEV_LAST_TS_STORAGE_KEY } from './vite_dev_client_timestamp.js';
 
 function record_vite_dev_client_now (): void {
     try {
-        sessionStorage.setItem(VITE_DEV_LAST_TS_STORAGE_KEY, String(Date.now()));
+        app_session_storage.setItem(VITE_DEV_LAST_TS_STORAGE_KEY, String(Date.now()));
     } catch {
         /* t.ex. privat läge */
     }

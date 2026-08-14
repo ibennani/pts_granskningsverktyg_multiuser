@@ -1,4 +1,5 @@
 // js/components/RulefileRequirementsListComponent.js
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_searchable_text_for_requirement } from '../utils/requirement_search_utils.js';
 import { prepareString } from '../utils/string_filter_normalize.js';
@@ -106,7 +107,7 @@ export class RulefileRequirementsListComponent {
                     on_confirm: () => {
                         this.dispatch({ type: this.StoreActionTypes.DELETE_REQUIREMENT_DEFINITION, payload: { requirementId } });
                         try {
-                            window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                            app_session_storage.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
                                 deletedRequirementId: requirementId,
                                 createdAt: Date.now()
                             }));
@@ -341,12 +342,12 @@ export class RulefileRequirementsListComponent {
         if (this._apply_return_focus_if_needed()) {
             // Rensa äldre fokusflaggor så att de inte skriver över vår fokus-återställning
             try {
-                sessionStorage.removeItem('focusAfterLoad');
+                app_session_storage.removeItem('focusAfterLoad');
             } catch (_) {
                 // ignoreras medvetet
             }
             try {
-                sessionStorage.removeItem('focusOnH1AfterLoad');
+                app_session_storage.removeItem('focusOnH1AfterLoad');
             } catch (_) {
                 // ignoreras medvetet
             }
@@ -354,16 +355,16 @@ export class RulefileRequirementsListComponent {
         }
 
         // Befintlig fokuslogik (används även av andra flöden)
-        const focusSelector = sessionStorage.getItem('focusAfterLoad');
+        const focusSelector = app_session_storage.getItem('focusAfterLoad');
         if (focusSelector) {
-            sessionStorage.removeItem('focusAfterLoad');
+            app_session_storage.removeItem('focusAfterLoad');
             const elementToFocus = this.plate_element_ref.querySelector(focusSelector);
             if (elementToFocus) {
                 elementToFocus.focus();
                 window.customFocusApplied = true;
             }
-        } else if (sessionStorage.getItem('focusOnH1AfterLoad')) {
-            sessionStorage.removeItem('focusOnH1AfterLoad');
+        } else if (app_session_storage.getItem('focusOnH1AfterLoad')) {
+            app_session_storage.removeItem('focusOnH1AfterLoad');
             this.plate_element_ref.querySelector('#main-content-heading')?.focus();
         }
     }
@@ -374,7 +375,7 @@ export class RulefileRequirementsListComponent {
 
         let raw = null;
         try {
-            raw = window.sessionStorage.getItem(this.RETURN_FOCUS_SESSION_KEY);
+            raw = app_session_storage.getItem(this.RETURN_FOCUS_SESSION_KEY);
         } catch (e) {
             return false;
         }
@@ -385,7 +386,7 @@ export class RulefileRequirementsListComponent {
             focus_instruction = JSON.parse(raw);
         } catch (e) {
             try {
-                window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
+                app_session_storage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
             } catch (_) {
                 // ignoreras medvetet
             }
@@ -394,7 +395,7 @@ export class RulefileRequirementsListComponent {
 
         // One-shot: rensa alltid instruktionen, oavsett utfall.
         try {
-            window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
+            app_session_storage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
         } catch (_) {
             // ignoreras medvetet
         }

@@ -7,6 +7,7 @@ import {
     format_group_actor_names,
     type AuditRowForGrouping
 } from './audit_list_case_grouping.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 const STORAGE_KEY = 'gv_audit_list_group_display_names_v1';
 
@@ -15,7 +16,7 @@ export type AuditGroupDisplayNameMap = Record<string, string>;
 function read_display_name_map(): AuditGroupDisplayNameMap {
     try {
         if (typeof sessionStorage === 'undefined') return {};
-        const raw = sessionStorage.getItem(STORAGE_KEY);
+        const raw = app_session_storage.getItem(STORAGE_KEY);
         if (!raw) return {};
         const parsed = JSON.parse(raw) as unknown;
         if (!parsed || typeof parsed !== 'object') return {};
@@ -28,7 +29,7 @@ function read_display_name_map(): AuditGroupDisplayNameMap {
 function write_display_name_map(map: AuditGroupDisplayNameMap): void {
     try {
         if (typeof sessionStorage === 'undefined') return;
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+        app_session_storage.setItem(STORAGE_KEY, JSON.stringify(map));
     } catch {
         // Ignorera t.ex. quota-fel; listan fungerar utan sparade namn.
     }

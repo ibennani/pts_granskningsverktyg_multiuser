@@ -270,6 +270,8 @@ export default {
     '^.+[\\\\/]audit_overview_continue_audit\\.js$': '<rootDir>/js/components/audit_overview_continue_audit.ts',
     '^.+[\\\\/]audit_overview_score_panel\\.js$': '<rootDir>/js/components/audit_overview_score_panel.ts',
     '^.+[\\\\/]audit_sync_tracking\\.js$': '<rootDir>/js/logic/audit_sync_tracking.ts',
+    '^.+[\\\\/]confirm_audit_missing_on_server\\.js$': '<rootDir>/js/logic/confirm_audit_missing_on_server.ts',
+    '^.+[\\\\/]scoped_browser_storage\\.js$': '<rootDir>/js/utils/scoped_browser_storage.ts',
     '^.+[\\\\/]audit_stuck_merge\\.js$': '<rootDir>/js/logic/audit_stuck_merge.ts',
     '^.+[\\\\/]audit_status_sync\\.js$': '<rootDir>/js/logic/audit_status_sync.ts',
     '^.+[\\\\/]audit_remote_reload\\.js$': '<rootDir>/js/logic/audit_remote_reload.ts',

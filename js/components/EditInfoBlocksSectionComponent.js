@@ -1,5 +1,6 @@
 // js/components/EditInfoBlocksSectionComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './rulefile_sections_view.css';
@@ -623,7 +624,7 @@ export const EditInfoBlocksSectionComponent = {
                 t('rulefile_info_blocks_order_saved'),
                 'success'
             );
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+            app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'info_blocks_order' });
         });
 
@@ -640,7 +641,7 @@ export const EditInfoBlocksSectionComponent = {
                 });
                 this.edit_baseline = null;
             }
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
+            app_session_storage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'info_blocks_order' });
         });
 

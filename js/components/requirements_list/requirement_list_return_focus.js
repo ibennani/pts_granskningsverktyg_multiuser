@@ -1,3 +1,4 @@
+import { app_session_storage } from '../../utils/scoped_browser_storage.js';
 /**
  * Återställer fokus till en kravrad efter navigering tillbaka till listan.
  * @module js/components/requirements_list/requirement_list_return_focus
@@ -15,7 +16,7 @@ export function apply_return_focus_if_needed(content_div_for_delegation, return_
 
     let raw = null;
     try {
-        raw = window.sessionStorage.getItem(return_focus_session_key);
+        raw = app_session_storage.getItem(return_focus_session_key);
     } catch (e) {
         return;
     }
@@ -26,7 +27,7 @@ export function apply_return_focus_if_needed(content_div_for_delegation, return_
         focus_instruction = JSON.parse(raw);
     } catch (e) {
         try {
-            window.sessionStorage.removeItem(return_focus_session_key);
+            app_session_storage.removeItem(return_focus_session_key);
         } catch (_) {
             // ignoreras medvetet
         }
@@ -37,7 +38,7 @@ export function apply_return_focus_if_needed(content_div_for_delegation, return_
     const sample_id = focus_instruction?.sampleId || null;
 
     try {
-        window.sessionStorage.removeItem(return_focus_session_key);
+        app_session_storage.removeItem(return_focus_session_key);
     } catch (_) {
         // ignoreras medvetet
     }

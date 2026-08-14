@@ -1,6 +1,7 @@
 // js/components/RequirementAuditSidebarComponent.ts
 // @ts-nocheck
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import { wrap_with_static_tooltip } from '../utils/generic_tooltip.js';
 import './requirement_audit_sidebar_component.css';
@@ -233,7 +234,7 @@ export class RequirementAuditSidebarComponent {
             await this.deps.onBeforeSidebarNavigate();
         }
         try {
-            window.sessionStorage?.setItem('gv_force_focus_h1_v1', 'true');
+            app_session_storage.setItem('gv_force_focus_h1_v1', 'true');
         } catch (_) {
             // ignoreras medvetet
         }

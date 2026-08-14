@@ -2,6 +2,7 @@
  * @fileoverview Tester för remoteStateHandlers (SET_REMOTE_AUDIT_ID m.m.).
  */
 
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { describe, expect, test } from '@jest/globals';
 import {
     reduce_discard_prepared_audit,
@@ -14,7 +15,7 @@ import { get_default_appendix1_sections } from '../../js/logic/appendix1_section
 
 describe('reduce_initialize_new_audit', () => {
     test('nollställer metadata utom inloggad granskare', () => {
-        sessionStorage.setItem('gv_current_user_name', 'Anna Granskare');
+        app_session_storage.setItem('gv_current_user_name', 'Anna Granskare');
         const current = {
             auditStatus: 'in_progress',
             auditMetadata: {
@@ -45,7 +46,7 @@ describe('reduce_initialize_new_audit', () => {
         });
         expect(typeof next.auditMetadata.appendix1SummaryText).toBe('string');
         expect(next.auditMetadata.appendix1SummaryText.length).toBeGreaterThan(0);
-        sessionStorage.removeItem('gv_current_user_name');
+        app_session_storage.removeItem('gv_current_user_name');
     });
 
     test('kopierar Bilaga 1-standardtext från regelfil vid ny granskning', () => {

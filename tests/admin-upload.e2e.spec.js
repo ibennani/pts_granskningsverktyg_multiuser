@@ -23,8 +23,9 @@ async function ensureSwedishAndDismissRestore(page) {
 
 async function ensureLoggedIn(page) {
     await page.evaluate(() => {
+        const gv_scope_storage_key = (base_key) => `gv:v2:${String(base_key || '').trim()}`;
         if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('gv_current_user_name', 'e2e-test-user');
+            sessionStorage.setItem(gv_scope_storage_key('gv_current_user_name'), 'e2e-test-user');
         }
         if (typeof window !== 'undefined') {
             window.__GV_CURRENT_USER_NAME__ = 'e2e-test-user';

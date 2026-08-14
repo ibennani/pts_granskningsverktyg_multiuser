@@ -1,3 +1,4 @@
+import { app_session_storage } from './scoped_browser_storage.js';
 /**
  * @fileoverview Dev: läser/sparar Vite-klienttid i sessionStorage och jämför med build-info.
  * HMR-registrering ligger i vite_dev_client_timestamp_hmr.ts (import.meta — undviker Jest-parserfel).
@@ -10,7 +11,7 @@ export const VITE_DEV_LAST_TS_STORAGE_KEY = 'gv_vite_client_last_ts';
  */
 export function read_vite_dev_client_timestamp_date (): Date | null {
     try {
-        const raw = sessionStorage.getItem(VITE_DEV_LAST_TS_STORAGE_KEY);
+        const raw = app_session_storage.getItem(VITE_DEV_LAST_TS_STORAGE_KEY);
         if (!raw) return null;
         const n = Number(raw);
         if (!Number.isFinite(n)) return null;

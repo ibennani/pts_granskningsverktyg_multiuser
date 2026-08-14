@@ -7,6 +7,7 @@
 import { build_reload_url } from '../utils/build_reload_url.js';
 import { hard_reload_page } from '../utils/hard_reload_page.js';
 import { set_version_reload_prompt } from './version_reload_prompt_state.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 export { build_reload_url };
 
@@ -97,7 +98,7 @@ export function init_version_check_service() {
     async function check_for_new_version() {
         if (already_shown) return;
         try {
-            const cooldown = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(NOTIFICATION_COOLDOWN_KEY);
+            const cooldown = app_session_storage.getItem(NOTIFICATION_COOLDOWN_KEY);
             if (cooldown) {
                 const elapsed = Date.now() - Number(cooldown);
                 if (elapsed >= 0 && elapsed < NOTIFICATION_COOLDOWN_MS) return;
@@ -125,7 +126,7 @@ export function init_version_check_service() {
         if (already_shown) return;
         already_shown = true;
         try {
-            sessionStorage.setItem(NOTIFICATION_COOLDOWN_KEY, String(Date.now()));
+            app_session_storage.setItem(NOTIFICATION_COOLDOWN_KEY, String(Date.now()));
         } catch (_) {
             // ignoreras medvetet
         }
@@ -207,7 +208,7 @@ export function init_version_check_service() {
                 verified_server_timestamp = info.timestamp;
                 // Respektera cooldown även vid "direkt vid start"-fall.
                 try {
-                    const cooldown = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(NOTIFICATION_COOLDOWN_KEY);
+                    const cooldown = app_session_storage.getItem(NOTIFICATION_COOLDOWN_KEY);
                     if (cooldown) {
                         const elapsed = Date.now() - Number(cooldown);
                         if (elapsed >= 0 && elapsed < NOTIFICATION_COOLDOWN_MS) return;

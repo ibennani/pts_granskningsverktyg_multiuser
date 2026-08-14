@@ -1,3 +1,4 @@
+import { app_local_storage } from '../utils/scoped_browser_storage.js';
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
@@ -185,7 +186,7 @@ export class GlobalActionBarComponent {
 
   set_theme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme_preference', theme);
+    app_local_storage.setItem('theme_preference', theme);
     // Button update is now handled by MutationObserver
   }
 

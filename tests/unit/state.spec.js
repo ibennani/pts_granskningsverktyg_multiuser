@@ -1,4 +1,5 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { scope_storage_key } from '../helpers/scoped_session_storage.ts';
 
 async function flush_notify_listeners() {
     await new Promise((resolve) => {
@@ -79,7 +80,7 @@ describe('state (js/state)', () => {
         const { APP_STATE_KEY } = await import('../../js/state/index.js');
         const { APP_STATE_VERSION } = await import('../../js/state/initialState.js');
         sessionStorage.setItem(
-            APP_STATE_KEY,
+            scope_storage_key(APP_STATE_KEY),
             JSON.stringify({
                 saveFileVersion: APP_STATE_VERSION,
                 samples: {},

@@ -1,6 +1,7 @@
 // js/components/BackupSettingsViewComponent.js
 // Egen vy för inställningar för säkerhetskopior (schema + retention).
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { get_backup_settings, update_backup_settings, is_current_user_admin } from '../api/client.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './backup_settings_view_component.css';
@@ -139,7 +140,7 @@ export class BackupSettingsViewComponent {
             await Promise.race([save_promise, timeout_promise]);
             if (typeof this.router === 'function') {
                 try {
-                    sessionStorage.setItem('gv_backup_settings_saved_message', 'backup_settings_saved_ok');
+                    app_session_storage.setItem('gv_backup_settings_saved_message', 'backup_settings_saved_ok');
                 } catch (_) {
                     // ignoreras medvetet
                 }

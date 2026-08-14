@@ -1,4 +1,5 @@
 import { get_current_user_name_window } from '../app/browser_globals.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 /**
  * Aktuell användare i runtime.
@@ -7,6 +8,6 @@ import { get_current_user_name_window } from '../app/browser_globals.js';
 export function get_current_user_name() {
     if (typeof window === 'undefined') return '';
     return (get_current_user_name_window() ||
-        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name'))) || '';
+        app_session_storage.getItem('gv_current_user_name')) || '';
 }
 

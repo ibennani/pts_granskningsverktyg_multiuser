@@ -5,6 +5,7 @@ import { jest, describe, test, expect, beforeAll, beforeEach, afterEach } from '
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
+import { scope_broadcast_channel_name } from '../../js/utils/scoped_browser_storage.ts';
 
 const spec_dir = path.dirname(fileURLToPath(import.meta.url));
 const client_path = path.join(spec_dir, '../../js/api/client.js');
@@ -17,6 +18,7 @@ const update_rule = jest.fn();
 const patch_rule_content_part = jest.fn();
 const load_audit_with_rule_file = jest.fn();
 const get_audit_version = jest.fn(async () => ({ version: null }));
+const get_audit = jest.fn();
 const get_auth_token = jest.fn(() => 'mock-jwt');
 const get_websocket_url = jest.fn(() => 'ws://localhost');
 const clear_audit_sync_pending = jest.fn();
@@ -35,6 +37,7 @@ jest.unstable_mockModule(client_path, () => ({
     patch_rule_content_part,
     load_audit_with_rule_file,
     get_audit_version,
+    get_audit,
     get_auth_token,
     get_websocket_url,
     api_patch_keepalive: jest.fn(() => true)
@@ -94,6 +97,9 @@ describe('server_sync', () => {
         update_audit.mockResolvedValue({ version: 9, ruleSetId: 'rs1', updated_at: '2026-05-21T13:05:56.000Z' });
         patch_requirement_result.mockResolvedValue({ version: 10, ruleSetId: 'rs1', updated_at: '2026-05-21T14:00:00.000Z' });
         get_audit_version.mockResolvedValue({ version: null });
+        get_audit.mockRejectedValue(
+            Object.assign(new Error('Granskning hittades inte'), { status: 404 })
+        );
         import_audit.mockResolvedValue({ auditId: 'new-a', version: 1, ruleSetId: null });
         update_rule.mockResolvedValue({ content: { ok: true }, version: 2 });
         is_fetch_network_error.mockImplementation(() => false);
@@ -614,6 +620,40 @@ describe('server_sync', () => {
         expect(update_audit).not.toHaveBeenCalled();
     });
 
+    test('run_sync: 404 utan bekräftad saknad granskning visar inte borttagen-modal', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
+        const err = Object.assign(new Error('Granskning hittades inte'), { status: 404 });
+        update_audit.mockRejectedValueOnce(err);
+        get_audit.mockResolvedValueOnce({ auditId: 'gone', version: 1 });
+        window.__gv_current_view_name = 'metadata';
+        window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = false;
+
+        const modal_show = jest.fn();
+        app_runtime_refs.modal_component = { show: modal_show };
+        const show_global = jest.fn();
+        app_runtime_refs.notification_component = { show_global_message: show_global };
+        window.Translation = { t: (k) => k };
+
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'gone',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
+        await sync_to_server_now(() => state, dispatch);
+
+        expect(get_audit).toHaveBeenCalledWith('gone');
+        expect(modal_show).not.toHaveBeenCalled();
+        expect(show_global).toHaveBeenCalled();
+
+        app_runtime_refs.modal_component = null;
+        app_runtime_refs.notification_component = null;
+        delete window.Translation;
+        delete window.__gv_current_view_name;
+        delete window.__GV_AUDIT_DELETED_MODAL_SHOWN__;
+    });
+
     test('run_sync: 404 granskning borttagen visar modalspår', async () => {
         const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
         note_audit_full_sync_required();
@@ -631,6 +671,7 @@ describe('server_sync', () => {
             auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
         });
         await sync_to_server_now(() => state, dispatch);
+        expect(get_audit).toHaveBeenCalledWith('gone');
         expect(show_global).toHaveBeenCalled();
         delete window.__gv_current_view_name;
         app_runtime_refs.notification_component = null;
@@ -702,7 +743,9 @@ describe('server_sync', () => {
             auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
         });
         await sync_to_server_now(() => state, dispatch);
-        expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
+        expect(global.BroadcastChannel).toHaveBeenCalledWith(
+            scope_broadcast_channel_name('granskningsverktyget-audit-updates')
+        );
         expect(broadcast_instances.length).toBeGreaterThan(0);
         const ch = broadcast_instances[broadcast_instances.length - 1];
         expect(ch.postMessage).toHaveBeenCalledWith(
@@ -721,7 +764,9 @@ describe('server_sync', () => {
         delete state.auditId;
         await sync_to_server_now(() => state, dispatch);
         expect(import_audit).toHaveBeenCalled();
-        expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
+        expect(global.BroadcastChannel).toHaveBeenCalledWith(
+            scope_broadcast_channel_name('granskningsverktyget-audit-updates')
+        );
         const ch = broadcast_instances[broadcast_instances.length - 1];
         expect(ch.postMessage).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -776,6 +821,7 @@ describe('server_sync', () => {
         });
         await sync_to_server_now(() => state, dispatch);
 
+        expect(get_audit).toHaveBeenCalledWith('gone');
         expect(modal_show).toHaveBeenCalled();
 
         app_runtime_refs.modal_component = null;

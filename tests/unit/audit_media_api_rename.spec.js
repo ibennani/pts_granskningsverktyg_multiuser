@@ -2,6 +2,7 @@
  * @fileoverview Enhetstester för omdöpning av granskningsmedia via API-klienten.
  */
 
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { get_audit_media_rename_url, rename_audit_media } from '../../js/api/audit_media_api.js';
 
@@ -9,7 +10,7 @@ describe('rename_audit_media', () => {
     beforeEach(() => {
         global.fetch = jest.fn();
         sessionStorage.clear();
-        sessionStorage.setItem('auth_token', 'test-token');
+        app_session_storage.setItem('auth_token', 'test-token');
     });
 
     test('lyckas när servern svarar med nytt filnamn', async () => {

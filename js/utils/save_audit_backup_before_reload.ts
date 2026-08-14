@@ -4,6 +4,7 @@
 
 import { getState } from '../state.js';
 import { get_api_base_url } from '../app/browser_globals.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 /**
  * Försöker spara säkerhetskopia av aktiv granskning. Fel ignoreras så omladdning kan fortsätta.
@@ -21,9 +22,7 @@ export async function save_audit_backup_before_reload(): Promise<void> {
         const api_base = String(get_api_base_url()).replace(/\/$/, '');
         let headers: Record<string, string> = { 'Content-Type': 'application/json' };
         try {
-            const token = typeof window !== 'undefined' && window.sessionStorage
-                ? window.sessionStorage.getItem('gv_auth_token')
-                : null;
+            const token = app_session_storage.getItem('gv_auth_token');
             if (token) {
                 headers = { ...headers, Authorization: `Bearer ${token}` };
             }

@@ -96,11 +96,20 @@ test.describe('Uppdatera regelfil (mockat API)', () => {
     test('varningssteg med knappar; tillbaka till översikt', async ({ page }) => {
         const session_state = buildState();
 
-        await page.addInitScript(
-            ({ key, state_json, token }) => {
-                sessionStorage.setItem(key, state_json);
-                sessionStorage.setItem('gv_auth_token', token);
-                sessionStorage.setItem('gv_current_user_is_admin', '0');
+        await page.addInitScript(({ key, state_json, token }) => {
+            const gv_scope_storage_key = (base_key) => {
+            const ns = 'v2';
+            return `gv:${ns}:${String(base_key || '').trim()}`;
+        };
+
+            const gv_scope_storage_key = (base_key) => {
+            const ns = 'v2';
+            return `gv:${ns}:${String(base_key || '').trim()}`;
+        };
+
+                sessionStorage.setItem(gv_scope_storage_key(key), state_json);
+                sessionStorage.setItem(gv_scope_storage_key('gv_auth_token'), token);
+                sessionStorage.setItem(gv_scope_storage_key('gv_current_user_is_admin'), '0');
             },
             {
                 key: 'digitalTillsynAppCentralState',

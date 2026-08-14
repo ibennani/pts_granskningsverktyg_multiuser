@@ -3,6 +3,7 @@
  */
 
 import { get_current_user_name } from '../user/current_user.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 const AUTH_USER_ID_KEY = 'gv_current_user_id';
 import {
@@ -27,7 +28,7 @@ export {
 function read_current_user_id_from_session(): string {
     if (typeof window === 'undefined') return '';
     try {
-        const raw = sessionStorage.getItem(AUTH_USER_ID_KEY);
+        const raw = app_session_storage.getItem(AUTH_USER_ID_KEY);
         return raw && String(raw).trim() ? String(raw).trim() : '';
     } catch {
         return '';

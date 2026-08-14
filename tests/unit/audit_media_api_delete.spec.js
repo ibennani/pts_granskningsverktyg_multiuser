@@ -2,6 +2,7 @@
  * @fileoverview Enhetstester för DELETE av granskningsmedia via API-klienten.
  */
 
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { delete_audit_media, get_audit_media_url } from '../../js/api/audit_media_api.js';
 
@@ -9,7 +10,7 @@ describe('delete_audit_media', () => {
     beforeEach(() => {
         global.fetch = jest.fn();
         sessionStorage.clear();
-        sessionStorage.setItem('auth_token', 'test-token');
+        app_session_storage.setItem('auth_token', 'test-token');
     });
 
     test('lyckas när servern svarar 204', async () => {

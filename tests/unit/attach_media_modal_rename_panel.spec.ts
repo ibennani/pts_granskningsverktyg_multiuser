@@ -2,6 +2,7 @@
  * @fileoverview Enhetstester för inline-panelen vid omdöpning av mediefiler.
  */
 
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { jest, describe, it, beforeEach, afterEach, expect } from '@jest/globals';
 import { ATTACH_MEDIA_INLINE_VIEW_TRANSITION_MS } from '../../shared/constants/modal_layout.ts';
 import { create_attach_media_modal_rename_panel } from '../../js/components/media/attach_media_modal_rename_panel.ts';
@@ -71,7 +72,7 @@ describe('create_attach_media_modal_rename_panel', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         sessionStorage.clear();
-        sessionStorage.setItem('auth_token', 'test-token');
+        app_session_storage.setItem('auth_token', 'test-token');
         working_filenames = ['cookie-banner_oversikt.png'];
         set_working_filenames = jest.fn((names: string[]) => {
             working_filenames = names;

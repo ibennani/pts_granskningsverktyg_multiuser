@@ -1,3 +1,4 @@
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import "./confirm_delete_requirement_view_component.css";
 import { find_requirement_definition, find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id, definition_primary_id } from '../audit_logic.js';
 
@@ -116,7 +117,7 @@ export class ConfirmDeleteViewComponent {
             // För raderade regelfilskrav vill vi fokusera på en titel-länk i listan (inte <h1>).
             if (deleteType === 'requirement' && this.params?.reqId) {
                 try {
-                    window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                    app_session_storage.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
                         deletedRequirementId: this.params.reqId,
                         createdAt: Date.now()
                     }));
@@ -124,15 +125,15 @@ export class ConfirmDeleteViewComponent {
                     // ignoreras medvetet
                 }
             } else if (config.focusOnSuccess === 'h1') {
-                sessionStorage.setItem('focusOnH1AfterLoad', 'true');
+                app_session_storage.setItem('focusOnH1AfterLoad', 'true');
             } else {
-                sessionStorage.setItem('focusAfterLoad', config.focusOnSuccess);
+                app_session_storage.setItem('focusAfterLoad', config.focusOnSuccess);
             }
             this.router(config.returnRoute, config.returnParams || {});
         };
 
         const handle_cancel = () => {
-            sessionStorage.setItem('focusAfterLoad', config.focusOnCancelSelector);
+            app_session_storage.setItem('focusAfterLoad', config.focusOnCancelSelector);
             this.router(config.returnRoute, config.returnParams || {});
         };
 

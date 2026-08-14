@@ -1,5 +1,6 @@
 // js/components/SettingsViewComponent.js
 
+import { app_local_storage } from '../utils/scoped_browser_storage.js';
 import { get_current_user_preferences, update_current_user_preferences, change_my_password } from '../api/client.js';
 import { is_saved_theme_preference } from '../logic/session_manager.js';
 import { get_current_user_name } from '../utils/helpers.js';
@@ -85,7 +86,7 @@ export class SettingsViewComponent {
     async handle_theme_change(event) {
         const theme = event.target?.value;
         if (theme === 'system') {
-            localStorage.removeItem('theme_preference');
+            app_local_storage.removeItem('theme_preference');
             const prefers_dark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
             document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
             try {
@@ -94,7 +95,7 @@ export class SettingsViewComponent {
                 /* ignorerar sparfel */
             }
         } else if (is_saved_theme_preference(theme)) {
-            localStorage.setItem('theme_preference', theme);
+            app_local_storage.setItem('theme_preference', theme);
             document.documentElement.setAttribute('data-theme', theme);
             try {
                 await update_current_user_preferences({ theme_preference: theme });
@@ -228,7 +229,7 @@ export class SettingsViewComponent {
         const theme_pref = this.user_preferences?.theme_preference;
         const saved = is_saved_theme_preference(theme_pref)
             ? theme_pref
-            : localStorage.getItem('theme_preference');
+            : app_local_storage.getItem('theme_preference');
         const current_pref = is_saved_theme_preference(saved) ? saved : 'system';
         const theme_options = [
             { value: 'light', label_key: 'light_mode' },

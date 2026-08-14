@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import { get_field_key, DraftManager } from '../../js/draft_manager.ts';
+import { get_draft_storage_prefix } from '../../js/utils/scoped_browser_storage.ts';
 
 describe('get_field_key', () => {
     test('ger unika nycklar för flera kryssrutor med samma name och olika value', () => {
@@ -62,7 +63,7 @@ describe('DraftManager.restoreIntoDom med flera selectedContentTypes', () => {
                 'checkbox:selectedContentTypes:y': { type: 'checkbox', value: false, extra: {} }
             }
         };
-        sessionStorage.setItem(`draft:${draft_key}`, JSON.stringify(payload));
+        sessionStorage.setItem(`${get_draft_storage_prefix()}${draft_key}`, JSON.stringify(payload));
 
         expect(c1.checked).toBe(false);
         expect(c2.checked).toBe(false);

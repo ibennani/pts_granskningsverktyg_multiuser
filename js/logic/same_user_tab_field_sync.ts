@@ -12,8 +12,9 @@ import {
 } from '../audit_logic.js';
 import type { RequirementResultStored } from './audit_logic_types.js';
 import { RequirementLookup } from './requirement_lookup.js';
+import { app_session_storage, scope_broadcast_channel_name } from '../utils/scoped_browser_storage.js';
 
-const CHANNEL_NAME = 'gv-same-user-field-sync';
+const CHANNEL_NAME = scope_broadcast_channel_name('gv-same-user-field-sync');
 
 let _channel: BroadcastChannel | null = null;
 let _tab_origin_id: string | null = null;
@@ -22,12 +23,12 @@ function get_tab_origin_id(): string {
     if (_tab_origin_id) return _tab_origin_id;
     try {
         const k = 'gv_tab_sync_origin';
-        let id = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(k) : null;
+        let id = app_session_storage.getItem(k);
         if (!id) {
             id = (typeof crypto !== 'undefined' && crypto.randomUUID)
                 ? crypto.randomUUID()
                 : `t-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            sessionStorage.setItem(k, id);
+            app_session_storage.setItem(k, id);
         }
         _tab_origin_id = id;
     } catch {

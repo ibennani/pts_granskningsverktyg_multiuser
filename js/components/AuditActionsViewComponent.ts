@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
@@ -127,7 +128,7 @@ export class AuditActionsViewComponent {
     _request_focus_on_audit_info_h2() {
         try {
             if (window.sessionStorage) {
-                window.sessionStorage.setItem(
+                app_session_storage.setItem(
                     this.RETURN_FOCUS_SESSION_KEY,
                     JSON.stringify({ focus: 'audit_info_h2' })
                 );

@@ -9,6 +9,7 @@ import {
     get_restore_focus_info,
     set_restore_position_getter
 } from '../app/browser_globals.js';
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 
 const FOCUS_STORAGE_KEY = 'gv_focus_by_scope_v1';
 
@@ -20,7 +21,7 @@ if (typeof window !== 'undefined') {
 
 export function load_focus_storage() {
     try {
-        const raw = window.sessionStorage?.getItem(FOCUS_STORAGE_KEY);
+        const raw = app_session_storage.getItem(FOCUS_STORAGE_KEY);
         if (!raw) return {};
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return {};
@@ -32,7 +33,7 @@ export function load_focus_storage() {
 
 export function save_focus_storage(storage) {
     try {
-        window.sessionStorage?.setItem(FOCUS_STORAGE_KEY, JSON.stringify(storage || {}));
+        app_session_storage.setItem(FOCUS_STORAGE_KEY, JSON.stringify(storage || {}));
     } catch {
         /* ignore */
     }
@@ -236,7 +237,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
 
     let raw = null;
     try {
-        raw = window.sessionStorage.getItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+        raw = app_session_storage.getItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
     } catch {
         return false;
     }
@@ -247,7 +248,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
         instruction = JSON.parse(raw);
     } catch {
         try {
-            window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+            app_session_storage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
         } catch (_) {
             // ignoreras medvetet
         }
@@ -256,7 +257,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
 
     if (instruction?.focus !== 'audit_info_h2') {
         try {
-            window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+            app_session_storage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
         } catch (_) {
             // ignoreras medvetet
         }
@@ -287,7 +288,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
                 heading.focus();
             }
             try {
-                window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+                app_session_storage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
             } catch (_) {
                 // ignoreras medvetet
             }
@@ -297,7 +298,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
         attempts_left -= 1;
         if (attempts_left <= 0) {
             try {
-                window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+                app_session_storage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
             } catch (_) {
                 // ignoreras medvetet
             }

@@ -18,6 +18,7 @@ import { memoryManager } from '../utils/memory_manager.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { get_current_user_actor_ref } from './current_user_actor.js';
 import { get_current_user_name_window, get_restore_position_via_hook } from '../app/browser_globals.js';
+import { app_local_storage } from '../utils/scoped_browser_storage.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
 import { init_audit_sync_lifecycle } from './audit_sync_lifecycle.js';
@@ -147,16 +148,16 @@ function apply_system_theme(): void {
 /** Tillämpar sparat tema eller systemläge (t.ex. vid borttaget "alternative"). */
 export function apply_theme_preference(theme: string | null | undefined): void {
     if (is_saved_theme_preference(theme)) {
-        localStorage.setItem('theme_preference', theme);
+        app_local_storage.setItem('theme_preference', theme);
         document.documentElement.setAttribute('data-theme', theme);
         return;
     }
-    localStorage.removeItem('theme_preference');
+    app_local_storage.removeItem('theme_preference');
     apply_system_theme();
 }
 
 export function set_initial_theme(): void {
-    apply_theme_preference(localStorage.getItem('theme_preference'));
+    apply_theme_preference(app_local_storage.getItem('theme_preference'));
 }
 
 export function is_dev_build_environment(): boolean {

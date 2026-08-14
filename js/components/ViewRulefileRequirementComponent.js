@@ -1,5 +1,6 @@
 // js/components/ViewRulefileRequirementComponent.js
 
+import { app_session_storage } from '../utils/scoped_browser_storage.js';
 import { marked, auto_convert_code_like_to_codeblocks } from '../utils/markdown.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import { find_requirement_definition } from '../audit_logic.js';
@@ -142,7 +143,7 @@ export class ViewRulefileRequirementComponent {
         });
         back_button_top.addEventListener('click', () => {
             try {
-                window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                app_session_storage.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
                     requirementId: requirement_id,
                     createdAt: Date.now()
                 }));
@@ -346,7 +347,7 @@ export class ViewRulefileRequirementComponent {
         });
         back_button_bottom.addEventListener('click', () => {
             try {
-                window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                app_session_storage.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
                     requirementId: requirement_id,
                     createdAt: Date.now()
                 }));

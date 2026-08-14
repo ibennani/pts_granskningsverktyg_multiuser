@@ -1,6 +1,7 @@
 /**
  * Tester för focus_manager.js
  */
+import { app_session_storage } from '../helpers/scoped_session_storage.ts';
 import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('focus_manager', () => {
@@ -27,7 +28,7 @@ describe('focus_manager', () => {
     });
 
     test('load_focus_storage hanterar ogiltig JSON', async () => {
-        sessionStorage.setItem('gv_focus_by_scope_v1', '{not-json');
+        app_session_storage.setItem('gv_focus_by_scope_v1', '{not-json');
         const { load_focus_storage } = await import('../../js/logic/focus_manager.js');
         expect(load_focus_storage()).toEqual({});
     });
@@ -179,7 +180,7 @@ describe('focus_manager', () => {
 
     test('apply_post_render_focus_instruction: audit_overview med sessionStorage-instruktion', async () => {
         jest.useFakeTimers();
-        sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
+        app_session_storage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
         const { apply_post_render_focus_instruction } = await import('../../js/logic/focus_manager.js');
         const root = document.createElement('div');
         const h2 = document.createElement('h2');
