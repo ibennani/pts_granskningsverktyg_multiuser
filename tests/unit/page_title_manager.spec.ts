@@ -17,7 +17,7 @@ function make_t_simple() {
     const map: Record<string, string> = {
         app_title: 'Leffe',
         app_title_suffix: 'Digital tillsyn',
-        menu_link_manage_audits: 'Alla ärenden',
+        menu_link_manage_audits: 'Alla granskningar',
         audit_title: 'Granskning',
         audit_title_audits: 'Mina granskningar',
         audit_title_rules: 'Regler',
@@ -102,13 +102,13 @@ describe('page_title_manager', () => {
 
     test('build_page_title returnerar suffix och vytext', () => {
         const title = build_page_title('start', {}, { getState, Translation });
-        expect(title).toContain('Alla ärenden');
+        expect(title).toContain('Alla granskningar');
         expect(title).toContain('Digital tillsyn');
     });
 
     test('get_page_title_prefix för huvudvyer i switch', () => {
         const cases: [string, PageTitleRouteParams, string][] = [
-            ['start', {}, 'Alla ärenden'],
+            ['start', {}, 'Alla granskningar'],
             ['audit', {}, 'Granskning'],
             ['audit_audits', {}, 'Mina granskningar'],
             ['audit_rules', {}, 'Regler'],
@@ -357,7 +357,7 @@ describe('page_title_manager', () => {
     test('build_page_title utan actor utanför granskning', () => {
         const title = build_page_title('start', {}, { getState, Translation });
         expect(title.startsWith('Bolag')).toBe(false);
-        expect(title).toContain('Alla ärenden');
+        expect(title).toContain('Alla granskningar');
     });
 
     test('build_page_title är identisk på test-server och v2', () => {
@@ -370,26 +370,26 @@ describe('page_title_manager', () => {
             return build_page_title('start', {}, { getState, Translation });
         })();
         expect(title_test).toBe(title_v2);
-        expect(title_test).toContain('Alla ärenden');
+        expect(title_test).toContain('Alla granskningar');
     });
 
     test('updatePageTitle med testserver-prefix på /test-server/', () => {
         window.history.pushState({}, '', '/test-server/');
         updatePageTitle('start', {}, { getState, Translation });
         expect(document.title.startsWith('Testserver Leffe: ')).toBe(true);
-        expect(document.title).toContain('Alla ärenden');
+        expect(document.title).toContain('Alla granskningar');
     });
 
     test('updatePageTitle utan testserver-prefix på /v2/', () => {
         window.history.pushState({}, '', '/v2/');
         updatePageTitle('start', {}, { getState, Translation });
         expect(document.title.startsWith('Testserver Leffe: ')).toBe(false);
-        expect(document.title).toContain('Alla ärenden');
+        expect(document.title).toContain('Alla granskningar');
     });
 
     test('updatePageTitle skriver document.title', () => {
         updatePageTitle('start', {}, { getState, Translation });
-        expect(document.title).toContain('Alla ärenden');
+        expect(document.title).toContain('Alla granskningar');
     });
 
     test('updatePageTitleFromCurrentView använder aktuell vy', () => {

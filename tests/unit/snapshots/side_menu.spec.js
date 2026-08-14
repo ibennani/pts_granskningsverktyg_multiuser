@@ -24,7 +24,7 @@ function build_translation() {
         left_menu_images_with_count: 'Bilder ({count})',
         left_menu_problems_with_count: 'Problem ({count})',
         left_menu_actions: 'Åtgärder',
-        audit_title_audits: 'Alla ärenden',
+        audit_title_audits: 'Alla granskningar',
         menu_link_logout: 'Logga ut',
     };
     return {
