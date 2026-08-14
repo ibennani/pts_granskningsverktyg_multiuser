@@ -98,7 +98,7 @@ test.describe('Inloggning (mockat API)', () => {
         await page.locator('#login-password-input').fill('secret123');
         await page.getByRole('button', { name: 'Logga in', exact: true }).click();
 
-        await expect(page.getByRole('heading', { name: 'Alla ärenden' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Hantera granskningar' })).toBeVisible();
     });
 
     test('felaktiga uppgifter visar felmeddelande', async ({ page }) => {
@@ -135,7 +135,7 @@ test.describe('Inloggning (mockat API)', () => {
         await page.locator('#login-user-input').fill('testuser');
         await page.locator('#login-password-input').fill('secret123');
         await page.getByRole('button', { name: 'Logga in', exact: true }).click();
-        await expect(page.getByRole('heading', { name: 'Alla ärenden' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Hantera granskningar' })).toBeVisible();
         await ensureSwedishAndDismissRestore(page);
 
         const logout_link = page.locator('nav#side-menu-nav a').filter({ hasText: /^Logga ut$/ });

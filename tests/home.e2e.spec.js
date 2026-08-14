@@ -35,7 +35,7 @@ test.describe('Startsida', () => {
 
     const h1 = page.locator('h1');
     await expect(h1).toBeVisible();
-    await expect(h1).toContainText('Alla ärenden');
+    await expect(h1).toContainText('Hantera granskningar');
 
     const auditsHeading = page.getByRole('heading', { name: /Pågående granskningar: \d+ st/ });
     await expect(auditsHeading).toBeVisible();

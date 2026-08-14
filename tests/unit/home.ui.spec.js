@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const indexHtmlPath = path.resolve(__dirname, '..', '..', 'index.html');
 
 const translations = {
-  audit_title_audits: 'Alla ärenden',
+  audit_title_audits: 'Hantera granskningar',
   start_view_audits_heading: 'Pågående granskningar',
   start_view_section_heading_with_count: '{title}: {count} st',
   start_view_new_audits_heading: 'Ej påbörjade granskningar',
@@ -133,7 +133,7 @@ test('renders start view with heading and audits section', async () => {
   const { StartViewComponent, appContainer } = await renderStartView();
 
   const h1 = screen.getByRole('heading', { level: 1 });
-  expect(h1).toHaveTextContent('Alla ärenden');
+  expect(h1).toHaveTextContent('Hantera granskningar');
 
   const h2 = screen.getByRole('heading', { name: /Pågående granskningar: \d+ st/ });
   expect(h2).toBeInTheDocument();
