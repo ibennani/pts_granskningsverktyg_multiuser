@@ -528,7 +528,9 @@ export class RequirementAuditComponent {
 
         const state_for_compare = this.getState();
         const sample_row = state_for_compare?.samples?.find(s => String(s.id) === String(this.params.sampleId));
-        const previous_from_store = sample_row?.requirementResults?.[this.requirement_map_key];
+        const previous_from_store = sample_row
+            ? this._get_stored_requirement_result_for_current(sample_row, state_for_compare)
+            : undefined;
         if (
             options.forcePersist !== true &&
             previous_from_store &&
@@ -728,6 +730,30 @@ export class RequirementAuditComponent {
         void this._flush_audit_requirement_to_server();
     }
 
+    _get_stored_requirement_result_for_current(
+        sample = this.current_sample,
+        state = this.getState()
+    ) {
+        if (!sample || !this.requirement_map_key) {
+            return undefined;
+        }
+        const results = sample.requirementResults || {};
+        const direct = results[this.requirement_map_key];
+        if (!this.current_requirement || !state?.ruleFileContent?.requirements) {
+            return direct;
+        }
+        const lookup = this.AuditLogic?.get_stored_requirement_result_for_def;
+        if (typeof lookup !== 'function') {
+            return direct;
+        }
+        return lookup(
+            results,
+            state.ruleFileContent.requirements,
+            this.current_requirement,
+            this.requirement_map_key
+        );
+    }
+
     load_and_prepare_view_data() {
         const state = this.getState();
         
@@ -778,7 +804,7 @@ export class RequirementAuditComponent {
             return false;
         }
 
-        const result_from_store = (this.current_sample.requirementResults || {})[this.requirement_map_key];
+        const result_from_store = this._get_stored_requirement_result_for_current(this.current_sample, state);
         
         this.current_result = result_from_store 
             ? (() => {
@@ -1419,7 +1445,9 @@ export class RequirementAuditComponent {
 
         const state_for_compare = this.getState();
         const sample_row = state_for_compare?.samples?.find(s => String(s.id) === String(this.params.sampleId));
-        const previous_from_store = sample_row?.requirementResults?.[this.requirement_map_key];
+        const previous_from_store = sample_row
+            ? this._get_stored_requirement_result_for_current(sample_row, state_for_compare)
+            : undefined;
         if (previous_from_store
             && typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function'
             && this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)) {
