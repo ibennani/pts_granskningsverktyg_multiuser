@@ -4,6 +4,8 @@
  */
 
 import { FILENAME_DISPLAY_TIMEZONE } from '../../shared/datetime/filename_datetime.js';
+import { is_user_uuid } from '../../shared/user/user_identity.js';
+import { normalize_user_id_key } from './user_identity.js';
 import type { RuleFileForAudit, SampleStored } from './audit_logic_types.js';
 import { calculate_overall_audit_progress } from './audit_logic_progress.js';
 import { get_relevant_requirements_for_sample } from './audit_logic_requirements_lists.js';
@@ -29,9 +31,19 @@ function part_value(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatP
     return parts.find((p) => p.type === type)?.value ?? '00';
 }
 
-/** Normaliserar användarnyckel (samma konvention som granskningslistans per-användare-filter). */
-export function normalize_resume_user_key(user_name: string): string {
-    return String(user_name || '').trim().toLowerCase();
+/** Normaliserar användarnyckel (användar-id eller legacy visningsnamn). */
+export function normalize_resume_user_key(user_ref: string): string {
+    const trimmed = String(user_ref || '').trim();
+    if (!trimmed) return '';
+    if (is_user_uuid(trimmed)) return normalize_user_id_key(trimmed);
+    return trimmed.toLowerCase();
+}
+
+function resolve_resume_lookup_keys(user_ref: string): string[] {
+    const primary = normalize_resume_user_key(user_ref);
+    if (!primary) return [];
+    if (is_user_uuid(user_ref)) return [primary];
+    return [primary];
 }
 
 /** Datum och klockslag i Europe/Stockholm för resume-metadata. */
@@ -75,36 +87,41 @@ function coerce_resume_map(metadata: Record<string, unknown> | null | undefined)
 
 export function get_user_resume_from_metadata(
     metadata: Record<string, unknown> | null | undefined,
-    user_name: string
+    user_ref: string
 ): UserRequirementResumeEntry | null {
-    const key = normalize_resume_user_key(user_name);
-    if (!key) return null;
-    const entry = coerce_resume_map(metadata)[key];
-    if (!entry || typeof entry !== 'object') return null;
-    const sample_id = String(entry.sampleId || '').trim();
-    const requirement_id = String(entry.requirementId || '').trim();
-    const focus_info = entry.focusInfo;
-    if (!sample_id || !requirement_id) return null;
-    if (!focus_info || typeof focus_info !== 'object' || Array.isArray(focus_info)) return null;
-    return entry;
+    const keys = resolve_resume_lookup_keys(user_ref);
+    if (!keys.length) return null;
+    const map = coerce_resume_map(metadata);
+    for (const key of keys) {
+        const entry = map[key];
+        if (!entry || typeof entry !== 'object') continue;
+        const sample_id = String(entry.sampleId || '').trim();
+        const requirement_id = String(entry.requirementId || '').trim();
+        const focus_info = entry.focusInfo;
+        if (!sample_id || !requirement_id) continue;
+        if (!focus_info || typeof focus_info !== 'object' || Array.isArray(focus_info)) continue;
+        return entry;
+    }
+    return null;
 }
 
 export function build_resume_metadata_patch(
     metadata: Record<string, unknown> | null | undefined,
-    user_name: string,
+    user_ref: string,
     sample_id: string,
     requirement_id: string,
     focus_info: ResumeFocusInfo,
-    updated_at_iso?: string | null
+    updated_at_iso?: string | null,
+    display_name = ''
 ): Record<string, unknown> {
-    const key = normalize_resume_user_key(user_name);
-    const display_name = String(user_name || '').trim();
+    const key = normalize_resume_user_key(user_ref);
+    const resolved_display = String(display_name || user_ref || '').trim();
     const ts = format_resume_local_timestamp(updated_at_iso ?? null);
     const prev_map = coerce_resume_map(metadata);
     const next_map: ResumeMetadataMap = {
         ...prev_map,
         [key]: {
-            displayUserName: display_name,
+            displayUserName: resolved_display,
             lastUpdatedDate: ts.date,
             lastUpdatedTime: ts.time,
             lastUpdatedAtIso: ts.iso,
@@ -142,23 +159,40 @@ export function is_valid_user_resume(state: Record<string, unknown>, resume: Use
     return relevant.some((req_def) => definition_primary_id(req_def) === String(resume.requirementId));
 }
 
+export function user_id_exists_in_instance(
+    user_id: string,
+    known_users: Array<{ id?: string | null }> | null | undefined
+): boolean {
+    const key = normalize_user_id_key(user_id);
+    if (!key || !Array.isArray(known_users)) return false;
+    return known_users.some((u) => normalize_user_id_key(String(u?.id || '')) === key);
+}
+
+/** @deprecated Använd user_id_exists_in_instance */
 export function user_name_exists_in_instance(
     user_name: string,
-    known_users: Array<{ name?: string | null }> | null | undefined
+    known_users: Array<{ name?: string | null; id?: string | null }> | null | undefined
 ): boolean {
     const key = normalize_resume_user_key(user_name);
     if (!key || !Array.isArray(known_users)) return false;
+    if (is_user_uuid(user_name)) {
+        return user_id_exists_in_instance(user_name, known_users);
+    }
     return known_users.some((u) => normalize_resume_user_key(String(u?.name || '')) === key);
 }
 
 export function should_show_audit_overview_continue_button(
     state: Record<string, unknown>,
-    user_name: string,
-    known_users: Array<{ name?: string | null }> | null | undefined
+    user_ref: string,
+    known_users: Array<{ id?: string | null; name?: string | null }> | null | undefined
 ): boolean {
     if (String(state.auditStatus || '') !== 'in_progress') return false;
-    if (!normalize_resume_user_key(user_name)) return false;
-    if (!user_name_exists_in_instance(user_name, known_users)) return false;
+    if (!normalize_resume_user_key(user_ref)) return false;
+    if (is_user_uuid(user_ref)) {
+        if (!user_id_exists_in_instance(user_ref, known_users)) return false;
+    } else if (!user_name_exists_in_instance(user_ref, known_users)) {
+        return false;
+    }
 
     const progress = calculate_overall_audit_progress(state as Parameters<typeof calculate_overall_audit_progress>[0]);
     const { audited, total } = progress;
@@ -167,7 +201,7 @@ export function should_show_audit_overview_continue_button(
     if (pct <= 0 || pct >= 100) return false;
 
     const metadata = state.auditMetadata as Record<string, unknown> | undefined;
-    const resume = get_user_resume_from_metadata(metadata, user_name);
+    const resume = get_user_resume_from_metadata(metadata, user_ref);
     if (!resume) return false;
     return is_valid_user_resume(state, resume);
 }

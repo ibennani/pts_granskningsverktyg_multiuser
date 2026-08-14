@@ -428,7 +428,7 @@ export class EditMetadataViewComponent {
     _has_required_metadata(form_data) {
         if (!form_data) return false;
         const has = (v) => (v !== null && v !== undefined && String(v).trim() !== '');
-        return has(form_data.actorName) && has(form_data.auditorName);
+        return has(form_data.actorName) && has(form_data.responsibleUserId || form_data.auditorName);
     }
 
     _show_required_fields_modal(form_data, source, on_proceed) {
@@ -440,7 +440,7 @@ export class EditMetadataViewComponent {
         const t = this.Translation.t;
         const has = (v) => (v !== null && v !== undefined && String(v).trim() !== '');
         const missing_actor = !has(form_data?.actorName);
-        const missing_auditor = !has(form_data?.auditorName);
+        const missing_auditor = !has(form_data?.responsibleUserId) && !has(form_data?.auditorName);
         const from_list = source === 'go_to_list';
         const suffix = from_list ? '_from_list' : '';
         let message_key = `metadata_required_fields_modal_message${suffix}`;

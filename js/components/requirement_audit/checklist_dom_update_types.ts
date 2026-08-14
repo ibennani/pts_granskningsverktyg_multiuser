@@ -77,12 +77,13 @@ export interface ChecklistDomUpdateHost extends ChecklistStatusButtonHost {
             check_id: string,
             pc_id: string
         ) => string;
-        getRemoteLock: (part_key: string) => { user_name?: string } | null;
+        getRemoteLock: (part_key: string) => { user_id?: string; user_name?: string } | null;
         ensureClientLockId: (part_key: string) => string;
         isRemoteLockHeldByOtherUser: (
-            remote_lock: { user_name?: string } | null,
+            remote_lock: { user_id?: string; user_name?: string } | null,
             user_name: string,
-            client_lock_id: string
+            client_lock_id: string,
+            current_user_id?: string | null
         ) => boolean;
     } | null;
     get_audit_id?: (() => string | null) | null;

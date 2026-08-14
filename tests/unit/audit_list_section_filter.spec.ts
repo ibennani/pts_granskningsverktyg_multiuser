@@ -122,6 +122,16 @@ describe('filter_audits_by_current_user', () => {
         sessionStorage.removeItem('gv_current_user_name');
     });
 
+    it('matchar responsibleUserId mot inloggad användare', () => {
+        sessionStorage.setItem('gv_current_user_id', 'user-anna');
+        const list = [
+            { ...make_audit(1, 'in_progress', { auditorName: 'Anna' }), responsibleUserId: 'user-anna' },
+            { ...make_audit(2, 'in_progress', { auditorName: 'Bob' }), responsibleUserId: 'user-bob' }
+        ];
+        expect(filter_audits_by_current_user(list).map((a) => a.id)).toEqual([1]);
+        sessionStorage.removeItem('gv_current_user_id');
+    });
+
     it('returnerar tom lista utan inloggad användare', () => {
         sessionStorage.removeItem('gv_current_user_name');
         const list = [make_audit(1, 'in_progress', { auditorName: 'Anna' })];

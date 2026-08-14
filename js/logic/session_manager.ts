@@ -16,6 +16,7 @@ import {
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
 import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_actor_ref } from './current_user_actor.js';
 import { get_current_user_name_window, get_restore_position_via_hook } from '../app/browser_globals.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
@@ -406,11 +407,11 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                 }
                 const view_name = get_current_view_name_rendered();
                 const state_now = getState() as { auditStatus?: string };
-                const user_name = get_current_user_name();
+                const user_ref = get_current_user_actor_ref();
                 if (
                     view_name === 'requirement_audit'
                     && state_now?.auditStatus === 'in_progress'
-                    && user_name.trim()
+                    && user_ref.trim()
                     && parsed_params
                     && typeof parsed_params === 'object'
                     && !Array.isArray(parsed_params)
@@ -422,7 +423,7 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                         dispatch({
                             type: StoreActionTypes.UPDATE_USER_REQUIREMENT_RESUME,
                             payload: {
-                                userName: user_name,
+                                userName: user_ref,
                                 sampleId: sample_id,
                                 requirementId: requirement_id,
                                 focusInfo: info,

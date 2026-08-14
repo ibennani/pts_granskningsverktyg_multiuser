@@ -84,7 +84,9 @@ describe('AuditOverviewComponent snapshot', () => {
     test('renderar översikt med rubrik, progress och bristindex', async () => {
         jest.unstable_mockModule(client_module_abs, () => ({
             get_rules: jest.fn().mockResolvedValue([]),
-            get_users: jest.fn().mockResolvedValue([])
+            get_users: jest.fn().mockResolvedValue([]),
+            get_auditor_options: jest.fn().mockResolvedValue([]),
+            get_current_user_id: jest.fn(() => null)
         }));
 
         const Helpers = await import('../../../js/utils/helpers.js');

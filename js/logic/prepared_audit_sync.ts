@@ -16,6 +16,7 @@ type PreparedAuditStateLike = {
     auditStatus?: string;
     ruleFileContent?: unknown;
     auditMetadata?: AuditMetadataLike;
+    responsibleUserId?: string | null;
 };
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
@@ -29,9 +30,14 @@ function field_has_value(value: unknown): boolean {
 /**
  * Obligatoriska metadatafält för att en förberedd granskning ska kunna visas i listan.
  */
-export function has_required_audit_metadata(metadata: AuditMetadataLike | null | undefined): boolean {
+export function has_required_audit_metadata(
+    metadata: AuditMetadataLike | null | undefined,
+    responsible_user_id?: string | null
+): boolean {
+    const has_auditor =
+        field_has_value(responsible_user_id) || field_has_value(metadata?.auditorName);
     return field_has_value(metadata?.actorName)
-        && field_has_value(metadata?.auditorName)
+        && has_auditor
         && field_has_value(metadata?.auditTypeId);
 }
 
@@ -46,7 +52,7 @@ export function should_sync_prepared_audit_to_list(
     if (!target_view_name || !LIST_VIEW_NAMES.has(target_view_name)) return false;
     if (state.auditStatus !== 'not_started') return false;
     if (state.auditId) return false;
-    return has_required_audit_metadata(state.auditMetadata);
+    return has_required_audit_metadata(state.auditMetadata, state.responsibleUserId);
 }
 
 /**

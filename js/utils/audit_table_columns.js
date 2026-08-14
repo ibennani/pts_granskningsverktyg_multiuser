@@ -1,10 +1,15 @@
 // js/utils/audit_table_columns.js
 // Returnerar kolumndefinitioner för granskningstabellen, används med GenericTableComponent.
 
+import { read_audit_auditor_display_name } from '../logic/user_identity.js';
 import {
     get_group_actor_display_sort_value,
     resolve_group_actor_display_name
 } from '../logic/audit_list_group_display_names.js';
+import {
+    get_group_auditor_sort_value,
+    resolve_auditor_group_display_name
+} from '../logic/audit_list_case_grouping.js';
 import { create_file_download_button } from './file_download_button_ui.js';
 import { audit_row_granskningstyp_display_label } from './audit_type_display_label.js';
 
@@ -106,8 +111,8 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         {
             columnKey: 'auditor',
             headerLabel: t('start_view_col_auditor'),
-            getSortValue: (row) => (row.metadata?.auditorName ?? '').toString().trim(),
-            getContent: (row) => (row.metadata?.auditorName ?? '').toString().trim() || EMPTY_PLACEHOLDER
+            getSortValue: (row) => read_audit_auditor_display_name(row),
+            getContent: (row) => read_audit_auditor_display_name(row) || EMPTY_PLACEHOLDER
         },
         {
             columnKey: 'last_updated',
@@ -189,8 +194,9 @@ export function create_audit_group_table_columns(deps, opts = {}) {
         return [
             {
                 headerLabel: t('start_view_col_auditor'),
-                getSortValue: (row) => (row.group_key ?? '').toString().trim(),
-                getContent: (row) => (row.group_key ?? '').toString().trim() || EMPTY_PLACEHOLDER
+                getSortValue: (row) => get_group_auditor_sort_value(row.audits || []),
+                getContent: (row) =>
+                    resolve_auditor_group_display_name(row.group_key ?? '', row.audits || []) || EMPTY_PLACEHOLDER
             },
             {
                 headerLabel: t('audit_group_col_count'),

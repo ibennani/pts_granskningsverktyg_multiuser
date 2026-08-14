@@ -49,6 +49,13 @@ describe('metadata auditor name field', () => {
         ]);
     });
 
+    test('build_metadata_auditor_options använder username när name saknas', () => {
+        const options = build_metadata_auditor_options([
+            { id: 'user-x', name: '', username: 'xuser' },
+        ]);
+        expect(options).toEqual([{ value: 'user-x', label: 'xuser' }]);
+    });
+
     test('metadata_form_create_auditor_name_field väljer initialt användar-id', () => {
         const options = build_metadata_auditor_options([
             { id: 'user-1', name: 'Anna Andersson' },

@@ -2,7 +2,7 @@
  * @fileoverview Reducer för atomisk import av handläggar-Word.
  */
 import * as AuditLogic from '../audit_logic.js';
-import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_actor_ref } from '../logic/current_user_actor.js';
 import { find_requirement_definition } from '../logic/audit_logic_lookup.js';
 import {
     calculate_check_status,
@@ -69,7 +69,7 @@ export function reduce_apply_observation_word_import(
     }
 
     const requirements = (current_state.ruleFileContent as { requirements?: unknown })?.requirements;
-    const updated_by = get_current_user_name();
+    const updated_by = get_current_user_actor_ref();
     const now_iso = get_current_iso_datetime_utc();
 
     const grouped = new Map<string, ObservationWordImportApplyPayload['changes']>();

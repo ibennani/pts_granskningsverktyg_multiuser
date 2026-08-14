@@ -1,7 +1,8 @@
 // js/components/RequirementAuditComponent.ts
 // @ts-nocheck
 
-import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_id } from '../api/client.js';
+import { get_current_user_actor_ref } from '../logic/current_user_actor.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
@@ -549,7 +550,7 @@ export class RequirementAuditComponent {
             modified_result_object.lastStatusUpdateBy = previous_from_store.lastStatusUpdateBy ?? null;
         } else {
             modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
-            modified_result_object.lastStatusUpdateBy = get_current_user_name();
+            modified_result_object.lastStatusUpdateBy = get_current_user_actor_ref();
         }
 
         const saved = dispatch_persist_sync({
@@ -1049,7 +1050,7 @@ export class RequirementAuditComponent {
 
         const current_time = this.Helpers.get_current_iso_datetime_utc();
 
-        const current_user = get_current_user_name();
+        const current_user = get_current_user_actor_ref();
         let logical_change_payload: Record<string, unknown> | null = null;
         if (change_info.type === 'check_overall_status_change') {
             const previous_status = check_result.overallStatus || 'not_audited';
@@ -1459,7 +1460,7 @@ export class RequirementAuditComponent {
             modified_result_object.lastStatusUpdateBy = previous_from_store.lastStatusUpdateBy ?? null;
         } else {
             modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
-            modified_result_object.lastStatusUpdateBy = get_current_user_name();
+            modified_result_object.lastStatusUpdateBy = get_current_user_actor_ref();
         }
 
         return this.dispatch({
@@ -1885,8 +1886,9 @@ export class RequirementAuditComponent {
             const my_client_lock_id = ensure_client_lock_id_for_part(part_key);
             const locked_by_other = is_remote_lock_held_by_other_user(
                 remote_lock,
-                get_current_user_name(),
-                my_client_lock_id
+                get_current_user_actor_ref(),
+                my_client_lock_id,
+                get_current_user_id()
             );
 
             // Om granskningen är arkiverad är fältet alltid låst

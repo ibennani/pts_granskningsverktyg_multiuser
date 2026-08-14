@@ -15,7 +15,7 @@ export async function fetch_audits_index_rows(status) {
     const hasPublished = await has_rule_sets_published_content_column();
     let sql;
     if (hasPublished) {
-        sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at::text AS updated_at,
+        sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.responsible_user_id, a.created_at, a.updated_at::text AS updated_at,
             COALESCE(
                 NULLIF(TRIM(COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content))->'metadata'->>'title'), ''),
                 r.name
@@ -23,7 +23,7 @@ export async function fetch_audits_index_rows(status) {
             COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content)) as rule_content
             FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
     } else {
-        sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at::text AS updated_at,
+        sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.responsible_user_id, a.created_at, a.updated_at::text AS updated_at,
             COALESCE(
                 NULLIF(TRIM(COALESCE(a.rule_file_content, r.content)->'metadata'->>'title'), ''),
                 r.name

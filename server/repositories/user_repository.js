@@ -133,6 +133,17 @@ export async function count_audits_by_metadata_auditor_name(auditor_name) {
  * @param {string} user_id
  * @returns {Promise<import('pg').QueryResult>}
  */
+export async function count_audits_by_responsible_user_id(user_id) {
+    return query(
+        'SELECT COUNT(*) AS count FROM audits WHERE responsible_user_id = $1',
+        [user_id]
+    );
+}
+
+/**
+ * @param {string} user_id
+ * @returns {Promise<import('pg').QueryResult>}
+ */
 export async function delete_user_by_id(user_id) {
     return query('DELETE FROM users WHERE id = $1 RETURNING id', [user_id]);
 }

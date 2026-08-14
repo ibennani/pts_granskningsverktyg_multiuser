@@ -1,6 +1,6 @@
 // js/state/auditReducer.ts
 import * as AuditLogic from '../audit_logic.js';
-import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_actor_ref } from '../logic/current_user_actor.js';
 import { ActionTypes } from './actionTypes.js';
 import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
 import { remove_stale_requirement_result_aliases } from './auditResultAliases.js';
@@ -271,7 +271,7 @@ export function auditReducer(current_state: any, action: any) {
                 current_state,
                 { target_sample_id: null, requirement_id: null },
                 timestamp,
-                get_current_user_name()
+                get_current_user_actor_ref()
             );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
@@ -292,7 +292,7 @@ export function auditReducer(current_state: any, action: any) {
                 current_state,
                 { target_sample_id: sample_id, requirement_id: null },
                 timestamp,
-                get_current_user_name()
+                get_current_user_actor_ref()
             );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
@@ -313,7 +313,7 @@ export function auditReducer(current_state: any, action: any) {
                 current_state,
                 { target_sample_id: null, requirement_id },
                 timestamp,
-                get_current_user_name()
+                get_current_user_actor_ref()
             );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);

@@ -279,7 +279,7 @@ router.post('/', async (req: Request, res: Response) => {
         }
         const { rule_set_id } = body;
         const r = req as AuthedRequest;
-        const last_updated_by = r.user ? r.user.name : null;
+        const last_updated_by = r.user ? (r.user.id || r.user.name || null) : null;
         const ruleResult = await fetch_rule_set_by_id(rule_set_id);
         if (ruleResult.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });

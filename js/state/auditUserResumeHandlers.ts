@@ -15,12 +15,12 @@ export function reduce_update_user_requirement_resume(current_state: Record<stri
     }
 
     const payload = action.payload || {};
-    const user_name = String(payload.userName || '').trim();
+    const user_ref = String(payload.userId || payload.userName || '').trim();
     const sample_id = String(payload.sampleId || '').trim();
     const requirement_id = String(payload.requirementId || '').trim();
     const focus_info = payload.focusInfo;
 
-    if (!normalize_resume_user_key(user_name) || !sample_id || !requirement_id) {
+    if (!normalize_resume_user_key(user_ref) || !sample_id || !requirement_id) {
         return current_state;
     }
     if (!focus_info || typeof focus_info !== 'object' || Array.isArray(focus_info)) {
@@ -30,11 +30,12 @@ export function reduce_update_user_requirement_resume(current_state: Record<stri
     const updated_at_iso = typeof payload.updatedAtIso === 'string' ? payload.updatedAtIso : get_current_iso_datetime_utc();
     const audit_metadata = build_resume_metadata_patch(
         current_state.auditMetadata as Record<string, unknown> | undefined,
-        user_name,
+        user_ref,
         sample_id,
         requirement_id,
         focus_info as Record<string, unknown>,
-        updated_at_iso
+        updated_at_iso,
+        String(payload.displayUserName || payload.userName || '').trim()
     );
 
     const now_iso = get_current_iso_datetime_utc();

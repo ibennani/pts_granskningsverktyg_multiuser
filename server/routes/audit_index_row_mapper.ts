@@ -51,6 +51,7 @@ function map_valid_audit_index_row(row: AuditIndexRow): Record<string, unknown> 
         version: row.version,
         rule_set_name: row.rule_set_name,
         last_updated_by: row.last_updated_by || null,
+        responsibleUserId: row.responsible_user_id || null,
         created_at: row.created_at,
         updated_at: row.updated_at,
         last_updated_display_at: resolve_audit_list_last_updated_at({

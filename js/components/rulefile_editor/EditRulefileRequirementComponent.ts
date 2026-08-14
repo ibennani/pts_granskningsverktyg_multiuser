@@ -7,7 +7,8 @@
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
 import { patch_rule_content_part } from '../../api/client.js';
 import { subscribe_rule_locks } from '../../logic/list_push_service.js';
-import { get_current_user_name } from '../../utils/helpers.js';
+import { get_current_user_id } from '../../api/client.js';
+import { get_current_user_actor_ref } from '../../logic/current_user_actor.js';
 import {
     init_rulefile_lock_service,
     try_acquire_rulefile_part_lock,
@@ -1063,7 +1064,12 @@ export class EditRulefileRequirementComponent {
                     }
                     const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
                     const my_client_lock_id = part_key ? ensure_client_lock_id_for_part(part_key) : null;
-                    const locked_by_other = is_remote_lock_held_by_other_user(remote_lock, get_current_user_name(), my_client_lock_id);
+                    const locked_by_other = is_remote_lock_held_by_other_user(
+                        remote_lock,
+                        get_current_user_actor_ref(),
+                        my_client_lock_id,
+                        get_current_user_id()
+                    );
                     const want_readonly = locked_by_other;
                     textarea.readOnly = want_readonly;
                     textarea.classList.toggle('readonly-textarea', want_readonly);
@@ -1116,7 +1122,7 @@ export class EditRulefileRequirementComponent {
                                 if (had_lock) {
                                     await release_rulefile_part_lock({ rule_set_id: rsid, part_key });
                                     post_same_user_field_commit({
-                                        userName: get_current_user_name(),
+                                        userName: get_current_user_actor_ref(),
                                         ruleSetId: rsid,
                                         partKey: part_key,
                                         value: v

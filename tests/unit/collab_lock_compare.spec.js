@@ -23,6 +23,29 @@ describe('is_remote_lock_held_by_other_user', () => {
         expect(is_remote_lock_held_by_other_user({ user_name: 'Bob' }, 'Ada')).toBe(true);
     });
 
+    test('samma user_id ger false även vid olika namn', () => {
+        const user_id = '550e8400-e29b-41d4-a716-446655440000';
+        expect(
+            is_remote_lock_held_by_other_user(
+                { user_id, user_name: 'Bob' },
+                'Ada',
+                undefined,
+                user_id
+            )
+        ).toBe(false);
+    });
+
+    test('olika user_id ger true', () => {
+        expect(
+            is_remote_lock_held_by_other_user(
+                { user_id: '550e8400-e29b-41d4-a716-446655440000', user_name: 'Bob' },
+                'Bob',
+                undefined,
+                '660e8400-e29b-41d4-a716-446655440001'
+            )
+        ).toBe(true);
+    });
+
     test('tomt lokalt namn men server har namn räknas som annan', () => {
         expect(is_remote_lock_held_by_other_user({ user_name: 'Bob' }, '')).toBe(true);
     });

@@ -21,9 +21,12 @@ function has_non_empty_trimmed_string(value) {
 export function has_saved_audit_metadata_for_navigation(full_state) {
     const meta = full_state?.auditMetadata;
     if (!meta || typeof meta !== 'object') return false;
+    const has_responsible =
+        has_non_empty_trimmed_string(full_state?.responsibleUserId)
+        || has_non_empty_trimmed_string(meta.auditorName);
     return (
         has_non_empty_trimmed_string(meta.actorName) &&
-        has_non_empty_trimmed_string(meta.auditorName)
+        has_responsible
     );
 }
 

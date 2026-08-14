@@ -1,4 +1,4 @@
-import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_actor_ref } from '../logic/current_user_actor.js';
 import './audit_images_view_component.css';
 import '../../css/components/attach_media_modal.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
@@ -23,7 +23,8 @@ import { fill_audit_media_filenames_list, revoke_audit_media_blob_urls } from '.
 import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
 
 export class AuditImagesViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -191,7 +192,7 @@ export class AuditImagesViewComponent {
                     });
                     requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
                     requirement_result_ref.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc?.() || new Date().toISOString();
-                    requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+                    requirement_result_ref.lastStatusUpdateBy = get_current_user_actor_ref();
                 }
 
                 this.dispatch({
@@ -247,7 +248,7 @@ export class AuditImagesViewComponent {
             });
             requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
             requirement_result_ref.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc?.() || new Date().toISOString();
-            requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+            requirement_result_ref.lastStatusUpdateBy = get_current_user_actor_ref();
         }
 
         this.dispatch({

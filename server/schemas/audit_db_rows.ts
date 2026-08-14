@@ -30,6 +30,7 @@ export const AuditIndexRowSchema = z.object({
     version: z.coerce.number().optional(),
     rule_set_name: z.string().optional(),
     last_updated_by: z.string().nullable().optional(),
+    responsible_user_id: z.string().nullable().optional(),
     created_at: z.string().nullable().optional(),
     updated_at: z.string().nullable().optional(),
     samples: JsonValueSchema.optional(),

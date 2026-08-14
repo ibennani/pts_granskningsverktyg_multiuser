@@ -13,9 +13,10 @@ describe('audit_default_entry_view', () => {
         expect(has_saved_audit_metadata_for_navigation({ auditMetadata: {} })).toBe(false);
         expect(
             has_saved_audit_metadata_for_navigation({
+                responsibleUserId: 'user-1',
                 auditMetadata: { actorName: 'A', auditorName: '' }
             })
-        ).toBe(false);
+        ).toBe(true);
         expect(
             has_saved_audit_metadata_for_navigation({
                 auditMetadata: { actorName: ' A ', auditorName: ' B ' }

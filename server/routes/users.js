@@ -15,6 +15,7 @@ import {
     update_user_password_by_id,
     select_user_id_name_by_id,
     count_audits_by_metadata_auditor_name,
+    count_audits_by_responsible_user_id,
     delete_user_by_id
 } from '../repositories/user_repository.js';
 
@@ -80,13 +81,14 @@ router.get('/admin-contacts', async (_req, res) => {
 router.get('/auditor-options', async (_req, res) => {
     try {
         const result = await query(
-            `SELECT id, name FROM users
+            `SELECT id, name, username FROM users
              ORDER BY COALESCE(NULLIF(TRIM(name), ''), username) ASC, username ASC`,
             []
         );
         res.json(result.rows.map((row) => ({
             id: row.id,
-            name: row.name
+            name: row.name,
+            username: row.username
         })));
     } catch (err) {
         console.error('[users] GET /auditor-options error:', err);
@@ -347,8 +349,7 @@ router.get('/:id/audit-count', requireAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
 
-        const user_name = userResult.rows[0].name;
-        const auditResult = await count_audits_by_metadata_auditor_name(user_name);
+        const auditResult = await count_audits_by_responsible_user_id(id);
         const raw_count = auditResult.rows[0] && auditResult.rows[0].count;
         const audit_count = Number.isFinite(Number(raw_count)) ? Number(raw_count) : 0;
 

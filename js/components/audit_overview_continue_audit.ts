@@ -2,7 +2,7 @@
  * @fileoverview «Fortsätt där du slutade» — knapp och klick på granskningsöversikten.
  */
 
-import { get_users } from '../api/client.js';
+import { get_auditor_options, get_current_user_id } from '../api/client.js';
 import { set_restore_focus_info } from '../app/browser_globals.js';
 import {
     collect_ordered_sample_open_hrefs,
@@ -15,7 +15,7 @@ import {
 } from '../logic/audit_user_requirement_resume.js';
 import { get_current_user_name } from '../user/current_user.js';
 
-type InstanceUser = { name?: string | null };
+type InstanceUser = { id?: string | null; name?: string | null; username?: string | null };
 
 type HelpersLike = {
     create_element: (
@@ -47,7 +47,7 @@ export function load_instance_users_for_continue() {
         return Promise.resolve(cached_instance_users);
     }
     if (!instance_users_load_promise) {
-        instance_users_load_promise = get_users()
+        instance_users_load_promise = get_auditor_options()
             .then((data) => {
                 cached_instance_users = Array.isArray(data) ? data : [];
                 return cached_instance_users;
@@ -73,7 +73,7 @@ export function should_show_continue_audit_button(
     state: Record<string, unknown>,
     known_users: InstanceUser[] | null | undefined
 ) {
-    return should_show_audit_overview_continue_button(state, get_current_user_name(), known_users);
+    return should_show_audit_overview_continue_button(state, get_current_user_id() || get_current_user_name(), known_users);
 }
 
 function navigate_to_resume_requirement(
@@ -99,10 +99,10 @@ export function handle_continue_audit_click({
     focus_element?: HTMLElement | null;
 }) {
     const state = getState();
-    const user_name = get_current_user_name();
+    const user_ref = get_current_user_id() || get_current_user_name();
     const resume = get_user_resume_from_metadata(
         state.auditMetadata as Record<string, unknown> | null | undefined,
-        user_name
+        user_ref
     );
     if (!resume) return;
 

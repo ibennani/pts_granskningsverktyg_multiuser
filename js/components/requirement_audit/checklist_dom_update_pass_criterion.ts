@@ -2,7 +2,8 @@
  * @fileoverview DOM-uppdatering per godkännandekriterium i ChecklistHandler.
  */
 
-import { get_current_user_name } from '../../utils/helpers.js';
+import { get_current_user_id } from '../../api/client.js';
+import { get_current_user_actor_ref } from '../../logic/current_user_actor.js';
 import { can_edit_observation_detail } from '../../logic/audit_observation_edit_policy.js';
 import {
     button_aria_label_with_context,
@@ -99,7 +100,7 @@ function update_observation_lock_ui(
             remote_lock = host.lock_helpers.getRemoteLock(part_key);
             const my_client_lock_id = host.lock_helpers.ensureClientLockId(part_key);
             locked_by_other = host.lock_helpers.isRemoteLockHeldByOtherUser(
-                remote_lock, get_current_user_name(), my_client_lock_id
+                remote_lock, get_current_user_actor_ref(), my_client_lock_id, get_current_user_id()
             );
         }
     }

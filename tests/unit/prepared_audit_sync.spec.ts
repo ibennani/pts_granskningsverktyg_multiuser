@@ -17,6 +17,12 @@ describe('prepared_audit_sync', () => {
         expect(has_required_audit_metadata({ actorName: 'A', auditorName: 'G' })).toBe(false);
         expect(has_required_audit_metadata({ actorName: 'A', auditorName: '', auditTypeId: 't' })).toBe(false);
         expect(has_required_audit_metadata({ actorName: '', auditorName: 'G', auditTypeId: 't' })).toBe(false);
+        expect(
+            has_required_audit_metadata(
+                { actorName: 'A', auditTypeId: 't' },
+                '550e8400-e29b-41d4-a716-446655440000'
+            )
+        ).toBe(true);
     });
 
     test('should_sync_prepared_audit_to_list för not_started utan auditId mot start', () => {

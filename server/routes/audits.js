@@ -239,6 +239,7 @@ router.get('/', async (req, res) => {
                 version: row.version,
                 rule_set_name: row.rule_set_name,
                 last_updated_by: row.last_updated_by || null,
+                responsibleUserId: row.responsible_user_id || null,
                 created_at: row.created_at,
                 updated_at: row.updated_at
             };
@@ -583,7 +584,7 @@ router.get('/:id/export', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { rule_set_id } = req.body;
-        const last_updated_by = req.user ? req.user.name : null;
+        const last_updated_by = req.user ? (req.user.id || req.user.name || null) : null;
         if (!rule_set_id) {
             return res.status(400).json({ error: 'rule_set_id krävs' });
         }
@@ -666,7 +667,7 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
                 : 'JSON-strukturen är för stor (för många fält eller värden).';
             return res.status(400).json({ error: msg });
         }
-        const last_updated_by = req.user ? req.user.name : null;
+        const last_updated_by = req.user ? (req.user.id || req.user.name || null) : null;
         const audit_validation = validate_saved_audit_file(data, {
             t: (key, replacements) => audit_import_t(key, replacements || {})
         });
@@ -863,7 +864,7 @@ router.patch('/:id', async (req, res) => {
         if (!Number.isFinite(expect_num)) {
             return res.status(400).json({ error: 'expectedVersion måste vara ett tal' });
         }
-        const last_updated_by = req.user ? req.user.name : null;
+        const last_updated_by = req.user ? (req.user.id || req.user.name || null) : null;
         const updates = [];
         const values = [];
         let i = 1;
@@ -1052,7 +1053,7 @@ router.patch('/:id/results/:sampleId/:requirementId', async (req, res) => {
     try {
         const { id, sampleId, requirementId } = req.params;
         const { version, result: newResult } = req.body;
-        const last_updated_by = req.user ? req.user.name : null;
+        const last_updated_by = req.user ? (req.user.id || req.user.name || null) : null;
         const auditResult = await query(
             `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
              FROM audits WHERE id = $1`, [id]

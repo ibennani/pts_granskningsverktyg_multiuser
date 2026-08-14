@@ -3,7 +3,7 @@
  */
 
 import { resolve_map_entry } from '../../audit_logic.js';
-import { get_current_user_name } from '../../utils/helpers.js';
+import { get_current_user_actor_ref } from '../../logic/current_user_actor.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import { is_debug_stuck_sync } from '../../app/runtime_flags.js';
 import { consoleManager } from '../../utils/console_manager.js';
@@ -116,7 +116,7 @@ function apply_stuck_description_to_result_ref(
     host.requirement_result_ref.stuckProblemDescription = description;
     host.requirement_result_ref.lastStatusUpdate = host.Helpers?.get_current_iso_datetime_utc?.()
         || new Date().toISOString();
-    host.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+    host.requirement_result_ref.lastStatusUpdateBy = get_current_user_actor_ref();
 }
 
 async function persist_stuck_modal_change_and_close(
@@ -296,7 +296,7 @@ function build_copy_observation_modal_content(
                     const ts = host.Helpers?.get_current_iso_datetime_utc
                         ? host.Helpers.get_current_iso_datetime_utc()
                         : new Date().toISOString();
-                    (pc_paste.value as { timestamp?: string; updatedBy?: string }).updatedBy = get_current_user_name();
+                    (pc_paste.value as { timestamp?: string; updatedBy?: string }).updatedBy = get_current_user_actor_ref();
                     (pc_paste.value as { timestamp?: string; updatedBy?: string }).timestamp = ts;
                 }
                 textarea.value = text_to_paste;

@@ -19,8 +19,14 @@ describe('audit_list_case_grouping', () => {
         expect(normalize_case_number({ metadata: {} })).toBe('');
     });
 
-    test('normalize_auditor_name trimmar metadata', () => {
-        expect(normalize_auditor_name({ metadata: { auditorName: '  Anna  ' } })).toBe('Anna');
+    test('normalize_auditor_name använder ansvarig användare som nyckel', () => {
+        expect(normalize_auditor_name({ metadata: { auditorName: '  Anna  ' } })).toBe('anna');
+        expect(
+            normalize_auditor_name({
+                responsibleUserId: '550E8400-E29B-41D4-A716-446655440000',
+                metadata: { auditorName: 'Anna' }
+            })
+        ).toBe('550e8400-e29b-41d4-a716-446655440000');
         expect(normalize_auditor_name({ metadata: {} })).toBe('');
     });
 
@@ -49,7 +55,7 @@ describe('audit_list_case_grouping', () => {
         expect(singles).toHaveLength(1);
         expect(singles[0].id).toBe('3');
         expect(groups).toHaveLength(1);
-        expect(groups[0].group_key).toBe('Leffe');
+        expect(groups[0].group_key).toBe('leffe');
         expect(groups[0].audits).toHaveLength(2);
     });
 
@@ -102,8 +108,8 @@ describe('audit_list_case_grouping', () => {
         ]);
 
         expect(groups).toHaveLength(2);
-        expect(groups[0].group_key).toBe('Anna');
-        expect(groups[1].group_key).toBe('Zara');
+        expect(groups[0].group_key).toBe('anna');
+        expect(groups[1].group_key).toBe('zara');
     });
 
     test('build_audit_list_groups väljer läge', () => {
@@ -139,7 +145,7 @@ describe('audit_list_case_grouping', () => {
         ];
         const groups = build_audit_auditor_groups(audits, { min_group_size: 1 });
         expect(groups).toHaveLength(2);
-        expect(groups.map((g) => g.group_key)).toEqual(['Anna', 'Bob']);
+        expect(groups.map((g) => g.group_key)).toEqual(['anna', 'bob']);
         expect(groups.every((g) => g.audits.length === 1)).toBe(true);
     });
 
@@ -160,7 +166,7 @@ describe('audit_list_case_grouping', () => {
         const filtered = audits.filter((a) => a.metadata?.auditorName === 'Anna');
         const groups = build_audit_list_groups(filtered, 'auditor', { min_group_size: 1 });
         expect(groups).toHaveLength(1);
-        expect(groups[0].group_key).toBe('Anna');
+        expect(groups[0].group_key).toBe('anna');
         expect(groups[0].audits).toHaveLength(2);
     });
 

@@ -16,7 +16,7 @@ import {
     find_import_conflict_audit_id
 } from './audit_import_internals.js';
 
-type AuthedRequest = Request & { user?: { name?: string | null } };
+type AuthedRequest = Request & { user?: { id?: string | null; name?: string | null } };
 
 export function register_audit_import_route(router: IRouter, import_limiter: RequestHandler): void {
     router.post('/import', import_limiter, async (req: Request, res: Response) => {
@@ -38,7 +38,7 @@ export function register_audit_import_route(router: IRouter, import_limiter: Req
                 return res.status(400).json({ error: msg });
             }
             const r = req as AuthedRequest;
-            const last_updated_by = r.user ? r.user.name : null;
+            const last_updated_by = r.user ? (r.user.id || r.user.name || null) : null;
             const audit_validation = validate_saved_audit_file(data, {
                 t: (key: string, replacements?: Record<string, string | number>) =>
                     audit_import_t(key, replacements || {})

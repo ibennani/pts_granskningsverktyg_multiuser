@@ -4,8 +4,8 @@
 
 import { DEFAULT_AUDIT_TYPES } from '../../shared/rulefile/rulefile_audit_types.js';
 import { audit_row_granskningstyp_display_label } from '../utils/audit_type_display_label.js';
-import { get_current_user_name } from '../user/current_user.js';
 import { filter_text_matches } from '../utils/string_filter_normalize.js';
+import { audit_row_belongs_to_current_user } from './user_identity.js';
 
 export type AuditListRow = {
     id?: string | number;
@@ -13,6 +13,8 @@ export type AuditListRow = {
     audit_type?: string;
     granskningstyp_id?: string;
     granskningstyp_label?: string;
+    responsibleUserId?: string | null;
+    responsible_user_id?: string | null;
     metadata?: {
         caseNumber?: string;
         actorName?: string;
@@ -110,14 +112,9 @@ export function filter_audits_by_text(list: AuditListRow[], query_raw: string): 
     });
 }
 
-/** Filtrerar till granskningar där metadata.auditorName matchar inloggad användare. */
+/** Filtrerar till granskningar där ansvarig användare är inloggad. */
 export function filter_audits_by_current_user(list: AuditListRow[]): AuditListRow[] {
-    const current = get_current_user_name().trim().toLowerCase();
-    if (!current) return [];
-    return list.filter((a) => {
-        const auditor = (a.metadata?.auditorName ?? '').toString().trim().toLowerCase();
-        return auditor === current;
-    });
+    return list.filter((row) => audit_row_belongs_to_current_user(row));
 }
 
 /** Samlar unika granskningstyper för filterdropdown (alltid minst standardtyperna). */

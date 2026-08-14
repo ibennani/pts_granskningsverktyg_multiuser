@@ -3,6 +3,9 @@
  */
 
 import { get_auditor_options } from '../api/client.js';
+import {
+    build_account_select_options,
+} from '../../shared/user/user_identity.js';
 
 type HelpersLike = {
     create_element: (
@@ -42,16 +45,9 @@ export function clear_metadata_auditor_options_cache(): void {
 
 /** Bygger sorterade alternativ från användarlistan. */
 export function build_metadata_auditor_options(
-    users: Array<{ id?: string | null; name?: string | null }>
+    users: Array<{ id?: string | null; name?: string | null; username?: string | null }>
 ): MetadataAuditorOption[] {
-    const rows: MetadataAuditorOption[] = [];
-    for (const user of users) {
-        const id = user?.id != null ? String(user.id).trim() : '';
-        const name = user?.name != null ? String(user.name).trim() : '';
-        if (!id || !name) continue;
-        rows.push({ value: id, label: name });
-    }
-    return rows.sort((a, b) => a.label.localeCompare(b.label, 'sv'));
+    return build_account_select_options(users);
 }
 
 /** Hämtar och cachar granskare-alternativ via GET /users/auditor-options. */

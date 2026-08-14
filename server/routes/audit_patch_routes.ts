@@ -26,7 +26,7 @@ import {
     purge_orphan_audit_snapshots,
 } from '../services/audit_snapshot_cleanup_service.js';
 
-type AuthedRequest = Request & { user?: { name?: string | null } };
+type AuthedRequest = Request & { user?: { id?: string | null; name?: string | null } };
 
 export function register_audit_patch_routes(router: IRouter): void {
     router.patch('/:id', async (req: Request, res: Response) => {
@@ -46,7 +46,7 @@ export function register_audit_patch_routes(router: IRouter): void {
                 expectedVersion: expect_num
             } = body;
             const r = req as AuthedRequest;
-            const last_updated_by = r.user ? r.user.name : null;
+            const last_updated_by = r.user ? (r.user.id || r.user.name || null) : null;
             const updates: string[] = [];
             const values: unknown[] = [];
             let i = 1;
@@ -200,7 +200,7 @@ export function register_audit_patch_routes(router: IRouter): void {
             }
             const { version, result: newResult } = body;
             const r = req as AuthedRequest;
-            const last_updated_by = r.user ? r.user.name : null;
+            const last_updated_by = r.user ? (r.user.id || r.user.name || null) : null;
             const auditResult = await query(
                 `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
              FROM audits WHERE id = $1`,

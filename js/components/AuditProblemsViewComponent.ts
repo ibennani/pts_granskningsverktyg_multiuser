@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_actor_ref } from '../logic/current_user_actor.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { marked } from '../utils/markdown.js';
@@ -419,7 +419,7 @@ export class AuditProblemsViewComponent {
             const modified_result = JSON.parse(JSON.stringify(req_result));
             modified_result.stuckProblemDescription = '';
             modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
-            modified_result.lastStatusUpdateBy = get_current_user_name();
+            modified_result.lastStatusUpdateBy = get_current_user_actor_ref();
             if (req_def && this.AuditLogic?.calculate_requirement_status) {
                 modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
             }
@@ -515,7 +515,7 @@ export class AuditProblemsViewComponent {
                     const modified_result = JSON.parse(JSON.stringify(base_res));
                     modified_result.stuckProblemDescription = description;
                     modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
-                    modified_result.lastStatusUpdateBy = get_current_user_name();
+                    modified_result.lastStatusUpdateBy = get_current_user_actor_ref();
                     if (rd2 && this.AuditLogic?.calculate_requirement_status) {
                         modified_result.status = this.AuditLogic.calculate_requirement_status(rd2, modified_result);
                     }
@@ -555,7 +555,7 @@ export class AuditProblemsViewComponent {
                         const modified_result = JSON.parse(JSON.stringify(base3));
                         modified_result.stuckProblemDescription = '';
                         modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
-                        modified_result.lastStatusUpdateBy = get_current_user_name();
+                        modified_result.lastStatusUpdateBy = get_current_user_actor_ref();
                         if (rd3 && this.AuditLogic?.calculate_requirement_status) {
                             modified_result.status = this.AuditLogic.calculate_requirement_status(rd3, modified_result);
                         }

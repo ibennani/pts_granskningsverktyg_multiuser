@@ -2,9 +2,13 @@
  * @fileoverview Delar upp granskningar i grupper för grupperad listvy.
  */
 
+import { audit_responsible_group_key } from './user_identity.js';
+
 /** Minimal radform för gruppering. */
 export interface AuditRowForGrouping {
     id?: string | number;
+    responsibleUserId?: string | null;
+    responsible_user_id?: string | null;
     metadata?: {
         caseNumber?: string;
         actorName?: string;
@@ -56,9 +60,9 @@ export function normalize_case_number(audit: AuditRowForGrouping): string {
     return (audit.metadata?.caseNumber ?? '').toString().trim();
 }
 
-/** Returnerar trimmat granskarnamn från granskningens metadata. */
+/** Returnerar gruppnyckel för ansvarig granskare (användar-id om finns). */
 export function normalize_auditor_name(audit: AuditRowForGrouping): string {
-    return (audit.metadata?.auditorName ?? '').toString().trim();
+    return audit_responsible_group_key(audit);
 }
 
 /** Sorteringsnyckel: tomma värden hamnar sist. */
@@ -93,9 +97,32 @@ export function format_group_actor_names(audits: AuditRowForGrouping[]): string 
     return (oldest?.metadata?.actorName ?? '').toString().trim();
 }
 
+/** Visningsnamn för granskargrupp (äldsta granskningen i gruppen). */
+export function format_group_auditor_names(audits: AuditRowForGrouping[]): string {
+    const oldest = get_oldest_audit_in_group(audits);
+    if (!oldest) return '';
+    const name = String(oldest.metadata?.auditorName ?? '').trim();
+    return name;
+}
+
+/** Visningsnamn för granskargrupp utifrån nyckel och rader. */
+export function resolve_auditor_group_display_name(
+    group_key: string,
+    audits: AuditRowForGrouping[]
+): string {
+    const from_audits = format_group_auditor_names(audits);
+    if (from_audits) return from_audits;
+    return String(group_key ?? '').trim();
+}
+
 /** Sorteringsvärde för aktörskolumn i grupprad. */
 export function get_group_actor_sort_value(audits: AuditRowForGrouping[]): string {
     return format_group_actor_names(audits);
+}
+
+/** Sorteringsvärde för granskarkolumn i grupprad. */
+export function get_group_auditor_sort_value(audits: AuditRowForGrouping[]): string {
+    return empty_last_sort_key(format_group_auditor_names(audits));
 }
 
 /** Sorteringsnyckel för äldst till nyast (senast ändrad, sedan skapad). */
