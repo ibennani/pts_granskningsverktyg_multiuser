@@ -743,13 +743,14 @@ export class EditMetadataViewComponent {
         const form_rule_file_content = defer_rule_until_save
             ? this._form_only_rule_file_content
             : state_after_rule.ruleFileContent;
+        const rule_already_loaded = Boolean(state_after_rule.ruleFileContent);
         const monitoring_type_confirmed = defer_rule_until_save
             ? Boolean(this._form_pending_monitoring_key && form_rule_file_content)
-            : this._monitoring_type_confirmed_by_user;
+            : rule_already_loaded || this._monitoring_type_confirmed_by_user;
         const selected_monitoring_key = defer_rule_until_save
             ? (this._form_pending_monitoring_key || '')
             : resolve_metadata_form_monitoring_key(
-                this._monitoring_type_confirmed_by_user,
+                monitoring_type_confirmed,
                 state_after_rule.ruleSetId,
                 this.monitoring_type_options
             );

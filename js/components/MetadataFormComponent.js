@@ -510,18 +510,26 @@ export const MetadataFormComponent = {
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.form_element_ref.addEventListener('submit', this.handle_form_submit);
 
-        const show_monitoring_dropdown =
-            showMonitoringTypeSelection && monitoringTypeOptions.length > 0;
         const monitoring_display_label = resolve_monitoring_type_display_label(
             ruleFileContent,
             monitoringTypeOptions,
             selectedMonitoringKey
         );
+        const show_monitoring_dropdown =
+            showMonitoringTypeSelection
+            && monitoringTypeOptions.length > 0
+            && !monitoringTypeConfirmed;
 
-        if (show_monitoring_dropdown) {
-            const effective_monitoring_key = monitoringTypeConfirmed
-                ? String(selectedMonitoringKey ?? '').trim()
-                : '';
+        if (monitoringTypeConfirmed && monitoring_display_label) {
+            const readonly_group = metadata_form_create_monitoring_type_readonly_field(
+                this.Helpers,
+                this.Translation,
+                monitoring_display_label
+            );
+            this.form_element_ref.appendChild(readonly_group);
+            this._set_monitoring_type_readonly_handles(readonly_group, selectedMonitoringKey);
+        } else if (show_monitoring_dropdown) {
+            const effective_monitoring_key = '';
             const monitoring_field = metadata_form_create_monitoring_type_field(
                 this.Helpers,
                 this.Translation,

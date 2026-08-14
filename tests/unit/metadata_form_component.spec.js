@@ -133,7 +133,7 @@ describe('MetadataFormComponent audit type field order', () => {
         expect(select?.options[0].textContent).toBe('Välj vad som ska granskas');
     });
 
-    test('render visar valt alternativ när monitoring bekräftats av användaren', () => {
+    test('render visar skrivskyddad text när monitoring bekräftats av användaren', () => {
         instance.render({
             ruleFileContent: WEBB_RULE,
             showMonitoringTypeSelection: true,
@@ -143,8 +143,9 @@ describe('MetadataFormComponent audit type field order', () => {
             auditStatus: 'not_started',
         });
 
-        const select = root.querySelector('#monitoringTypeKey');
-        expect(select?.value).toBe('Webbplats');
+        expect(root.querySelector('#monitoringTypeKey')).toBeNull();
+        const value_el = root.querySelector('.metadata-field-value');
+        expect(value_el?.textContent).toBe('Webb');
     });
 
     test('render placerar granskningstyp direkt efter vad-som-ska-granskas när val bekräftats', () => {
