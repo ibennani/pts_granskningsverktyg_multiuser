@@ -386,6 +386,8 @@ export default {
     '^.+[\\\\/]page_screenshot_cookie_consent_logic\\.js$': '<rootDir>/server/services/page_screenshot_cookie_consent_logic.ts',
     '^.+[\\\\/]page_screenshot_intrusive_overlay\\.js$': '<rootDir>/server/services/page_screenshot_intrusive_overlay.ts',
     '^.+[\\\\/]page_screenshot_intrusive_overlay_logic\\.js$': '<rootDir>/server/services/page_screenshot_intrusive_overlay_logic.ts',
+    '^.+[\\\\/]page_screenshot_intrusive_overlay_cache_logic\\.js$': '<rootDir>/server/services/page_screenshot_intrusive_overlay_cache_logic.ts',
+    '^.+[\\\\/]page_screenshot_intrusive_overlay_cache\\.js$': '<rootDir>/server/services/page_screenshot_intrusive_overlay_cache.ts',
     '^.+[\\\\/]overlay/intrusive_overlay_patterns\\.js$': '<rootDir>/server/services/overlay/intrusive_overlay_patterns.ts',
     '^.+[\\\\/]page_screenshot_consent_cache_logic\\.js$': '<rootDir>/server/services/page_screenshot_consent_cache_logic.ts',
     '^.+[\\\\/]page_screenshot_consent_cache\\.js$': '<rootDir>/server/services/page_screenshot_consent_cache.ts',

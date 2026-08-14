@@ -54,4 +54,13 @@ describe('page_screenshot_intrusive_overlay_logic', () => {
         expect(hide.hide_selectors).toContain('#intercom-container');
         expect(dismiss.overlay_detection.context_keywords).toContain('nyhetsbrev');
     });
+
+    test('build_intrusive_overlay_dismiss_config prioriterar domän-hints', () => {
+        const dismiss = build_intrusive_overlay_dismiss_config({
+            close_selectors: ['.domain-close'],
+            shadow_host_selectors: ['custom-widget'],
+        });
+        expect(dismiss.close_selectors[0]).toBe('.domain-close');
+        expect(dismiss.shadow_host_selectors[0]).toBe('custom-widget');
+    });
 });

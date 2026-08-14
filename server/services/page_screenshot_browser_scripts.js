@@ -505,6 +505,7 @@ function try_dismiss_shadow_marketing_hosts(config) {
                     const match = root.querySelector(close_selector);
                     if (match instanceof HTMLElement && is_visible(match)) {
                         match.click();
+                        globalThis.__gv_overlay_dismiss_hint = { kind: 'shadow_host', value: selector };
                         return true;
                     }
                 } catch {
@@ -520,6 +521,7 @@ function try_dismiss_shadow_marketing_hosts(config) {
                         is_close_button_in_dialog_corner(candidate, modal, is_visible)
                     ) {
                         candidate.click();
+                        globalThis.__gv_overlay_dismiss_hint = { kind: 'shadow_host', value: selector };
                         return true;
                     }
                 }
@@ -654,7 +656,15 @@ export function browser_find_intrusive_overlay_roots(config) {
         if (dialog && has_visible_close_control(element)) {
             const rect = element.getBoundingClientRect();
             const vw = window.innerWidth || document.documentElement.clientWidth || 1;
-            if (rect.width / vw >= dialog_min_ratio) return true;
+            const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+            if (rect.width / vw >= dialog_min_ratio && rect.height / vh >= 0.1) return true;
+        }
+
+        if (has_icon_close_in_corner(element, is_visible)) {
+            const rect = element.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+            const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+            if (rect.width / vw >= dialog_min_ratio && rect.height / vh >= 0.12) return true;
         }
 
         return false;
@@ -695,9 +705,19 @@ export function browser_find_intrusive_overlay_roots(config) {
 
 /**
  * @param {object} config
- * @returns {boolean}
+ * @returns {{ clicked: boolean, hint: { kind: string, value: string } | null }}
  */
 export function browser_dismiss_intrusive_overlays(config) {
+    const set_dismiss_hint = (kind, value) => {
+        if (typeof value === 'string' && value.trim()) {
+            globalThis.__gv_overlay_dismiss_hint = { kind, value: value.trim() };
+        }
+    };
+
+    const read_dismiss_hint = () => globalThis.__gv_overlay_dismiss_hint || null;
+
+    delete globalThis.__gv_overlay_dismiss_hint;
+
     const is_visible = (element) => {
         if (!(element instanceof HTMLElement)) return false;
         const style = window.getComputedStyle(element);
@@ -737,7 +757,10 @@ export function browser_dismiss_intrusive_overlays(config) {
         for (const selector of config.close_selectors || []) {
             try {
                 const match = root.querySelector(selector);
-                if (try_click(match)) return true;
+                if (try_click(match)) {
+                    set_dismiss_hint('close_selector', selector);
+                    return true;
+                }
             } catch {
                 // Ogiltig selector.
             }
@@ -748,11 +771,15 @@ export function browser_dismiss_intrusive_overlays(config) {
         );
         for (const candidate of candidates) {
             const label = read_clickable_label(candidate);
-            if (label_matches_close(label) && try_click(candidate)) return true;
+            if (label_matches_close(label) && try_click(candidate)) {
+                set_dismiss_hint('close_selector', `[data-gv-overlay-label="${label.slice(0, 48)}"]`);
+                return true;
+            }
         }
         const icon_candidates = root.querySelectorAll('button, [role="button"]');
         for (const candidate of icon_candidates) {
             if (is_close_button_in_dialog_corner(candidate, root, is_visible) && try_click(candidate)) {
+                set_dismiss_hint('close_selector', 'button.icon-close-in-corner');
                 return true;
             }
         }
@@ -761,19 +788,23 @@ export function browser_dismiss_intrusive_overlays(config) {
 
     const overlay_roots = browser_find_intrusive_overlay_roots(config);
     for (const overlay of overlay_roots) {
-        if (find_close_in_root(overlay)) return true;
+        if (find_close_in_root(overlay)) {
+            return { clicked: true, hint: read_dismiss_hint() };
+        }
     }
 
-    if (try_dismiss_shadow_marketing_hosts(config)) return true;
+    if (try_dismiss_shadow_marketing_hosts(config)) {
+        return { clicked: true, hint: read_dismiss_hint() };
+    }
 
     if (overlay_roots.length > 0) {
         document.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true })
         );
-        return true;
+        return { clicked: true, hint: { kind: 'close_selector', value: 'keyboard:escape' } };
     }
 
-    return false;
+    return { clicked: false, hint: null };
 }
 
 /**

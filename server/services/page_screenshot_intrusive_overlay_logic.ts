@@ -18,6 +18,11 @@ import {
     INTRUSIVE_OVERLAY_POSITIONS,
     INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS,
 } from './overlay/intrusive_overlay_patterns.js';
+import {
+    merge_overlay_domain_hints,
+    sanitize_overlay_domain_hints,
+    type OverlayDomainHints,
+} from './page_screenshot_intrusive_overlay_cache_logic.js';
 
 export type IntrusiveOverlayDetectionConfig = {
     context_keywords: string[];
@@ -88,8 +93,8 @@ export function build_intrusive_overlay_detection_config(): IntrusiveOverlayDete
     };
 }
 
-export function build_intrusive_overlay_dismiss_config() {
-    return {
+export function build_intrusive_overlay_dismiss_config(domain_hints: OverlayDomainHints | null = null) {
+    const base = {
         close_selectors: [...INTRUSIVE_OVERLAY_CLOSE_BUTTON_SELECTORS],
         close_text_patterns: [...INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS],
         reject_text_patterns: [...INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS],
@@ -98,10 +103,18 @@ export function build_intrusive_overlay_dismiss_config() {
         shadow_host_selectors: [...INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS],
         overlay_detection: build_intrusive_overlay_detection_config(),
     };
+    const merged_hints = sanitize_overlay_domain_hints(
+        merge_overlay_domain_hints(null, domain_hints)
+    );
+    return {
+        ...base,
+        close_selectors: [...(merged_hints.close_selectors || []), ...base.close_selectors],
+        shadow_host_selectors: [...(merged_hints.shadow_host_selectors || []), ...base.shadow_host_selectors],
+    };
 }
 
-export function build_intrusive_overlay_hide_config() {
-    return {
+export function build_intrusive_overlay_hide_config(domain_hints: OverlayDomainHints | null = null) {
+    const base = {
         close_selectors: [...INTRUSIVE_OVERLAY_CLOSE_BUTTON_SELECTORS],
         close_text_patterns: [...INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS],
         reject_text_patterns: [...INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS],
@@ -110,5 +123,13 @@ export function build_intrusive_overlay_hide_config() {
         chat_hide_only_selectors: [...INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS],
         shadow_host_selectors: [...INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS],
         overlay_detection: build_intrusive_overlay_detection_config(),
+    };
+    const merged_hints = sanitize_overlay_domain_hints(
+        merge_overlay_domain_hints(null, domain_hints)
+    );
+    return {
+        ...base,
+        hide_selectors: [...(merged_hints.hide_selectors || []), ...base.hide_selectors],
+        shadow_host_selectors: [...(merged_hints.shadow_host_selectors || []), ...base.shadow_host_selectors],
     };
 }

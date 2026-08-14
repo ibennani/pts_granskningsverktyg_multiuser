@@ -138,6 +138,7 @@ Modelfile
 /audit-media/
 /audit-snapshots/
 /cmp-consent-cache/
+/intrusive-overlay-cache/
 /backups/
 *.dump
 

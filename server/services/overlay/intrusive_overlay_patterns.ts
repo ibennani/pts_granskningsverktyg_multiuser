@@ -65,12 +65,25 @@ export const INTRUSIVE_OVERLAY_GENERIC_KEYWORDS = [
     'modal',
 ] as const;
 
+export const INTRUSIVE_OVERLAY_SURVEY_KEYWORDS = [
+    'hotjar',
+    'usabilla',
+    'feedback',
+    'enkät',
+    'survey',
+    'opinion',
+    'tyck till',
+    'vad tycker du',
+    'rate your experience',
+] as const;
+
 export const INTRUSIVE_OVERLAY_CONTEXT_KEYWORDS = [
     ...INTRUSIVE_OVERLAY_NEWSLETTER_KEYWORDS,
     ...INTRUSIVE_OVERLAY_MEMBERSHIP_KEYWORDS,
     ...INTRUSIVE_OVERLAY_PROMO_KEYWORDS,
     ...INTRUSIVE_OVERLAY_APP_KEYWORDS,
     ...INTRUSIVE_OVERLAY_CHAT_KEYWORDS,
+    ...INTRUSIVE_OVERLAY_SURVEY_KEYWORDS,
 ] as const;
 
 export const INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS = [
@@ -91,6 +104,10 @@ export const INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS = [
     'fortsätt utan',
     'continue without',
     'nej, tack',
+    'lukk',
+    'lukke',
+    'schließen',
+    'fermer',
 ] as const;
 
 export const INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS = [
@@ -130,6 +147,8 @@ export const INTRUSIVE_OVERLAY_CLOSE_BUTTON_SELECTORS = [
     '[class*="closeButton"]',
     '[data-testid*="close"]',
     '[data-action="close"]',
+    '[data-dismiss="modal"]',
+    '[data-close]',
 ] as const;
 
 export const INTRUSIVE_OVERLAY_CONTAINER_SELECTORS = [
@@ -145,6 +164,11 @@ export const INTRUSIVE_OVERLAY_CONTAINER_SELECTORS = [
     '[id*="Newsletter"]',
     '[class*="popup"]',
     '[id*="popup"]',
+    '[class*="overlay"]',
+    '[class*="Overlay"]',
+    '[class*="modal-backdrop"]',
+    '[data-modal]',
+    '[data-testid*="modal"]',
 ] as const;
 
 export const INTRUSIVE_OVERLAY_HIDE_SELECTORS = [
@@ -159,6 +183,10 @@ export const INTRUSIVE_OVERLAY_HIDE_SELECTORS = [
     '.tidio-chat',
     '[id*="livechat"]',
     '[class*="livechat"]',
+    '#hotjar-survey',
+    '._hj-widget-container',
+    '#usabilla',
+    '.usabilla_live_button_container',
 ] as const;
 
 /**
@@ -169,6 +197,12 @@ export const INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS = [
     'triggerbee-widget',
     'klaviyo-form',
     'klaviyo-popup',
+    'omnisend-form',
+    'privy-container',
+    'justuno-popup',
+    'optinmonster',
+    'mailchimp-embedded-form',
+    'sleeknote-popup',
 ] as const;
 
 /** Chatt-widgets: dölj utan att klicka (undvik att öppna chatt). */
@@ -187,5 +221,5 @@ export const INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS = [
 
 export const INTRUSIVE_OVERLAY_MIN_Z_INDEX = 50;
 export const INTRUSIVE_OVERLAY_BACKDROP_MIN_COVERAGE_RATIO = 0.25;
-export const INTRUSIVE_OVERLAY_DIALOG_MIN_WIDTH_RATIO = 0.15;
+export const INTRUSIVE_OVERLAY_DIALOG_MIN_WIDTH_RATIO = 0.12;
 export const INTRUSIVE_OVERLAY_POSITIONS = ['fixed', 'sticky', 'absolute'] as const;
