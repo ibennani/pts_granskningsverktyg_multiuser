@@ -18,13 +18,13 @@ function build_translation() {
         side_menu_aria_label: 'Sidomeny',
         side_menu_open_button: 'Öppna meny',
         side_menu_close_button: 'Stäng meny',
-        left_menu_audit_overview: 'Översikt',
+        left_menu_audit_overview: 'Granskningsöversikt',
         left_menu_all_requirements_with_count: 'Alla krav ({count})',
         left_menu_sample_list_with_count: 'Granskningsdelar ({count})',
         left_menu_images_with_count: 'Bilder ({count})',
         left_menu_problems_with_count: 'Problem ({count})',
         left_menu_actions: 'Åtgärder',
-        audit_title_audits: 'Hantera granskningar',
+        audit_title_audits: 'Alla ärenden',
         menu_link_logout: 'Logga ut',
     };
     return {
@@ -97,14 +97,14 @@ describe('SideMenuComponent snapshot', () => {
         const nav = root.querySelector('#side-menu-nav');
         expect(nav).toBeTruthy();
         const texts = [...root.querySelectorAll('.side-menu__link')].map((el) => el.textContent.trim());
-        expect(texts.some((t) => t.includes('Översikt'))).toBe(true);
+        expect(texts.some((t) => t.includes('Granskningsöversikt'))).toBe(true);
         expect(texts.some((t) => t.includes('Granskningsdelar'))).toBe(true);
         expect(texts.some((t) => t.includes('Åtgärder'))).toBe(true);
         expect(texts.some((t) => t.includes('Inställningar'))).toBe(false);
         expect(texts.some((t) => t.includes('Logga ut'))).toBe(true);
 
         const active_overview = [...root.querySelectorAll('a.side-menu__link')].find((el) =>
-            el.textContent.trim().includes('Översikt')
+            el.textContent.trim().includes('Granskningsöversikt')
         );
         expect(active_overview?.tagName).toBe('A');
         expect(active_overview?.getAttribute('aria-current')).toBe('page');

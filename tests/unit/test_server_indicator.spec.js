@@ -53,15 +53,15 @@ describe('test_server_indicator', () => {
 
     test('apply_test_server_document_title_prefix på test-server', () => {
         window.history.pushState({}, '', '/test-server/');
-        expect(apply_test_server_document_title_prefix('Hantera granskningar | Digital tillsyn')).toBe(
-            'Testserver Leffe: Hantera granskningar | Digital tillsyn'
+        expect(apply_test_server_document_title_prefix('Alla ärenden | Digital tillsyn')).toBe(
+            'Testserver Leffe: Alla ärenden | Digital tillsyn'
         );
     });
 
     test('apply_test_server_document_title_prefix utanför test-server', () => {
         window.history.pushState({}, '', '/v2/');
-        expect(apply_test_server_document_title_prefix('Hantera granskningar | Digital tillsyn')).toBe(
-            'Hantera granskningar | Digital tillsyn'
+        expect(apply_test_server_document_title_prefix('Alla ärenden | Digital tillsyn')).toBe(
+            'Alla ärenden | Digital tillsyn'
         );
     });
 });

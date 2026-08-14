@@ -147,7 +147,7 @@ test.describe('Granskningsflöde (mockat API)', () => {
         await page.locator('#login-password-input').fill('secret');
         await page.getByRole('button', { name: 'Logga in', exact: true }).click();
 
-        await expect(page.getByRole('heading', { name: 'Hantera granskningar' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Alla ärenden' })).toBeVisible();
 
         await page.goto('/v2/#audit');
         await ensureSwedishAndDismissRestore(page);
