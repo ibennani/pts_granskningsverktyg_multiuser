@@ -15,6 +15,7 @@ const SCRIPTS_PATH = path.join(
 const BROWSER_SCRIPT_EXPORT_NAMES = [
     'browser_read_document_scroll_height',
     'browser_auto_scroll_lazy_content',
+    'browser_prepare_lazy_images_for_screenshot',
     'browser_wait_for_lazy_images',
     'browser_scroll_to_top',
     'browser_page_has_renderable_content',
@@ -110,6 +111,8 @@ const scripts = load_raw_browser_scripts();
 
 export const browser_read_document_scroll_height = scripts.browser_read_document_scroll_height;
 export const browser_auto_scroll_lazy_content = scripts.browser_auto_scroll_lazy_content;
+export const browser_prepare_lazy_images_for_screenshot =
+    scripts.browser_prepare_lazy_images_for_screenshot;
 export const browser_wait_for_lazy_images = scripts.browser_wait_for_lazy_images;
 export const browser_scroll_to_top = scripts.browser_scroll_to_top;
 export const browser_page_has_renderable_content = scripts.browser_page_has_renderable_content;

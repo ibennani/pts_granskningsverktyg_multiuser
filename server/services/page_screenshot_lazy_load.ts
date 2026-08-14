@@ -5,6 +5,7 @@
 import type { Page } from 'puppeteer';
 import {
     browser_auto_scroll_lazy_content,
+    browser_prepare_lazy_images_for_screenshot,
     browser_read_document_scroll_height,
     browser_scroll_to_top,
     browser_wait_for_lazy_images,
@@ -12,10 +13,11 @@ import {
 
 export const LAZY_SCROLL_STEP_PX = 400;
 export const LAZY_SCROLL_PAUSE_MS = 150;
-export const LAZY_SCROLL_MAX_PASSES = 6;
+export const LAZY_SCROLL_MAX_PASSES = 8;
 export const LAZY_SCROLL_STABLE_PASSES = 2;
 export const POST_LAZY_LOAD_SETTLE_MS = 1200;
-export const LAZY_IMAGE_WAIT_MS = 3000;
+export const LAZY_IMAGE_WAIT_MS = 6000;
+export const PRE_SCREENSHOT_IMAGE_WAIT_MS = 5000;
 
 export type LazyLoadScrollPassResult = {
     pass_index: number;
@@ -60,6 +62,17 @@ export async function auto_scroll_lazy_content(page: Page): Promise<void> {
  */
 export async function wait_for_lazy_images(page: Page, timeout_ms: number): Promise<void> {
     await page.evaluate(browser_wait_for_lazy_images, timeout_ms);
+}
+
+/**
+ * Scrollar synliga lazy-bilder i view och väntar tills de verkar laddade.
+ */
+export async function prepare_and_wait_for_visible_images(
+    page: Page,
+    timeout_ms = PRE_SCREENSHOT_IMAGE_WAIT_MS
+): Promise<void> {
+    await page.evaluate(browser_prepare_lazy_images_for_screenshot);
+    await wait_for_lazy_images(page, timeout_ms);
 }
 
 export async function settle_after_lazy_load(page: Page): Promise<void> {

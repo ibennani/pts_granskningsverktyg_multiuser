@@ -71,6 +71,32 @@ export async function browser_auto_scroll_lazy_content(config) {
 
 /** @param {number} max_wait_ms */
 export async function browser_wait_for_lazy_images(max_wait_ms) {
+    const sleep = (ms) =>
+        new Promise((resolve) => {
+            window.setTimeout(resolve, ms);
+        });
+
+    const count_visible_broken_images = () => {
+        let count = 0;
+        for (const img of document.images) {
+            const rect = img.getBoundingClientRect();
+            if (rect.width > 40 && rect.height > 40 && img.naturalWidth < 2) {
+                count += 1;
+            }
+        }
+        return count;
+    };
+
+    const deadline = Date.now() + max_wait_ms;
+    while (Date.now() < deadline) {
+        const pending = Array.from(document.images).filter((img) => !img.complete);
+        const broken_visible = count_visible_broken_images();
+        if (pending.length === 0 && broken_visible === 0) {
+            return;
+        }
+        await sleep(100);
+    }
+
     const pending = Array.from(document.images).filter((img) => !img.complete);
     if (pending.length === 0) return;
 
@@ -84,10 +110,65 @@ export async function browser_wait_for_lazy_images(max_wait_ms) {
                     })
             )
         ),
-        new Promise((resolve) => {
-            window.setTimeout(resolve, max_wait_ms);
-        }),
+        sleep(Math.max(0, deadline - Date.now())),
     ]);
+}
+
+/**
+ * Tvingar lazy-bilder att ladda: eager, data-attribut, scrollIntoView för intersection observers.
+ */
+export async function browser_prepare_lazy_images_for_screenshot() {
+    const sleep = (ms) =>
+        new Promise((resolve) => {
+            window.setTimeout(resolve, ms);
+        });
+
+    document.querySelectorAll('img[loading="lazy"]').forEach((img) => {
+        img.loading = 'eager';
+    });
+
+    document.querySelectorAll('img').forEach((img) => {
+        const data_src =
+            img.getAttribute('data-src') ||
+            img.getAttribute('data-lazy-src') ||
+            img.getAttribute('data-original');
+        if (data_src && (!img.getAttribute('src') || img.getAttribute('src') === '')) {
+            img.setAttribute('src', data_src);
+        }
+        const data_srcset = img.getAttribute('data-srcset');
+        if (data_srcset && !img.getAttribute('srcset')) {
+            img.setAttribute('srcset', data_srcset);
+        }
+    });
+
+    const scroll_targets = Array.from(
+        document.querySelectorAll('picture, img, [data-src], [data-bg]')
+    ).filter((node) => {
+        if (node instanceof HTMLImageElement) {
+            const rect = node.getBoundingClientRect();
+            if (rect.width < 4 && rect.height < 4) return false;
+            if (!node.complete || node.naturalWidth < 2) return true;
+            const src = node.currentSrc || node.src || '';
+            return src.includes('width=1490') && node.naturalWidth < 10;
+        }
+        return true;
+    });
+    for (const node of scroll_targets) {
+        if (!(node instanceof HTMLElement)) continue;
+        try {
+            node.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+        } catch {
+            try {
+                node.scrollIntoView({ block: 'center', inline: 'nearest' });
+            } catch {
+                // Ignorera scroll-fel.
+            }
+        }
+        await sleep(40);
+    }
+
+    window.dispatchEvent(new Event('scroll'));
+    await sleep(150);
 }
 
 export function browser_scroll_to_top() {
