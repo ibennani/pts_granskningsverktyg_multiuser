@@ -100,6 +100,9 @@ export function build_intrusive_overlay_dismiss_config() {
 
 export function build_intrusive_overlay_hide_config() {
     return {
+        close_selectors: [...INTRUSIVE_OVERLAY_CLOSE_BUTTON_SELECTORS],
+        close_text_patterns: [...INTRUSIVE_OVERLAY_CLOSE_TEXT_PATTERNS],
+        reject_text_patterns: [...INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS],
         hide_selectors: [...INTRUSIVE_OVERLAY_HIDE_SELECTORS],
         container_selectors: [...INTRUSIVE_OVERLAY_CONTAINER_SELECTORS],
         chat_hide_only_selectors: [...INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS],

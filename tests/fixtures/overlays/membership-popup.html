@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head><meta charset="utf-8"><title>Medlems-popup fixture</title></head>
+<body>
+<main><h1>Butik</h1></main>
+<div id="backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;"></div>
+<div id="modal" role="dialog" aria-modal="true" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,90vw);padding:2rem;background:#fff;z-index:9001;">
+    <button type="button" id="close" style="position:absolute;top:12px;right:12px;width:40px;height:40px;border:0;background:transparent;padding:0;">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16" stroke="#111" stroke-width="2"/></svg>
+    </button>
+    <h2>Bli medlem – få 10% på ditt nästa köp</h2>
+    <p>Ange din e-postadress.</p>
+    <label for="email">E-post</label>
+    <input id="email" type="email" name="email">
+    <button type="button">Bli medlem</button>
+</div>
+<script>
+setTimeout(function () {
+    document.getElementById('backdrop').style.display = 'block';
+    document.getElementById('modal').style.display = 'block';
+    document.body.classList.add('modal-open');
+}, 3200);
+document.getElementById('close').addEventListener('click', function () {
+    document.getElementById('backdrop').style.display = 'none';
+    document.getElementById('modal').style.display = 'none';
+});
+</script>
+</body>
+</html>

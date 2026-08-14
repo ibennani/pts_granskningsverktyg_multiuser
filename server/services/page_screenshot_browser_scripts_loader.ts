@@ -49,10 +49,10 @@ export function get_intrusive_overlay_bundle_source(): string {
     }
 
     const source = readFileSync(SCRIPTS_PATH, 'utf8');
-    const marker = 'export function browser_find_intrusive_overlay_roots';
+    const marker = 'function is_icon_only_close_button';
     const start = source.indexOf(marker);
     if (start < 0) {
-        throw new Error('Saknar browser_find_intrusive_overlay_roots i page_screenshot_browser_scripts.js');
+        throw new Error('Saknar is_icon_only_close_button i page_screenshot_browser_scripts.js');
     }
     cached_intrusive_overlay_bundle_source = source.slice(start).replace(/^export /gm, '');
     return cached_intrusive_overlay_bundle_source;

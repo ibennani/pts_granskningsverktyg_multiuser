@@ -7,8 +7,14 @@
   <h2>Skriv upp dig på vårt nyhetsbrev</h2>
   <p>Få erbjudanden och nyheter direkt i inkorgen.</p>
   <button type="button">Prenumerera</button>
-  <button type="button" aria-label="Stäng">×</button>
+  <button type="button" id="close" aria-label="Stäng">×</button>
 </div>
 <main><h1>Butik</h1></main>
+<script>
+document.getElementById('close').addEventListener('click', function () {
+    document.querySelector('.modal-backdrop').style.display = 'none';
+    document.querySelector('.newsletter-popup').style.display = 'none';
+});
+</script>
 </body>
 </html>

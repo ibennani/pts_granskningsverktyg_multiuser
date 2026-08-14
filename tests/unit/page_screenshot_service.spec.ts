@@ -66,6 +66,12 @@ jest.unstable_mockModule('../../server/services/page_screenshot_intrusive_overla
     is_intrusive_overlay_visible: is_intrusive_overlay_visible_mock,
 }));
 
+jest.unstable_mockModule('../../server/snapshots/audit_snapshot_config.js', () => ({
+    get_snapshot_post_navigation_settle_ms: () => 0,
+    get_snapshot_pre_screenshot_intrusive_wait_ms: () => 0,
+    get_snapshot_full_page_max_height_css: () => 50_000,
+}));
+
 jest.unstable_mockModule('puppeteer', () => ({
     default: {
         launch: jest.fn(async () => ({

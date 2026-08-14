@@ -8,7 +8,7 @@ import {
     scroll_to_top,
     settle_after_lazy_load,
 } from './page_screenshot_lazy_load.js';
-import { get_snapshot_post_navigation_settle_ms } from '../snapshots/audit_snapshot_config.js';
+import { get_snapshot_post_navigation_settle_ms, get_snapshot_pre_screenshot_intrusive_wait_ms } from '../snapshots/audit_snapshot_config.js';
 import {
     assert_acceptable_navigation_status,
     configure_stealth_page,
@@ -216,12 +216,17 @@ export async function capture_viewport_png_with_adjustments(
         dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
     }
 
+    await delay(get_snapshot_pre_screenshot_intrusive_wait_ms());
+
     if (!overlay_state.overlay_gone || (await is_intrusive_overlay_visible(page))) {
         overlay_state = await ensure_intrusive_overlays_dismissed(page, { wait_for_overlay: false });
     }
 
     const hidden_count = await hide_cookie_banners_visually_for_screenshot(page);
-    const intrusive_hidden_count = await hide_intrusive_overlays_visually_for_screenshot(page);
+    let intrusive_hidden_count = await hide_intrusive_overlays_visually_for_screenshot(page);
+    if (await is_intrusive_overlay_visible(page)) {
+        intrusive_hidden_count += await hide_intrusive_overlays_visually_for_screenshot(page);
+    }
     await settle_after_consent_apply(page);
 
     if (dismiss_state.clicked || dismiss_state.banner_gone) {

@@ -13,6 +13,11 @@ import {
 } from '../../server/services/page_screenshot_intrusive_overlay_logic.ts';
 
 describe('page_screenshot_intrusive_overlay_logic', () => {
+    test('element_text_suggests_intrusive_overlay känner igen medlems-popup', () => {
+        expect(element_text_suggests_intrusive_overlay('Bli medlem – få 10% på ditt nästa köp')).toBe(true);
+        expect(element_text_suggests_intrusive_overlay('Get 10% off your next purchase')).toBe(true);
+    });
+
     test('element_text_suggests_intrusive_overlay känner igen nyhetsbrev', () => {
         expect(element_text_suggests_intrusive_overlay('Skriv upp dig på vårt nyhetsbrev')).toBe(true);
         expect(element_text_suggests_intrusive_overlay('Subscribe to our newsletter')).toBe(true);

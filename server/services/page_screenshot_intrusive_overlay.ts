@@ -134,6 +134,14 @@ export async function dismiss_intrusive_overlays_before_screenshot(
     }
 
     const overlay_gone = await wait_until_intrusive_overlay_gone(page, OVERLAY_GONE_TIMEOUT_MS);
+    if (!overlay_gone) {
+        await hide_intrusive_overlays_visually_for_screenshot(page);
+        return {
+            clicked,
+            overlay_gone: !(await is_intrusive_overlay_visible(page)),
+            matched_selector,
+        };
+    }
     return { clicked, overlay_gone, matched_selector };
 }
 

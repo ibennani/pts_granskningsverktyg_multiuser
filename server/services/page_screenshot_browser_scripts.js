@@ -414,6 +414,56 @@ export function browser_hide_cookie_banners_for_screenshot(config) {
 }
 
 /**
+ * @param {HTMLElement} element
+ * @param {(element: HTMLElement) => boolean} is_visible_fn
+ * @returns {boolean}
+ */
+function is_icon_only_close_button(element, is_visible_fn) {
+    if (!(element instanceof HTMLElement)) return false;
+    if (!is_visible_fn(element)) return false;
+    const tag = element.tagName;
+    if (tag !== 'BUTTON' && element.getAttribute('role') !== 'button') return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width > 72 || rect.height > 72) return false;
+    const text = (element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim();
+    if (text.length > 2) return false;
+    const has_svg = element.querySelector('svg') !== null;
+    const has_icon_class = /\b(close|dismiss|icon)\b/i.test(element.className || '');
+    return has_svg || has_icon_class || text === '×' || text === '✕' || text === 'x' || text === 'X';
+}
+
+/**
+ * @param {HTMLElement} button
+ * @param {HTMLElement} root
+ * @param {(element: HTMLElement) => boolean} is_visible_fn
+ * @returns {boolean}
+ */
+function is_close_button_in_dialog_corner(button, root, is_visible_fn) {
+    if (!is_icon_only_close_button(button, is_visible_fn)) return false;
+    const root_rect = root.getBoundingClientRect();
+    const rect = button.getBoundingClientRect();
+    const top_offset = rect.top - root_rect.top;
+    const right_offset = root_rect.right - rect.right;
+    const top_limit = Math.max(96, root_rect.height * 0.22);
+    const right_limit = Math.max(96, root_rect.width * 0.22);
+    return top_offset <= top_limit && right_offset <= right_limit;
+}
+
+/**
+ * @param {HTMLElement} root
+ * @param {(element: HTMLElement) => boolean} is_visible_fn
+ * @returns {boolean}
+ */
+function has_icon_close_in_corner(root, is_visible_fn) {
+    if (!(root instanceof HTMLElement)) return false;
+    const candidates = root.querySelectorAll('button, [role="button"]');
+    for (const candidate of candidates) {
+        if (is_close_button_in_dialog_corner(candidate, root, is_visible_fn)) return true;
+    }
+    return false;
+}
+
+/**
  * @param {object} config
  * @returns {HTMLElement[]}
  */
@@ -507,6 +557,7 @@ export function browser_find_intrusive_overlay_roots(config) {
             if (reject_patterns.some((p) => normalized.includes(String(p).toLowerCase()))) continue;
             if (close_patterns.some((p) => normalized.includes(String(p).toLowerCase()))) return true;
         }
+        if (has_icon_close_in_corner(root, is_visible)) return true;
         return false;
     };
 
@@ -558,11 +609,13 @@ export function browser_find_intrusive_overlay_roots(config) {
         }
     }
 
-    document.querySelectorAll('body *').forEach((node) => {
-        if (node instanceof HTMLElement) {
-            add_root(node);
-        }
-    });
+    if (roots.length === 0) {
+        document.querySelectorAll('body *').forEach((node) => {
+            if (node instanceof HTMLElement) {
+                add_root(node);
+            }
+        });
+    }
 
     return roots;
 }
@@ -623,6 +676,12 @@ export function browser_dismiss_intrusive_overlays(config) {
         for (const candidate of candidates) {
             const label = read_clickable_label(candidate);
             if (label_matches_close(label) && try_click(candidate)) return true;
+        }
+        const icon_candidates = root.querySelectorAll('button, [role="button"]');
+        for (const candidate of icon_candidates) {
+            if (is_close_button_in_dialog_corner(candidate, root, is_visible) && try_click(candidate)) {
+                return true;
+            }
         }
         return false;
     };
@@ -734,6 +793,31 @@ export function browser_hide_intrusive_overlays_for_screenshot(config) {
 
     for (const overlay of browser_find_intrusive_overlay_roots(config)) {
         hide_element(overlay);
+    }
+
+    const detection = config.overlay_detection || {};
+    const backdrop_ratio = detection.backdrop_min_coverage_ratio ?? 0.25;
+    const min_z = detection.min_z_index ?? 50;
+    const positions = detection.positions || ['fixed', 'sticky', 'absolute'];
+    const is_backdrop_like = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        if (!positions.includes(style.position)) return false;
+        const z_index = Number.parseInt(style.zIndex, 10);
+        if (!Number.isNaN(z_index) && z_index < min_z) return false;
+        const rect = element.getBoundingClientRect();
+        const vw = window.innerWidth || document.documentElement.clientWidth || 1;
+        const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+        return rect.width / vw >= backdrop_ratio && rect.height / vh >= backdrop_ratio;
+    };
+
+    if (hidden_count > 0) {
+        document.querySelectorAll('body *').forEach((node) => {
+            if (is_backdrop_like(node)) hide_element(node);
+        });
     }
 
     document.documentElement.style.overflow = '';

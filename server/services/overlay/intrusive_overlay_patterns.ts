@@ -11,6 +11,18 @@ export const INTRUSIVE_OVERLAY_NEWSLETTER_KEYWORDS = [
     'mailing list',
 ] as const;
 
+export const INTRUSIVE_OVERLAY_MEMBERSHIP_KEYWORDS = [
+    'bli medlem',
+    'become a member',
+    'join now',
+    'gå med',
+    'sign up and save',
+    'nästa köp',
+    'next purchase',
+    'your next order',
+    'ditt nästa köp',
+] as const;
+
 export const INTRUSIVE_OVERLAY_PROMO_KEYWORDS = [
     'rabatt',
     'erbjudande',
@@ -22,6 +34,9 @@ export const INTRUSIVE_OVERLAY_PROMO_KEYWORDS = [
     'save ',
     '% rabatt',
     '% off',
+    '% på',
+    '% off your',
+    '10%',
 ] as const;
 
 export const INTRUSIVE_OVERLAY_APP_KEYWORDS = [
@@ -52,6 +67,7 @@ export const INTRUSIVE_OVERLAY_GENERIC_KEYWORDS = [
 
 export const INTRUSIVE_OVERLAY_CONTEXT_KEYWORDS = [
     ...INTRUSIVE_OVERLAY_NEWSLETTER_KEYWORDS,
+    ...INTRUSIVE_OVERLAY_MEMBERSHIP_KEYWORDS,
     ...INTRUSIVE_OVERLAY_PROMO_KEYWORDS,
     ...INTRUSIVE_OVERLAY_APP_KEYWORDS,
     ...INTRUSIVE_OVERLAY_CHAT_KEYWORDS,
@@ -100,6 +116,8 @@ export const INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS = [
 export const INTRUSIVE_OVERLAY_CLOSE_BUTTON_SELECTORS = [
     'button[aria-label*="close" i]',
     'button[aria-label*="stäng" i]',
+    'button[aria-label*="lukk" i]',
+    'button[aria-label*="lukke" i]',
     'button[title*="close" i]',
     'button[title*="stäng" i]',
     '[role="button"][aria-label*="close" i]',

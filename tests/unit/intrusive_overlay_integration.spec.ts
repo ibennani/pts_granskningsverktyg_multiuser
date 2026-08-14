@@ -48,7 +48,7 @@ describe('intrusive overlay integration fixtures', () => {
             await hide_intrusive_overlays_visually_for_screenshot(page);
             expect(await is_intrusive_overlay_visible(page)).toBe(false);
         });
-    }, 60_000);
+    }, 90_000);
 
     test('chatt-widget kan döljas utan klick', async () => {
         await with_page(async (page) => {
@@ -58,7 +58,7 @@ describe('intrusive overlay integration fixtures', () => {
             expect(hidden).toBeGreaterThan(0);
             expect(await is_intrusive_overlay_visible(page)).toBe(false);
         });
-    }, 60_000);
+    }, 90_000);
 
     test('app-popup kan dismissas med not now', async () => {
         await with_page(async (page) => {
@@ -71,5 +71,20 @@ describe('intrusive overlay integration fixtures', () => {
             await hide_intrusive_overlays_visually_for_screenshot(page);
             expect(await is_intrusive_overlay_visible(page)).toBe(false);
         });
-    }, 60_000);
+    }, 90_000);
+
+    test('fördröjd medlems-popup med ikon-stäng kan döljas', async () => {
+        await with_page(async (page) => {
+            await page.goto(`${fixture_server.base_url}/membership-popup.html`, { waitUntil: 'load' });
+            expect(await is_intrusive_overlay_visible(page)).toBe(false);
+            await new Promise((resolve) => setTimeout(resolve, 3600));
+            expect(await is_intrusive_overlay_visible(page)).toBe(true);
+            const result = await dismiss_intrusive_overlays_before_screenshot(page, {
+                wait_for_overlay: true,
+            });
+            expect(result.clicked).toBe(true);
+            await hide_intrusive_overlays_visually_for_screenshot(page);
+            expect(await is_intrusive_overlay_visible(page)).toBe(false);
+        });
+    }, 90_000);
 });

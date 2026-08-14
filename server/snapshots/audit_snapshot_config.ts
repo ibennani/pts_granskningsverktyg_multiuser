@@ -64,6 +64,11 @@ export function get_snapshot_post_navigation_settle_ms(): number {
     return read_int_env('GV_SNAPSHOT_POST_NAVIGATION_SETTLE_MS', 1500);
 }
 
+/** Väntan före sista overlay-stängning (fördröjda kampanj-/medlemspopups). */
+export function get_snapshot_pre_screenshot_intrusive_wait_ms(): number {
+    return read_int_env('GV_SNAPSHOT_PRE_SCREENSHOT_INTRUSIVE_WAIT_MS', 3500);
+}
+
 export function get_snapshot_full_page_max_height_css(): number {
     return read_int_env('GV_SNAPSHOT_FULL_PAGE_MAX_HEIGHT_CSS', 50_000);
 }
