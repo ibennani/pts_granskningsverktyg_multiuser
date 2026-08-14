@@ -7,6 +7,7 @@ import { resolve_default_url_sample_category_id } from '../logic/bulk_url_import
 import { show_bulk_url_import_modal } from './bulk_url_import_modal.js';
 import { wait_for_audit_snapshot_ready } from '../logic/wait_for_audit_snapshot_ready.js';
 import { mark_textarea_without_markdown_toolbar } from '../utils/markdown_toolbar_exclusions.js';
+import { is_web_monitoring_audit } from '../logic/is_web_monitoring_audit.js';
 
 type BulkViewDeps = {
     router: (view: string, params?: Record<string, unknown>) => void;
@@ -57,6 +58,13 @@ export class BulkSampleUrlImportViewComponent {
     handle_start_click() {
         if (!this.deps) return;
         const t = this.deps.Translation.t;
+        if (!is_web_monitoring_audit(this.deps.getState()?.ruleFileContent)) {
+            this.deps.NotificationComponent?.show_global_message(
+                t('web_monitoring_only_feature_unavailable'),
+                'warning'
+            );
+            return;
+        }
         const sample_category_id = this.get_sample_category_id();
         if (!sample_category_id) {
             this.deps.NotificationComponent?.show_global_message(t('bulk_url_import_no_url_category'), 'warning');
@@ -117,6 +125,7 @@ export class BulkSampleUrlImportViewComponent {
     render() {
         if (!this.root || !this.deps) return;
         const t = this.deps.Translation.t;
+        const is_web_audit = is_web_monitoring_audit(this.deps.getState()?.ruleFileContent);
 
         if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
             this.root.innerHTML = '';
@@ -129,6 +138,22 @@ export class BulkSampleUrlImportViewComponent {
         plate!.innerHTML = '';
 
         plate!.appendChild(this.deps.Helpers.create_element('h1', { text_content: t('bulk_url_import_title') }));
+
+        if (!is_web_audit) {
+            plate!.appendChild(this.deps.Helpers.create_element('p', {
+                class_name: 'view-intro-text',
+                text_content: t('web_monitoring_only_feature_unavailable'),
+            }));
+            const back_btn = this.deps.Helpers.create_element('button', {
+                class_name: ['button', 'button-default'],
+                attributes: { type: 'button' },
+                text_content: t('bulk_url_import_back_button'),
+            });
+            back_btn.addEventListener('click', () => this.deps!.router('sample_management'));
+            plate!.appendChild(back_btn);
+            return;
+        }
+
         plate!.appendChild(this.deps.Helpers.create_element('p', {
             class_name: 'view-intro-text',
             text_content: t('bulk_url_import_intro'),

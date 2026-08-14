@@ -10,6 +10,7 @@ import {
     type SampleForSidrapport,
 } from './audit_sidrapport_retake.js';
 import { sync_to_server_now } from './server_sync.js';
+import { is_web_monitoring_audit } from './is_web_monitoring_audit.js';
 
 export type SampleSaveSnapshotInput = {
     sampleId: string;
@@ -44,11 +45,15 @@ export function should_queue_sidrapport_for_saved_sample(
     sample: SampleSaveSnapshotInput,
     rule_file_content: unknown
 ): boolean {
+    if (!is_web_monitoring_audit(rule_file_content)) {
+        return false;
+    }
+    const metadata = (rule_file_content as { metadata?: unknown } | null)?.metadata;
     const url = String(sample.url ?? '').trim();
     if (!url) {
         return false;
     }
-    return sample_category_has_url(rule_file_content, sample.sampleCategory);
+    return sample_category_has_url(metadata, sample.sampleCategory);
 }
 
 export async function queue_sidrapport_after_sample_save(
@@ -56,8 +61,7 @@ export async function queue_sidrapport_after_sample_save(
     sample: SampleSaveSnapshotInput
 ): Promise<void> {
     const state = deps.getState?.();
-    const rule_file_metadata = state?.ruleFileContent as { metadata?: unknown } | undefined;
-    if (!should_queue_sidrapport_for_saved_sample(sample, rule_file_metadata?.metadata)) {
+    if (!should_queue_sidrapport_for_saved_sample(sample, state?.ruleFileContent)) {
         return;
     }
     if (!get_auth_token()) {

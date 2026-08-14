@@ -29,7 +29,11 @@ function make_helpers() {
 function make_deps(audit_status, section = '', extra_params = {}) {
     const state = {
         auditStatus: audit_status,
-        ruleFileContent: { requirements: {}, metadata: { language: 'sv' }, appendix2: {} },
+        ruleFileContent: {
+            requirements: {},
+            metadata: { language: 'sv', monitoringType: { type: 'web', text: 'Webb' } },
+            appendix2: {},
+        },
         samples: [{ id: 's1', requirementResults: {} }],
         auditMetadata: {}
     };
@@ -124,6 +128,17 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
             'audit_actions_nav_snapshots',
         ]);
 
+        component.destroy();
+        root.remove();
+    });
+
+    test('hub döljer sidrapporter för pdf-granskning', async () => {
+        const { root, component } = await render_with('in_progress');
+        const state = component.getState();
+        state.ruleFileContent.metadata.monitoringType = { text: 'PDF-dokument' };
+        component.render();
+        const hub_links = [...root.querySelectorAll('.audit-settings__hub-link')].map((link) => link.textContent);
+        expect(hub_links).not.toContain('audit_actions_nav_snapshots');
         component.destroy();
         root.remove();
     });

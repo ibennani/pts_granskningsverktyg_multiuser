@@ -15,6 +15,7 @@ export default {
     '^.+/audit_logic_requirements_lists\\.js$': '<rootDir>/js/logic/audit_logic_requirements_lists.ts',
     '^.+/audit_logic_progress\\.js$': '<rootDir>/js/logic/audit_logic_progress.ts',
     '^.+/audit_logic_recalc\\.js$': '<rootDir>/js/logic/audit_logic_recalc.ts',
+    '^.+[\\\\/]is_web_monitoring_audit\\.js$': '<rootDir>/js/logic/is_web_monitoring_audit.ts',
     '^.+/audit_list_last_updated\\.js$': '<rootDir>/js/logic/audit_list_last_updated.ts',
     '^.+/audit_list_progress\\.js$': '<rootDir>/js/logic/audit_list_progress.ts',
     '^.+/closed_audit_assessment_gap_fill\\.js$': '<rootDir>/js/logic/closed_audit_assessment_gap_fill.ts',

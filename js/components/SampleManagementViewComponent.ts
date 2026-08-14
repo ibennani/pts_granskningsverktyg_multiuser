@@ -12,6 +12,7 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
+import { is_web_monitoring_audit } from '../logic/is_web_monitoring_audit.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -236,7 +237,11 @@ export class SampleManagementViewComponent {
     render() {
         if (!this.root || !this.Translation || !this.getState || !this.Helpers) return;
         const t = this.Translation.t;
-        const current_state = this.getState() as { samples?: unknown[]; auditStatus?: string };
+        const current_state = this.getState() as {
+            samples?: unknown[];
+            auditStatus?: string;
+            ruleFileContent?: unknown;
+        };
 
         if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
             this.root.innerHTML = '';
@@ -260,6 +265,7 @@ export class SampleManagementViewComponent {
         );
 
         const top_actions_div = this.Helpers.create_element('div', { class_name: 'sample-management-actions' });
+        const is_web_audit = is_web_monitoring_audit(current_state.ruleFileContent);
         const can_add_sample = !audit_status_blocks_sample_and_requirement_edits(current_state.auditStatus);
         if (can_add_sample) {
             const add_button = this.Helpers.create_element('button', {
@@ -272,19 +278,22 @@ export class SampleManagementViewComponent {
             });
             top_actions_div.appendChild(add_button);
 
-            const bulk_import_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary'],
-                text_content: t('bulk_url_import_open_button'),
-            });
-            bulk_import_button.addEventListener('click', () => {
-                this.router?.('bulk_sample_import');
-            });
-            top_actions_div.appendChild(bulk_import_button);
+            if (is_web_audit) {
+                const bulk_import_button = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-secondary'],
+                    text_content: t('bulk_url_import_open_button'),
+                });
+                bulk_import_button.addEventListener('click', () => {
+                    this.router?.('bulk_sample_import');
+                });
+                top_actions_div.appendChild(bulk_import_button);
+            }
         }
 
-        const has_any_sample_url = (current_state.samples as Array<Record<string, unknown>> | undefined)?.some(
-            (s) => sample_url_raw_string(s) !== ''
-        );
+        const has_any_sample_url = is_web_audit
+            && (current_state.samples as Array<Record<string, unknown>> | undefined)?.some(
+                (s) => sample_url_raw_string(s) !== ''
+            );
         if (has_any_sample_url) {
             const external_tab_icon_html = this.Helpers.get_external_link_icon_html
                 ? this.Helpers.get_external_link_icon_html(t)

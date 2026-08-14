@@ -25,6 +25,7 @@ import {
     type BulkRecurringImportDeps,
 } from './bulk_recurring_import.js';
 import { resolve_default_url_sample_category_id } from './bulk_url_import_category.js';
+import { is_web_monitoring_audit } from './is_web_monitoring_audit.js';
 
 export type { BulkImportLogFn, BulkImportCreatedItem };
 
@@ -220,6 +221,11 @@ export async function run_full_bulk_url_import(
     rows: BulkImportPreparedRow[],
     sample_category_id: string
 ): Promise<BulkImportRunResult> {
+    const state = deps.getState();
+    if (!is_web_monitoring_audit(state?.ruleFileContent)) {
+        throw new Error('web_monitoring_only_feature_unavailable');
+    }
+
     log_import_step(deps, 'bulk_url_import_log_batch_start', { count: rows.length });
 
     const audit_id = await ensure_audit_id_for_server_sync(deps.getState, deps.dispatch);
@@ -228,7 +234,6 @@ export async function run_full_bulk_url_import(
     }
     log_import_step(deps, 'bulk_url_import_log_batch_audit', { auditId: audit_id });
 
-    const state = deps.getState();
     const metadata = (state?.ruleFileContent as { metadata?: unknown } | undefined)?.metadata;
     const url_category = resolve_default_url_sample_category_id(metadata);
     const url_category_label = (() => {

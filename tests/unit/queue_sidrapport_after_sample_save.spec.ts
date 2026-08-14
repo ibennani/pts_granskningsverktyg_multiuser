@@ -36,6 +36,7 @@ const {
 } = await import('../../js/logic/queue_sidrapport_after_sample_save.ts');
 
 const rule_file = {
+    monitoringType: { type: 'web', text: 'Webb' },
     samples: {
         sampleCategories: [{ id: 'web', text: 'Webb', hasUrl: true, categories: [] }],
     },
@@ -59,19 +60,34 @@ describe('queue_sidrapport_after_sample_save', () => {
         expect(
             should_queue_sidrapport_for_saved_sample(
                 { sampleId: 's1', url: 'https://example.com', sampleCategory: 'web' },
-                rule_file
+                make_rule_file_content()
             )
         ).toBe(true);
         expect(
             should_queue_sidrapport_for_saved_sample(
                 { sampleId: 's1', url: '', sampleCategory: 'web' },
-                rule_file
+                make_rule_file_content()
             )
         ).toBe(false);
         expect(
             should_queue_sidrapport_for_saved_sample(
                 { sampleId: 's1', url: 'https://example.com', sampleCategory: 'pdf' },
-                rule_file
+                make_rule_file_content()
+            )
+        ).toBe(false);
+    });
+
+    test('should_queue_sidrapport_for_saved_sample kräver webbgranskning', () => {
+        const pdf_rule_file = {
+            metadata: {
+                monitoringType: { text: 'PDF-dokument' },
+                samples: rule_file.samples,
+            },
+        };
+        expect(
+            should_queue_sidrapport_for_saved_sample(
+                { sampleId: 's1', url: 'https://example.com', sampleCategory: 'web' },
+                pdf_rule_file
             )
         ).toBe(false);
     });

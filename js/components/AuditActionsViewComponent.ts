@@ -30,7 +30,9 @@ import {
     normalize_audit_actions_section,
     render_audit_actions_hub,
     render_audit_actions_section_header,
+    render_audit_actions_web_only_blocked,
 } from './audit_actions_render.js';
+import { is_web_monitoring_audit } from '../logic/is_web_monitoring_audit.js';
 import { render_audit_actions_information_section } from './audit_actions_information_render.js';
 import {
     render_audit_appendix_templates_hub,
@@ -634,10 +636,12 @@ export class AuditActionsViewComponent {
         }
 
         const section = normalize_audit_actions_section(this.deps?.params?.section);
+        const is_web_audit = is_web_monitoring_audit(state.ruleFileContent);
         const render_deps = {
             Helpers: this.Helpers,
             Translation: this.Translation,
             router: this.router,
+            is_web_monitoring_audit: is_web_audit,
         };
 
         if (section !== 'information' && this._metadata_container) {
@@ -681,6 +685,13 @@ export class AuditActionsViewComponent {
             this.root.appendChild(plate);
             return;
         } else if (section === 'snapshots') {
+            if (!is_web_audit) {
+                render_audit_actions_web_only_blocked(render_deps, plate, {
+                    title_key: 'audit_actions_snapshots_title',
+                });
+                this.root.appendChild(plate);
+                return;
+            }
             if (this._snapshots_section) {
                 this._snapshots_section.destroy();
                 this._snapshots_section = null;

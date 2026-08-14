@@ -10,6 +10,7 @@
   "add_new_requirement_button": "Add New Requirement",
   "add_new_sample": "Add new audit section",
   "bulk_url_import_open_button": "Create from URL list",
+  "web_monitoring_only_feature_unavailable": "This feature is only available for web audits.",
   "bulk_url_import_title": "Create audit sections from URL list",
   "bulk_url_import_intro": "Paste one web address per line. The tool fetches the page title and screenshot, creates the audit sections and suggests page type and content types from the page report.",
   "bulk_url_import_urls_label": "URL list",

@@ -10,6 +10,7 @@
   "add_new_requirement_button": "Legg til nytt krav",
   "add_new_sample": "Legg til ny granskningsdel",
   "bulk_url_import_open_button": "Opprett fra URL-liste",
+  "web_monitoring_only_feature_unavailable": "Denne funksjonen finnes bare for webbgranskninger.",
   "bulk_url_import_title": "Opprett granskningsdeler fra URL-liste",
   "bulk_url_import_intro": "Lim inn én nettadresse per linje. Verktøyet henter sidetittel og skjermbilde, oppretter granskningsdelene og foreslår sidetype og innholdstyper fra sidrapporten.",
   "bulk_url_import_urls_label": "URL-liste",

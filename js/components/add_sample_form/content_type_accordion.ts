@@ -10,6 +10,7 @@ import {
     apply_instant_expanded_panel_state
 } from '../../utils/expandable_panel_transition.js';
 import { resolve_initial_content_type_ids } from '../../../shared/rulefile/content_type_defaults.js';
+import { is_web_monitoring_audit } from '../../logic/is_web_monitoring_audit.js';
 type ContentTypeChild = {
     id: string;
     text: string;
@@ -48,7 +49,11 @@ export function get_selected_content_type_ids(component: any): string[] {
     return Array.from(component.content_type_selected_ids || []);
 }
 
-function render_content_type_instruction_row(component: any, panel_inner: HTMLElement): void {
+function render_content_type_instruction_row(
+    component: any,
+    panel_inner: HTMLElement,
+    show_paste_analyze: boolean
+): void {
     const t = component.get_t_internally();
     const row = component.Helpers.create_element('div', {
         class_name: 'content-types-instruction-row'
@@ -60,20 +65,24 @@ function render_content_type_instruction_row(component: any, panel_inner: HTMLEl
         style: { 'color': 'var(--text-color-muted)' }
     }));
 
-    const paste_btn = component.Helpers.create_element('button', {
-        class_name: ['button', 'button-default', 'content-type-paste-analyze-button'],
-        attributes: { type: 'button' },
-        text_content: t('content_type_paste_analyze_button')
-    });
-    paste_btn.addEventListener('click', () => {
-        if (typeof component.handle_content_type_paste_analyze_click === 'function') {
-            component.handle_content_type_paste_analyze_click();
-        }
-    });
-    row.appendChild(paste_btn);
-    panel_inner.appendChild(row);
+    if (show_paste_analyze) {
+        const paste_btn = component.Helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'content-type-paste-analyze-button'],
+            attributes: { type: 'button' },
+            text_content: t('content_type_paste_analyze_button')
+        });
+        paste_btn.addEventListener('click', () => {
+            if (typeof component.handle_content_type_paste_analyze_click === 'function') {
+                component.handle_content_type_paste_analyze_click();
+            }
+        });
+        row.appendChild(paste_btn);
+        component.content_type_paste_analyze_btn = paste_btn;
+    } else {
+        component.content_type_paste_analyze_btn = null;
+    }
 
-    component.content_type_paste_analyze_btn = paste_btn;
+    panel_inner.appendChild(row);
 }
 
 function render_content_type_analyze_status(component: any, panel_inner: HTMLElement): void {
@@ -91,11 +100,13 @@ function render_content_type_analyze_status(component: any, panel_inner: HTMLEle
 function render_content_type_groups(
     component: any,
     groups: ContentTypeGroup[],
-    panel_inner: HTMLElement
+    panel_inner: HTMLElement,
+    metadata: unknown
 ): void {
     const t = component.get_t_internally();
+    const show_paste_analyze = is_web_monitoring_audit({ metadata });
 
-    render_content_type_instruction_row(component, panel_inner);
+    render_content_type_instruction_row(component, panel_inner, show_paste_analyze);
     render_content_type_analyze_status(component, panel_inner);
 
     groups.forEach((group: ContentTypeGroup) => {
@@ -187,10 +198,10 @@ function render_content_type_groups(
     sync_content_type_selection_from_dom(component);
 }
 
-function mount_section_panel(component: any, groups: ContentTypeGroup[]): void {
+function mount_section_panel(component: any, groups: ContentTypeGroup[], metadata: unknown): void {
     const panel_inner = component.content_types_section_panel_inner;
     if (!panel_inner || panel_inner.childElementCount > 0) return;
-    render_content_type_groups(component, groups, panel_inner);
+    render_content_type_groups(component, groups, panel_inner, metadata);
 }
 
 function unmount_section_panel(component: any): void {
@@ -215,7 +226,7 @@ async function toggle_content_types_section(
     section.setAttribute('data-animating', 'true');
     try {
         if (will_open) {
-            mount_section_panel(component, groups);
+            mount_section_panel(component, groups, component._content_types_metadata);
             section.classList.add('content-types-section-accordion--open');
             header_button.setAttribute('aria-expanded', 'true');
             await animate_expandable_panel(expandable_panel, panel_host, true);
@@ -241,6 +252,7 @@ export function render_content_types_section_accordion(
     const t = component.get_t_internally();
     const is_new_sample = !component.current_editing_sample_id;
     init_content_type_selection(component, effective_sample_data, metadata, is_new_sample);
+    component._content_types_metadata = metadata;
 
     const initially_open = component.current_editing_sample_id
         ? false
@@ -313,7 +325,7 @@ export function render_content_types_section_accordion(
 
     if (initially_open) {
         section.classList.add('content-types-section-accordion--open');
-        mount_section_panel(component, groups);
+        mount_section_panel(component, groups, component._content_types_metadata);
         apply_instant_expanded_panel_state(expandable_panel, panel_host, true, EXPANDABLE_PANEL_EXPANDED_CLASS);
     }
 

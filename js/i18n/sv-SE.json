@@ -10,6 +10,7 @@
   "add_new_requirement_button": "Lägg till nytt krav",
   "add_new_sample": "Lägg till ny granskningsdel",
   "bulk_url_import_open_button": "Skapa från URL-lista",
+  "web_monitoring_only_feature_unavailable": "Den här funktionen finns bara för webbgranskningar.",
   "bulk_url_import_title": "Skapa granskningsdelar från URL-lista",
   "bulk_url_import_intro": "Klistra in en webbadress per rad. Verktyget hämtar sidtitel och skärmavbild, skapar granskningsdelarna och föreslår sidtyp och innehållstyper utifrån sidrapporten.",
   "bulk_url_import_urls_label": "URL-lista",

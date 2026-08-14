@@ -3,6 +3,7 @@ import { handle_sample_attach_media_click, render_sample_screenshot_section } fr
 import { sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
 import { create_sample_url_analyze_button } from './sample_url_analyze_status.js';
 import { resolve_content_types } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { is_web_monitoring_audit } from '../../logic/is_web_monitoring_audit.js';
 
 type ContentTypeGroupOption = {
     id: string;
@@ -114,17 +115,26 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.url_input.addEventListener('input', () => {
         component.handle_autosave_input();
     });
-    const url_analyze_parts = create_sample_url_analyze_button(component.Helpers, t);
+    const is_web_audit = is_web_monitoring_audit(current_state.ruleFileContent);
+    const url_analyze_parts = is_web_audit
+        ? create_sample_url_analyze_button(component.Helpers, t)
+        : null;
     component.url_analyze_button_parts = url_analyze_parts;
-    component.url_analyze_btn = url_analyze_parts.button;
-    component.url_analyze_btn.addEventListener('click', () => {
-        if (typeof component.handle_analyze_url_page_click === 'function') {
-            component.handle_analyze_url_page_click();
-        }
-    });
+    component.url_analyze_btn = url_analyze_parts?.button ?? null;
+    if (component.url_analyze_btn) {
+        component.url_analyze_btn.addEventListener('click', () => {
+            if (typeof component.handle_analyze_url_page_click === 'function') {
+                component.handle_analyze_url_page_click();
+            }
+        });
+    }
+    const url_input_row_children: HTMLElement[] = [component.url_input];
+    if (url_analyze_parts) {
+        url_input_row_children.push(url_analyze_parts.wrapper);
+    }
     const url_input_row = component.Helpers.create_element('div', {
         class_name: 'sample-url-input-row',
-        children: [component.url_input, url_analyze_parts.wrapper]
+        children: url_input_row_children
     });
     component.url_form_group_ref = component.Helpers.create_element('div', {
         class_name: 'form-group',

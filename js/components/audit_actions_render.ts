@@ -16,6 +16,7 @@ export type AuditActionsRenderDeps = {
     };
     Translation: { t: (key: string, opts?: Record<string, unknown>) => string };
     router: (view: string, params?: Record<string, string>) => void;
+    is_web_monitoring_audit?: boolean;
 };
 
 export function normalize_audit_actions_section(raw: unknown): AuditActionsSection {
@@ -82,9 +83,39 @@ export function render_audit_actions_hub(deps: AuditActionsRenderDeps, plate: HT
         'audit_actions_nav_appendix_templates',
         'audit_actions_hub_appendix_templates_desc'
     );
-    add_hub_link('snapshots', 'audit_actions_nav_snapshots', 'audit_actions_hub_snapshots_desc');
+    if (deps.is_web_monitoring_audit !== false) {
+        add_hub_link('snapshots', 'audit_actions_nav_snapshots', 'audit_actions_hub_snapshots_desc');
+    }
     nav.appendChild(list);
     plate.appendChild(nav);
+}
+
+/** Visas när en webb-only undersida nås i en icke-webbgranskning. */
+export function render_audit_actions_web_only_blocked(
+    deps: AuditActionsRenderDeps,
+    plate: HTMLElement,
+    options: {
+        title_key: string;
+        back_section?: AuditActionsSection;
+    }
+): void {
+    const { Helpers: helpers, Translation: { t }, router } = deps;
+    plate.appendChild(helpers.create_element('h1', { text_content: t(options.title_key) }));
+    plate.appendChild(
+        helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('web_monitoring_only_feature_unavailable'),
+        })
+    );
+    const back_btn = helpers.create_element('button', {
+        class_name: ['button', 'button-default'],
+        attributes: { type: 'button' },
+        text_content: t('audit_actions_back_to_hub'),
+    });
+    back_btn.addEventListener('click', () => {
+        router('audit_actions', options.back_section ? { section: options.back_section } : {});
+    });
+    plate.appendChild(back_btn);
 }
 
 /** Sidhuvud för Snapshots (endast rubrik tills innehåll läggs till). */

@@ -29,6 +29,7 @@ import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
 import { queue_sidrapport_after_sample_save } from '../logic/queue_sidrapport_after_sample_save.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
+import { is_web_monitoring_audit } from '../logic/is_web_monitoring_audit.js';
 
 type SampleCategoryOption = {
     id?: string;
@@ -205,6 +206,9 @@ export class AddSampleFormComponent {
     }
 
     handle_content_type_paste_analyze_click(): void {
+        if (!is_web_monitoring_audit(this.getState?.()?.ruleFileContent)) {
+            return;
+        }
         show_content_type_paste_analyze_modal({
             component: this as unknown as ContentTypeDetectionComponentLike,
             Helpers: this.Helpers,
@@ -346,6 +350,9 @@ export class AddSampleFormComponent {
     }
 
     handle_analyze_url_page_click(): void {
+        if (!is_web_monitoring_audit(this.getState?.()?.ruleFileContent)) {
+            return;
+        }
         const val = (this.url_input?.value || '').trim();
         const add_protocol = this.Helpers?.add_protocol_if_missing;
         if (!is_accepted_sample_url(val, add_protocol)) {

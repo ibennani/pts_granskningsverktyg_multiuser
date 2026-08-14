@@ -110,6 +110,9 @@ function format_bulk_import_error_message(
     if (message === 'bulk_url_import_no_audit') {
         return t('bulk_url_import_no_audit');
     }
+    if (message === 'web_monitoring_only_feature_unavailable') {
+        return t('web_monitoring_only_feature_unavailable');
+    }
     return t('bulk_url_import_log_unexpected_error', { error: message });
 }
 
