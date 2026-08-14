@@ -19,6 +19,7 @@ import {
     apply_single_audit_type_if_unique,
     resolve_available_audit_types
 } from '../../shared/audit/audit_type_metadata.js';
+import { merge_local_stuck_into_server_samples } from '../logic/audit_stuck_merge.js';
 
 function build_fresh_new_audit_metadata() {
     return {
@@ -211,6 +212,10 @@ export function reduce_replace_state_from_remote (current_state: any, action: an
         pendingSampleChanges: current_state.pendingSampleChanges ?? null,
         sampleEditDraft: current_state.sampleEditDraft ?? null
     };
+    merged_remote.samples = merge_local_stuck_into_server_samples(
+        current_state?.samples || [],
+        merged_remote.samples
+    );
     merged_remote.samples = ensure_samples_attached_media_shape(merged_remote.samples);
     if (merged_remote.auditStatus === 'locked' || merged_remote.auditStatus === 'archived') {
         const frozen_from_meta = merged_remote.auditMetadata?.lastInProgressActivityAt;

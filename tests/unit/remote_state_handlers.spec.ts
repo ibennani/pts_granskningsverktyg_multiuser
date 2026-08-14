@@ -6,6 +6,7 @@ import { describe, expect, test } from '@jest/globals';
 import {
     reduce_discard_prepared_audit,
     reduce_initialize_new_audit,
+    reduce_replace_state_from_remote,
     reduce_set_remote_audit_id,
     reduce_update_new_audit_rulefile
 } from '../../js/state/remoteStateHandlers.ts';
@@ -99,6 +100,85 @@ describe('reduce_update_new_audit_rulefile', () => {
         expect(next.auditMetadata.auditTypeId).toBe('');
         expect(next.auditMetadata.auditTypeLabel).toBe('');
         expect(next.ruleSetId).toBe('rs-1');
+    });
+});
+
+describe('reduce_replace_state_from_remote', () => {
+    test('behåller lokala kört-fast-texter som servern saknar vid fjärrersättning', () => {
+        const current = {
+            auditId: 'audit-1',
+            version: 2,
+            uiSettings: { foo: 'local' },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        R1: {
+                            stuckProblemDescription: 'Lokal A',
+                            lastStatusUpdate: '2026-08-14T12:00:00.000Z'
+                        },
+                        R2: {
+                            stuckProblemDescription: 'Lokal B',
+                            lastStatusUpdate: '2026-08-14T12:01:00.000Z'
+                        }
+                    }
+                }
+            ]
+        };
+        const next = reduce_replace_state_from_remote(current, {
+            payload: {
+                auditId: 'audit-1',
+                version: 5,
+                auditStatus: 'in_progress',
+                samples: [
+                    {
+                        id: 's1',
+                        requirementResults: {
+                            R1: {
+                                stuckProblemDescription: 'Server A',
+                                lastStatusUpdate: '2026-08-14T11:00:00.000Z'
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+        expect(next.samples[0].requirementResults.R1.stuckProblemDescription).toBe('Lokal A');
+        expect(next.samples[0].requirementResults.R2.stuckProblemDescription).toBe('Lokal B');
+        expect(next.uiSettings).toEqual({ foo: 'local' });
+        expect(next.version).toBe(5);
+    });
+
+    test('låter serverns kört-fast vinna när den är nyare än lokal', () => {
+        const current = {
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        R1: {
+                            stuckProblemDescription: 'Gammal lokal',
+                            lastStatusUpdate: '2026-08-14T10:00:00.000Z'
+                        }
+                    }
+                }
+            ]
+        };
+        const next = reduce_replace_state_from_remote(current, {
+            payload: {
+                samples: [
+                    {
+                        id: 's1',
+                        requirementResults: {
+                            R1: {
+                                stuckProblemDescription: 'Nyare server',
+                                lastStatusUpdate: '2026-08-14T14:00:00.000Z'
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+        expect(next.samples[0].requirementResults.R1.stuckProblemDescription).toBe('Nyare server');
     });
 });
 
