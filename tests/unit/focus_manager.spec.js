@@ -294,4 +294,47 @@ describe('focus_manager', () => {
         expect(focus_spy).toHaveBeenCalled();
         focus_spy.mockRestore();
     });
+
+    test('apply_document_scroll_positions sätter window och container-scroll utan animation', async () => {
+        const { apply_document_scroll_positions } = await import('../../js/logic/focus_manager.js');
+        const app_container = document.createElement('div');
+        app_container.id = 'app-container';
+        app_container.scrollTop = 120;
+        const main_view_root = document.createElement('div');
+        main_view_root.id = 'app-main-view-root';
+        main_view_root.scrollTop = 80;
+        document.body.append(app_container, main_view_root);
+
+        const scroll_to_spy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+        apply_document_scroll_positions({
+            windowY: 40,
+            appContainer: 15,
+            mainViewRoot: 25,
+            behavior: 'instant'
+        });
+
+        expect(scroll_to_spy).toHaveBeenCalledWith({ left: 0, top: 40, behavior: 'instant' });
+        expect(app_container.scrollTop).toBe(15);
+        expect(main_view_root.scrollTop).toBe(25);
+
+        scroll_to_spy.mockRestore();
+    });
+
+    test('reset_document_scroll_positions nollställer alla scroll-containers', async () => {
+        const { reset_document_scroll_positions } = await import('../../js/logic/focus_manager.js');
+        const app_container = document.createElement('div');
+        app_container.id = 'app-container';
+        app_container.scrollTop = 200;
+        document.body.appendChild(app_container);
+
+        const scroll_to_spy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+        reset_document_scroll_positions();
+
+        expect(scroll_to_spy).toHaveBeenCalledWith({ left: 0, top: 0, behavior: 'instant' });
+        expect(app_container.scrollTop).toBe(0);
+
+        scroll_to_spy.mockRestore();
+    });
 });

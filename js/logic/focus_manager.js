@@ -114,6 +114,31 @@ export function update_restore_position(view, params, focus_info) {
     };
 }
 
+/**
+ * Sätter scroll i fönster och kända scroll-containers (app-container, main-view-root).
+ * @param {{ windowY?: number, appContainer?: number, mainViewRoot?: number, behavior?: ScrollBehavior }} [positions]
+ */
+export function apply_document_scroll_positions(positions = {}) {
+    const window_y = positions.windowY ?? 0;
+    const app_container_y = positions.appContainer ?? 0;
+    const main_view_root_y = positions.mainViewRoot ?? 0;
+    const behavior = positions.behavior ?? 'instant';
+
+    window.scrollTo({ left: 0, top: window_y, behavior });
+    document.documentElement.scrollTop = window_y;
+    document.body.scrollTop = window_y;
+
+    const app_container = document.getElementById('app-container');
+    const main_view_root = document.getElementById('app-main-view-root');
+    if (app_container) app_container.scrollTop = app_container_y;
+    if (main_view_root) main_view_root.scrollTop = main_view_root_y;
+}
+
+/** Nollställer alla kända scroll-containers utan animation. */
+export function reset_document_scroll_positions() {
+    apply_document_scroll_positions({ windowY: 0, appContainer: 0, mainViewRoot: 0, behavior: 'instant' });
+}
+
 export function apply_restore_focus_instruction({ view_root }) {
     if (!view_root) return false;
     const focus_info = get_restore_focus_info();

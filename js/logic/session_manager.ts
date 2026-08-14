@@ -22,6 +22,7 @@ import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
 import { init_audit_sync_lifecycle } from './audit_sync_lifecycle.js';
 import { init_version_reload_banner_live_sync } from './version_reload_banner_mount.js';
+import { apply_document_scroll_positions } from './focus_manager.js';
 
 /** Bygg-info som läses in dynamiskt i webbläsaren. */
 interface BuildInfoPayload {
@@ -427,7 +428,8 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                                 sampleId: sample_id,
                                 requirementId: requirement_id,
                                 focusInfo: info,
-                                updatedAtIso: new Date().toISOString()
+                                updatedAtIso: new Date().toISOString(),
+                                skip_render: true
                             }
                         });
                     }
@@ -561,6 +563,12 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                         return;
                     }
                 }
+                if (
+                    get_current_view_name_rendered() === 'requirement_audit' &&
+                    listener_meta?.action_type === 'REPLACE_STATE_FROM_REMOTE'
+                ) {
+                    return;
+                }
                 const view_root = get_main_view_root() || get_app_container();
                 const force_view_render =
                     typeof listener_meta?.action_type === 'string' &&
@@ -589,13 +597,12 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                                     window_scroll,
                                 });
                             }
-                            window.scrollTo(0, scroll_before.windowY);
-                            document.documentElement.scrollTop = scroll_before.windowY;
-                            document.body.scrollTop = scroll_before.windowY;
-                            const ac = document.getElementById('app-container');
-                            const mvr = document.getElementById('app-main-view-root');
-                            if (ac) ac.scrollTop = scroll_before.appContainer;
-                            if (mvr) mvr.scrollTop = scroll_before.mainViewRoot;
+                            apply_document_scroll_positions({
+                                windowY: scroll_before.windowY,
+                                appContainer: scroll_before.appContainer,
+                                mainViewRoot: scroll_before.mainViewRoot,
+                                behavior: 'instant'
+                            });
                         });
                     };
                     if (render_promise && typeof render_promise.then === 'function') {

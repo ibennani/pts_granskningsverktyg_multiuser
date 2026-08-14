@@ -226,7 +226,13 @@ if (typeof window !== 'undefined') {
         const active = document.activeElement;
         if (!active || !view_root.contains(active)) return false;
         const tag = active.tagName ? active.tagName.toLowerCase() : '';
-        return tag === 'input' || tag === 'textarea' || tag === 'select';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+        if (tag === 'button') return true;
+        if (tag === 'a') {
+            const href = (active.getAttribute?.('href') || '').trim();
+            if (href && !href.toLowerCase().startsWith('javascript:')) return true;
+        }
+        return false;
     }
 
     const render_view_deps = () => ({
