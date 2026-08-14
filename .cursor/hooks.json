@@ -21,6 +21,16 @@
         "command": "node .cursor/hooks/nabu_on_todo_write.mjs",
         "matcher": "TodoWrite"
       }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": ".cursor/hooks/nabu-on-after-agent-response.cmd"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/nabu-on-agent-stop.cmd"
+      }
     ]
   }
 }

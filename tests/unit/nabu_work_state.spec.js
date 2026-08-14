@@ -12,11 +12,13 @@ import {
     compute_flush_retry_delay_ms,
     count_open_todos,
     create_default_state,
+    mark_notify_sent,
     maybe_reset_leaked_subagents,
     maybe_reset_leaked_todos,
     maybe_reset_orphaned_subagents,
     maybe_reset_stale,
     normalize_state,
+    NOTIFY_DEDUP_MS,
     read_state,
     request_notify,
     requeue_notify,
@@ -24,6 +26,7 @@ import {
     subagent_stop,
     sync_todos,
     try_flush,
+    was_notify_sent_recently,
     write_state,
 } from '../../scripts/nabu_work_state.mjs';
 
@@ -265,5 +268,13 @@ describe('nabu_work_state', () => {
         expect(normalized.pending_subagents).toBe(0);
         expect(normalized.open_todo_count).toBe(0);
         expect(normalized.notify_requested).toBe(true);
+    });
+
+    test('mark_notify_sent och was_notify_sent_recently skyddar mot dubbelnotis', () => {
+        expect(was_notify_sent_recently()).toBe(false);
+        mark_notify_sent();
+        expect(read_state().last_notify_sent_at).toBeGreaterThan(0);
+        expect(was_notify_sent_recently()).toBe(true);
+        expect(was_notify_sent_recently(NOTIFY_DEDUP_MS - 1)).toBe(true);
     });
 });

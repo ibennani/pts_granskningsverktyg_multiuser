@@ -92,6 +92,7 @@ function Send-FlushWebhook {
         & node $state_script requeue-notify | Out-Null
         Write-Host '[nabu_try_flush] Webhook misslyckades; klar-notis återköad.'
     } else {
+        & node $state_script mark-notify-sent | Out-Null
         Write-Host '[nabu_try_flush] Klar-notis skickad.'
     }
     return $exit_code

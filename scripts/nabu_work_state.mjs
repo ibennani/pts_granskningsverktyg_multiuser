@@ -16,11 +16,13 @@ export const DELAYED_FLUSH_SECONDS = 10;
 export const FLUSH_RETRY_BUFFER_MS = 500;
 /** Max väntetid i notify_done innan vi ger upp (synkron retry i nabu_try_flush.ps1). */
 export const SYNC_FLUSH_MAX_MS = 25000;
+/** Skydd mot dubbelnotis när stop-hook och notify_done.cmd körs i samma tur. */
+export const NOTIFY_DEDUP_MS = 15000;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = path.resolve(__dirname, '..');
 
-/** @typedef {{ version: number, pending_subagents: number, open_todo_count: number, notify_requested: boolean, notify_requested_at: number, delayed_flush_scheduled: boolean, last_activity_at: number, last_subagent_activity_at: number }} NabuWorkState */
+/** @typedef {{ version: number, pending_subagents: number, open_todo_count: number, notify_requested: boolean, notify_requested_at: number, delayed_flush_scheduled: boolean, last_activity_at: number, last_subagent_activity_at: number, last_notify_sent_at: number }} NabuWorkState */
 
 /**
  * @param {string} [repo_root]
@@ -55,6 +57,7 @@ export function create_default_state() {
         delayed_flush_scheduled: false,
         last_activity_at: Date.now(),
         last_subagent_activity_at: 0,
+        last_notify_sent_at: 0,
     };
 }
 
@@ -77,6 +80,7 @@ export function normalize_state(raw) {
         delayed_flush_scheduled: Boolean(obj.delayed_flush_scheduled),
         last_activity_at: Number(obj.last_activity_at) || Date.now(),
         last_subagent_activity_at: Math.max(0, Number(obj.last_subagent_activity_at) || 0),
+        last_notify_sent_at: Math.max(0, Number(obj.last_notify_sent_at) || 0),
     };
 }
 
@@ -465,6 +469,30 @@ export function clear_delayed_flush_scheduled(repo_root) {
 }
 
 /**
+ * @param {number} [within_ms]
+ * @param {string} [repo_root]
+ * @returns {boolean}
+ */
+export function was_notify_sent_recently(within_ms = NOTIFY_DEDUP_MS, repo_root) {
+    const state = read_state(repo_root);
+    if (!state.last_notify_sent_at) {
+        return false;
+    }
+    return Date.now() - state.last_notify_sent_at < within_ms;
+}
+
+/**
+ * @param {string} [repo_root]
+ */
+export function mark_notify_sent(repo_root) {
+    with_state_lock((state) => {
+        state.last_notify_sent_at = Date.now();
+        state.last_activity_at = Date.now();
+    }, repo_root);
+    append_debug_log('mark_notify_sent', {}, repo_root);
+}
+
+/**
  * @param {string[]} argv
  */
 function run_cli(argv) {
@@ -525,6 +553,10 @@ function run_cli(argv) {
     }
     if (command === 'clear-delayed-flush-scheduled') {
         clear_delayed_flush_scheduled();
+        return;
+    }
+    if (command === 'mark-notify-sent') {
+        mark_notify_sent();
         return;
     }
 
