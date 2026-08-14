@@ -463,6 +463,72 @@ function has_icon_close_in_corner(root, is_visible_fn) {
     return false;
 }
 
+const SHADOW_MARKETING_CLOSE_SELECTORS = [
+    '.close',
+    '.modal-close',
+    '[class*="close-button"]',
+    '[class*="closeButton"]',
+    'button[aria-label*="close" i]',
+    'button[aria-label*="stäng" i]',
+    '[role="button"][aria-label*="close" i]',
+    '[role="button"][aria-label*="stäng" i]',
+];
+
+/**
+ * @param {object} config
+ * @returns {boolean}
+ */
+function try_dismiss_shadow_marketing_hosts(config) {
+    const selectors = config.shadow_host_selectors || [];
+    const is_visible = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 4 && rect.height > 4;
+    };
+
+    for (const selector of selectors) {
+        let hosts = [];
+        try {
+            hosts = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const host of hosts) {
+            if (!(host instanceof HTMLElement) || !host.shadowRoot) continue;
+            const root = host.shadowRoot;
+            for (const close_selector of SHADOW_MARKETING_CLOSE_SELECTORS) {
+                try {
+                    const match = root.querySelector(close_selector);
+                    if (match instanceof HTMLElement && is_visible(match)) {
+                        match.click();
+                        return true;
+                    }
+                } catch {
+                    // Ogiltig selector.
+                }
+            }
+            const modal = root.querySelector('.modal, .layout-popup, [class*="modal"]');
+            if (modal instanceof HTMLElement) {
+                const buttons = modal.querySelectorAll('button, [role="button"]');
+                for (const candidate of buttons) {
+                    if (
+                        candidate instanceof HTMLElement &&
+                        is_close_button_in_dialog_corner(candidate, modal, is_visible)
+                    ) {
+                        candidate.click();
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 /**
  * @param {object} config
  * @returns {HTMLElement[]}
@@ -563,6 +629,13 @@ export function browser_find_intrusive_overlay_roots(config) {
 
     const is_intrusive_overlay_candidate = (element) => {
         if (!is_visible(element)) return false;
+        const tag = element.tagName;
+        if (
+            (tag === 'FOOTER' || tag === 'MAIN' || tag === 'NAV' || tag === 'HEADER') &&
+            !is_dialog_like(element)
+        ) {
+            return false;
+        }
         const text = element.innerText || element.textContent || '';
         if (text_suggests_consent(text)) return false;
 
@@ -691,6 +764,8 @@ export function browser_dismiss_intrusive_overlays(config) {
         if (find_close_in_root(overlay)) return true;
     }
 
+    if (try_dismiss_shadow_marketing_hosts(config)) return true;
+
     if (overlay_roots.length > 0) {
         document.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true })
@@ -746,6 +821,24 @@ export function browser_is_intrusive_overlay_visible(config) {
         }
     }
 
+    for (const selector of config.shadow_host_selectors || []) {
+        let hosts = [];
+        try {
+            hosts = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const host of hosts) {
+            if (!(host instanceof HTMLElement)) continue;
+            const style = window.getComputedStyle(host);
+            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+                continue;
+            }
+            const rect = host.getBoundingClientRect();
+            if (rect.width > 4 && rect.height > 4) return true;
+        }
+    }
+
     for (const container_selector of config.container_selectors || []) {
         let containers = [];
         try {
@@ -778,6 +871,18 @@ export function browser_hide_intrusive_overlays_for_screenshot(config) {
         element.style.setProperty('pointer-events', 'none', 'important');
         hidden_count += 1;
     };
+
+    for (const selector of config.shadow_host_selectors || []) {
+        let hosts = [];
+        try {
+            hosts = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const host of hosts) {
+            hide_element(host);
+        }
+    }
 
     for (const selector of config.hide_selectors || []) {
         let elements = [];

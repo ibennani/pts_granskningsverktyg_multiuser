@@ -50,6 +50,7 @@ describe('page_screenshot_intrusive_overlay_logic', () => {
         const hide = build_intrusive_overlay_hide_config();
         expect(dismiss.close_selectors.length).toBeGreaterThan(3);
         expect(dismiss.container_selectors).toContain('[role="dialog"]');
+        expect(dismiss.shadow_host_selectors).toContain('triggerbee-widget');
         expect(hide.hide_selectors).toContain('#intercom-container');
         expect(dismiss.overlay_detection.context_keywords).toContain('nyhetsbrev');
     });

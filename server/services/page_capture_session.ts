@@ -236,6 +236,7 @@ export async function capture_viewport_png_with_adjustments(
     const banner_still_visible = await is_cookie_banner_visible(page);
     const overlay_still_visible = await is_intrusive_overlay_visible(page);
     const blocked_count = read_cmp_blocked_count(page);
+    await hide_intrusive_overlays_visually_for_screenshot(page);
     const png_buffer = Buffer.from(
         await page.screenshot({
             type: 'png',

@@ -11,6 +11,7 @@ import {
     INTRUSIVE_OVERLAY_CONTEXT_KEYWORDS,
     INTRUSIVE_OVERLAY_GENERIC_KEYWORDS,
     INTRUSIVE_OVERLAY_HIDE_SELECTORS,
+    INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS,
     INTRUSIVE_OVERLAY_MIN_Z_INDEX,
     INTRUSIVE_OVERLAY_BACKDROP_MIN_COVERAGE_RATIO,
     INTRUSIVE_OVERLAY_DIALOG_MIN_WIDTH_RATIO,
@@ -94,6 +95,7 @@ export function build_intrusive_overlay_dismiss_config() {
         reject_text_patterns: [...INTRUSIVE_OVERLAY_REJECT_TEXT_PATTERNS],
         container_selectors: [...INTRUSIVE_OVERLAY_CONTAINER_SELECTORS],
         chat_hide_only_selectors: [...INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS],
+        shadow_host_selectors: [...INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS],
         overlay_detection: build_intrusive_overlay_detection_config(),
     };
 }
@@ -106,6 +108,7 @@ export function build_intrusive_overlay_hide_config() {
         hide_selectors: [...INTRUSIVE_OVERLAY_HIDE_SELECTORS],
         container_selectors: [...INTRUSIVE_OVERLAY_CONTAINER_SELECTORS],
         chat_hide_only_selectors: [...INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS],
+        shadow_host_selectors: [...INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS],
         overlay_detection: build_intrusive_overlay_detection_config(),
     };
 }

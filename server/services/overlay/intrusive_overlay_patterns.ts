@@ -161,6 +161,16 @@ export const INTRUSIVE_OVERLAY_HIDE_SELECTORS = [
     '[class*="livechat"]',
 ] as const;
 
+/**
+ * Marknadsföringswidgets i Shadow DOM (t.ex. Triggerbee på nelly.com).
+ * Döljer värd-elementet så hela popupen försvinner ur skärmdumpen.
+ */
+export const INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS = [
+    'triggerbee-widget',
+    'klaviyo-form',
+    'klaviyo-popup',
+] as const;
+
 /** Chatt-widgets: dölj utan att klicka (undvik att öppna chatt). */
 export const INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS = [
     '#intercom-container',
@@ -172,6 +182,7 @@ export const INTRUSIVE_OVERLAY_CHAT_HIDE_ONLY_SELECTORS = [
     '.hs-messages-widget',
     '.drift-frame-controller',
     '.tidio-chat',
+    ...INTRUSIVE_OVERLAY_SHADOW_HOST_SELECTORS,
 ] as const;
 
 export const INTRUSIVE_OVERLAY_MIN_Z_INDEX = 50;
