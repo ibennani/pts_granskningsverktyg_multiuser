@@ -3,6 +3,7 @@
  */
 
 import {
+    filter_rule_set_id_candidates_to_known,
     pick_published_rule_row_by_monitoring_kind,
     read_rule_set_id_candidates,
     resolve_monitoring_kind_from_rule_content,
@@ -22,7 +23,11 @@ export async function resolve_rule_set_row_for_audit_overlay(
     const parsed = parse_rule_content_value(rule_file_content);
     if (!parsed) return null;
 
-    const candidates = read_rule_set_id_candidates(audit_rule_set_id, parsed);
+    const list = await fetch_rule_sets_list();
+    const candidates = filter_rule_set_id_candidates_to_known(
+        read_rule_set_id_candidates(audit_rule_set_id, parsed),
+        list.rows
+    );
     for (const id of candidates) {
         const result = await fetch_rule_set_by_id(id);
         if (result.rows[0]) return result.rows[0];
@@ -31,7 +36,6 @@ export async function resolve_rule_set_row_for_audit_overlay(
     const kind = resolve_monitoring_kind_from_rule_content(parsed);
     if (kind === 'unknown') return null;
 
-    const list = await fetch_rule_sets_list();
     const match = pick_published_rule_row_by_monitoring_kind(list.rows, kind);
     if (!match?.id) return null;
 

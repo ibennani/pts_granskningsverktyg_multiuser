@@ -11,6 +11,8 @@ import {
 import { resolve_audit_types } from '../../shared/rulefile/rulefile_audit_types.js';
 import {
     build_default_published_audit_types_content,
+    build_known_rule_set_id_set,
+    filter_rule_set_id_candidates_to_known,
     pick_published_rule_row_by_monitoring_kind,
     read_rule_set_id_candidates,
     resolve_monitoring_kind_from_rule_content,
@@ -18,13 +20,18 @@ import {
 import { type PublishedRuleRow } from './published_monitoring_rule_options.js';
 
 export async function fetch_published_rule_content_for_audit(
-    rule_set_id: string | number | null | undefined
+    rule_set_id: string | number | null | undefined,
+    known_rules: PublishedRuleRow[] | null = null
 ): Promise<unknown | null> {
     if (rule_set_id === null || rule_set_id === undefined || String(rule_set_id).trim() === '') {
         return null;
     }
+    const id = String(rule_set_id);
+    if (known_rules && !build_known_rule_set_id_set(known_rules).has(id)) {
+        return null;
+    }
     try {
-        const rule = await get_rule(String(rule_set_id));
+        const rule = await get_rule(id);
         return parse_rule_content_value(rule?.published_content ?? rule?.content);
     } catch {
         return null;
@@ -51,12 +58,19 @@ export async function resolve_published_rule_content_for_audit_state(
         return { published: null, resolved_rule_set_id: null };
     }
 
-    const candidates = read_rule_set_id_candidates(
-        state.ruleSetId ?? state.rule_set_id,
-        snapshot
+    let rules: PublishedRuleRow[] = [];
+    try {
+        rules = (await get_rules()) as PublishedRuleRow[];
+    } catch {
+        // Fortsätt med tom lista och fall tillbaka till standardtyper
+    }
+
+    const candidates = filter_rule_set_id_candidates_to_known(
+        read_rule_set_id_candidates(state.ruleSetId ?? state.rule_set_id, snapshot),
+        rules
     );
     for (const rule_set_id of candidates) {
-        const published = await fetch_published_rule_content_for_audit(rule_set_id);
+        const published = await fetch_published_rule_content_for_audit(rule_set_id, rules);
         if (published && resolve_audit_types((published as { metadata?: unknown }).metadata).length > 0) {
             return { published, resolved_rule_set_id: rule_set_id };
         }
@@ -64,17 +78,12 @@ export async function resolve_published_rule_content_for_audit_state(
 
     const kind = resolve_monitoring_kind_from_rule_content(snapshot);
     if (kind !== 'unknown') {
-        try {
-            const rules = (await get_rules()) as PublishedRuleRow[];
-            const match = pick_published_rule_row_by_monitoring_kind(rules, kind);
-            if (match?.id) {
-                const published = await fetch_published_rule_content_for_audit(match.id);
-                if (published && resolve_audit_types((published as { metadata?: unknown }).metadata).length > 0) {
-                    return { published, resolved_rule_set_id: match.id };
-                }
+        const match = pick_published_rule_row_by_monitoring_kind(rules, kind);
+        if (match?.id) {
+            const published = await fetch_published_rule_content_for_audit(match.id, rules);
+            if (published && resolve_audit_types((published as { metadata?: unknown }).metadata).length > 0) {
+                return { published, resolved_rule_set_id: match.id };
             }
-        } catch {
-            // Fortsätt till standardtyper
         }
     }
 

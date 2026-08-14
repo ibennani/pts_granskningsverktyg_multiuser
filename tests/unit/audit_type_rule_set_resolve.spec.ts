@@ -3,6 +3,8 @@
  */
 import {
     build_default_published_audit_types_content,
+    build_known_rule_set_id_set,
+    filter_rule_set_id_candidates_to_known,
     pick_published_rule_row_by_monitoring_kind,
     read_rule_set_id_candidates,
     resolve_monitoring_kind_from_rule_content,
@@ -16,6 +18,19 @@ describe('audit_type_rule_set_resolve', () => {
                 metadata: { ruleSetId: 'old-id', monitoringType: { type: 'web' } },
             })
         ).toEqual(['old-id']);
+    });
+
+    test('filter_rule_set_id_candidates_to_known tar bort okända id', () => {
+        const known = [
+            { id: 'web-id', name: 'Webb', is_published: true, published_content: {} },
+        ];
+        expect(
+            filter_rule_set_id_candidates_to_known(
+                ['legacy-id', 'web-id'],
+                known
+            )
+        ).toEqual(['web-id']);
+        expect(build_known_rule_set_id_set(known)).toEqual(new Set(['web-id']));
     });
 
     test('resolve_monitoring_kind_from_rule_content känner igen webbplats', () => {

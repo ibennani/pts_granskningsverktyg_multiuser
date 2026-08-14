@@ -1,7 +1,8 @@
 /**
  * @fileoverview Synkar bristtyper från serverns regelfilsinnehåll till klientstate vid behov.
  */
-import { get_rule } from '../api/client.js';
+import { get_rule, get_rules } from '../api/client.js';
+import { build_known_rule_set_id_set } from '../../shared/audit/audit_type_rule_set_resolve.js';
 import { normalize_requirements_to_record } from './requirement_lookup.js';
 
 type RequirementRecord = Record<string, Record<string, unknown>>;
@@ -73,6 +74,14 @@ export async function merge_deficiency_types_from_server_if_missing(
     }
 
     try {
+        const rules = await get_rules();
+        const known_ids = build_known_rule_set_id_set(
+            Array.isArray(rules) ? rules as Array<{ id: string }> : []
+        );
+        if (!known_ids.has(String(rule_set_id))) {
+            return { content: rule_file_content, changed: false };
+        }
+
         const rule_row = await get_rule(String(rule_set_id));
         const remote_content = parse_rule_content(rule_row?.content);
         if (!remote_content) {

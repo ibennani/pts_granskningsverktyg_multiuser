@@ -43,6 +43,28 @@ export function resolve_monitoring_kind_from_rule_row(row: PublishedRuleRowLike)
     return 'unknown';
 }
 
+export function build_known_rule_set_id_set(rule_rows: PublishedRuleRowLike[]): Set<string> {
+    const ids = new Set<string>();
+    if (!Array.isArray(rule_rows)) {
+        return ids;
+    }
+    for (const row of rule_rows) {
+        const id = String(row?.id ?? '').trim();
+        if (id) {
+            ids.add(id);
+        }
+    }
+    return ids;
+}
+
+export function filter_rule_set_id_candidates_to_known(
+    candidates: string[],
+    rule_rows: PublishedRuleRowLike[]
+): string[] {
+    const known = build_known_rule_set_id_set(rule_rows);
+    return candidates.filter((id) => known.has(id));
+}
+
 export function read_rule_set_id_candidates(
     audit_rule_set_id: unknown,
     rule_file_content: unknown
