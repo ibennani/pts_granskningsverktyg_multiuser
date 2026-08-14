@@ -74,6 +74,9 @@ async function migrate() {
         const sql20 = readFileSync(join(__dirname, '../migrations/020_audit_snapshot_warnings_json.sql'), 'utf8');
         await client.query(sql20);
         console.log('[Migrate] Migration 020 kördes.');
+        const sql21 = readFileSync(join(__dirname, '../migrations/021_snapshot_requester.sql'), 'utf8');
+        await client.query(sql21);
+        console.log('[Migrate] Migration 021 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);
