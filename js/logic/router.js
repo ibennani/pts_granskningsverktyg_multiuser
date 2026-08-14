@@ -3,7 +3,7 @@
  * @module js/logic/router
  */
 
-import { is_current_user_admin, get_auth_token, get_current_user_preferences_with_timeout, set_current_user_admin } from '../api/client.js';
+import { is_current_user_admin, get_auth_token, get_current_user_preferences_with_timeout, set_current_user_admin, set_current_user_id } from '../api/client.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import * as ValidationLogic from '../validation_logic.js';
@@ -290,6 +290,7 @@ export async function handle_hash_change(options) {
                     if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
                 }
                 set_current_user_admin(!!user?.is_admin);
+                set_current_user_id(user?.id || null);
                 dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
             } catch {
                 /* ignorerar – anropet kan misslyckas utan giltig session */

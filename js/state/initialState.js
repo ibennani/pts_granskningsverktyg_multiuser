@@ -17,6 +17,7 @@ export const initial_state = {
         auditTypeLabel: ''
     },
     auditStatus: 'not_started',
+    responsibleUserId: null,
     startTime: null,
     endTime: null,
     auditLastNonObservationActivityAt: null,

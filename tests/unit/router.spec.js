@@ -15,6 +15,7 @@ const get_auth_token = jest.fn(() => null);
 const get_current_user_preferences = jest.fn(async () => ({}));
 const get_current_user_preferences_with_timeout = jest.fn(async () => ({}));
 const set_current_user_admin = jest.fn();
+const set_current_user_id = jest.fn();
 const load_audit_with_rule_file = jest.fn();
 
 jest.unstable_mockModule(client_path, () => ({
@@ -23,6 +24,7 @@ jest.unstable_mockModule(client_path, () => ({
     get_current_user_preferences,
     get_current_user_preferences_with_timeout,
     set_current_user_admin,
+    set_current_user_id,
     load_audit_with_rule_file
 }));
 

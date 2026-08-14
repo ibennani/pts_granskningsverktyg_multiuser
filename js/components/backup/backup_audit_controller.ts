@@ -231,7 +231,10 @@ export class BackupAuditController {
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         ModalComponent.show(
-            { h1_text: this.t('backup_restore_modal_overwrite_title'), message_text: this.t('backup_restore_modal_overwrite_intro') },
+            {
+                h1_text: this.t('backup_restore_modal_overwrite_title'),
+                message_text: `${this.t('backup_restore_modal_overwrite_intro')} ${this.t('backup_restore_modal_media_warning')}`
+            },
             (container: HTMLElement, modal: any) => {
                 const actions = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const restore_btn = this.Helpers.create_element('button', {
@@ -280,8 +283,10 @@ export class BackupAuditController {
                     samples: backup_data.samples || [],
                     auditStatus: backup_data.auditStatus || 'not_started',
                     archivedRequirementResults: backup_data.archivedRequirementResults || [],
-                    lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog || null
-                });
+                    lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog || null,
+                    responsibleUserId: backup_data.responsibleUserId || null,
+                    auditId: audit_id
+                }, { restore_deleted_audit_id: audit_id });
                 this.NotificationComponent?.show_global_message?.(this.t('backup_restore_success'), 'success');
                 this._data_loaded = false;
                 await this.load_data(true);

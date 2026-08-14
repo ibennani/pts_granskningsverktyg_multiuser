@@ -733,6 +733,7 @@
   "backup_restore_modal_keep_current": "Keep current version",
   "backup_restore_modal_loading_from_label": "Audit you are loading (backup):",
   "backup_restore_modal_overwrite_intro": "You are about to overwrite an audit in the same case.",
+  "backup_restore_modal_media_warning": "Images on the server are not updated automatically. References in the audit follow the selected copy.",
   "backup_restore_modal_overwrite_title": "Overwrite audit",
   "backup_restore_modal_restore_btn": "Restore",
   "backup_restore_success": "The audit has been restored from the backup.",

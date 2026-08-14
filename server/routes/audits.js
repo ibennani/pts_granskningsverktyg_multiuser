@@ -18,6 +18,9 @@ import { attach_export_integrity_server_payload } from '../utils/export_integrit
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
 import { broadcast } from '../ws.js';
+import { select_user_id_name_by_id } from '../repositories/user_repository.js';
+import { get_backup_dir } from '../backup/audit_backup.js';
+import { user_may_access_audit_backup } from '../utils/backup_access.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import {
     apply_audit_type_overlay_to_rule_content,
@@ -131,6 +134,24 @@ function normalize_audit_type(rule_content) {
     return raw;
 }
 
+const AUDIT_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function resolve_metadata_with_responsible_user_id(metadata, responsible_user_id) {
+    if (!responsible_user_id) {
+        return metadata || {};
+    }
+    const user_result = await select_user_id_name_by_id(responsible_user_id);
+    if (user_result.rows.length === 0) {
+        const err = new Error('Ansvarig användare hittades inte');
+        err.status = 400;
+        throw err;
+    }
+    return {
+        ...(metadata || {}),
+        auditorName: user_result.rows[0].name
+    };
+}
+
 export function build_full_state(audit_row, rule_set_row) {
     let ruleFileContent = audit_row?.rule_file_content
         ?? (rule_set_row
@@ -174,6 +195,7 @@ export function build_full_state(audit_row, rule_set_row) {
         version: audit_row.version,
         auditId: audit_row.id,
         ruleSetId: audit_row.rule_set_id,
+        responsibleUserId: audit_row.responsible_user_id || null,
         archivedRequirementResults: Array.isArray(audit_row.archived_requirement_results) ? audit_row.archived_requirement_results : [],
         lastRulefileUpdateLog: audit_row.last_rulefile_update_log || null
     };
@@ -197,6 +219,7 @@ function build_audit_state_without_rule_file(audit_row) {
         version: audit_row.version,
         auditId: audit_row.id,
         ruleSetId: audit_row.rule_set_id,
+        responsibleUserId: audit_row.responsible_user_id || null,
         archivedRequirementResults: Array.isArray(audit_row.archived_requirement_results) ? audit_row.archived_requirement_results : [],
         lastRulefileUpdateLog: audit_row.last_rulefile_update_log || null
     };
@@ -571,8 +594,8 @@ router.post('/', async (req, res) => {
         const ruleSet = ruleResult.rows[0];
         const rule_content_for_audit = ruleSet.published_content ?? ruleSet.content;
         const result = await query(
-            'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [rule_set_id, rule_content_for_audit, 'not_started', '{}', '[]', last_updated_by]
+            'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by, responsible_user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [rule_set_id, rule_content_for_audit, 'not_started', '{}', '[]', last_updated_by, req.user?.id || null]
         );
         const audit = result.rows[0];
         const fullState = build_full_state(audit, ruleSet);
@@ -631,8 +654,10 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
     try {
         const raw = req.body;
         const replaceExistingAuditId = raw.replaceExistingAuditId;
+        const restoreDeletedAuditId = raw.restoreDeletedAuditId;
         const data = { ...raw };
         delete data.replaceExistingAuditId;
+        delete data.restoreDeletedAuditId;
 
         const structure_check = check_json_structure_depth_and_size(data);
         if (!structure_check.ok) {
@@ -720,6 +745,50 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
             });
         }
 
+        if (restoreDeletedAuditId !== undefined && restoreDeletedAuditId !== null && restoreDeletedAuditId !== '') {
+            if (!AUDIT_UUID_REGEX.test(String(restoreDeletedAuditId))) {
+                return res.status(400).json({ error: 'Ogiltigt restoreDeletedAuditId.' });
+            }
+            const may_restore = await user_may_access_audit_backup(
+                req.user,
+                String(restoreDeletedAuditId),
+                get_backup_dir()
+            );
+            if (!may_restore) {
+                return res.status(403).json({ error: 'Du har inte behörighet att återställa den här granskningen.' });
+            }
+            const metadata_restore_raw = data.auditMetadata || {};
+            const samples_restore = data.samples || [];
+            const status_restore = data.auditStatus || 'not_started';
+            const archived_restore = Array.isArray(data.archivedRequirementResults) ? data.archivedRequirementResults : [];
+            const log_restore = data.lastRulefileUpdateLog || null;
+            const responsible_restore = data.responsibleUserId || null;
+            const metadata_restore = responsible_restore
+                ? await resolve_metadata_with_responsible_user_id(metadata_restore_raw, responsible_restore)
+                : metadata_restore_raw;
+            const insert_restore = await query(
+                `INSERT INTO audits (
+                    id, rule_set_id, rule_file_content, status, metadata, samples,
+                    archived_requirement_results, last_rulefile_update_log, last_updated_by, responsible_user_id
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+                [
+                    restoreDeletedAuditId,
+                    null,
+                    data.ruleFileContent,
+                    status_restore,
+                    JSON.stringify(metadata_restore),
+                    JSON.stringify(samples_restore),
+                    JSON.stringify(archived_restore),
+                    log_restore ? JSON.stringify(log_restore) : null,
+                    last_updated_by,
+                    responsible_restore
+                ]
+            );
+            const restored_audit = insert_restore.rows[0];
+            const restored_state = build_full_state(restored_audit, null);
+            return res.status(201).json(restored_state);
+        }
+
         const metadata = data.auditMetadata || {};
         const samples = data.samples || [];
         const status = data.auditStatus || 'not_started';
@@ -784,7 +853,8 @@ router.patch('/:id', async (req, res) => {
             ruleFileContent,
             archivedRequirementResults,
             lastRulefileUpdateLog,
-            expectedVersion
+            expectedVersion,
+            responsibleUserId
         } = req.body;
         if (expectedVersion === undefined || expectedVersion === null) {
             return res.status(400).json({ error: 'expectedVersion krävs för att spara granskningen' });
@@ -797,7 +867,32 @@ router.patch('/:id', async (req, res) => {
         const updates = [];
         const values = [];
         let i = 1;
-        if (metadata !== undefined) {
+        let metadata_to_save = metadata;
+        if (responsibleUserId !== undefined && responsibleUserId !== null && responsibleUserId !== '') {
+            if (!AUDIT_UUID_REGEX.test(String(responsibleUserId))) {
+                return res.status(400).json({ error: 'Ogiltigt responsibleUserId' });
+            }
+            let base_metadata = metadata;
+            if (base_metadata === undefined) {
+                const existing_meta = await query('SELECT metadata FROM audits WHERE id = $1', [id]);
+                base_metadata = existing_meta.rows[0]?.metadata || {};
+            }
+            try {
+                metadata_to_save = await resolve_metadata_with_responsible_user_id(
+                    base_metadata,
+                    responsibleUserId
+                );
+            } catch (err) {
+                const status_code = err.status || 500;
+                return res.status(status_code).json({ error: err.message || 'Kunde inte uppdatera ansvarig granskare' });
+            }
+            updates.push(`responsible_user_id = $${i++}`);
+            values.push(responsibleUserId);
+        }
+        if (metadata_to_save !== undefined) {
+            updates.push(`metadata = $${i++}`);
+            values.push(JSON.stringify(metadata_to_save));
+        } else if (metadata !== undefined) {
             updates.push(`metadata = $${i++}`);
             values.push(JSON.stringify(metadata));
         }

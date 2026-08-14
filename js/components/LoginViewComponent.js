@@ -1,10 +1,10 @@
 // js/components/LoginViewComponent.js
 
-import { login, set_auth_token, set_current_user_admin, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
+import { login, set_auth_token, set_current_user_admin, set_current_user_id, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
 import { set_current_user_name_window } from '../app/browser_globals.js';
 import './login_view_component.css';
 
-export class LoginViewComponent {
+export class LoginViewComponent {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -222,6 +222,7 @@ export class LoginViewComponent {
                         sessionStorage.setItem('gv_current_user_name', user_name);
                     }
                     set_current_user_admin(!!user?.is_admin);
+                    set_current_user_id(user?.id || null);
                     set_current_user_name_window(user_name);
                     if (typeof this.on_login_callback === 'function') {
                         this.on_login_callback();

@@ -768,6 +768,7 @@
   "backup_restore_modal_keep_current": "Behold gjeldende versjon",
   "backup_restore_modal_loading_from_label": "Tilsynet du laster inn (sikkerhetskopi):",
   "backup_restore_modal_overwrite_intro": "Du er i ferd med å overskrive et tilsyn i samme sak.",
+  "backup_restore_modal_media_warning": "Bilder på serveren oppdateres ikke automatisk. Referansene i tilsynet styres av den valgte kopien.",
   "backup_restore_modal_overwrite_title": "Overskriv tilsyn",
   "backup_restore_modal_restore_btn": "Gjenopprett",
   "backup_restore_success": "Tilsynet er gjenopprettet fra sikkerhetskopien.",

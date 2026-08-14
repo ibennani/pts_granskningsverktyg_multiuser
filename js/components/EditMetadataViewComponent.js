@@ -754,7 +754,7 @@ export class EditMetadataViewComponent {
                 state_after_rule.ruleSetId,
                 this.monitoring_type_options
             );
-        const auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
+        const auditor_name_options = await load_metadata_auditor_options();
         const case_handler_options = await load_metadata_case_handler_options(
             metadata.caseHandler || ''
         );
@@ -762,6 +762,7 @@ export class EditMetadataViewComponent {
         const form_options = {
             initialData: {
                 ...metadata,
+                responsibleUserId: state_after_rule.responsibleUserId || '',
                 startDateInputValue: start_date_input_value,
                 endDateInputValue: end_date_input_value
             },

@@ -116,7 +116,6 @@ describe('audit_actions_view_content_transition', () => {
 
 describe('AuditActionsViewComponent render under statusfade', () => {
     test('render() är no-op medan statusfade pågår', async () => {
-        jest.resetModules();
         const mod = await import('../../js/components/AuditActionsViewComponent.ts');
         const AuditActionsViewComponentClass = mod.AuditActionsViewComponent;
         const component = new AuditActionsViewComponentClass();

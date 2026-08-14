@@ -1,4 +1,5 @@
 import './backup_overview_component.css';
+import { is_current_user_admin } from '../api/client.js';
 import { BackupAuditController } from './backup/backup_audit_controller.js';
 import { BackupRulefileController, type RulefileKind } from './backup/backup_rulefile_controller.js';
 import { load_backup_mode_from_storage, save_backup_mode_to_storage, type BackupMode } from './backup/backup_mode_storage.js';
@@ -28,6 +29,10 @@ export class BackupOverviewComponent {
         this.Translation = deps.Translation;
         this.NotificationComponent = deps.NotificationComponent;
         this.mode = load_backup_mode_from_storage();
+        if (!is_current_user_admin() && this.mode === 'rulefiles') {
+            this.mode = 'audits';
+            save_backup_mode_to_storage('audits');
+        }
 
                 const deps_for_backup_child = {
             ...deps,
@@ -196,9 +201,15 @@ export class BackupOverviewComponent {
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
         const t = this.get_t_func();
+        const is_admin = is_current_user_admin();
+
+        if (this.view_name === 'backup_rulefile_detail' && !is_admin) {
+            this.router('backup', {});
+            return;
+        }
 
         if (this.mode === 'audits') await this.audits.load_data();
-        if (this.mode === 'rulefiles') await this.rulefiles.load_data();
+        if (this.mode === 'rulefiles' && is_admin) await this.rulefiles.load_data();
 
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate backup-view-plate' });
@@ -253,7 +264,9 @@ export class BackupOverviewComponent {
                 settings_btn.appendChild(set_icon);
             }
             settings_btn.addEventListener('click', () => this.router('backup_settings', {}));
-            right.appendChild(settings_btn);
+            if (is_admin) {
+                right.appendChild(settings_btn);
+            }
             heading_row.appendChild(right);
             status_box.appendChild(heading_row);
 
@@ -274,7 +287,9 @@ export class BackupOverviewComponent {
                 mode_select.appendChild(opt);
             };
             add_mode_opt('audits', t('backup_filter_mode_audits'));
-            add_mode_opt('rulefiles', t('backup_filter_mode_rulefiles'));
+            if (is_admin) {
+                add_mode_opt('rulefiles', t('backup_filter_mode_rulefiles'));
+            }
             mode_select.addEventListener('change', (e: any) => {
                 void this._handle_mode_change((e?.target?.value as BackupMode) || 'audits');
             });

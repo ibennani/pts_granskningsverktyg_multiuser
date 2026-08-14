@@ -7,7 +7,30 @@ import { build_rulefile_overview_index, list_rulefile_history_rows, resolve_syst
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.ts';
+import { requireAdmin } from '../auth/middleware.js';
+import { is_backup_admin, user_may_access_audit_backup } from '../utils/backup_access.js';
 const router = express.Router();
+
+function backup_forbidden(res) {
+    return res.status(403).json({ error: 'Du har inte behörighet till den här säkerhetskopian.' });
+}
+
+async function ensure_audit_backup_access(req, res, audit_id) {
+    const allowed = await user_may_access_audit_backup(req.user, audit_id, get_backup_dir());
+    if (!allowed) {
+        backup_forbidden(res);
+        return false;
+    }
+    return true;
+}
+
+function ensure_rulefile_backup_admin(req, res) {
+    if (!is_backup_admin(req.user)) {
+        backup_forbidden(res);
+        return false;
+    }
+    return true;
+}
 
 async function read_latest_backup_metadata(audit_path, json_files) {
     if (!audit_path || !Array.isArray(json_files) || json_files.length === 0) return null;
@@ -50,6 +73,7 @@ router.get('/files/:auditId/:filename', async (req, res) => {
     if (!filename || !auditId) {
         return res.status(400).json({ error: 'Saknar auditId eller filnamn' });
     }
+    if (!(await ensure_audit_backup_access(req, res, auditId))) return;
     const decoded_filename = decodeURIComponent(filename);
     if (decoded_filename.includes('..') || path.normalize(decoded_filename) !== decoded_filename) {
         return res.status(400).json({ error: 'Ogiltigt filnamn' });
@@ -106,8 +130,8 @@ router.get('/settings', async (_req, res) => {
 
 const ALLOWED_RUNS = [1, 2, 3, 4, 6, 8, 12, 24];
 
-// Uppdatera backup-inställningar – alla inloggade användare
-router.put('/settings', async (req, res) => {
+// Uppdatera backup-inställningar – endast administratörer
+router.put('/settings', requireAdmin, async (req, res) => {
     try {
         const body = req.body || {};
         const has_retention = body.retention_days !== undefined || body.min_backups !== undefined;
@@ -174,6 +198,7 @@ router.post('/save-audit', async (req, res) => {
         if (!audit_id) {
             return res.status(400).json({ error: 'auditId krävs' });
         }
+        if (!(await ensure_audit_backup_access(req, res, audit_id))) return;
         const auditResult = await query('SELECT * FROM audits WHERE id = $1', [audit_id]);
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
@@ -194,7 +219,7 @@ router.post('/save-audit', async (req, res) => {
 });
 
 // Lista alla granskningar som har backuper i backup-katalogen.
-router.get('/list', async (_req, res) => {
+router.get('/list', async (req, res) => {
     try {
         const backup_dir = get_backup_dir();
         let dir_entries;
@@ -214,13 +239,20 @@ router.get('/list', async (_req, res) => {
             .map((d) => d.name)
             .filter((name) => typeof name === 'string' && name.length > 0 && uuidLike.test(name));
 
-        if (audit_ids.length === 0) {
+        const visible_audit_ids = [];
+        for (const audit_id of audit_ids) {
+            if (await user_may_access_audit_backup(req.user, audit_id, backup_dir)) {
+                visible_audit_ids.push(audit_id);
+            }
+        }
+
+        if (visible_audit_ids.length === 0) {
             return res.json([]);
         }
 
         const dbResult = await query(
-            'SELECT id, metadata, status FROM audits WHERE id = ANY($1::uuid[])',
-            [audit_ids]
+            'SELECT id, metadata, status, responsible_user_id FROM audits WHERE id = ANY($1::uuid[])',
+            [visible_audit_ids]
         );
         const meta_by_id = new Map();
         dbResult.rows.forEach((row) => {
@@ -229,7 +261,7 @@ router.get('/list', async (_req, res) => {
 
         const items = [];
 
-        for (const audit_id of audit_ids) {
+        for (const audit_id of visible_audit_ids) {
             const audit_path = path.join(backup_dir, audit_id);
             let files;
             try {
@@ -297,7 +329,8 @@ router.get('/list', async (_req, res) => {
 });
 
 // Lista regelfilsbackuper (system-snapshots) – används av backup-vyns regelfilsläge.
-router.get('/rulefiles/overview', async (_req, res) => {
+router.get('/rulefiles/overview', async (req, res) => {
+    if (!ensure_rulefile_backup_admin(req, res)) return;
     try {
         const items = await build_rulefile_overview_index();
         res.json(items);
@@ -309,6 +342,7 @@ router.get('/rulefiles/overview', async (_req, res) => {
 
 // Historik för en specifik regelfil (alla snapshots + kategorier).
 router.get('/rulefiles/:ruleSetId/history', async (req, res) => {
+    if (!ensure_rulefile_backup_admin(req, res)) return;
     const { ruleSetId } = req.params;
     const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!ruleSetId || !uuidLike.test(ruleSetId)) {
@@ -325,6 +359,7 @@ router.get('/rulefiles/:ruleSetId/history', async (req, res) => {
 
 // Nedladdning av en fil från system-snapshot (regelfiler).
 router.get('/system-files/:snapshotDir/:category/:filename', async (req, res) => {
+    if (!ensure_rulefile_backup_admin(req, res)) return;
     const { snapshotDir, category, filename } = req.params;
     const file_path = resolve_system_rulefile_file_path(snapshotDir, category, filename);
     if (!file_path) {
@@ -349,6 +384,7 @@ router.get('/system-files/:snapshotDir/:category/:filename', async (req, res) =>
 // Lista alla backup-filer för en specifik granskning.
 router.get('/:auditId', async (req, res) => {
     const { auditId } = req.params;
+    if (!(await ensure_audit_backup_access(req, res, auditId))) return;
     try {
         const backup_dir = get_backup_dir();
         const audit_path = path.join(backup_dir, auditId);

@@ -743,6 +743,7 @@
   "backup_restore_modal_keep_current": "Behåll aktuell version",
   "backup_restore_modal_loading_from_label": "Granskning du läser in (säkerhetskopia):",
   "backup_restore_modal_overwrite_intro": "Du håller på att skriva över en granskning i samma ärende.",
+  "backup_restore_modal_media_warning": "Bilder på servern uppdateras inte automatiskt. Referenserna i granskningen styrs av den valda kopian.",
   "backup_restore_modal_overwrite_title": "Skriva över granskning",
   "backup_restore_modal_restore_btn": "Återställ",
   "backup_restore_success": "Granskningen har återställts från säkerhetskopian.",

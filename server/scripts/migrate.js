@@ -77,6 +77,9 @@ async function migrate() {
         const sql21 = readFileSync(join(__dirname, '../migrations/021_snapshot_requester.sql'), 'utf8');
         await client.query(sql21);
         console.log('[Migrate] Migration 021 kördes.');
+        const sql22 = readFileSync(join(__dirname, '../migrations/022_add_responsible_user_id_to_audits.sql'), 'utf8');
+        await client.query(sql22);
+        console.log('[Migrate] Migration 022 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

@@ -192,6 +192,9 @@ export const MetadataFormComponent = {
             auditorName: sanitize_input(
                 this.auditor_name_field_handles?.get_selected_auditor_name?.() ?? ''
             ),
+            responsibleUserId: sanitize_input(
+                this.auditor_name_field_handles?.get_selected_auditor_user_id?.() ?? ''
+            ),
             caseHandler: sanitize_input(
                 this.case_handler_field_handles?.get_selected_case_handler?.() ?? ''
             ),
@@ -593,6 +596,7 @@ export const MetadataFormComponent = {
             this.Helpers,
             this.Translation,
             auditorNameOptions,
+            initialData.responsibleUserId || '',
             initialData.auditorName || ''
         );
         this.auditor_name_field_handles = auditor_field;

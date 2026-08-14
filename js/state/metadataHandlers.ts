@@ -42,6 +42,17 @@ export function reduce_update_metadata(current_state: any, action: any) {
     delete payload.preserve_fresh_new_audit_metadata;
     delete payload.samples_modified;
 
+    let responsible_user_id_update: string | null | undefined;
+    if (Object.prototype.hasOwnProperty.call(payload, 'responsibleUserId')) {
+        const raw_id = payload.responsibleUserId;
+        delete payload.responsibleUserId;
+        if (raw_id === null || raw_id === undefined || raw_id === '') {
+            responsible_user_id_update = null;
+        } else {
+            responsible_user_id_update = String(raw_id);
+        }
+    }
+
     if (
         current_state.auditStatus === 'archived'
         || has_audit_type_id(current_state.auditMetadata)
@@ -113,6 +124,7 @@ export function reduce_update_metadata(current_state: any, action: any) {
         auditMetadata: audit_metadata,
         ...(start_time_update !== undefined ? { startTime: start_time_update } : {}),
         ...(end_time_update !== undefined ? { endTime: end_time_update } : {}),
+        ...(responsible_user_id_update !== undefined ? { responsibleUserId: responsible_user_id_update } : {}),
         ...(
             clear_fresh_new_audit_metadata
             || (current_state.freshNewAuditMetadata === true && !preserve_fresh_new_audit_metadata)

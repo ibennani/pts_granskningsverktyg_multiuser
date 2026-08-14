@@ -116,7 +116,7 @@ export class AuditActionsViewComponent {
         bind_audit_actions_view_ui(this);
         bind_audit_actions_export_handlers(this);
 
-        this._auditor_name_options = await load_metadata_auditor_options(get_current_user_name() || '');
+        this._auditor_name_options = await load_metadata_auditor_options();
         const state = this.getState?.() ?? {};
         const current_case_handler = String(
             (state.auditMetadata as { caseHandler?: string } | undefined)?.caseHandler ?? ''

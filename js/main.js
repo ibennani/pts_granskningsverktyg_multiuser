@@ -56,7 +56,7 @@ import { ModalComponent } from './components/ModalComponent.js';
 import { SideMenuComponent } from './components/SideMenuComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 import { DraftManager } from './draft_manager.js';
-import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
+import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin, set_current_user_id } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 
 import { resolve_app_dom, ensure_app_layout as ensure_app_layout_dom } from './logic/app_dom.js';
@@ -361,6 +361,7 @@ if (typeof window !== 'undefined') {
             get_auth_token,
             get_current_user_preferences,
             set_current_user_admin,
+            set_current_user_id,
             dispatch,
             StoreActionTypes,
             loadStateFromLocalStorageBackup,

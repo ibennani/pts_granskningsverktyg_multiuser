@@ -76,6 +76,24 @@ router.get('/admin-contacts', async (_req, res) => {
     }
 });
 
+/** Id och visningsnamn för ansvarig-granskare-dropdown (alla inloggade). */
+router.get('/auditor-options', async (_req, res) => {
+    try {
+        const result = await query(
+            `SELECT id, name FROM users
+             ORDER BY COALESCE(NULLIF(TRIM(name), ''), username) ASC, username ASC`,
+            []
+        );
+        res.json(result.rows.map((row) => ({
+            id: row.id,
+            name: row.name
+        })));
+    } catch (err) {
+        console.error('[users] GET /auditor-options error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta granskare' });
+    }
+});
+
 router.get('/me', async (req, res) => {
     try {
         const user = req.user;

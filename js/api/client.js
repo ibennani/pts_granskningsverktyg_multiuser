@@ -7,6 +7,7 @@ import {
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
+const AUTH_USER_ID_KEY = 'gv_current_user_id';
 const AUTH_REQUIRED_EVENT = 'gv-auth-required';
 
 /** Path till token-förnyelse (samma bas-URL som övriga API-anrop). */
@@ -20,6 +21,25 @@ export function is_current_user_admin() {
 export function set_current_user_admin(is_admin) {
     if (typeof sessionStorage !== 'undefined') {
         sessionStorage.setItem(AUTH_USER_IS_ADMIN_KEY, is_admin ? '1' : '0');
+    }
+}
+
+export function get_current_user_id() {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = sessionStorage.getItem(AUTH_USER_ID_KEY);
+        return raw && String(raw).trim() ? String(raw).trim() : null;
+    } catch {
+        return null;
+    }
+}
+
+export function set_current_user_id(user_id) {
+    if (typeof sessionStorage === 'undefined' || !user_id) return;
+    try {
+        sessionStorage.setItem(AUTH_USER_ID_KEY, String(user_id));
+    } catch {
+        /* ignoreras */
     }
 }
 
@@ -53,6 +73,7 @@ export function clear_auth_token() {
     try {
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
         sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
+        sessionStorage.removeItem(AUTH_USER_ID_KEY);
     } catch (_) {
         /* ignoreras medvetet */
     }
@@ -492,6 +513,10 @@ export async function get_users() {
     return api_get('/users');
 }
 
+export async function get_auditor_options() {
+    return api_get('/users/auditor-options');
+}
+
 export async function get_current_user_preferences() {
     return api_get('/users/me');
 }
@@ -692,12 +717,15 @@ export async function create_audit(rule_set_id) {
 
 /**
  * @param {object} audit_data - Granskningspayload (sparad JSON-struktur)
- * @param {{ replace_existing_audit_id?: string }} [options] - Vid överskrivning: befintligt gransknings-id
+ * @param {{ replace_existing_audit_id?: string, restore_deleted_audit_id?: string }} [options]
  */
 export async function import_audit(audit_data, options = {}) {
     const body = { ...audit_data };
     if (options.replace_existing_audit_id) {
         body.replaceExistingAuditId = options.replace_existing_audit_id;
+    }
+    if (options.restore_deleted_audit_id) {
+        body.restoreDeletedAuditId = options.restore_deleted_audit_id;
     }
     return api_post('/audits/import', body);
 }

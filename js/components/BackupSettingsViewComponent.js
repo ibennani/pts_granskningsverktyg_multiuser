@@ -1,7 +1,7 @@
 // js/components/BackupSettingsViewComponent.js
 // Egen vy för inställningar för säkerhetskopior (schema + retention).
 
-import { get_backup_settings, update_backup_settings } from '../api/client.js';
+import { get_backup_settings, update_backup_settings, is_current_user_admin } from '../api/client.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './backup_settings_view_component.css';
 
@@ -26,7 +26,8 @@ function format_schedule_times(hours) {
 }
 
 export class BackupSettingsViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.Helpers = null;
@@ -159,6 +160,12 @@ export class BackupSettingsViewComponent {
 
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
+        if (!is_current_user_admin()) {
+            if (typeof this.router === 'function') {
+                this.router('backup', {});
+            }
+            return;
+        }
         const t = this.get_t();
 
         if (!this.settings) {

@@ -35,6 +35,7 @@ export async function init_app(deps) {
         get_auth_token,
         get_current_user_preferences,
         set_current_user_admin,
+        set_current_user_id,
         StoreActionTypes,
         loadStateFromLocalStorageBackup,
         ensure_app_layout,
@@ -306,6 +307,7 @@ export async function init_app(deps) {
                 if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
             }
             set_current_user_admin(!!user?.is_admin);
+            set_current_user_id(user?.id || null);
         }).catch(() => {});
     }
 
@@ -317,6 +319,7 @@ export async function init_app(deps) {
                 if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
             }
             set_current_user_admin(!!user?.is_admin);
+            set_current_user_id(user?.id || null);
             deps.dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
         }).catch(() => {});
     });

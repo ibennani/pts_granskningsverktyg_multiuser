@@ -1,7 +1,8 @@
 /**
  * Tester för Åtgärder-vyn: hub, hantera, nedladdningar och status-dropdown.
  */
-import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { jest, describe, test, expect, beforeAll, beforeEach } from '@jest/globals';
+import { clear_metadata_auditor_options_cache } from '../../js/logic/metadata_auditor_name_field.ts';
 
 function make_helpers() {
     return {
@@ -69,13 +70,27 @@ function make_deps(audit_status, section = '', extra_params = {}) {
     };
 }
 
+function mock_api_fetch() {
+    global.fetch = jest.fn(() =>
+        Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => [],
+        })
+    );
+}
+
 describe('AuditActionsViewComponent hub och sektioner', () => {
     let AuditActionsViewComponent;
 
-    beforeEach(async () => {
-        jest.resetModules();
+    beforeAll(async () => {
         const mod = await import('../../js/components/AuditActionsViewComponent.ts');
         AuditActionsViewComponent = mod.AuditActionsViewComponent;
+    }, 30000);
+
+    beforeEach(() => {
+        clear_metadata_auditor_options_cache();
+        mock_api_fetch();
     });
 
     async function render_with(status, section = '', extra_params = {}) {
@@ -276,13 +291,15 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
     });
 
     test('statusändring via select utan bekräftelse dispatchar in_progress', async () => {
-        jest.useFakeTimers();
         const root = document.createElement('div');
         document.body.appendChild(root);
         const deps = make_deps('locked', 'manage');
         const component = new AuditActionsViewComponent();
         await component.init({ root, deps });
         component.render();
+
+        jest.useFakeTimers();
+        global.requestAnimationFrame = (callback) => setTimeout(() => callback(Date.now()), 0);
 
         const select = root.querySelector('#audit-action-status-select');
         select.value = 'in_progress';
@@ -296,19 +313,15 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
             type: 'SET_AUDIT_STATUS',
             payload: { status: 'in_progress' }
         });
-        await jest.runAllTimersAsync();
+        await jest.advanceTimersByTimeAsync(500);
         expect(select.value).toBe('in_progress');
         component.destroy();
         root.remove();
         jest.useRealTimers();
-    });
+    }, 10000);
 
     test('statusändring till locked visar bekräftelsemodal', async () => {
-        jest.resetModules();
         const { app_runtime_refs: runtime_refs } = await import('../../js/utils/app_runtime_refs.js');
-        const { AuditActionsViewComponent: ActionsComponent } = await import(
-            '../../js/components/AuditActionsViewComponent.ts'
-        );
         const orig_modal = runtime_refs.modal_component;
         const show_spy = jest.fn();
         runtime_refs.modal_component = { show: show_spy };
@@ -316,7 +329,7 @@ describe('AuditActionsViewComponent hub och sektioner', () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
         const deps = make_deps('in_progress', 'manage');
-        const component = new ActionsComponent();
+        const component = new AuditActionsViewComponent();
         await component.init({ root, deps });
         component.render();
 
@@ -366,10 +379,14 @@ describe('audit_actions_render', () => {
 describe('manage status-dropdown alternativ', () => {
     let AuditActionsViewComponent;
 
-    beforeEach(async () => {
-        jest.resetModules();
+    beforeAll(async () => {
         const mod = await import('../../js/components/AuditActionsViewComponent.ts');
         AuditActionsViewComponent = mod.AuditActionsViewComponent;
+    }, 30000);
+
+    beforeEach(() => {
+        clear_metadata_auditor_options_cache();
+        mock_api_fetch();
     });
 
     async function render_manage(status) {

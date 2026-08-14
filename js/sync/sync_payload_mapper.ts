@@ -12,6 +12,7 @@ export type ServerAuditStatus = (typeof SERVER_STATUS_VALUES)[number];
 export type SyncPayloadState = {
     auditId?: string | null;
     ruleSetId?: string | null;
+    responsibleUserId?: string | null;
     auditMetadata?: Record<string, unknown> & { audit_edit_log?: unknown[] };
     auditStatus?: string;
     samples?: unknown[];
@@ -33,6 +34,7 @@ export type AuditPatchPayload = {
     status: ServerAuditStatus;
     samples: unknown[];
     expectedVersion: number;
+    responsibleUserId?: string | null;
     ruleFileContent?: unknown;
     archivedRequirementResults?: unknown[];
 };
@@ -74,6 +76,9 @@ export function state_to_patch(state: SyncPayloadState, options: StateToPatchOpt
     if (Array.isArray(state.archivedRequirementResults)) {
         patch.archivedRequirementResults = state.archivedRequirementResults;
     }
+    if (state.responsibleUserId) {
+        patch.responsibleUserId = state.responsibleUserId;
+    }
     return patch;
 }
 
@@ -82,10 +87,11 @@ export type AuditMetadataPatchPayload = {
     metadata: Record<string, unknown>;
     status: ServerAuditStatus;
     expectedVersion: number;
+    responsibleUserId?: string | null;
 };
 
 export function state_to_metadata_patch(state: SyncPayloadState): AuditMetadataPatchPayload {
-    return {
+    const patch: AuditMetadataPatchPayload = {
         metadata: (state.auditMetadata || {}) as Record<string, unknown>,
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
         expectedVersion:
@@ -93,6 +99,10 @@ export function state_to_metadata_patch(state: SyncPayloadState): AuditMetadataP
                 ? Number(state.version)
                 : 0
     };
+    if (state.responsibleUserId) {
+        patch.responsibleUserId = state.responsibleUserId;
+    }
+    return patch;
 }
 
 export function state_to_import(state: SyncPayloadState): AuditImportPayload {

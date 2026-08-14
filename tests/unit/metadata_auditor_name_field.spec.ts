@@ -38,27 +38,44 @@ describe('metadata auditor name field', () => {
         clear_metadata_auditor_options_cache();
     });
 
-    test('build_metadata_auditor_options sorterar och inkluderar aktuell användare', () => {
-        const options = build_metadata_auditor_options(
-            [{ name: 'Zara Zetterlund' }, { name: 'Anna Andersson' }],
-            'Bob Bobsson'
-        );
-        expect(options.map((row) => row.value)).toEqual([
-            'Anna Andersson',
-            'Bob Bobsson',
-            'Zara Zetterlund',
+    test('build_metadata_auditor_options sorterar på namn och använder id som värde', () => {
+        const options = build_metadata_auditor_options([
+            { id: 'id-z', name: 'Zara Zetterlund' },
+            { id: 'id-a', name: 'Anna Andersson' },
+        ]);
+        expect(options).toEqual([
+            { value: 'id-a', label: 'Anna Andersson' },
+            { value: 'id-z', label: 'Zara Zetterlund' },
         ]);
     });
 
-    test('metadata_form_create_auditor_name_field väljer initialt värde', () => {
-        const options = build_metadata_auditor_options([{ name: 'Anna Andersson' }], 'Anna Andersson');
+    test('metadata_form_create_auditor_name_field väljer initialt användar-id', () => {
+        const options = build_metadata_auditor_options([
+            { id: 'user-1', name: 'Anna Andersson' },
+        ]);
         const field = metadata_form_create_auditor_name_field(
             Helpers,
             Translation,
             options,
-            'Anna Andersson'
+            'user-1',
+            ''
         );
-        expect(field.select_element.value).toBe('Anna Andersson');
+        expect(field.select_element.value).toBe('user-1');
+        expect(field.get_selected_auditor_user_id()).toBe('user-1');
         expect(field.get_selected_auditor_name()).toBe('Anna Andersson');
+    });
+
+    test('fallback till namn när id saknas', () => {
+        const options = build_metadata_auditor_options([
+            { id: 'user-2', name: 'Bob Bobsson' },
+        ]);
+        const field = metadata_form_create_auditor_name_field(
+            Helpers,
+            Translation,
+            options,
+            '',
+            'Bob Bobsson'
+        );
+        expect(field.select_element.value).toBe('user-2');
     });
 });

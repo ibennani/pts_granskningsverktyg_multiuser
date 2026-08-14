@@ -4,6 +4,7 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_id } from '../api/client.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
 import {
     traverse_all_pass_criteria,
@@ -45,6 +46,7 @@ export function reduce_initialize_new_audit (_current_state: any, action: any) {
         ruleFileContent: action.payload.ruleFileContent,
         ruleSetId: action.payload.ruleSetId ?? null,
         auditMetadata: build_fresh_new_audit_metadata(),
+        responsibleUserId: get_current_user_id(),
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
         auditStatus: 'not_started',
         freshNewAuditMetadata: true

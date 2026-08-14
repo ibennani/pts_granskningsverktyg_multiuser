@@ -716,7 +716,7 @@ describe('api/client – regler och granskningar', () => {
                 ]),
             },
         });
-        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledTimes(2);
     });
 
     test('load_audit_with_rule_file: utan ruleSetId ingen extra regelhämtning', async () => {
