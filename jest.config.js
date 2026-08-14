@@ -459,6 +459,7 @@ export default {
     '^.+[\\\\/]convert_image_to_png\\.js$': '<rootDir>/server/services/convert_image_to_png.ts',
     '^.+[\\\\/]ensure_audit_media_png\\.js$': '<rootDir>/server/services/ensure_audit_media_png.ts',
     '^.+[\\\\/]page_screenshot_capture_height\\.js$': '<rootDir>/server/services/page_screenshot_capture_height.ts',
+    '^.+[\\\\/]page_screenshot_readiness\\.js$': '<rootDir>/server/services/page_screenshot_readiness.ts',
     '^.+[\\\\/]page_screenshot_browser_scripts_loader\\.js$': '<rootDir>/server/services/page_screenshot_browser_scripts_loader.ts',
     '^.+[\\\\/]pdf_generation_service\\.js$': '<rootDir>/server/services/pdf_generation_service.ts',
     '^.+[\\\\/]pdf_merge_service\\.js$': '<rootDir>/server/services/pdf_merge_service.ts',

@@ -26,7 +26,12 @@ import {
     hide_intrusive_overlays_visually_for_screenshot,
     is_intrusive_overlay_visible,
 } from './page_screenshot_intrusive_overlay.js';
-import { compute_screenshot_clip_height_css, compute_full_document_screenshot_height_css } from './page_screenshot_capture_height.js';
+import {
+    compute_screenshot_clip_height_css,
+    compute_full_document_screenshot_height_css,
+    crop_png_to_max_css_height,
+} from './page_screenshot_capture_height.js';
+import { wait_for_screenshot_content_ready } from './page_screenshot_readiness.js';
 import { get_snapshot_full_page_max_height_css } from '../snapshots/audit_snapshot_config.js';
 import {
     enable_cmp_request_block_for_screenshot,
@@ -198,20 +203,13 @@ export async function capture_viewport_png_with_adjustments(
     const page_title = await read_capture_page_title(page);
     const scroll_height_css = await read_document_scroll_height(page);
     const height_mode = options.height_mode ?? 'viewport_capped';
-    const capture_height_css =
+    const max_capture_height_css =
         height_mode === 'full_document'
             ? compute_full_document_screenshot_height_css(
                   scroll_height_css,
                   get_snapshot_full_page_max_height_css()
               )
             : compute_screenshot_clip_height_css(scroll_height_css, CAPTURE_VIEWPORT_WIDTH);
-
-    await page.setViewport({
-        width: CAPTURE_VIEWPORT_WIDTH,
-        height: capture_height_css,
-        deviceScaleFactor: CAPTURE_DEVICE_SCALE_FACTOR,
-    });
-    await scroll_to_top(page);
 
     if (!dismiss_state.banner_gone || (await is_cookie_banner_visible(page))) {
         dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
@@ -238,11 +236,25 @@ export async function capture_viewport_png_with_adjustments(
     const overlay_still_visible = await is_intrusive_overlay_visible(page, { url });
     const blocked_count = read_cmp_blocked_count(page);
     await hide_intrusive_overlays_visually_for_screenshot(page, { url });
-    const png_buffer = Buffer.from(
+
+    await page.setViewport({
+        width: CAPTURE_VIEWPORT_WIDTH,
+        height: CAPTURE_VIEWPORT_HEIGHT,
+        deviceScaleFactor: CAPTURE_DEVICE_SCALE_FACTOR,
+    });
+    await scroll_to_top(page);
+    await wait_for_screenshot_content_ready(page);
+
+    const raw_png_buffer = Buffer.from(
         await page.screenshot({
             type: 'png',
-            fullPage: false,
+            fullPage: true,
         })
+    );
+    const png_buffer = await crop_png_to_max_css_height(
+        raw_png_buffer,
+        max_capture_height_css,
+        CAPTURE_DEVICE_SCALE_FACTOR
     );
 
     return {

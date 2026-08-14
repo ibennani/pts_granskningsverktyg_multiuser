@@ -18,6 +18,7 @@ const BROWSER_SCRIPT_EXPORT_NAMES = [
     'browser_wait_for_lazy_images',
     'browser_scroll_to_top',
     'browser_page_has_renderable_content',
+    'browser_read_main_content_lengths',
     'browser_hide_webdriver_flag',
     'browser_dismiss_cookie_banners',
     'browser_find_cookie_overlay_roots',
@@ -112,6 +113,7 @@ export const browser_auto_scroll_lazy_content = scripts.browser_auto_scroll_lazy
 export const browser_wait_for_lazy_images = scripts.browser_wait_for_lazy_images;
 export const browser_scroll_to_top = scripts.browser_scroll_to_top;
 export const browser_page_has_renderable_content = scripts.browser_page_has_renderable_content;
+export const browser_read_main_content_lengths = scripts.browser_read_main_content_lengths;
 export const browser_hide_webdriver_flag = scripts.browser_hide_webdriver_flag;
 export const browser_dismiss_cookie_banners = scripts.browser_dismiss_cookie_banners;
 export const browser_find_cookie_overlay_roots = scripts.browser_find_cookie_overlay_roots;

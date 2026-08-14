@@ -1,8 +1,9 @@
 /**
  * @fileoverview Enhetstester för skärmavbild med höjdbegränsning (mockad Puppeteer).
  */
-import { jest, describe, test, expect, beforeEach } from '@jest/globals';
-import { browser_read_document_scroll_height } from '../../server/services/page_screenshot_browser_scripts_loader.js';
+import { jest, describe, test, expect, beforeEach, beforeAll } from '@jest/globals';
+import sharp from 'sharp';
+import { browser_read_document_scroll_height, browser_read_main_content_lengths } from '../../server/services/page_screenshot_browser_scripts_loader.js';
 
 const set_user_agent_mock = jest.fn(async () => undefined);
 const set_extra_http_headers_mock = jest.fn(async () => undefined);
@@ -98,12 +99,30 @@ const { capture_page_screenshot, fetch_page_title_from_url } = await import(
     '../../server/services/page_screenshot_service.ts'
 );
 
+let valid_png_buffer: Buffer;
+
+beforeAll(async () => {
+    valid_png_buffer = await sharp({
+        create: {
+            width: 2560,
+            height: 4000,
+            channels: 3,
+            background: '#ffffff',
+        },
+    })
+        .png()
+        .toBuffer();
+});
+
 function mock_evaluate_with_scroll_height(scroll_height: number) {
     evaluate_mock.mockImplementation(async (fn: unknown) => {
         if (fn === browser_read_document_scroll_height) {
             return scroll_height;
         }
-        return undefined;
+        if (fn === browser_read_main_content_lengths) {
+            return { main_lengths: [500], body_text_length: 600 };
+        }
+        return true;
     });
 }
 
@@ -136,6 +155,7 @@ describe('page_screenshot_service', () => {
         hide_intrusive_overlay_mock.mockClear();
         is_intrusive_overlay_visible_mock.mockClear();
         mock_evaluate_with_scroll_height(2000);
+        screenshot_mock.mockResolvedValue(valid_png_buffer);
     });
 
     test('aktiverar CMP-block och consent-cache endast vid skärmdump', async () => {
@@ -163,7 +183,7 @@ describe('page_screenshot_service', () => {
         expect(evaluate_on_new_document_mock).toHaveBeenCalled();
     });
 
-    test('sätter viewport till dokumenthöjd före screenshot', async () => {
+    test('behåller standard-viewport och tar fullPage-skärmdump', async () => {
         await capture_page_screenshot({ url: 'https://example.com' });
         expect(set_viewport_mock).toHaveBeenCalledWith({
             width: 1280,
@@ -172,12 +192,12 @@ describe('page_screenshot_service', () => {
         });
         expect(set_viewport_mock).toHaveBeenLastCalledWith({
             width: 1280,
-            height: 2000,
+            height: 800,
             deviceScaleFactor: 2,
         });
     });
 
-    test('tar viewport-screenshot med dokumenthöjd och stänger webbläsaren', async () => {
+    test('tar fullPage-screenshot och stänger webbläsaren', async () => {
         const result = await capture_page_screenshot({ url: 'https://example.com' });
         expect(goto_mock).toHaveBeenCalledWith(
             'https://example.com',
@@ -185,21 +205,22 @@ describe('page_screenshot_service', () => {
         );
         expect(screenshot_mock).toHaveBeenCalledWith({
             type: 'png',
-            fullPage: false,
+            fullPage: true,
         });
         expect(result.page_title).toBe('Testtitel');
-        expect(result.png_buffer.toString()).toBe('png-bytes');
+        expect(Buffer.isBuffer(result.png_buffer)).toBe(true);
+        expect(result.png_buffer.length).toBeGreaterThan(0);
         expect(close_mock).toHaveBeenCalled();
     });
 
-    test('begränsar capture-höjd till tre gånger viewport-bredden', async () => {
+    test('beräknar fortfarande cap-höjd via scrollHeight för beskärning', async () => {
         mock_evaluate_with_scroll_height(8000);
 
         await capture_page_screenshot({ url: 'https://example.com' });
 
         expect(set_viewport_mock).toHaveBeenLastCalledWith({
             width: 1280,
-            height: 3840,
+            height: 800,
             deviceScaleFactor: 2,
         });
     });
@@ -215,6 +236,9 @@ describe('page_screenshot_service', () => {
         evaluate_mock.mockImplementation(async (fn: unknown) => {
             if (fn === browser_read_document_scroll_height) {
                 return 2000;
+            }
+            if (fn === browser_read_main_content_lengths) {
+                return { main_lengths: [500], body_text_length: 600 };
             }
             return true;
         });

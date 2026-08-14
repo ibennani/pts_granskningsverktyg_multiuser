@@ -107,6 +107,18 @@ export function browser_page_has_renderable_content() {
     return text.length > 20 || height > 200;
 }
 
+export function browser_read_main_content_lengths() {
+    const read_len = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim().length;
+    const main_lengths = Array.from(
+        document.querySelectorAll('main, [role="main"], article')
+    ).map((node) => read_len(node));
+
+    return {
+        main_lengths,
+        body_text_length: read_len(document.body),
+    };
+}
+
 export function browser_hide_webdriver_flag() {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
 }

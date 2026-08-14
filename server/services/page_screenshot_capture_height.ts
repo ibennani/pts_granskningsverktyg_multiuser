@@ -1,6 +1,7 @@
 /**
  * @fileoverview Beräknar max höjd för skärmavbild (höjd:bredd högst 3:1).
  */
+import sharp from 'sharp';
 
 export const MAX_CAPTURE_HEIGHT_TO_WIDTH_RATIO = 3;
 
@@ -29,4 +30,25 @@ export function compute_full_document_screenshot_height_css(
     const safe_height = Math.max(1, Math.floor(scroll_height_css));
     const safe_max = Math.max(1, Math.floor(max_height_css));
     return Math.min(safe_height, safe_max);
+}
+
+/**
+ * Beskär PNG till maxhöjd i CSS-pixlar (deviceScaleFactor hanteras).
+ */
+export async function crop_png_to_max_css_height(
+    png_buffer: Buffer,
+    max_height_css: number,
+    device_scale_factor: number
+): Promise<Buffer> {
+    const max_height_px = Math.max(1, Math.floor(max_height_css * device_scale_factor));
+    const image = sharp(png_buffer);
+    const metadata = await image.metadata();
+    if (!metadata.width || !metadata.height || metadata.height <= max_height_px) {
+        return png_buffer;
+    }
+
+    return image
+        .extract({ left: 0, top: 0, width: metadata.width, height: max_height_px })
+        .png()
+        .toBuffer();
 }
