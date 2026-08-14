@@ -29,6 +29,7 @@ import {
     type BulkUrlImportLogEvent,
 } from '../logic/bulk_url_import_logger.js';
 import { get_default_content_type_ids } from '../../shared/rulefile/content_type_defaults.js';
+import { create_snapshot_queue_status_controller } from '../logic/snapshot_queue_status_ui.js';
 
 type BulkUrlImportModalDeps = {
     getState: () => Record<string, unknown>;
@@ -85,6 +86,8 @@ function apply_step_progress(
     const message = build_bulk_import_live_status_text(t, state);
     progress_live_el.textContent = message;
     const current = state.phase === 'done' ? state.total : Math.max(state.current, 0);
+    const percent = state.total > 0 ? Math.round((current / state.total) * 100) : 0;
+    progress_bar_el.style.width = `${percent}%`;
     progress_bar_el.setAttribute('aria-valuemin', '0');
     progress_bar_el.setAttribute('aria-valuemax', String(state.total));
     progress_bar_el.setAttribute('aria-valuenow', String(current));
@@ -197,6 +200,8 @@ async function run_import_in_modal(
     ui: {
         progress_live_el: HTMLParagraphElement;
         progress_bar_el: HTMLDivElement;
+        capacity_el: HTMLParagraphElement;
+        elapsed_el: HTMLParagraphElement;
         task_list_el: HTMLOListElement;
         log_list_el: HTMLOListElement;
         container_el: HTMLElement;
@@ -206,6 +211,13 @@ async function run_import_in_modal(
 ): Promise<void> {
     const { Helpers, t } = deps;
     ui.task_list_el.setAttribute('aria-busy', 'true');
+    const queue_status = create_snapshot_queue_status_controller({
+        t,
+        capacity_el: ui.capacity_el,
+        elapsed_el: ui.elapsed_el,
+    });
+    queue_status.start();
+
     let step_progress: BulkImportStepProgressState = {
         ...create_bulk_import_step_progress(rows.length, t),
         phase: 'running',
@@ -242,6 +254,24 @@ async function run_import_in_modal(
                 wait_for_snapshot_ready: deps.wait_for_snapshot_ready,
                 t: deps.t,
                 log_import_step: (message_key, params, meta) => {
+                    if (message_key === 'bulk_url_import_log_capture_start') {
+                        queue_status.start_elapsed_hint();
+                    }
+                    if (
+                        message_key === 'bulk_url_import_log_capture_title'
+                        || message_key === 'bulk_url_import_log_capture_failed'
+                    ) {
+                        queue_status.stop_elapsed_hint();
+                    }
+                    if (message_key === 'bulk_url_import_log_sidrapport_wait') {
+                        queue_status.start_elapsed_hint();
+                    }
+                    if (
+                        message_key === 'bulk_url_import_log_sidrapport_ready'
+                        || message_key === 'bulk_url_import_log_sidrapport_timeout'
+                    ) {
+                        queue_status.stop_elapsed_hint();
+                    }
                     emit_bulk_url_import_log(
                         (event) => append_log_line(ui.log_list_el, event),
                         t(message_key, params),
@@ -276,6 +306,7 @@ async function run_import_in_modal(
 
     ui.task_list_el.setAttribute('aria-busy', 'false');
     ui.progress_live_el.setAttribute('aria-busy', 'false');
+    queue_status.stop();
 
     const failed_count = rows.filter((row) => row.status === 'failed').length;
     const elapsed_ms = Date.now() - started_at;
@@ -367,8 +398,30 @@ export function show_bulk_url_import_modal(
             }
             container.appendChild(task_list_el);
 
+            const capacity_el = deps.Helpers.create_element('p', {
+                class_name: 'sample-url-analyze-modal-capacity',
+                attributes: {
+                    role: 'status',
+                    'aria-live': 'polite',
+                    hidden: 'true',
+                },
+            }) as HTMLParagraphElement;
+
+            const elapsed_el = deps.Helpers.create_element('p', {
+                class_name: 'sample-url-analyze-modal-elapsed',
+                attributes: {
+                    role: 'status',
+                    'aria-live': 'polite',
+                    hidden: 'true',
+                },
+            }) as HTMLParagraphElement;
+
+            const progress_track_el = deps.Helpers.create_element('div', {
+                class_name: 'sample-url-analyze-modal-progresstrack',
+            });
+
             const progress_bar_el = deps.Helpers.create_element('div', {
-                class_name: 'visually-hidden sample-url-analyze-modal-progressbar',
+                class_name: 'sample-url-analyze-modal-progressbar sample-url-analyze-modal-progressbar--visible',
                 attributes: {
                     role: 'progressbar',
                     'aria-valuemin': '0',
@@ -388,7 +441,8 @@ export function show_bulk_url_import_modal(
                 },
             }) as HTMLParagraphElement;
 
-            container.append(progress_bar_el, progress_live_el);
+            progress_track_el.appendChild(progress_bar_el);
+            container.append(capacity_el, elapsed_el, progress_track_el, progress_live_el);
 
             const log_heading = deps.Helpers.create_element('h2', {
                 class_name: 'bulk-url-import-modal-log__heading',
@@ -402,6 +456,8 @@ export function show_bulk_url_import_modal(
             void run_import_in_modal(deps, rows, row_elements, {
                 progress_live_el,
                 progress_bar_el,
+                capacity_el,
+                elapsed_el,
                 task_list_el,
                 log_list_el,
                 container_el: container,

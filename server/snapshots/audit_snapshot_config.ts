@@ -19,13 +19,13 @@ function read_bool_env(name: string, fallback: boolean): boolean {
 export function get_snapshot_browser_max_concurrency(): number {
     const legacy = process.env.GV_SNAPSHOT_MAX_CONCURRENCY;
     if (legacy !== undefined && legacy !== '') {
-        return read_int_env('GV_SNAPSHOT_MAX_CONCURRENCY', 4);
+        return read_int_env('GV_SNAPSHOT_MAX_CONCURRENCY', 8);
     }
-    return read_int_env('GV_SNAPSHOT_BROWSER_MAX_CONCURRENCY', 4);
+    return read_int_env('GV_SNAPSHOT_BROWSER_MAX_CONCURRENCY', 8);
 }
 
 export function get_snapshot_package_max_concurrency(): number {
-    return read_int_env('GV_SNAPSHOT_PACKAGE_MAX_CONCURRENCY', 3);
+    return read_int_env('GV_SNAPSHOT_PACKAGE_MAX_CONCURRENCY', 5);
 }
 
 export function get_snapshot_extended_cdp_max_ms(): number {

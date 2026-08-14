@@ -735,7 +735,11 @@ Tekniska snapshots skapas i samma Chromium-session som **Hämta information** (s
 | GET | `/api/audits/:id/snapshots/:snapshotId/download` | Ladda ner en färdig snapshot-zip. |
 | DELETE | `/api/audits/:id/snapshots/:snapshotId` | Avbryt pågående capture eller rensa ofärdigt jobb. |
 
-**WebSocket:** `audit:snapshots_changed` (payload: `auditId`, `snapshotId`, `sampleId`, `status`). Används av klienten i vyn **Åtgärder → Snapshots**.
+**WebSocket:** `audit:snapshots_changed` (payload: `auditId`, `snapshotId`, `sampleId`, `status`). Används av klienten i vyn **Åtgärder → Snapshots**. `snapshot:capacity_changed` skickar global kapacitet (aktiva captures, kö, max slots).
+
+| Metod | Route | Beskrivning |
+|-------|-------|-------------|
+| GET | `/api/snapshots/capacity` | Global snapshot-belastning: aktiva captures, kö, antal granskningar och användare. |
 
 **Miljövariabler (server):**
 
@@ -743,8 +747,8 @@ Tekniska snapshots skapas i samma Chromium-session som **Hämta information** (s
 |----------|----------|-------|
 | `GV_AUDIT_SNAPSHOT_DIR` | `./audit-snapshots` | Katalog för zip-filer |
 # Sidrapport (miljövariabler)
-| `GV_SNAPSHOT_BROWSER_MAX_CONCURRENCY` | `4` | Parallella browser-slots |
-| `GV_SNAPSHOT_PACKAGE_MAX_CONCURRENCY` | `3` | Parallell zip-paketering |
+| `GV_SNAPSHOT_BROWSER_MAX_CONCURRENCY` | `8` | Parallella browser-slots |
+| `GV_SNAPSHOT_PACKAGE_MAX_CONCURRENCY` | `5` | Parallell zip-paketering |
 | `GV_SNAPSHOT_EXTENDED_CDP_MAX_MS` | `8000` | Tidsbudget för extended CDP |
 | `GV_SNAPSHOT_YIELD_ON_QUEUE` | `true` | Trunkera extended CDP vid kö |
 | `GV_SNAPSHOT_MAX_BYTES` | samma som filgräns | Max storlek per snapshot-zip |

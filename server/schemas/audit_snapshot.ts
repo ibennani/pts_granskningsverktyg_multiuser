@@ -2,6 +2,7 @@
  * @fileoverview Zod-scheman för tekniska audit-snapshots (API och databas).
  */
 import { z } from 'zod';
+import { SnapshotCaptureQueueInfoSchema } from './snapshot_capacity.js';
 
 export const AuditSnapshotStatusSchema = z.enum([
     'queued',
@@ -47,6 +48,8 @@ export const AuditSnapshotRowSchema = z.object({
     started_at: z.coerce.date().nullable(),
     completed_at: z.coerce.date().nullable(),
     updated_at: z.coerce.date(),
+    requested_by_user_id: z.string().uuid().nullable().optional(),
+    requested_by_user_name: z.string().nullable().optional(),
 });
 
 export type AuditSnapshotRow = z.infer<typeof AuditSnapshotRowSchema>;
@@ -80,6 +83,7 @@ export const AuditSnapshotCaptureResponseSchema = z.object({
         mime: z.string().optional(),
         error: z.string().optional(),
     }),
+    queue: SnapshotCaptureQueueInfoSchema.optional(),
 });
 
 export type AuditSnapshotCaptureResponse = z.infer<typeof AuditSnapshotCaptureResponseSchema>;

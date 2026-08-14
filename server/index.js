@@ -15,6 +15,7 @@ import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import timeRouter from './routes/time.js';
+import { create_snapshot_capacity_router } from './routes/snapshot_capacity_routes.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 import { initialize_snapshot_job_service } from './services/audit_snapshot_job_service.js';
 import {
@@ -93,6 +94,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/rules', requireAuth, rulesRouter);
 app.use('/api/audits', requireAuth, auditsRouter);
+app.use('/api/snapshots', requireAuth, create_snapshot_capacity_router());
 app.use('/api/backup', requireAuth, backupRouter);
 app.use('/api/time', requireAuth, timeRouter);
 

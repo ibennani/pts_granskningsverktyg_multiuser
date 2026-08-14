@@ -16,16 +16,36 @@ export type InsertAuditSnapshotParams = {
     audit_id: string;
     sample_id: string;
     requested_url: string;
+    requested_by_user_id?: string | null;
+    requested_by_user_name?: string | null;
+};
+
+export type SnapshotProcessingCounts = {
+    queued_count: number;
+    capturing_count: number;
+    packaging_count: number;
+    active_audit_count: number;
+    active_user_count: number;
 };
 
 export async function insert_audit_snapshot_row(
     params: InsertAuditSnapshotParams
 ): Promise<AuditSnapshotRow> {
     const result = await query(
-        `INSERT INTO audit_snapshots (id, audit_id, sample_id, requested_url, status)
-         VALUES ($1, $2, $3, $4, 'queued')
+        `INSERT INTO audit_snapshots (
+            id, audit_id, sample_id, requested_url, status,
+            requested_by_user_id, requested_by_user_name
+         )
+         VALUES ($1, $2, $3, $4, 'queued', $5, $6)
          RETURNING *`,
-        [params.id, params.audit_id, params.sample_id, params.requested_url]
+        [
+            params.id,
+            params.audit_id,
+            params.sample_id,
+            params.requested_url,
+            params.requested_by_user_id ?? null,
+            params.requested_by_user_name ?? null,
+        ]
     );
     return parse_db_row(AuditSnapshotRowSchema, result.rows[0]);
 }
@@ -203,4 +223,36 @@ export async function list_orphan_snapshot_candidates(
         [audit_id, valid_sample_ids, String(older_than_hours)]
     );
     return result.rows.map((row: unknown) => parse_db_row(AuditSnapshotRowSchema, row));
+}
+
+export async function count_snapshot_processing_rows(): Promise<SnapshotProcessingCounts> {
+    const result = await query(
+        `SELECT
+            COUNT(*) FILTER (WHERE status = 'queued')::int AS queued_count,
+            COUNT(*) FILTER (WHERE status = 'capturing')::int AS capturing_count,
+            COUNT(*) FILTER (WHERE status = 'packaging')::int AS packaging_count,
+            COUNT(DISTINCT audit_id) FILTER (
+                WHERE status IN ('queued', 'capturing', 'packaging')
+            )::int AS active_audit_count,
+            COUNT(DISTINCT requested_by_user_id) FILTER (
+                WHERE status IN ('capturing', 'packaging')
+                  AND requested_by_user_id IS NOT NULL
+            )::int AS active_user_count
+         FROM audit_snapshots
+         WHERE status IN ('queued', 'capturing', 'packaging')`
+    );
+    const row = result.rows[0] as {
+        queued_count: number;
+        capturing_count: number;
+        packaging_count: number;
+        active_audit_count: number;
+        active_user_count: number;
+    };
+    return {
+        queued_count: Number(row.queued_count ?? 0),
+        capturing_count: Number(row.capturing_count ?? 0),
+        packaging_count: Number(row.packaging_count ?? 0),
+        active_audit_count: Number(row.active_audit_count ?? 0),
+        active_user_count: Number(row.active_user_count ?? 0),
+    };
 }

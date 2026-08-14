@@ -423,6 +423,48 @@ dialog.modal-dialog.modal-dialog--sample-url-analyze {
     display: none;
 }
 
+.sample-url-analyze-modal-capacity {
+    margin: 0.5rem 0 0;
+    font-size: 0.95rem;
+    color: var(--text-muted, #555);
+}
+
+.sample-url-analyze-modal-capacity[hidden] {
+    display: none;
+}
+
+.sample-url-analyze-modal-elapsed {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: var(--text-muted, #555);
+}
+
+.sample-url-analyze-modal-elapsed[hidden] {
+    display: none;
+}
+
+.sample-url-analyze-modal-progresstrack {
+    margin: 0.75rem 0 0.35rem;
+    height: 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-color, #222) 12%, transparent);
+    overflow: hidden;
+}
+
+.sample-url-analyze-modal-progressbar--visible {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--primary-color, #005ea5);
+    transition: width 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sample-url-analyze-modal-progressbar--visible {
+        transition: none;
+    }
+}
+
 .sample-url-analyze-modal-error-detail {
     margin: 0.75rem 0 0;
     padding: 0.75rem 1rem;

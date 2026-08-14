@@ -32,6 +32,15 @@ import type {
     AuditSnapshotCaptureBody,
     AuditSnapshotCaptureResponse,
 } from '../schemas/audit_snapshot.js';
+import { pick_fair_queue_job } from './snapshot_fair_queue_pick.js';
+import { schedule_snapshot_capacity_broadcast } from './snapshot_capacity_broadcast.js';
+import { build_snapshot_capture_queue_info } from './snapshot_capacity_service.js';
+import { set_snapshot_queue_metric_readers } from './snapshot_job_queue_metrics.js';
+
+type SnapshotCaptureRequester = {
+    user_id?: string | null;
+    user_name?: string | null;
+};
 
 type PendingCapture = AuditSnapshotCaptureBody & {
     audit_id: string;
@@ -45,7 +54,28 @@ const package_semaphore = new Semaphore(get_snapshot_package_max_concurrency());
 const cancelled_ids = new Set<string>();
 const active_extended_jobs = new Set<string>();
 const queue: PendingCapture[] = [];
+const active_audit_ids = new Set<string>();
+let last_served_audit_id: string | null = null;
 let pump_running = false;
+
+set_snapshot_queue_metric_readers({
+    get_queue_length: () => queue.length,
+    get_queue_position: (capture_id: string) => {
+        const index = queue.findIndex((job) => job.captureId === capture_id);
+        if (index < 0) return null;
+        return index + 1;
+    },
+});
+
+export function get_in_memory_queue_length(): number {
+    return queue.length;
+}
+
+export function get_memory_queue_position(capture_id: string): number | null {
+    const index = queue.findIndex((job) => job.captureId === capture_id);
+    if (index < 0) return null;
+    return index + 1;
+}
 
 function broadcast_snapshot_changed(params: {
     auditId: string;
@@ -60,6 +90,7 @@ function broadcast_snapshot_changed(params: {
         sampleId: params.sampleId,
         status: params.status,
     });
+    schedule_snapshot_capacity_broadcast();
 }
 
 export function should_yield_extended_capture(): boolean {
@@ -83,7 +114,16 @@ async function save_png_to_audit_media(
     return save_png_buffer_to_audit_media(audit_id, png_buffer, page_title, filename_suffix);
 }
 
+async function attach_queue_info_to_response(
+    capture_id: string,
+    response: AuditSnapshotCaptureResponse
+): Promise<AuditSnapshotCaptureResponse> {
+    const queue_info = await build_snapshot_capture_queue_info(capture_id);
+    return { ...response, queue: queue_info };
+}
+
 async function process_capture_job(job: PendingCapture): Promise<void> {
+    active_audit_ids.add(job.audit_id);
     const host_slot = await acquire_snapshot_host_slot(job.url);
     await browser_semaphore.acquire();
     await update_audit_snapshot_status(job.captureId, 'capturing', {
@@ -120,12 +160,12 @@ async function process_capture_job(job: PendingCapture): Promise<void> {
                     screenshot_filename: visible.screenshot.filename ?? null,
                     visible_phase_completed_at: new Date(),
                 });
-                const response: AuditSnapshotCaptureResponse = {
+                const response = await attach_queue_info_to_response(job.captureId, {
                     captureId: visible.captureId,
                     snapshotStatus: 'capturing',
                     pageTitle: visible.pageTitle,
                     screenshot: visible.screenshot,
-                };
+                });
                 job.resolve_visible(response);
                 visible_resolved = true;
                 active_extended_jobs.add(job.captureId);
@@ -182,6 +222,7 @@ async function process_capture_job(job: PendingCapture): Promise<void> {
         }
         cancelled_ids.delete(job.captureId);
     } finally {
+        active_audit_ids.delete(job.audit_id);
         browser_semaphore.release();
         host_slot.release();
         void pump_queue();
@@ -193,7 +234,13 @@ async function pump_queue(): Promise<void> {
     pump_running = true;
     try {
         while (queue.length > 0 && browser_semaphore.active_count < get_snapshot_browser_max_concurrency()) {
-            const job = queue.shift();
+            const picked = pick_fair_queue_job({
+                queue,
+                active_audit_ids,
+                last_served_audit_id,
+            });
+            last_served_audit_id = picked.last_served_audit_id;
+            const job = picked.job;
             if (!job) break;
             void process_capture_job(job);
         }
@@ -213,13 +260,15 @@ export function enqueue_snapshot_capture(
             resolve_visible,
             reject_visible,
         });
+        schedule_snapshot_capacity_broadcast();
         void pump_queue();
     });
 }
 
 export async function start_snapshot_capture(
     audit_id: string,
-    body: AuditSnapshotCaptureBody
+    body: AuditSnapshotCaptureBody,
+    requester?: SnapshotCaptureRequester
 ): Promise<AuditSnapshotCaptureResponse> {
     await ensure_audit_snapshot_dir(audit_id);
     await insert_audit_snapshot_row({
@@ -227,6 +276,8 @@ export async function start_snapshot_capture(
         audit_id,
         sample_id: body.sampleId,
         requested_url: body.url,
+        requested_by_user_id: requester?.user_id ?? null,
+        requested_by_user_name: requester?.user_name ?? null,
     });
     broadcast_snapshot_changed({
         auditId: audit_id,
@@ -243,6 +294,7 @@ export async function initialize_snapshot_job_service(): Promise<void> {
     );
     if (count > 0) {
         console.info(`[audit_snapshot] Marked ${count} stale jobs as failed after restart.`);
+        schedule_snapshot_capacity_broadcast();
     }
 }
 

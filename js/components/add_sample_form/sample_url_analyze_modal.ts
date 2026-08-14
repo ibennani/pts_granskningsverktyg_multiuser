@@ -30,6 +30,10 @@ import {
     type SampleUrlAnalyzeTaskOutcome,
 } from './sample_url_analyze_tasks.js';
 import type { FileDownloadHelpers } from '../../utils/file_download_button_ui.js';
+import {
+    create_snapshot_queue_status_controller,
+    type SnapshotQueueStatusController,
+} from '../../logic/snapshot_queue_status_ui.js';
 
 type SampleUrlAnalyzeModalHandle = {
     close: (focus_element?: HTMLElement | null) => void;
@@ -63,6 +67,9 @@ type SampleUrlAnalyzeModalUi = {
     completed_count: number;
     failed_count: number;
     total_count: number;
+    capacity_el: HTMLParagraphElement;
+    elapsed_el: HTMLParagraphElement;
+    queue_status: SnapshotQueueStatusController | null;
 };
 
 function remove_modal_intro(ui: SampleUrlAnalyzeModalUi): void {
@@ -94,6 +101,8 @@ function apply_progress_state(
     const value_text = build_sample_url_analyze_progress_value_text(t, state);
 
     ui.progress_live_el.textContent = message;
+    const percent = state.total > 0 ? Math.round((state.completed / state.total) * 100) : 0;
+    ui.progress_bar_el.style.width = `${percent}%`;
     ui.progress_bar_el.setAttribute('aria-valuemin', '0');
     ui.progress_bar_el.setAttribute('aria-valuemax', String(state.total));
     ui.progress_bar_el.setAttribute('aria-valuenow', String(state.completed));
@@ -190,6 +199,8 @@ function handle_task_complete(
 
     if (all_done) {
         ui.fetch_snapshot = null;
+        ui.queue_status?.stop_elapsed_hint();
+        ui.queue_status?.stop();
         set_modal_action_phase(ui, 'done', t);
     }
 }
@@ -217,6 +228,8 @@ function start_fetch(
     remove_modal_intro(ui);
     set_modal_action_phase(ui, 'running', t);
     apply_progress_state(ui, t, build_progress_state(ui, 'running'));
+    ui.queue_status?.start();
+    ui.queue_status?.start_elapsed_hint();
 
     void run_sample_url_analyze_tasks(host, {
         on_task_start: () => {},
@@ -251,6 +264,7 @@ async function stop_fetch_and_rollback(
     ui.progress_live_el.textContent = t('sample_url_analyze_progress_stopped');
     restore_modal_intro(ui);
     set_modal_action_phase(ui, 'idle', t);
+    ui.queue_status?.stop();
     ui.run_btn.focus();
 }
 
@@ -263,6 +277,7 @@ function close_modal(
     if (ui.fetch_in_progress) {
         cancel_sample_url_analyze_tasks(host);
     }
+    ui.queue_status?.stop();
     modal.close(trigger_button);
 }
 
@@ -309,8 +324,30 @@ export function show_sample_url_analyze_modal({
             }
             container.appendChild(task_list_el);
 
+            const capacity_el = Helpers.create_element('p', {
+                class_name: 'sample-url-analyze-modal-capacity',
+                attributes: {
+                    role: 'status',
+                    'aria-live': 'polite',
+                    hidden: 'true',
+                },
+            }) as HTMLParagraphElement;
+
+            const elapsed_el = Helpers.create_element('p', {
+                class_name: 'sample-url-analyze-modal-elapsed',
+                attributes: {
+                    role: 'status',
+                    'aria-live': 'polite',
+                    hidden: 'true',
+                },
+            }) as HTMLParagraphElement;
+
+            const progress_track_el = Helpers.create_element('div', {
+                class_name: 'sample-url-analyze-modal-progresstrack',
+            });
+
             const progress_bar_el = Helpers.create_element('div', {
-                class_name: 'visually-hidden sample-url-analyze-modal-progressbar',
+                class_name: 'sample-url-analyze-modal-progressbar sample-url-analyze-modal-progressbar--visible',
                 attributes: {
                     role: 'progressbar',
                     'aria-valuemin': '0',
@@ -335,7 +372,14 @@ export function show_sample_url_analyze_modal({
                 },
             }) as HTMLParagraphElement;
 
-            container.append(progress_bar_el, progress_live_el, error_detail_el);
+            progress_track_el.appendChild(progress_bar_el);
+            container.append(capacity_el, elapsed_el, progress_track_el, progress_live_el, error_detail_el);
+
+            const queue_status = create_snapshot_queue_status_controller({
+                t,
+                capacity_el,
+                elapsed_el,
+            });
 
             const actions = Helpers.create_element('div', {
                 class_name: 'modal-confirm-actions',
@@ -378,6 +422,9 @@ export function show_sample_url_analyze_modal({
                 completed_count: 0,
                 failed_count: 0,
                 total_count: tasks.length,
+                capacity_el,
+                elapsed_el,
+                queue_status,
             };
 
             apply_progress_state(ui, t, create_initial_progress_state(tasks.length));

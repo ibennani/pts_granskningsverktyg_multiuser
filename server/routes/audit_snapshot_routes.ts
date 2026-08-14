@@ -111,9 +111,13 @@ export function register_audit_snapshot_routes(router: Router): void {
                 return res.status(422).json({ error: message });
             }
 
+            const auth_user = (req as Request & { user?: { id?: string; name?: string } }).user;
             const response = await start_snapshot_capture(audit_id, {
                 ...body,
                 url: capture_url,
+            }, {
+                user_id: auth_user?.id ?? null,
+                user_name: auth_user?.name ?? null,
             });
             return res.status(202).json(response);
         } catch (err) {
