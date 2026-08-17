@@ -20,6 +20,10 @@
       {
         "command": "node .cursor/hooks/nabu_on_todo_write.mjs",
         "matcher": "TodoWrite"
+      },
+      {
+        "command": ".cursor/hooks/nabu-on-ask-question.cmd",
+        "matcher": "AskQuestion"
       }
     ],
     "afterAgentResponse": [

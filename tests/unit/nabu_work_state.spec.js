@@ -19,6 +19,7 @@ import {
     maybe_reset_stale,
     normalize_state,
     NOTIFY_DEDUP_MS,
+    prepare_agent_stop_notify,
     read_state,
     request_notify,
     requeue_notify,
@@ -268,6 +269,14 @@ describe('nabu_work_state', () => {
         expect(normalized.pending_subagents).toBe(0);
         expect(normalized.open_todo_count).toBe(0);
         expect(normalized.notify_requested).toBe(true);
+    });
+
+    test('prepare_agent_stop_notify rensar öppna todos vid agentstopp', () => {
+        request_notify();
+        sync_todos([{ id: '1', status: 'in_progress' }]);
+        prepare_agent_stop_notify();
+        const flush = try_flush();
+        expect(flush.sent).toBe(true);
     });
 
     test('mark_notify_sent och was_notify_sent_recently skyddar mot dubbelnotis', () => {

@@ -469,6 +469,34 @@ export function clear_delayed_flush_scheduled(repo_root) {
 }
 
 /**
+ * Rensar kvarvarande blockering när huvudagenten stoppat med status completed.
+ * @param {string} [repo_root]
+ */
+export function prepare_agent_stop_notify(repo_root) {
+    with_state_lock((state) => {
+        if (!state.notify_requested) {
+            return;
+        }
+        const had_todos = state.open_todo_count;
+        const had_subagents = state.pending_subagents;
+        maybe_reset_orphaned_subagents(state);
+        maybe_reset_leaked_subagents(state);
+        maybe_reset_leaked_todos(state);
+        if (state.open_todo_count > 0 || state.pending_subagents > 0) {
+            state.open_todo_count = 0;
+            state.pending_subagents = 0;
+            append_debug_log('agent_stop_cleared_blockers', { had_todos, had_subagents }, repo_root);
+        }
+        if (state.notify_requested_at) {
+            state.notify_requested_at = Math.min(
+                state.notify_requested_at,
+                Date.now() - MIN_IDLE_MS - 1,
+            );
+        }
+    }, repo_root);
+}
+
+/**
  * @param {number} [within_ms]
  * @param {string} [repo_root]
  * @returns {boolean}
