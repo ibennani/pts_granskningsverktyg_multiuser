@@ -82,6 +82,8 @@
     --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
     --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
     --focus-clearance: calc(var(--focus-outer-width) + var(--focus-ring-outline-offset) + 2px);
+    --focus-z-index: 10000;
+    --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
     --status-icon-tooltip-color: #1a1a1a;
     --status-icon-tooltip-bg: #fff;
@@ -231,6 +233,8 @@
     --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
     --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
     --focus-clearance: calc(var(--focus-outer-width) + var(--focus-ring-outline-offset) + 2px);
+    --focus-z-index: 10000;
+    --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
     --status-icon-tooltip-color: #f5f5f5;
     --status-icon-tooltip-bg: #2d2d2d;
@@ -713,14 +717,20 @@ input[type="text"]:focus,
 input[type="url"]:focus,
 input[type="email"]:focus,
 textarea:focus,
-select:focus {
-    /* Enforce global focus ring also on click/active focus for inputs */
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
-    outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
-    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+select:focus,
+.form-control:focus-visible,
+input[type="text"]:focus-visible,
+input[type="url"]:focus-visible,
+input[type="email"]:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    /* Formfält: pseudo-element stöds inte tillförlitligt – ring på elementet (ingen layoutpåverkan) */
+    position: relative;
+    z-index: var(--focus-z-index);
+    outline: var(--focus-outer-width) var(--focus-outer-style, solid) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
     border-color: var(--border-color);
-    /* Maintain visual consistency, do not change border color */
-    z-index: 10;
 }
 
 [data-theme="dark"] .form-control,
@@ -805,20 +815,36 @@ input[type="radio"] + label {
     box-shadow: none;
 }
 
+[tabindex="-1"]:focus-visible::before {
+    content: none;
+    display: none;
+}
+
+/*
+ * Fokusring på ::before så knappar/länkar inte växer i layout vid fokus.
+ * Formfält undantas – ring ritas direkt på elementet (se regler ovan).
+ */
 :focus-visible {
+    position: relative;
+    z-index: var(--focus-z-index);
+    outline: none;
+}
+
+:is(input, textarea, select, .form-control):focus-visible::before {
+    content: none;
+    display: none;
+}
+
+:focus-visible::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
     outline: var(--focus-outer-width) var(--focus-outer-style, solid) var(--focus-outer-color);
     outline-offset: var(--focus-ring-outline-offset);
     box-shadow: var(--focus-ring-box-shadow);
-    /* 
-       Note: The box-shadow fills the gap + inner ring space.
-       To explicitly have a transparent gap (1px) + white ring (2px) + black ring (2px):
-       Outline offset = 1px (gap) + 2px (white) = 3px.
-       Shadow needs to be white at 1px-3px.
-       Box-shadow starts at 0. Simple box-shadow covers 0-3px.
-       Visual result: Object -> White(3px) -> Black(2px).
-       This satisfies "Inner White, Outer Black".
-    */
-    z-index: 10;
 }
 
 

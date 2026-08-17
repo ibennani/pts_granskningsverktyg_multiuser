@@ -239,14 +239,7 @@ html[data-theme="dark-experimental"] a:focus-visible {
     color: var(--link-hover-color);
 }
 
-/* --- Fokusmarkering (global i dark-experimental) --- */
-html[data-theme="dark-experimental"] :focus-visible {
-    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: none;
-    position: relative;
-    z-index: var(--focus-z-index);
-}
+/* --- Fokusmarkering (variabler ovan; global pseudo-ring i style.css) --- */
 
 /* --- Topbar (global action bar) --- */
 [data-theme="dark-experimental"] #global-action-bar-top .global-action-bar,
@@ -435,8 +428,6 @@ html[data-theme="dark-experimental"] :focus-visible {
 [data-theme="dark-experimental"] .button:focus-visible {
     border-color: var(--de-interactive-border);
     box-shadow: var(--de-interactive-shadow);
-    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
 }
 
 [data-theme="dark-experimental"] .button-primary {
@@ -531,11 +522,21 @@ html[data-theme="dark-experimental"] :focus-visible {
 }
 
 html[data-theme="dark-experimental"] .requirement-audit-sidebar__item:focus-within {
+    position: relative;
+    z-index: var(--focus-z-index);
+    outline: none;
+}
+
+html[data-theme="dark-experimental"] .requirement-audit-sidebar__item:focus-within::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
     outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
     box-shadow: none;
-    position: relative;
-    z-index: var(--focus-z-index);
 }
 
 html[data-theme="dark-experimental"] .requirement-audit-sidebar__list:has(.requirement-audit-sidebar__item:focus-within),
@@ -1218,8 +1219,6 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 [data-theme="dark-experimental"] .md-toolbar-btn:focus-visible {
     border-color: var(--de-interactive-border);
     box-shadow: var(--de-interactive-shadow);
-    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
 }
 
 [data-theme="dark-experimental"] .md-toolbar-btn[aria-pressed="true"] {

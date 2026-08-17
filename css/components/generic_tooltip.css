@@ -33,7 +33,7 @@
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.15s ease, visibility 0.15s ease;
-    z-index: 100;
+    z-index: var(--tooltip-z-index, 10001);
     pointer-events: none;
 }
 
@@ -120,6 +120,6 @@
     border: 1px solid var(--status-icon-tooltip-border);
     border-radius: 4px;
     box-shadow: var(--status-icon-tooltip-shadow);
-    z-index: 100;
+    z-index: var(--tooltip-z-index, 10001);
     pointer-events: none;
 }

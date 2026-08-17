@@ -240,14 +240,7 @@ html[data-theme="winter-white"] a:focus-visible {
     color: var(--link-hover-color);
 }
 
-/* --- Fokusmarkering (global i winter-white) --- */
-html[data-theme="winter-white"] :focus-visible {
-    outline: var(--ww-focus-ring-width) var(--ww-focus-ring-style) var(--ww-focus-color);
-    outline-offset: var(--ww-focus-ring-outline-offset);
-    box-shadow: none;
-    position: relative;
-    z-index: var(--focus-z-index);
-}
+/* --- Fokusmarkering (variabler ovan; global pseudo-ring i style.css) --- */
 
 /* --- Topbar (global action bar) --- */
 [data-theme="winter-white"] #global-action-bar-top .global-action-bar,
@@ -437,8 +430,6 @@ html[data-theme="winter-white"] :focus-visible {
 [data-theme="winter-white"] .button:focus-visible {
     border-color: var(--ww-interactive-border);
     box-shadow: var(--ww-interactive-shadow);
-    outline: var(--ww-focus-ring-width) var(--ww-focus-ring-style) var(--ww-focus-color);
-    outline-offset: var(--ww-focus-ring-outline-offset);
 }
 
 [data-theme="winter-white"] .button-primary {
@@ -535,11 +526,21 @@ html[data-theme="winter-white"] :focus-visible {
 }
 
 html[data-theme="winter-white"] .requirement-audit-sidebar__item:focus-within {
+    position: relative;
+    z-index: var(--focus-z-index);
+    outline: none;
+}
+
+html[data-theme="winter-white"] .requirement-audit-sidebar__item:focus-within::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
     outline: var(--ww-focus-ring-width) var(--ww-focus-ring-style) var(--ww-focus-color);
     outline-offset: var(--ww-focus-ring-outline-offset);
     box-shadow: none;
-    position: relative;
-    z-index: var(--focus-z-index);
 }
 
 html[data-theme="winter-white"] .requirement-audit-sidebar__list:has(.requirement-audit-sidebar__item:focus-within),
@@ -1229,8 +1230,6 @@ html[data-theme="winter-white"] .FilterPanelComponent__status-icon.status-icon-n
 [data-theme="winter-white"] .md-toolbar-btn:focus-visible {
     border-color: var(--ww-interactive-border);
     box-shadow: var(--ww-interactive-shadow);
-    outline: var(--ww-focus-ring-width) var(--ww-focus-ring-style) var(--ww-focus-color);
-    outline-offset: var(--ww-focus-ring-outline-offset);
 }
 
 [data-theme="winter-white"] .md-toolbar-btn[aria-pressed="true"] {

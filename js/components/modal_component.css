@@ -264,6 +264,18 @@ dialog.modal-dialog > .modal-content {
 .copy-observation-radio-option:hover,
 .copy-observation-radio-option:focus-within {
     border-color: var(--primary-color);
+    position: relative;
+    z-index: var(--focus-z-index);
+    outline: none;
+}
+
+.copy-observation-radio-option:focus-within::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
     outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--focus-ring-outline-offset);
     box-shadow: var(--focus-ring-box-shadow);

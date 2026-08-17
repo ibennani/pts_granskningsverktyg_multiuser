@@ -416,8 +416,13 @@
 }
 
 .audit-group-summary-row:focus-visible {
+    outline: none;
+}
+
+.audit-group-summary-row:focus-visible::before {
     outline: 2px solid var(--focus-ring-color, #000);
     outline-offset: -2px;
+    box-shadow: none;
 }
 
 .audit-group-detail-row__cell {

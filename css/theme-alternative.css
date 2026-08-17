@@ -54,6 +54,8 @@
     --focus-outer-color: var(--primary-alt);
     --focus-ring-outline-offset: 2px;
     --focus-ring-box-shadow: none;
+    --focus-z-index: 10000;
+    --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
     --modal-backdrop-color: rgba(0, 0, 0, 0.5);
     --modal-dialog-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);

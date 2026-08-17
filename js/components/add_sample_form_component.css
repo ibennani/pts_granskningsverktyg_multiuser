@@ -274,10 +274,7 @@
 }
 
 .content-types-section-accordion__header:focus-visible {
-    outline: var(--focus-outer-width) var(--focus-outer-style, solid) var(--focus-outer-color);
-    outline-offset: var(--focus-ring-outline-offset);
-    box-shadow: var(--focus-ring-box-shadow);
-    z-index: 10;
+    z-index: var(--focus-z-index);
 }
 
 .content-types-section-accordion__header-inner {

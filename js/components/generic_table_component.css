@@ -143,9 +143,8 @@
     color: var(--primary-color);
 }
 
-.generic-table-header-sort-btn:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+.generic-table-header-sort-btn:focus-visible {
+    outline: none;
 }
 
 .generic-table-header-sort-btn::after {
