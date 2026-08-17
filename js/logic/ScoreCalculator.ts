@@ -6,7 +6,6 @@ import { get_stored_requirement_result_for_def } from '../audit_logic.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { normalize_requirements_to_record } from './requirement_lookup.js';
 import { count_failed_pass_criteria_under_passed_checks } from './score_calculator_passed_check_failures.js';
-import { is_requirement_excluded_from_deficiency_index } from './score_calculator_requirement_inclusion.js';
 import {
     get_concept_ids_for_requirement,
     get_primary_grouping_taxonomy_id,
@@ -153,17 +152,6 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
         const relevant_reqs_for_sample = _get_relevant_requirements_for_sample(audit_state.ruleFileContent!, sample);
 
         relevant_reqs_for_sample.forEach((req_def) => {
-            const requirements_obj = audit_state.ruleFileContent?.requirements;
-            const req_result = get_stored_requirement_result_for_def(
-                sample.requirementResults as never,
-                requirements_obj as never,
-                req_def as never
-            );
-
-            if (is_requirement_excluded_from_deficiency_index(req_def as never, req_result)) {
-                return;
-            }
-
             const req_weight = _calculate_requirement_weight(req_def);
 
             total_max_weight += req_weight;
@@ -178,6 +166,12 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
                 }
             }
 
+            const requirements_obj = audit_state.ruleFileContent?.requirements;
+            const req_result = get_stored_requirement_result_for_def(
+                sample.requirementResults as never,
+                requirements_obj as never,
+                req_def as never
+            );
             let deficiency_points_for_req = 0;
             if (req_result?.checkResults) {
                 const failure_count_for_req = count_failed_pass_criteria_under_passed_checks(req_result);

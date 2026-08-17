@@ -65,9 +65,9 @@ describe('is_requirement_excluded_from_deficiency_index', () => {
     });
 });
 
-describe('calculateQualityScore not_applicable exclusion', () => {
-    test('exkluderar krav med alla kontrollpunkter inte aktuella från maxvikt', () => {
-        const state_with_excluded = {
+describe('calculateQualityScore not_applicable i maxvikt', () => {
+    test('räknar krav helt inte aktuella med i maxvikt utan avdrag', () => {
+        const state_with_na = {
             ruleFileContent: mock_rule_file,
             samples: [
                 {
@@ -84,22 +84,48 @@ describe('calculateQualityScore not_applicable exclusion', () => {
             ],
         };
 
-        const state_without_requirement = {
-            ruleFileContent: mock_rule_file,
+        const result = calculateQualityScore(state_with_na);
+        expect(result.totalScore).toBe(0);
+    });
+
+    test('späder ut bristindex när inte aktuella krav väger tungt i maxvikt', () => {
+        const req_na = { ...mock_requirement, id: 'req_na', key: 'req_na' };
+        const req_fail = {
+            ...mock_requirement,
+            id: 'req_fail',
+            key: 'req_fail',
+            checks: [{ id: 'check_1', passCriteria: [{ id: 'pc_1' }] }],
+        };
+        const state = {
+            ruleFileContent: {
+                metadata: { taxonomies: [mock_taxonomy] },
+                requirements: { req_na, req_fail },
+            },
             samples: [
                 {
                     id: 's1',
-                    selectedContentTypes: [],
-                    requirementResults: {},
+                    selectedContentTypes: ['web'],
+                    requirementResults: {
+                        req_na: {
+                            checkResults: {
+                                check_1: { overallStatus: 'not_applicable', passCriteria: {} },
+                            },
+                        },
+                        req_fail: {
+                            checkResults: {
+                                check_1: {
+                                    overallStatus: 'passed',
+                                    passCriteria: { pc_1: { status: 'failed' } },
+                                },
+                            },
+                        },
+                    },
                 },
             ],
         };
 
-        const excluded = calculateQualityScore(state_with_excluded);
-        const baseline = calculateQualityScore(state_without_requirement);
-
-        expect(excluded.totalScore).toBe(baseline.totalScore);
-        expect(excluded.totalScore).toBe(0);
+        const result = calculateQualityScore(state);
+        expect(result.totalScore).toBe(50);
     });
 
     test('räknar fortfarande med krav som har minst en stämmer-kontrollpunkt', () => {
