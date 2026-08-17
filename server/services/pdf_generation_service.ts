@@ -6,6 +6,7 @@ import { merge_pdf_export_html_chunks } from '../../shared/pdf/merge_pdf_export_
 import { PUPPETEER_LAUNCH_ARGS } from './page_screenshot_stealth.js';
 import { inject_appendix1_cover_image } from './appendix1_cover_image.js';
 import { inject_appendix1_toc_page_numbers } from './appendix1_toc_page_numbers.js';
+import { inject_pdf_font_faces } from './pdf_font_faces.js';
 
 export type PdfDocumentKind = 'default' | 'appendix1';
 
@@ -108,8 +109,11 @@ async function render_single_html_to_pdf(
 }
 
 function prepare_html_for_pdf(html_content: string, document_kind: PdfDocumentKind): string {
-    if (document_kind !== 'appendix1') return html_content;
-    return inject_appendix1_cover_image(html_content);
+    let prepared = inject_pdf_font_faces(html_content);
+    if (document_kind === 'appendix1') {
+        prepared = inject_appendix1_cover_image(prepared);
+    }
+    return prepared;
 }
 
 /**

@@ -124,7 +124,8 @@ function build_toc_html(
 
     let list_html = '<ul>';
     for (const entry of entries) {
-        const level_class = entry.heading_level === 2 ? ' appendix1-toc__item--level-2' : '';
+        const level_class =
+            entry.heading_level === 2 ? ' appendix1-toc__item--level-2' : ' appendix1-toc__item--level-1';
         const href = `#${escape_html_internal(entry.section_id)}`;
         list_html +=
             `<li class="appendix1-toc__item${level_class}">` +

@@ -446,10 +446,13 @@ describe('export_report_html_appendix1_pts', () => {
 
     test('PDF print-CSS har tight kontakt och punktledare i innehållsförteckning', () => {
         const css = build_appendix1_pdf_print_css();
+        expect(css).toContain("'Aeonik'");
+        expect(css).not.toContain('Cambria');
         expect(css).toContain('.appendix1-audit-info__contact');
         expect(css).toMatch(/line-height:\s*1\.15/);
         expect(css).toContain('.appendix1-toc__leader');
         expect(css).toMatch(/dotted #000000/);
+        expect(css).toContain('.appendix1-toc__item--level-1 .appendix1-toc__label');
         expect(css).toContain('.appendix1-toc__item--level-2 .appendix1-toc__label');
         expect(css).toMatch(/text-align:\s*right/);
         expect(css).not.toContain('transform: translateY');
@@ -460,6 +463,7 @@ describe('export_report_html_appendix1_pts', () => {
         expect(html).toContain('class="appendix1-toc__leader"');
         expect(html).toContain('class="appendix1-toc__page"');
         expect(html).toContain('class="appendix1-toc__link"');
+        expect(html).toContain('appendix1-toc__item--level-1');
         expect(html).toContain('appendix1-toc__item--level-2');
         expect(html).toContain('href="#section-audit-info"');
     });

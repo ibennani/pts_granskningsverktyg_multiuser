@@ -73,8 +73,8 @@ describe('export_report_html_criterias', () => {
         });
         expect(html).toContain('<html lang="sv">');
         expect(html).toContain('<title>TEST Aktör</title>');
-        expect(html).toContain("'Calibri'");
-        expect(html).toContain('font-size: 16pt');
+        expect(html).toContain("'Aeonik'");
+        expect(html).toContain('font-size: 18pt');
         expect(html).toContain('<main>');
     });
 

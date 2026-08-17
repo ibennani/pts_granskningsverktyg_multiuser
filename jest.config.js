@@ -114,8 +114,13 @@ export default {
       '<rootDir>/js/components/rulefile_sections/EditReportTemplateAppendix1Component.ts',
     '^.+[\\\\/]shared/pdf/appendix1_toc_page_numbers\\.js$':
       '<rootDir>/shared/pdf/appendix1_toc_page_numbers.ts',
+    '^.+[\\\\/]shared/pdf/pdf_aeonik_font_faces\\.js$':
+      '<rootDir>/shared/pdf/pdf_aeonik_font_faces.ts',
+    '^.+[\\\\/]shared/pdf/pdf_export_typography_constants\\.js$':
+      '<rootDir>/shared/pdf/pdf_export_typography_constants.ts',
     '^.+[\\\\/]requirement_classifications\\.js$': '<rootDir>/js/logic/requirement_classifications.ts',
     '^.+[\\\\/]appendix1_cover_image\\.js$': '<rootDir>/server/services/appendix1_cover_image.ts',
+    '^.+[\\\\/]pdf_font_faces\\.js$': '<rootDir>/server/services/pdf_font_faces.ts',
     '^.+[\\\\/]appendix1_toc_page_numbers\\.js$': '<rootDir>/server/services/appendix1_toc_page_numbers.ts',
     '^.+[\\\\/]appendix1_toc_browser_scripts_loader\\.js$':
       '<rootDir>/server/services/appendix1_toc_browser_scripts_loader.ts',

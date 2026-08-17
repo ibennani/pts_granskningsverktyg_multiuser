@@ -1,6 +1,12 @@
 /**
- * @fileoverview Print-CSS för Bilaga 1 (PTS-layout, Cambria, 25 mm marginaler).
+ * @fileoverview Print-CSS för Bilaga 1 (PTS-layout, Aeonik, 25 mm marginaler).
  */
+
+import { PDF_AEONIK_FONT_FACE_PLACEHOLDER } from '../../shared/pdf/pdf_aeonik_font_faces.js';
+import {
+    build_pdf_font_stack,
+    PDF_EXPORT_FONT_SIZES_PT,
+} from '../../shared/pdf/pdf_export_typography_constants.js';
 
 export const APPENDIX1_COVER_IMAGE_PLACEHOLDER = '{{APPENDIX1_COVER_SRC}}';
 
@@ -13,7 +19,12 @@ export function appendix1_pdf_margin_inches(): number {
 
 export function build_appendix1_pdf_print_css(): string {
     const margin_mm = APPENDIX1_PDF_MARGIN_MM;
+    const font_stack = build_pdf_font_stack();
+    const { body, heading1, heading2, cover_title, cover_subtitle, metadata, toc_entry } =
+        PDF_EXPORT_FONT_SIZES_PT;
+
     return `
+${PDF_AEONIK_FONT_FACE_PLACEHOLDER}
 @page {
     size: A4 portrait;
     margin: ${margin_mm}mm;
@@ -22,8 +33,8 @@ export function build_appendix1_pdf_print_css(): string {
     margin: 0;
 }
 body, main {
-    font-family: Cambria, Georgia, 'Times New Roman', serif;
-    font-size: 10pt;
+    font-family: ${font_stack};
+    font-size: ${body}pt;
     line-height: 1.4;
     color: #000000;
     margin: 0;
@@ -67,17 +78,17 @@ main.appendix1-document {
 .appendix1-cover__meta-row {
     display: flex;
     justify-content: space-between;
-    font-size: 9pt;
+    font-size: ${metadata}pt;
     margin: 0 0 4pt;
 }
 .appendix1-cover__title {
-    font-size: 32pt;
+    font-size: ${cover_title}pt;
     font-weight: 700;
     margin: 18mm 0 0;
     line-height: 1.15;
 }
 .appendix1-cover__subtitle {
-    font-size: 18pt;
+    font-size: ${cover_subtitle}pt;
     font-weight: 700;
     margin: 6mm 0 0;
 }
@@ -90,16 +101,16 @@ main.appendix1-document {
     break-before: auto;
 }
 h1, h2 {
-    font-family: Cambria, Georgia, 'Times New Roman', serif;
+    font-family: ${font_stack};
     font-weight: 700;
     color: #000000;
     margin: 0 0 8pt;
 }
 h1 {
-    font-size: 18pt;
+    font-size: ${heading1}pt;
 }
 h2 {
-    font-size: 12pt;
+    font-size: ${heading2}pt;
 }
 p {
     margin: 0 0 8pt;
@@ -121,9 +132,12 @@ p {
     padding: 0;
 }
 .appendix1-toc-title {
-    font-size: 18pt;
+    font-size: ${heading1}pt;
     font-weight: 700;
     margin: 0 0 12mm;
+}
+.appendix1-toc nav {
+    font-size: ${toc_entry}pt;
 }
 .appendix1-toc nav ul {
     list-style: none;
@@ -133,7 +147,11 @@ p {
 .appendix1-toc nav li {
     margin: 0 0 5pt;
 }
+.appendix1-toc nav li.appendix1-toc__item--level-1 .appendix1-toc__label {
+    font-weight: 700;
+}
 .appendix1-toc nav li.appendix1-toc__item--level-2 .appendix1-toc__label {
+    font-weight: 400;
     padding-left: 15mm;
 }
 .appendix1-toc nav a.appendix1-toc__link {
@@ -191,6 +209,10 @@ a {
 }
 strong {
     font-weight: 700;
+}
+em, i {
+    font-style: normal;
+    font-weight: inherit;
 }
 `.trim();
 }
