@@ -3,6 +3,7 @@
  */
 
 import { resolve_samples_for_server_sync } from '../logic/sample_attached_media_normalize.js';
+import { resolve_effective_rule_set_id_for_audit } from '../logic/audit_bound_rule_metadata.js';
 
 const SERVER_STATUS_VALUES = ['not_started', 'in_progress', 'locked', 'archived'] as const;
 
@@ -35,6 +36,7 @@ export type AuditPatchPayload = {
     samples: unknown[];
     expectedVersion: number;
     responsibleUserId?: string | null;
+    ruleSetId?: string | null;
     ruleFileContent?: unknown;
     archivedRequirementResults?: unknown[];
 };
@@ -44,6 +46,7 @@ export type AuditImportPayload = {
     auditMetadata: Record<string, unknown>;
     auditStatus: ServerAuditStatus;
     samples: unknown[];
+    ruleSetId?: string | null;
 };
 
 export function normalize_status_for_server(status: string | undefined): ServerAuditStatus {
@@ -79,6 +82,10 @@ export function state_to_patch(state: SyncPayloadState, options: StateToPatchOpt
     if (state.responsibleUserId) {
         patch.responsibleUserId = state.responsibleUserId;
     }
+    const rule_set_id = resolve_effective_rule_set_id_for_audit(state);
+    if (rule_set_id) {
+        patch.ruleSetId = rule_set_id;
+    }
     return patch;
 }
 
@@ -106,10 +113,15 @@ export function state_to_metadata_patch(state: SyncPayloadState): AuditMetadataP
 }
 
 export function state_to_import(state: SyncPayloadState): AuditImportPayload {
-    return {
+    const payload: AuditImportPayload = {
         ruleFileContent: state.ruleFileContent,
         auditMetadata: (state.auditMetadata || {}) as Record<string, unknown>,
         auditStatus: normalize_status_for_server(state.auditStatus || 'not_started'),
         samples: resolve_samples_for_server_sync(state, state.samples || []),
     };
+    const rule_set_id = resolve_effective_rule_set_id_for_audit(state);
+    if (rule_set_id) {
+        payload.ruleSetId = rule_set_id;
+    }
+    return payload;
 }

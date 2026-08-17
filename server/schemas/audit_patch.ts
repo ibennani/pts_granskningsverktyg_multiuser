@@ -9,6 +9,7 @@ const PATCH_SLICE_FIELDS = {
     metadata: JsonValueSchema.optional(),
     status: z.string().optional(),
     samples: JsonValueSchema.optional(),
+    ruleSetId: z.union([z.string(), z.literal(''), z.null()]).optional(),
     ruleFileContent: JsonValueSchema.optional(),
     archivedRequirementResults: JsonValueSchema.optional(),
     lastRulefileUpdateLog: JsonValueSchema.optional()

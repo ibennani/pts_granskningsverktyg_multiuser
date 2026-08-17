@@ -40,6 +40,7 @@ export function register_audit_patch_routes(router: IRouter): void {
                 metadata,
                 status,
                 samples,
+                ruleSetId,
                 ruleFileContent,
                 archivedRequirementResults,
                 lastRulefileUpdateLog,
@@ -61,6 +62,12 @@ export function register_audit_patch_routes(router: IRouter): void {
             if (samples !== undefined) {
                 updates.push(`samples = $${i++}`);
                 values.push(JSON.stringify(samples));
+            }
+            if (ruleSetId !== undefined) {
+                const normalized_rule_set_id =
+                    ruleSetId === null || ruleSetId === '' ? null : String(ruleSetId).trim();
+                updates.push(`rule_set_id = $${i++}`);
+                values.push(normalized_rule_set_id);
             }
             if (ruleFileContent !== undefined) {
                 updates.push(`rule_file_content = $${i++}`);

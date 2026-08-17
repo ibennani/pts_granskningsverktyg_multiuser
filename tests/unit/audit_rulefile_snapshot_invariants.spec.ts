@@ -61,4 +61,22 @@ describe('audit_rulefile_snapshot_invariants', () => {
         const sanitized = sanitize_persisted_app_state_shape(state as Record<string, unknown>);
         expect(JSON.stringify(sanitized.ruleFileContent)).toBe(before);
     });
+
+    it('state_to_import inkluderar ruleSetId när den finns i state', () => {
+        const state = {
+            ...build_audit_with_duplicate_vocabularies(),
+            ruleSetId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        };
+        const payload = state_to_import(state);
+        expect(payload.ruleSetId).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+    });
+
+    it('state_to_patch inkluderar ruleSetId när den finns i state', () => {
+        const state = {
+            ...build_audit_with_duplicate_vocabularies(),
+            ruleSetId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+        };
+        const patch = state_to_patch(state);
+        expect(patch.ruleSetId).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+    });
 });

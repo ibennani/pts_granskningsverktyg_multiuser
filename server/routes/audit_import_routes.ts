@@ -18,6 +18,19 @@ import {
 
 type AuthedRequest = Request & { user?: { id?: string | null; name?: string | null } };
 
+function resolve_import_rule_set_id(
+    rule_set_id: unknown,
+    metadata: Record<string, unknown>
+): string | null {
+    const from_body = rule_set_id !== null && rule_set_id !== undefined ? String(rule_set_id).trim() : '';
+    if (from_body) return from_body;
+    const bound = metadata.boundRuleSetId;
+    if (bound !== null && bound !== undefined && String(bound).trim() !== '') {
+        return String(bound).trim();
+    }
+    return null;
+}
+
 export function register_audit_import_route(router: IRouter, import_limiter: RequestHandler): void {
     router.post('/import', import_limiter, async (req: Request, res: Response) => {
         try {
@@ -79,6 +92,7 @@ export function register_audit_import_route(router: IRouter, import_limiter: Req
                     data.auditMetadata && typeof data.auditMetadata === 'object' && !Array.isArray(data.auditMetadata)
                         ? (data.auditMetadata as Record<string, unknown>)
                         : {};
+                const rule_set_id = resolve_import_rule_set_id(data.ruleSetId, metadata);
                 const samples = Array.isArray(data.samples) ? data.samples : [];
                 const status = typeof data.auditStatus === 'string' ? data.auditStatus : 'not_started';
                 const archived_requirement_results = Array.isArray(data.archivedRequirementResults)
@@ -101,7 +115,7 @@ export function register_audit_import_route(router: IRouter, import_limiter: Req
                  WHERE id = $9
                  RETURNING *`,
                     [
-                        null,
+                        rule_set_id,
                         data.ruleFileContent,
                         status,
                         JSON.stringify(metadata),
@@ -133,6 +147,7 @@ export function register_audit_import_route(router: IRouter, import_limiter: Req
                 data.auditMetadata && typeof data.auditMetadata === 'object' && !Array.isArray(data.auditMetadata)
                     ? (data.auditMetadata as Record<string, unknown>)
                     : {};
+            const rule_set_id = resolve_import_rule_set_id(data.ruleSetId, metadata);
             const samples = Array.isArray(data.samples) ? data.samples : [];
             const status = typeof data.auditStatus === 'string' ? data.auditStatus : 'not_started';
             const archived_requirement_results = Array.isArray(data.archivedRequirementResults)
@@ -142,7 +157,7 @@ export function register_audit_import_route(router: IRouter, import_limiter: Req
             const result = await query(
                 'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, archived_requirement_results, last_rulefile_update_log, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
                 [
-                    null,
+                    rule_set_id,
                     data.ruleFileContent,
                     status,
                     JSON.stringify(metadata),

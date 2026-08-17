@@ -24,6 +24,8 @@ import {
 } from '../logic/new_audit_empty_metadata.js';
 import { should_skip_draft_restore_for_view } from '../logic/draft_restore_policy.js';
 import { DraftManager } from '../draft_manager.js';
+import { subscribe_rules } from '../logic/list_push_service.js';
+import { with_bound_rule_metadata } from '../logic/audit_bound_rule_metadata.js';
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -63,6 +65,7 @@ export class EditMetadataViewComponent {
         this._form_pending_monitoring_key = '';
         /** Avbryter inaktuella async render()-anrop (samma mönster som RulefileSectionsViewComponent). */
         this._render_generation = 0;
+        this._unsubscribe_rules = null;
         
         this.metadata_form_container_element = null;
 
@@ -71,6 +74,26 @@ export class EditMetadataViewComponent {
         this.handle_cancel_new_audit = this.handle_cancel_new_audit.bind(this);
         this.handle_go_to_list = this.handle_go_to_list.bind(this);
         this.handle_monitoring_type_change = this.handle_monitoring_type_change.bind(this);
+
+        this._unsubscribe_rules = subscribe_rules(() => {
+            this.monitoring_type_options = [];
+            if (this.root?.isConnected) {
+                void this.render();
+            }
+        });
+    }
+
+    _read_rule_version_from_content(rule_file_content) {
+        return String(rule_file_content?.metadata?.version ?? '').trim();
+    }
+
+    _metadata_with_bound_rule_fields(form_data, state) {
+        const rule_set_id = String(state?.ruleSetId ?? '').trim();
+        const version = this._read_rule_version_from_content(state?.ruleFileContent);
+        if (!rule_set_id || !version) {
+            return form_data;
+        }
+        return with_bound_rule_metadata({ ...form_data }, rule_set_id, version);
     }
 
     _get_validation_logic() {
@@ -289,14 +312,17 @@ export class EditMetadataViewComponent {
 
     async _ensure_global_rule_for_new_audit() {
         const state = this.getState();
-        if (state.auditStatus !== 'not_started' || state.ruleFileContent) {
+        if (state.auditStatus !== 'not_started') {
             return true;
         }
         const loaded = await this._load_rule_for_metadata_submit();
         if (!loaded) return false;
         try {
+            const action_type = state.ruleFileContent
+                ? this.StoreActionTypes.UPDATE_NEW_AUDIT_RULEFILE
+                : this.StoreActionTypes.INITIALIZE_NEW_AUDIT;
             await this.dispatch({
-                type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
+                type: action_type,
                 payload: {
                     ruleFileContent: loaded.content,
                     ruleSetId: loaded.rule_id,
@@ -318,15 +344,20 @@ export class EditMetadataViewComponent {
 
     async _submit_metadata(form_data) {
         const state_before = this.getState();
-        if (state_before.auditStatus === 'not_started' && !state_before.ruleFileContent) {
+        if (state_before.auditStatus === 'not_started') {
             const rule_ready = await this._ensure_global_rule_for_new_audit();
             if (!rule_ready) return;
         }
 
+        const state_after_rule = this.getState();
+        const metadata_payload = state_before.auditStatus === 'not_started'
+            ? this._metadata_with_bound_rule_fields(form_data, state_after_rule)
+            : form_data;
+
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: {
-                ...form_data,
+                ...metadata_payload,
                 ...(state_before.auditStatus === 'not_started'
                     ? { clear_fresh_new_audit_metadata: true }
                     : {})
@@ -493,14 +524,18 @@ export class EditMetadataViewComponent {
 
     async _save_and_go_to_list(form_data) {
         const state_before = this.getState();
-        if (state_before.auditStatus === 'not_started' && !state_before.ruleFileContent) {
+        if (state_before.auditStatus === 'not_started') {
             const rule_ready = await this._ensure_global_rule_for_new_audit();
             if (!rule_ready) return;
         }
+        const state_after_rule = this.getState();
+        const metadata_payload = state_before.auditStatus === 'not_started'
+            ? this._metadata_with_bound_rule_fields(form_data, state_after_rule)
+            : form_data;
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: {
-                ...form_data,
+                ...metadata_payload,
                 clear_fresh_new_audit_metadata: true
             }
         });
@@ -794,6 +829,10 @@ export class EditMetadataViewComponent {
     }
 
     destroy() {
+        if (typeof this._unsubscribe_rules === 'function') {
+            this._unsubscribe_rules();
+            this._unsubscribe_rules = null;
+        }
         if (this.metadata_form_component_instance && this.metadata_form_component_instance.destroy) {
             this.metadata_form_component_instance.destroy();
         }

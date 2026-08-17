@@ -1,5 +1,5 @@
 /**
  * Brygga: behåller import med .js-suffix (Vite extensionAlias + verify_js_only_imports).
- * Källan: newer_rule_check.ts
+ * Källan: audit_bound_rule_metadata.ts
  */
-export * from './newer_rule_check.ts';
+export * from './audit_bound_rule_metadata.ts';

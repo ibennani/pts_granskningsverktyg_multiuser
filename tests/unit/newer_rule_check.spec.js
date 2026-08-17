@@ -38,11 +38,10 @@ describe('newer_rule_check', () => {
         ).toBeNull();
     });
 
-    test('utan ruleSetId: matchar på titel och väljer högsta nyare version', () => {
+    test('utan ruleSetId: matchar på monitoringType.text bland publicerade', () => {
         const ruleFileContent = {
             metadata: {
                 version: '1.0.0',
-                title: 'Min regel',
                 monitoringType: { text: 'Tillsyn A' }
             }
         };
@@ -51,17 +50,21 @@ describe('newer_rule_check', () => {
                 id: 'r1',
                 name: 'annan',
                 monitoring_type_text: 'Tillsyn A',
-                metadata_version: '1.5.0'
-            },
-            {
-                id: 'r2',
-                name: 'Min regel',
-                monitoring_type_text: 'x',
-                metadata_version: '2.0.0'
+                metadata_version: '2.0.0',
+                is_published: true
             }
         ];
         const out = find_newer_rule_for_audit(ruleFileContent, rules, v_gt);
-        expect(out).toEqual({ ruleId: 'r2', version: '2.0.0' });
+        expect(out).toEqual({ ruleId: 'r1', version: '2.0.0' });
+    });
+
+    test('utan ruleSetId: använder boundRuleSetId i auditMetadata', () => {
+        const ruleFileContent = { metadata: { version: '1.0.0' } };
+        const rules = [{ id: 'bound', metadata_version: '2.0.0', is_published: true }];
+        const out = find_newer_rule_for_audit(ruleFileContent, rules, v_gt, null, {
+            boundRuleSetId: 'bound'
+        });
+        expect(out).toEqual({ ruleId: 'bound', version: '2.0.0' });
     });
 
     test('utan ruleSetId: returnerar null om inga id:n kan matchas', () => {

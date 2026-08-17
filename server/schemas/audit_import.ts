@@ -10,6 +10,7 @@ export const AuditImportBodySchema = z
         replaceExistingAuditId: z.union([UuidSchema, z.literal(''), z.null()]).optional(),
         auditId: z.string().optional(),
         ruleFileContent: JsonValueSchema.optional(),
+        ruleSetId: z.union([z.string(), z.literal(''), z.null()]).optional(),
         auditMetadata: JsonValueSchema.optional(),
         auditStatus: JsonValueSchema.optional(),
         samples: JsonValueSchema.optional(),

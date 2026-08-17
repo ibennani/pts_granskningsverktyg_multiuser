@@ -13,6 +13,11 @@ import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_log
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 import { is_web_monitoring_audit } from '../logic/is_web_monitoring_audit.js';
+import { refresh_published_rulefile_in_audit_state } from '../logic/audit_rulefile_refresh.js';
+import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
+import {
+    read_bound_rule_version_from_metadata,
+} from '../logic/audit_bound_rule_metadata.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -33,6 +38,9 @@ export class SampleManagementViewComponent {
     Helpers: SampleManagementDeps['Helpers'] | null = null;
 
     NotificationComponent: SampleManagementDeps['NotificationComponent'] | null = null;
+
+    ValidationLogic: SampleManagementDeps['ValidationLogic'] | null = null;
+
     sample_list_component_instance = SampleListComponent;
 
     sample_list_container_element: HTMLElement | null = null;
@@ -61,6 +69,11 @@ export class SampleManagementViewComponent {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.ValidationLogic =
+            deps.ValidationLogic
+            || (typeof window !== 'undefined'
+                ? (window as Window & { ValidationLogic?: SampleManagementDeps['ValidationLogic'] }).ValidationLogic
+                : null);
 
         void this.init_sub_components();
             }
@@ -210,8 +223,60 @@ export class SampleManagementViewComponent {
         );
     }
 
-    handle_start_audit() {
-        if (!this.dispatch || !this.StoreActionTypes) return;
+    async handle_start_audit() {
+        if (!this.dispatch || !this.StoreActionTypes || !this.getState || !this.Translation) return;
+        const t = this.Translation.t;
+        const state_before = this.getState() as {
+            auditMetadata?: Record<string, unknown>;
+            ruleFileContent?: { metadata?: { version?: unknown } };
+        };
+        const version_before =
+            read_bound_rule_version_from_metadata(state_before.auditMetadata)
+            || String(state_before.ruleFileContent?.metadata?.version ?? '').trim();
+
+        const refresh_result = await refresh_published_rulefile_in_audit_state(
+            () => this.getState?.() ?? null,
+            (action) => {
+                this.dispatch?.(action);
+            },
+            this.StoreActionTypes as {
+                UPDATE_NEW_AUDIT_RULEFILE: string;
+                UPDATE_METADATA: string;
+                UPDATE_RULEFILE_CONTENT: string;
+            },
+            {
+                migrate: migrate_rulefile_to_new_structure,
+                validate: (content) =>
+                    this.ValidationLogic?.validate_rule_file_json?.(content) ?? { isValid: false },
+                Translation: this.Translation,
+            }
+        );
+
+        if (!refresh_result.ok) {
+            if (refresh_result.error === 'missing_rule_set_id') {
+                this.NotificationComponent?.show_global_message?.(
+                    t('audit_start_missing_rule_set'),
+                    'error'
+                );
+                return;
+            }
+            this.NotificationComponent?.show_global_message?.(
+                t('audit_start_rulefile_refresh_failed'),
+                'warning'
+            );
+        } else if (version_before) {
+            const state_after = this.getState() as {
+                ruleFileContent?: { metadata?: { version?: unknown } };
+            };
+            const version_after = String(state_after.ruleFileContent?.metadata?.version ?? '').trim();
+            if (version_after && version_after !== version_before) {
+                this.NotificationComponent?.show_global_message?.(
+                    t('audit_start_rulefile_refreshed', { version: version_after }),
+                    'info'
+                );
+            }
+        }
+
         this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
         this.router?.('audit_overview');
     }
