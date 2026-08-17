@@ -49,7 +49,10 @@ import {
 export const CAPTURE_VIEWPORT_WIDTH = 1280;
 export const CAPTURE_VIEWPORT_HEIGHT = 800;
 export const CAPTURE_DEVICE_SCALE_FACTOR = 2;
-export const CAPTURE_NAVIGATION_TIMEOUT_MS = 30_000;
+export const CAPTURE_NAVIGATION_TIMEOUT_MS = 90_000;
+export const CAPTURE_PAGE_DEFAULT_TIMEOUT_MS = 120_000;
+export const CAPTURE_BROWSER_PROTOCOL_TIMEOUT_MS = 900_000;
+export const FULLPAGE_SCREENSHOT_FALLBACK_SCROLL_HEIGHT_CSS = 8_000;
 
 export type CapturePageScreenshotInput = {
     url: string;
@@ -71,12 +74,19 @@ export type CaptureAdjustments = {
 export async function launch_capture_browser(): Promise<Browser> {
     return puppeteer.launch({
         headless: true,
-        args: PUPPETEER_LAUNCH_ARGS,
+        args: [...PUPPETEER_LAUNCH_ARGS, '--window-size=1280,800'],
+        protocolTimeout: CAPTURE_BROWSER_PROTOCOL_TIMEOUT_MS,
     });
 }
 
 export async function prepare_capture_page(page: Page): Promise<void> {
     await configure_stealth_page(page);
+    if (typeof page.setDefaultNavigationTimeout === 'function') {
+        page.setDefaultNavigationTimeout(CAPTURE_NAVIGATION_TIMEOUT_MS);
+    }
+    if (typeof page.setDefaultTimeout === 'function') {
+        page.setDefaultTimeout(CAPTURE_PAGE_DEFAULT_TIMEOUT_MS);
+    }
     await page.setViewport({
         width: CAPTURE_VIEWPORT_WIDTH,
         height: CAPTURE_VIEWPORT_HEIGHT,
@@ -96,7 +106,7 @@ export async function navigate_and_validate_capture_page(
     timeout_ms: number
 ): Promise<void> {
     const response = await page.goto(url, {
-        waitUntil: 'load',
+        waitUntil: 'domcontentloaded',
         timeout: timeout_ms,
     });
     if (!response) {
@@ -212,6 +222,8 @@ export async function capture_viewport_png_with_adjustments(
                   get_snapshot_full_page_max_height_css()
               )
             : compute_screenshot_clip_height_css(scroll_height_css, CAPTURE_VIEWPORT_WIDTH);
+    const use_clip_instead_of_fullpage =
+        height_mode === 'viewport_capped' && scroll_height_css > FULLPAGE_SCREENSHOT_FALLBACK_SCROLL_HEIGHT_CSS;
 
     if (!dismiss_state.banner_gone || (await is_cookie_banner_visible(page))) {
         dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
@@ -234,10 +246,11 @@ export async function capture_viewport_png_with_adjustments(
         await learn_consent_from_page(page, url);
     }
 
-    const banner_still_visible = await is_cookie_banner_visible(page);
-    const overlay_still_visible = await is_intrusive_overlay_visible(page, { url });
     const blocked_count = read_cmp_blocked_count(page);
     await hide_intrusive_overlays_visually_for_screenshot(page, { url });
+
+    const banner_still_visible = await is_cookie_banner_visible(page);
+    const overlay_still_visible = await is_intrusive_overlay_visible(page, { url });
 
     await page.setViewport({
         width: CAPTURE_VIEWPORT_WIDTH,
@@ -248,24 +261,62 @@ export async function capture_viewport_png_with_adjustments(
     await wait_for_screenshot_content_ready(page);
     await prepare_and_wait_for_visible_images(page);
     await scroll_to_top(page);
-    await finalize_images_for_fullpage_screenshot(page);
-    await scroll_to_top(page);
+    if (!use_clip_instead_of_fullpage) {
+        await finalize_images_for_fullpage_screenshot(page);
+        await scroll_to_top(page);
+    }
 
+    let capture_title = page_title;
+    if (/application error|access denied/i.test(capture_title)) {
+        try {
+            await page.reload({ waitUntil: 'domcontentloaded', timeout: CAPTURE_NAVIGATION_TIMEOUT_MS });
+            await settle_after_initial_navigation(page);
+            await hide_cookie_banners_visually_for_screenshot(page);
+            await hide_intrusive_overlays_visually_for_screenshot(page, { url });
+            await scroll_to_top(page);
+            await wait_for_screenshot_content_ready(page);
+            capture_title = await read_capture_page_title(page);
+        } catch {
+            // Behåll ursprunglig titel om reload misslyckas.
+        }
+    }
+
+    let screenshot_height_css = Math.min(
+        Math.max(scroll_height_css, CAPTURE_VIEWPORT_HEIGHT),
+        max_capture_height_css
+    );
+    if (screenshot_height_css < 100) {
+        screenshot_height_css = max_capture_height_css;
+    }
     const raw_png_buffer = Buffer.from(
-        await page.screenshot({
-            type: 'png',
-            fullPage: true,
-        })
+        await page.screenshot(
+            use_clip_instead_of_fullpage
+                ? {
+                      type: 'png',
+                      clip: {
+                          x: 0,
+                          y: 0,
+                          width: CAPTURE_VIEWPORT_WIDTH,
+                          height: screenshot_height_css,
+                      },
+                  }
+                : {
+                      type: 'png',
+                      fullPage: true,
+                  }
+        )
     );
-    const png_buffer = await crop_png_to_max_css_height(
-        raw_png_buffer,
-        max_capture_height_css,
-        CAPTURE_DEVICE_SCALE_FACTOR
-    );
+    const png_buffer = use_clip_instead_of_fullpage
+        ? raw_png_buffer
+        : await crop_png_to_max_css_height(
+              raw_png_buffer,
+              max_capture_height_css,
+              CAPTURE_DEVICE_SCALE_FACTOR
+          );
 
     return {
         png_buffer,
-        page_title,
+        page_title: capture_title,
         adjustments: {
             consentApplied: true,
             cookieBannerClicked: dismiss_state.clicked,

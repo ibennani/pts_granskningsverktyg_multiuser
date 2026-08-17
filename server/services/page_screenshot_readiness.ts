@@ -5,7 +5,7 @@ import type { Page } from 'puppeteer';
 import { browser_read_main_content_lengths } from './page_screenshot_browser_scripts_loader.js';
 
 export const MAIN_CONTENT_MIN_TEXT_LENGTH = 40;
-export const MAIN_CONTENT_READY_TIMEOUT_MS = 5000;
+export const MAIN_CONTENT_READY_TIMEOUT_MS = 12_000;
 export const MAIN_CONTENT_READY_POLL_MS = 250;
 
 function delay(ms: number): Promise<void> {

@@ -426,6 +426,11 @@ export function browser_read_main_content_lengths() {
 
 export function browser_hide_webdriver_flag() {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    Object.defineProperty(navigator, 'languages', { get: () => ['sv-SE', 'sv', 'en-US', 'en'] });
+    Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+    if (!window.chrome) {
+        window.chrome = { runtime: {} };
+    }
 }
 
 /**
@@ -1234,10 +1239,6 @@ export function browser_dismiss_intrusive_overlays(config) {
  * @returns {boolean}
  */
 export function browser_is_intrusive_overlay_visible(config) {
-    const detection = config.overlay_detection || {};
-    const context_keywords = detection.context_keywords || [];
-    const consent_exclusion = detection.consent_exclusion_keywords || [];
-
     const is_visible = (element) => {
         if (!(element instanceof HTMLElement)) return false;
         const style = window.getComputedStyle(element);
@@ -1246,20 +1247,6 @@ export function browser_is_intrusive_overlay_visible(config) {
         }
         const rect = element.getBoundingClientRect();
         return rect.width > 4 && rect.height > 4;
-    };
-
-    const normalize_text = (text) => String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
-
-    const text_suggests_consent = (text) => {
-        const normalized = normalize_text(text);
-        if (!normalized) return false;
-        return consent_exclusion.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
-    };
-
-    const text_suggests_intrusive = (text) => {
-        const normalized = normalize_text(text);
-        if (!normalized || text_suggests_consent(normalized)) return false;
-        return context_keywords.some((keyword) => intrusive_context_keyword_matches(normalized, keyword));
     };
 
     for (const selector of config.chat_hide_only_selectors || []) {
@@ -1282,28 +1269,13 @@ export function browser_is_intrusive_overlay_visible(config) {
             continue;
         }
         for (const host of hosts) {
-            if (!(host instanceof HTMLElement)) continue;
-            const style = window.getComputedStyle(host);
-            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
-                continue;
-            }
-            const rect = host.getBoundingClientRect();
-            if (rect.width > 4 && rect.height > 4) return true;
+            if (is_visible(host)) return true;
         }
     }
 
-    for (const container_selector of config.container_selectors || []) {
-        let containers = [];
-        try {
-            containers = Array.from(document.querySelectorAll(container_selector));
-        } catch {
-            continue;
-        }
-        for (const container of containers) {
-            if (!is_visible(container)) continue;
-            const text = container.innerText || container.textContent || '';
-            if (text_suggests_intrusive(text)) return true;
-        }
+    const overlay_roots = browser_find_intrusive_overlay_roots(config);
+    for (const root of overlay_roots) {
+        if (is_visible(root)) return true;
     }
 
     return false;

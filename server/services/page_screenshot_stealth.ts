@@ -25,6 +25,9 @@ export async function configure_stealth_page(page: Page): Promise<void> {
     await page.setExtraHTTPHeaders({
         'Accept-Language': 'sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Sec-CH-UA': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"Windows"',
     });
     await page.evaluateOnNewDocument(browser_hide_webdriver_flag);
 }
