@@ -564,10 +564,7 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                         return;
                     }
                 }
-                if (
-                    get_current_view_name_rendered() === 'requirement_audit' &&
-                    listener_meta?.action_type === 'REPLACE_STATE_FROM_REMOTE'
-                ) {
+                if (get_current_view_name_rendered() === 'requirement_audit') {
                     return;
                 }
                 const view_root = get_main_view_root() || get_app_container();
@@ -583,7 +580,6 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                     mainViewRoot: document.getElementById('app-main-view-root')?.scrollTop ?? 0,
                 };
                 const focus_state = capture_focus_state(view_root);
-                const window_scroll = focus_state ? { x: window.scrollX, y: window.scrollY } : null;
                 try {
                     const render_promise = current_view_component_instance.render();
                     if (DraftManager?.restoreIntoDom) {
@@ -595,7 +591,6 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                                 restore_focus_state({
                                     focus_root: view_root,
                                     focus_state,
-                                    window_scroll,
                                 });
                             }
                             apply_document_scroll_positions({

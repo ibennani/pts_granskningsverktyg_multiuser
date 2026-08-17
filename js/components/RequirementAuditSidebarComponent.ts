@@ -11,6 +11,7 @@ import { fingerprint_item_keys, can_incremental_update } from '../utils/incremen
 import { parse_view_and_params_from_hash } from '../logic/router.js';
 import { requirement_audit_sidebar_settings_to_url_params } from '../logic/requirement_audit_url_ui.js';
 import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
+import { request_requirement_audit_h1_focus } from '../logic/focus_manager.js';
 import {
     get_requirement_public_key,
     get_stored_requirement_result_for_def,
@@ -233,11 +234,7 @@ export class RequirementAuditSidebarComponent {
         if (typeof this.deps?.onBeforeSidebarNavigate === 'function') {
             await this.deps.onBeforeSidebarNavigate();
         }
-        try {
-            app_session_storage.setItem('gv_force_focus_h1_v1', 'true');
-        } catch (_) {
-            // ignoreras medvetet
-        }
+        request_requirement_audit_h1_focus();
         this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
     }
 

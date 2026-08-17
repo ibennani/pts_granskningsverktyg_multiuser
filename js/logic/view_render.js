@@ -9,7 +9,6 @@ import { get_registered_translation_module } from '../utils/translation_access.j
 import { public_api as ExportLogicApi } from '../export_logic.js';
 import {
     apply_post_render_focus_instruction,
-    reset_document_scroll_positions,
     update_restore_position
 } from './focus_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';
@@ -200,11 +199,6 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (renderPromise && typeof renderPromise.then === 'function') {
             await renderPromise;
         }
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                reset_document_scroll_positions();
-            });
-        });
         if (render_ctx.current_view_name_rendered === view_name_mut) {
             updatePageTitle(view_name_mut, params_mut);
         }

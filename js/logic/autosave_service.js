@@ -34,7 +34,7 @@ export function capture_focus_state(focus_root) {
     };
 }
 
-export function restore_focus_state({ focus_root, focus_state, window_scroll }) {
+export function restore_focus_state({ focus_root, focus_state }) {
     if (!focus_root || !focus_state) return;
 
     let element_to_focus = null;
@@ -49,10 +49,6 @@ export function restore_focus_state({ focus_root, focus_state, window_scroll }) 
         if (candidates.length > 0) {
             element_to_focus = candidates[0];
         }
-    }
-
-    if (window_scroll) {
-        window.scrollTo({ left: window_scroll.x, top: window_scroll.y, behavior: 'instant' });
     }
 
     if (!element_to_focus || !document.contains(element_to_focus)) return;
@@ -112,7 +108,6 @@ export const AutosaveService = {
         const perform_save = ({ is_autosave, should_trim, skip_render, restore_focus }) => {
             if (session.destroyed || typeof session.on_save !== 'function') return;
             const focus_state = restore_focus ? capture_focus_state(session.focus_root) : null;
-            const window_scroll = restore_focus ? { x: window.scrollX, y: window.scrollY } : null;
 
             session.on_save({
                 is_autosave,
@@ -127,8 +122,7 @@ export const AutosaveService = {
                 requestAnimationFrame(() => {
                     restore_focus_state({
                         focus_root: session.focus_root,
-                        focus_state,
-                        window_scroll
+                        focus_state
                     });
                 });
             }, RESTORE_DELAY_MS);

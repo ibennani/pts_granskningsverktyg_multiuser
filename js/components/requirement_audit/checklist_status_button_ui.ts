@@ -195,7 +195,7 @@ function reapply_pending_observation_focus(
     const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
     const rect = textarea.getBoundingClientRect();
     const scroll_position = Math.max(0, rect.top + window.pageYOffset - top_bar_height - 16);
-    window.scrollTo({ top: scroll_position, behavior: 'smooth' });
+    window.scrollTo({ top: scroll_position, behavior: 'auto' });
 
     requestAnimationFrame(() => {
         setTimeout(() => {

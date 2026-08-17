@@ -11,6 +11,7 @@ import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarCompo
 import "./requirement_audit_component.css";
 import { consoleManager } from '../utils/console_manager.js';
 import { establish_baseline_for_current_audit_focus } from '../logic/audit_collaboration_notice.js';
+import { request_requirement_audit_h1_focus } from '../logic/focus_manager.js';
 import { find_requirement_definition, resolve_requirement_map_key, get_requirement_public_key } from '../audit_logic.js';
 import {
     definition_primary_id,
@@ -1541,6 +1542,7 @@ export class RequirementAuditComponent {
 
         const navigate_to_item = (item) => {
             if (!item) return;
+            request_requirement_audit_h1_focus();
             if (mode === 'requirement_samples') {
                 this.router('requirement_audit', {
                     sampleId: item.sample.id,

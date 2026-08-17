@@ -338,4 +338,37 @@ describe('focus_manager', () => {
 
         scroll_to_spy.mockRestore();
     });
+
+    test('apply_requirement_audit_h1_focus sätter fokus på krubrik och scrollar utan animation', async () => {
+        const { apply_requirement_audit_h1_focus } = await import('../../js/logic/focus_manager.js');
+        const root = document.createElement('div');
+        const plate = document.createElement('div');
+        plate.className = 'requirement-audit-plate';
+        const header = document.createElement('div');
+        header.className = 'requirement-audit-header';
+        const heading = document.createElement('h1');
+        heading.textContent = 'Kravrubrik';
+        header.appendChild(heading);
+        plate.appendChild(header);
+        root.appendChild(plate);
+        document.body.appendChild(root);
+
+        const scroll_to_spy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+        const focus_spy = jest.spyOn(heading, 'focus');
+
+        apply_requirement_audit_h1_focus({ view_root: root });
+        await new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(resolve);
+            });
+        });
+
+        expect(scroll_to_spy).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'auto' }));
+        expect(focus_spy).toHaveBeenCalled();
+        expect(heading.getAttribute('tabindex')).toBe('-1');
+
+        scroll_to_spy.mockRestore();
+        focus_spy.mockRestore();
+        root.remove();
+    });
 });

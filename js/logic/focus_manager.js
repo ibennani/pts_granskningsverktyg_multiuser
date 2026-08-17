@@ -211,8 +211,7 @@ export function apply_restore_focus_instruction({ view_root }) {
 
         if (el && document.contains(el)) {
             try {
-                el.focus({ preventScroll: false });
-                el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                el.focus({ preventScroll: true });
             } catch {
                 el.focus();
             }
@@ -226,10 +225,76 @@ export function apply_restore_focus_instruction({ view_root }) {
     return true;
 }
 
+export const REQUIREMENT_AUDIT_H1_FOCUS_KEY = 'gv_force_focus_h1_v1';
+
+/** Begär h1-fokus efter nästa render av kravgranskningsvyn. */
+export function request_requirement_audit_h1_focus() {
+    try {
+        app_session_storage.setItem(REQUIREMENT_AUDIT_H1_FOCUS_KEY, 'true');
+    } catch {
+        /* ignore */
+    }
+}
+
+function ensure_focusable_heading(heading) {
+    if (heading.getAttribute('tabindex') === null) {
+        heading.setAttribute('tabindex', '-1');
+    }
+}
+
+function scroll_requirement_audit_heading_into_view(heading) {
+    reset_document_scroll_positions();
+
+    const top_action_bar = document.getElementById('global-action-bar-top');
+    const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
+    const rect = heading.getBoundingClientRect();
+    const scroll_target = Math.max(0, rect.top + window.pageYOffset - top_bar_height);
+    window.scrollTo({ top: scroll_target, behavior: 'auto' });
+}
+
+/**
+ * Flyttar fokus till krubriken (h1) och scrollar dit utan animation.
+ * @param {{ view_root: HTMLElement | null | undefined }} options
+ * @returns {boolean}
+ */
+export function apply_requirement_audit_h1_focus({ view_root }) {
+    if (!view_root) return false;
+
+    const heading = view_root.querySelector('.requirement-audit-header h1')
+        || view_root.querySelector('.requirement-audit-plate h1');
+    if (!heading) return false;
+
+    window.customFocusApplied = true;
+    ensure_focusable_heading(heading);
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            if (!document.contains(heading)) return;
+            scroll_requirement_audit_heading_into_view(heading);
+            try {
+                heading.focus({ preventScroll: true });
+            } catch {
+                heading.focus();
+            }
+            try {
+                app_session_storage.removeItem(REQUIREMENT_AUDIT_H1_FOCUS_KEY);
+            } catch {
+                /* ignore */
+            }
+        });
+    });
+
+    return true;
+}
+
 export function apply_post_render_focus_instruction({ view_name, view_root }) {
     if (view_root && apply_restore_focus_instruction({ view_root })) return true;
 
     if (!view_root || !window.sessionStorage) return false;
+
+    if (view_name === 'requirement_audit') {
+        return apply_requirement_audit_h1_focus({ view_root });
+    }
 
     const RETURN_FOCUS_AUDIT_INFO_H2_KEY = 'gv_return_focus_audit_info_h2_v1';
 
