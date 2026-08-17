@@ -9,6 +9,8 @@ import {
     note_audit_full_sync_required,
     note_metadata_only_changed,
     note_requirement_result_changed,
+    clear_pending_requirement_sync,
+    has_pending_audit_sync_plan,
     peek_audit_sync_strategy,
     resolve_audit_sync_strategy,
     should_include_rule_file_in_patch
@@ -43,6 +45,15 @@ describe('audit_sync_planning', () => {
             sample_id: 's1',
             requirement_id: 'r1'
         });
+    });
+
+    test('clear_pending_requirement_sync tar bort ett krav från planen', () => {
+        note_requirement_result_changed('s1', 'r1');
+        note_requirement_result_changed('s1', 'r2');
+        clear_pending_requirement_sync('s1', 'r1');
+        expect(has_pending_audit_sync_plan()).toBe(true);
+        clear_pending_requirement_sync('s1', 'r2');
+        expect(has_pending_audit_sync_plan()).toBe(false);
     });
 
     test('resolve_audit_sync_strategy: två krav → full', () => {

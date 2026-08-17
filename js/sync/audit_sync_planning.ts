@@ -68,6 +68,12 @@ export function note_requirement_result_changed(sample_id: string, requirement_i
     pending_requirement_keys.add(requirement_sync_key(sample_id, requirement_id));
 }
 
+/** Tar bort ett krav från väntande synkplan (t.ex. vid navigering utan osparade ändringar). */
+export function clear_pending_requirement_sync(sample_id: string, requirement_id: string): void {
+    if (force_full_sync) return;
+    pending_requirement_keys.delete(requirement_sync_key(sample_id, requirement_id));
+}
+
 /** Om ett visst kravresultat väntar på serversynk. */
 export function is_requirement_pending_sync(sample_id: string, requirement_id: string): boolean {
     if (force_full_sync) return true;

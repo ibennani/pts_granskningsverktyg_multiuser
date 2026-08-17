@@ -25,6 +25,7 @@ import {
     flush_before_view_switch,
     init_and_render_view_component,
     is_requirement_audit_core_param_change,
+    requirement_audit_core_route_params,
     is_same_view_quick_render,
     render_quick_view
 } from '../view/view_lifecycle.js';
@@ -32,6 +33,11 @@ import { render_view_not_found, handle_view_lifecycle_error } from '../view/view
 import { set_current_view_tracking, get_restore_position_via_hook } from '../app/browser_globals.js';
 import { sync_version_reload_banner_in_host } from './version_reload_banner_mount.js';
 import { should_skip_draft_restore_for_view } from './draft_restore_policy.js';
+import {
+    prune_synced_leaving_requirement_from_pending_plan,
+    requirement_nav_needs_server_sync,
+    schedule_background_sync_on_requirement_nav
+} from './requirement_audit_nav_sync.js';
 
 /**
  * Renderar en vy utifrån namn och parametrar.
@@ -171,7 +177,23 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     });
 
     if (is_requirement_audit_param_nav) {
-        await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
+        const state_now = getState?.();
+        const prev_core = requirement_audit_core_route_params(prev_params);
+        if (state_now) {
+            prune_synced_leaving_requirement_from_pending_plan(
+                state_now,
+                prev_core.sampleId,
+                prev_core.requirementId
+            );
+        }
+        if (state_now && requirement_nav_needs_server_sync(state_now)) {
+            schedule_background_sync_on_requirement_nav(
+                flush_sync_to_server,
+                getState,
+                dispatch,
+                consoleManager
+            );
+        }
         current_view_component_instance.deps.params = params_mut;
         current_view_component_instance.params = params_mut;
         const renderPromise = current_view_component_instance.render();

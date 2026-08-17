@@ -7,6 +7,7 @@ import {
     is_local_audit_content_newer_than,
     should_push_local_audit_to_server,
     has_unsynced_local_audit_changes,
+    is_requirement_result_synced_with_server,
     build_last_local_change_metadata_patch,
     build_last_server_sync_metadata_patch,
     dispatch_mark_audit_server_sync_baseline,
@@ -92,6 +93,26 @@ describe('audit_sync_tracking', () => {
             samples: []
         };
         expect(has_unsynced_local_audit_changes(state)).toBe(false);
+    });
+
+    test('is_requirement_result_synced_with_server för synkat krav', () => {
+        const state = {
+            auditMetadata: {
+                last_local_change_at: '2026-05-20T13:00:00.000Z',
+                last_server_sync_at: '2026-05-20T12:00:00.000Z'
+            },
+            samples: [
+                {
+                    sampleId: 's1',
+                    requirementResults: {
+                        r1: { lastStatusUpdate: '2026-05-19T10:00:00.000Z' },
+                        r2: { lastStatusUpdate: '2026-05-20T13:00:00.000Z' }
+                    }
+                }
+            ]
+        };
+        expect(is_requirement_result_synced_with_server(state, 's1', 'r1')).toBe(true);
+        expect(is_requirement_result_synced_with_server(state, 's1', 'r2')).toBe(false);
     });
 
     test('metadata-patch builders', () => {

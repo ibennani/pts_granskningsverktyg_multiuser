@@ -8,6 +8,7 @@ export type AuditStateLike = {
     version?: number | null;
     auditMetadata?: Record<string, unknown>;
     samples?: Array<{
+        sampleId?: string;
         requirementResults?: Record<string, { lastStatusUpdate?: string | null }>;
     }>;
 };
@@ -80,6 +81,34 @@ export function has_unsynced_local_audit_changes(state: AuditStateLike | null | 
     if (!local_at) return false;
     if (!server_at) return true;
     return local_at > server_at;
+}
+
+/**
+ * Om ett enskilt kravresultat redan finns på servern enligt last_server_sync_at.
+ */
+export function is_requirement_result_synced_with_server(
+    state: AuditStateLike | null | undefined,
+    sample_id: string,
+    requirement_id: string
+): boolean {
+    if (!state) return true;
+    if (!has_unsynced_local_audit_changes(state)) return true;
+
+    const server_at =
+        typeof state.auditMetadata?.last_server_sync_at === 'string'
+            ? state.auditMetadata.last_server_sync_at
+            : null;
+    if (!server_at) return false;
+
+    const sample = (state.samples || []).find(
+        (s) => String(s.sampleId ?? '') === String(sample_id)
+    );
+    const result = sample?.requirementResults?.[requirement_id];
+    if (!result) return true;
+
+    const ts = result.lastStatusUpdate;
+    if (typeof ts !== 'string' || !ts) return true;
+    return ts <= server_at;
 }
 
 /**

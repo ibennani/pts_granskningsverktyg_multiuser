@@ -3,6 +3,7 @@
  */
 
 import { execute_audit_server_sync } from './audit_sync_execute.js';
+import type { AuditSyncPrepareOptions } from './audit_sync_prepare.js';
 import {
     log_krav_vy_sync_skipped,
     peek_krav_vy_sync_flow
@@ -64,7 +65,8 @@ export async function sync_to_server_now(
 
 export async function flush_sync_to_server(
     get_state_fn: () => SyncPayloadState | null | undefined,
-    dispatch_fn: DispatchFn
+    dispatch_fn: DispatchFn,
+    options?: AuditSyncPrepareOptions
 ) {
     if (debounce_timer) {
         clearTimeout(debounce_timer);
@@ -82,7 +84,7 @@ export async function flush_sync_to_server(
             }
             return Promise.resolve();
         }
-        return execute_audit_server_sync(st, dispatch_fn);
+        return execute_audit_server_sync(st, dispatch_fn, options);
     });
 }
 

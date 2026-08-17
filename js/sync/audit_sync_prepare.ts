@@ -24,6 +24,11 @@ import type { SyncPayloadState } from './sync_payload_mapper.js';
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
 
+export type AuditSyncPrepareOptions = {
+    /** Kravnavigering: hoppa över get_audit_version när inget ska synkas eller vid bakgrundssynk. */
+    skip_version_probe?: boolean;
+};
+
 export type AuditSyncPrepareResult =
     | { action: 'skip'; reason: string }
     | { action: 'reload' }
@@ -145,7 +150,8 @@ async function align_stale_version_without_sync(
  */
 export async function prepare_audit_sync_state(
     state: SyncPayloadState,
-    dispatch_fn: DispatchFn | undefined
+    dispatch_fn: DispatchFn | undefined,
+    options?: AuditSyncPrepareOptions
 ): Promise<AuditSyncPrepareResult> {
     if (!state.auditId) {
         return { action: 'proceed', state };
@@ -154,13 +160,21 @@ export async function prepare_audit_sync_state(
     const audit_state = state as AuditStateLike;
     const pending_plan = has_pending_audit_sync_plan();
     const unsynced = has_unsynced_local_audit_changes(audit_state);
+    const skip_version_probe = options?.skip_version_probe === true;
 
     if (!unsynced && !pending_plan) {
+        if (skip_version_probe) {
+            return { action: 'skip', reason: 'Inget att synka till servern' };
+        }
         const aligned = await align_stale_version_without_sync(state, dispatch_fn, audit_state);
         if (aligned === 'reload') {
             return { action: 'reload' };
         }
         return { action: 'skip', reason: 'Inget att synka till servern' };
+    }
+
+    if (skip_version_probe) {
+        return { action: 'proceed', state };
     }
 
     try {

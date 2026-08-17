@@ -47,6 +47,46 @@ describe('audit_sync_prepare', () => {
         expect(get_audit_version).toHaveBeenCalledWith('a1');
     });
 
+    test('skip_version_probe hoppar över get_audit_version när inget ska synkas', async () => {
+        const { clear_rule_file_sync_baseline_for_testing } = await import('../../js/sync/audit_sync_planning.js');
+        const { prepare_audit_sync_state } = await import('../../js/sync/audit_sync_prepare.js');
+        clear_rule_file_sync_baseline_for_testing();
+        const result = await prepare_audit_sync_state(
+            {
+                auditId: 'a1',
+                version: 3,
+                auditMetadata: { last_server_sync_at: '2026-06-01T10:00:00.000Z' },
+                samples: [],
+                ruleFileContent: { x: 1 }
+            },
+            jest.fn(),
+            { skip_version_probe: true }
+        );
+        expect(result.action).toBe('skip');
+        expect(get_audit_version).not.toHaveBeenCalled();
+    });
+
+    test('skip_version_probe hoppar över versionkontroll när synk behövs', async () => {
+        const { clear_rule_file_sync_baseline_for_testing, note_requirement_result_changed } =
+            await import('../../js/sync/audit_sync_planning.js');
+        const { prepare_audit_sync_state } = await import('../../js/sync/audit_sync_prepare.js');
+        clear_rule_file_sync_baseline_for_testing();
+        note_requirement_result_changed('s1', 'r1');
+        const result = await prepare_audit_sync_state(
+            {
+                auditId: 'a1',
+                version: 3,
+                auditMetadata: { last_local_change_at: '2026-06-02T12:00:00.000Z' },
+                samples: [],
+                ruleFileContent: { x: 1 }
+            },
+            jest.fn(),
+            { skip_version_probe: true }
+        );
+        expect(result.action).toBe('proceed');
+        expect(get_audit_version).not.toHaveBeenCalled();
+    });
+
     test('laddar om från server när version ligger före och lokalt inte är nyare', async () => {
         const { clear_rule_file_sync_baseline_for_testing } = await import('../../js/sync/audit_sync_planning.js');
         const { prepare_audit_sync_state } = await import('../../js/sync/audit_sync_prepare.js');

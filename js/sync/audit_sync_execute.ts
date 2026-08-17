@@ -53,7 +53,7 @@ import {
     should_include_rule_file_in_patch,
     type AuditSyncStrategy
 } from './audit_sync_planning.js';
-import { prepare_audit_sync_state } from './audit_sync_prepare.js';
+import { prepare_audit_sync_state, type AuditSyncPrepareOptions } from './audit_sync_prepare.js';
 import { server_status_should_win_over_local } from '../logic/audit_status_sync.js';
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
@@ -529,7 +529,8 @@ async function handle_version_conflict_409(
  */
 export async function execute_audit_server_sync(
     state: SyncPayloadState | null | undefined,
-    dispatch_fn: DispatchFn | undefined
+    dispatch_fn: DispatchFn | undefined,
+    options?: AuditSyncPrepareOptions
 ): Promise<void> {
     const krav_vy_sync = create_krav_vy_sync_tracker();
     if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
@@ -561,7 +562,7 @@ export async function execute_audit_server_sync(
     try {
         if (state.auditId) {
             let sync_state = state;
-            const prepared = await prepare_audit_sync_state(sync_state, dispatch_fn);
+            const prepared = await prepare_audit_sync_state(sync_state, dispatch_fn, options);
             if (prepared.action === 'skip') {
                 krav_vy_sync_skipped(krav_vy_sync, prepared.reason);
                 return;
