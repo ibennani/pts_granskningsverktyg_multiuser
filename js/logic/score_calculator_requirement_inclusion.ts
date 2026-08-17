@@ -3,6 +3,7 @@
  */
 
 import type { RequirementDef, RequirementResultStored } from './audit_logic_types.js';
+import { definition_primary_id, resolve_map_entry } from './entity_id_match.js';
 
 /**
  * Krav exkluderas när alla kontrollpunkter i regelfilen är markerade «Inte aktuellt»
@@ -17,10 +18,10 @@ export function is_requirement_excluded_from_deficiency_index(
     if (!req_result?.checkResults) return false;
 
     for (const check_def of checks) {
-        const check_id = String(check_def?.id ?? '').trim();
-        if (!check_id) return false;
+        const check_storage_key = definition_primary_id(check_def);
+        if (!check_storage_key) return false;
 
-        const check_result = req_result.checkResults[check_id];
+        const check_result = resolve_map_entry(req_result.checkResults, check_storage_key)?.value;
         if (!check_result || check_result.overallStatus !== 'not_applicable') {
             return false;
         }

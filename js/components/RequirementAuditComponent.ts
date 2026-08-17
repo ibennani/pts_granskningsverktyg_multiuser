@@ -852,9 +852,29 @@ export class RequirementAuditComponent {
                 }
             });
         });
+
+        this._recalculate_local_result_statuses();
         
         this.ordered_requirement_keys = this.AuditLogic.get_ordered_relevant_requirement_keys(state.ruleFileContent, this.current_sample, 'default');
         return true;
+    }
+
+    /** Omräknar statusfält i minnet så checklista stämmer även om sparad status är inaktuell. */
+    _recalculate_local_result_statuses() {
+        if (!this.current_result || !this.current_requirement) return;
+        (this.current_requirement.checks || []).forEach((check_def) => {
+            const check_storage_key = definition_primary_id(check_def);
+            if (!check_storage_key) return;
+            const resolved = resolve_map_entry(this.current_result.checkResults, check_storage_key);
+            const check_res = resolved?.value;
+            if (!check_res) return;
+            check_res.status = this.AuditLogic.calculate_check_status(
+                check_def, check_res.passCriteria, check_res.overallStatus
+            );
+        });
+        this.current_result.status = this.AuditLogic.calculate_requirement_status(
+            this.current_requirement, this.current_result
+        );
     }
 
     _should_patch_requirement_result_only(listener_meta) {
