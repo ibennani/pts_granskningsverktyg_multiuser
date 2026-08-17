@@ -21,6 +21,7 @@ import { open_attach_media_modal } from './media/AttachMediaModal.js';
 import { can_edit_observation_detail } from '../logic/audit_observation_edit_policy.js';
 import { fill_audit_media_filenames_list, revoke_audit_media_blob_urls } from './media/render_audit_media_list_item.js';
 import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
+import { create_audit_media_server_index } from '../logic/audit_media_server_index.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -40,6 +41,45 @@ export class AuditImagesViewComponent {
         this.is_dom_initialized = false;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;
+        this._media_server_index = null;
+        this._media_server_index_audit_id = null;
+    }
+
+    _ensure_media_server_index(audit_id) {
+        const id = String(audit_id || '').trim();
+        if (!id) {
+            this._media_server_index = null;
+            this._media_server_index_audit_id = null;
+            return Promise.resolve();
+        }
+        if (this._media_server_index_audit_id !== id) {
+            this._media_server_index_audit_id = id;
+            this._media_server_index = create_audit_media_server_index(id);
+        }
+        return this._media_server_index.ensure_loaded();
+    }
+
+    _get_media_server_filenames() {
+        return this._media_server_index?.get_server_filenames() ?? null;
+    }
+
+    _resolve_media_fetch_filename(filename) {
+        return this._media_server_index?.resolve_fetch_filename(filename) ?? filename;
+    }
+
+    _refresh_media_lists_after_server_index() {
+        const state = this.getState();
+        if (!state?.ruleFileContent || get_current_view_name() !== 'audit_images') {
+            return;
+        }
+        const images = this.AuditLogic?.collect_attached_images
+            ? this.AuditLogic.collect_attached_images(state)
+            : [];
+        const t = this.Translation.t;
+        const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        this.group_images_by_requirement_sample(images).forEach((group) => {
+            this._patch_image_card_filenames(group, t, is_audit_locked);
+        });
     }
 
     async init({ root, deps }) {
@@ -303,6 +343,9 @@ export class AuditImagesViewComponent {
         const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         this._update_images_header(images, t);
         this._sync_image_cards(this.group_images_by_requirement_sample(images), images, t, is_audit_locked);
+        void this._ensure_media_server_index(state.auditId ?? null).then(() => {
+            this._refresh_media_lists_after_server_index();
+        });
     }
 
     _update_images_header(images, t) {
@@ -386,7 +429,14 @@ export class AuditImagesViewComponent {
     _patch_image_card_filenames(group, t, is_audit_locked) {
         const audit_id = this.getState()?.auditId ?? null;
         if (group.is_sample_screenshot) {
-            patch_sample_screenshot_card(this.list_wrapper_ref, group, t, audit_id);
+            patch_sample_screenshot_card(
+                this.list_wrapper_ref,
+                group,
+                t,
+                audit_id,
+                this._get_media_server_filenames(),
+                (filename) => this._resolve_media_fetch_filename(filename)
+            );
             return;
         }
 
@@ -429,7 +479,9 @@ export class AuditImagesViewComponent {
                     audit_id,
                     filenames,
                     observation_detail,
-                    observation_edit
+                    observation_edit,
+                    this._get_media_server_filenames(),
+                    (filename) => this._resolve_media_fetch_filename(filename)
                 );
             }
 
@@ -470,7 +522,15 @@ export class AuditImagesViewComponent {
 
     create_image_card(group, t, is_audit_locked = false) {
         if (group.is_sample_screenshot) {
-            return create_sample_screenshot_card(this, group, t, is_audit_locked, this.handle_sample_attach_media_click);
+            return create_sample_screenshot_card(
+                this,
+                group,
+                t,
+                is_audit_locked,
+                this.handle_sample_attach_media_click,
+                this._get_media_server_filenames(),
+                (filename) => this._resolve_media_fetch_filename(filename)
+            );
         }
 
         const card = this.Helpers.create_element('article', {
@@ -616,7 +676,9 @@ export class AuditImagesViewComponent {
                 audit_id,
                 filenames,
                 observation_detail,
-                observation_edit
+                observation_edit,
+                this._get_media_server_filenames(),
+                (filename) => this._resolve_media_fetch_filename(filename)
             );
             section.appendChild(ul);
 

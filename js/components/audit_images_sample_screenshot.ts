@@ -105,7 +105,9 @@ export function create_sample_screenshot_card(
     group: { sample?: { id?: string; description?: string; url?: string }; items: Array<{ filename?: string }> },
     t: (key: string, params?: Record<string, unknown>) => string,
     is_audit_locked: boolean,
-    on_attach_click: (event: Event) => void
+    on_attach_click: (event: Event) => void,
+    server_filenames: Set<string> | null = null,
+    resolve_fetch_filename?: (filename: string) => string
 ): HTMLElement {
     const helpers = ctx.Helpers as {
         create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
@@ -168,7 +170,17 @@ export function create_sample_screenshot_card(
         attributes: { 'data-check-id': SAMPLE_SCREENSHOT_CARD_PREFIX, 'data-pc-id': SAMPLE_SCREENSHOT_CARD_PREFIX }
     });
     const ul = helpers.create_element('ul', { class_name: 'audit-image-card__filenames' });
-    fill_audit_media_filenames_list(ul, helpers, t, audit_id, filenames);
+    fill_audit_media_filenames_list(
+        ul,
+        helpers,
+        t,
+        audit_id,
+        filenames,
+        undefined,
+        undefined,
+        server_filenames,
+        resolve_fetch_filename
+    );
     section.appendChild(ul);
 
     if (!is_audit_locked && group.sample?.id) {
@@ -201,7 +213,9 @@ export function patch_sample_screenshot_card(
     list_wrapper: HTMLElement,
     group: { sample?: { id?: string }; items: Array<{ filename?: string }> },
     t: (key: string, params?: Record<string, unknown>) => string,
-    audit_id?: string | null
+    audit_id?: string | null,
+    server_filenames: Set<string> | null = null,
+    resolve_fetch_filename?: (filename: string) => string
 ): void {
     const card = list_wrapper.querySelector(
         `.audit-image-card--sample-screenshot[data-sample-id="${CSS.escape(String(group.sample?.id || ''))}"]`
@@ -231,7 +245,17 @@ export function patch_sample_screenshot_card(
             }
             return el;
         } };
-        fill_audit_media_filenames_list(ul as HTMLElement, helpers, t, audit_id ?? null, filenames);
+        fill_audit_media_filenames_list(
+            ul as HTMLElement,
+            helpers,
+            t,
+            audit_id ?? null,
+            filenames,
+            undefined,
+            undefined,
+            server_filenames,
+            resolve_fetch_filename
+        );
     }
 
     const attach_btn = card.querySelector('button[data-action="attach-sample-media"]');

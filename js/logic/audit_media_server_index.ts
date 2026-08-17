@@ -108,6 +108,16 @@ export function partition_files_for_upload(
 }
 
 /**
+ * True om filnamnet matchar en faktisk fil på servern (ej bara äldre filnamnsreferens).
+ */
+export function is_media_file_on_server(
+    filename: string,
+    server_filenames: Set<string> | null | undefined
+): boolean {
+    return find_server_media_filename_match(filename, server_filenames) !== null;
+}
+
+/**
  * Filnamn som ska raderas fysiskt på servern (hoppar över äldre filnamnsreferenser).
  */
 export function filenames_existing_on_server(

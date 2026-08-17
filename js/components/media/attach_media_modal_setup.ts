@@ -214,7 +214,8 @@ export function setup_attach_media_modal_content(
             in_modal_preview ? handle_image_click : undefined,
             undefined,
             resolve_fetch_filename,
-            can_upload && audit_id ? request_rename_filename : undefined
+            can_upload && audit_id ? request_rename_filename : undefined,
+            server_index?.get_server_filenames() ?? null
         );
     };
 
@@ -319,6 +320,7 @@ export function setup_attach_media_modal_content(
             handle_image_click: in_modal_preview ? handle_image_click : undefined,
             resolve_fetch_filename,
             on_rename: can_upload && audit_id ? request_rename_filename : undefined,
+            get_server_filenames: () => server_index?.get_server_filenames() ?? null,
             persist_media_changes,
             show_status,
             on_remove_confirm_open_change: (is_open) => {

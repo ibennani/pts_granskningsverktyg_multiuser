@@ -7,6 +7,7 @@ import {
     is_upload_duplicate_filename,
     partition_files_for_upload,
     filenames_existing_on_server,
+    is_media_file_on_server,
     find_server_media_filename_match,
     merge_uploaded_media_filenames,
     resolve_server_media_fetch_filename
@@ -59,6 +60,16 @@ describe('filenames_existing_on_server', () => {
 
     it('försöker radera alla när serverindex saknas', () => {
         expect(filenames_existing_on_server(['legacy.png'], null)).toEqual(['legacy.png']);
+    });
+});
+
+describe('is_media_file_on_server', () => {
+    it('returnerar false när serverindex är tomt', () => {
+        expect(is_media_file_on_server('legacy.png', new Set())).toBe(false);
+    });
+
+    it('returnerar true vid träff i serverindex', () => {
+        expect(is_media_file_on_server('bild.png', new Set(['bild.png']))).toBe(true);
     });
 });
 

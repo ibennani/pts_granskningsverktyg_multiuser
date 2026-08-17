@@ -3,6 +3,7 @@
  */
 
 import { fetch_audit_media_blob_url } from '../../api/audit_media_api.js';
+import { is_media_file_on_server } from '../../logic/audit_media_server_index.js';
 import {
     get_media_display_kind,
     is_previewable_image_filename
@@ -25,6 +26,26 @@ function cache_key(audit_id: string, filename: string): string {
 
 function get_cached_blob_url(audit_id: string, filename: string): string | undefined {
     return blob_url_cache.get(cache_key(audit_id, filename));
+}
+
+/**
+ * True om miniatyr/förhandsgranskning får visas (lokal blob eller faktisk serverfil).
+ */
+export function is_media_available_for_preview(
+    audit_id: string | null | undefined,
+    filename: string,
+    server_filenames?: Set<string> | null
+): boolean {
+    if (!audit_id) {
+        return false;
+    }
+    if (get_cached_blob_url(audit_id, filename)) {
+        return true;
+    }
+    if (!server_filenames) {
+        return false;
+    }
+    return is_media_file_on_server(filename, server_filenames);
 }
 
 /**
@@ -224,17 +245,22 @@ export function create_attach_media_filename_list_item(
     on_remove: (trigger: HTMLButtonElement) => void,
     on_image_click?: (filename: string, trigger: HTMLButtonElement) => void,
     resolve_fetch_filename?: (filename: string) => string,
-    on_rename?: (filename: string, trigger: HTMLButtonElement) => void
+    on_rename?: (filename: string, trigger: HTMLButtonElement) => void,
+    server_filenames?: Set<string> | null
 ): HTMLLIElement {
+    const has_server_file = is_media_available_for_preview(audit_id, filename, server_filenames);
     const li = helpers.create_element('li', {
-        class_name: 'attach-media-filename-list__item'
+        class_name: [
+            'attach-media-filename-list__item',
+            ...(has_server_file ? [] : ['attach-media-filename-list__item--filename-only'])
+        ]
     }) as HTMLLIElement;
 
     const preview = helpers.create_element('div', {
         class_name: 'attach-media-filename-list__preview'
     });
 
-    if (audit_id && is_previewable_image_filename(filename)) {
+    if (audit_id && has_server_file && is_previewable_image_filename(filename)) {
         if (on_image_click) {
             preview.appendChild(
                 create_image_thumb_button(helpers, t, audit_id, filename, li, {
@@ -247,25 +273,11 @@ export function create_attach_media_filename_list_item(
                 create_static_image_thumb(helpers, audit_id, filename, li, resolve_fetch_filename)
             );
         }
-    } else if (audit_id) {
+    } else if (audit_id && has_server_file) {
         const kind = get_media_display_kind(filename);
         if (kind === 'image' || kind === 'video') {
             preview.appendChild(create_media_type_icon_placeholder(helpers, kind));
-        } else {
-            preview.appendChild(
-                helpers.create_element('span', {
-                    class_name: 'attach-media-filename-list__placeholder',
-                    attributes: { 'aria-hidden': 'true' }
-                })
-            );
         }
-    } else {
-        preview.appendChild(
-            helpers.create_element('span', {
-                class_name: 'attach-media-filename-list__placeholder',
-                attributes: { 'aria-hidden': 'true' }
-            })
-        );
     }
 
     preview.appendChild(
@@ -318,10 +330,16 @@ export function create_audit_media_filename_list_item(
     audit_id: string | null | undefined,
     filename: string,
     observation_detail?: string | null,
-    observation_edit?: AuditMediaObservationEditOptions | null
+    observation_edit?: AuditMediaObservationEditOptions | null,
+    server_filenames?: Set<string> | null,
+    resolve_fetch_filename?: (filename: string) => string
 ): HTMLLIElement {
+    const has_server_file = is_media_available_for_preview(audit_id, filename, server_filenames);
     const li = helpers.create_element('li', {
-        class_name: 'audit-image-card__media-item'
+        class_name: [
+            'audit-image-card__media-item',
+            ...(has_server_file ? [] : ['audit-image-card__media-item--filename-only'])
+        ]
     }) as HTMLLIElement;
 
     const name_span = helpers.create_element('span', {
@@ -330,13 +348,16 @@ export function create_audit_media_filename_list_item(
     });
     li.appendChild(name_span);
 
-    if (!audit_id) return li;
+    if (!audit_id || !has_server_file) {
+        return li;
+    }
 
     if (is_previewable_image_filename(filename)) {
         li.insertBefore(
             create_image_thumb_button(helpers, t, audit_id, filename, li, {
                 observation_detail,
-                observation_edit
+                observation_edit,
+                resolve_fetch_filename
             }),
             name_span
         );
@@ -360,7 +381,9 @@ export function fill_audit_media_filenames_list(
     audit_id: string | null | undefined,
     filenames: string[],
     observation_detail?: string | null,
-    observation_edit?: AuditMediaObservationEditOptions | null
+    observation_edit?: AuditMediaObservationEditOptions | null,
+    server_filenames?: Set<string> | null,
+    resolve_fetch_filename?: (filename: string) => string
 ): void {
     ul.innerHTML = '';
     filenames.forEach((fn) => {
@@ -371,7 +394,9 @@ export function fill_audit_media_filenames_list(
                 audit_id,
                 fn,
                 observation_detail,
-                observation_edit
+                observation_edit,
+                server_filenames,
+                resolve_fetch_filename
             )
         );
     });
