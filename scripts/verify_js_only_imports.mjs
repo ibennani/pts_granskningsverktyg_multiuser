@@ -54,6 +54,7 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/logic/queue_sidrapport_after_sample_save.js',
     'js/logic/requirement_audit_nav_sync.js',
     'js/logic/audit_media_server_index.js',
+    'js/logic/attached_media_edit_policy.js',
     'js/utils/scoped_browser_storage.js'
 ];
 

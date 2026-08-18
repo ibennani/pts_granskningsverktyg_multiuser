@@ -6,6 +6,7 @@ import { resolve_effective_sample_attached_filenames } from '../logic/sample_att
 import { open_attach_media_modal } from './media/AttachMediaModal.js';
 import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
 import { fill_audit_media_filenames_list } from './media/render_audit_media_list_item.js';
+import { should_show_edit_attached_media_button } from '../logic/attached_media_edit_policy.js';
 
 export const SAMPLE_SCREENSHOT_CARD_PREFIX = '__sample__';
 
@@ -183,7 +184,7 @@ export function create_sample_screenshot_card(
     );
     section.appendChild(ul);
 
-    if (!is_audit_locked && group.sample?.id) {
+    if (should_show_edit_attached_media_button(is_audit_locked) && group.sample?.id) {
         const attach_btn_label = t('edit_attached_media_button', { count: filenames.length });
         const image_icon = helpers.get_icon_svg ? helpers.get_icon_svg('image', ['currentColor'], 16) : '';
         const video_icon = helpers.get_icon_svg ? helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';

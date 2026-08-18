@@ -19,6 +19,7 @@ import {
 } from './audit_images_sample_screenshot.js';
 import { open_attach_media_modal } from './media/AttachMediaModal.js';
 import { can_edit_observation_detail } from '../logic/audit_observation_edit_policy.js';
+import { should_show_edit_attached_media_button } from '../logic/attached_media_edit_policy.js';
 import { fill_audit_media_filenames_list, revoke_audit_media_blob_urls } from './media/render_audit_media_list_item.js';
 import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
 import { create_audit_media_server_index } from '../logic/audit_media_server_index.js';
@@ -682,7 +683,7 @@ export class AuditImagesViewComponent {
             );
             section.appendChild(ul);
 
-            if (!is_audit_locked && dom_check_id && dom_pc_id) {
+            if (should_show_edit_attached_media_button(is_audit_locked) && dom_check_id && dom_pc_id) {
                 const image_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('image', ['currentColor'], 16) : '';
                 const video_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';
                 const attach_icons_html = (image_icon || video_icon)
