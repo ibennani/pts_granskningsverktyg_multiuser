@@ -50,9 +50,9 @@ async function ensure_temp_db_with_backup() {
 
 async function fetch_audit_rows(db_name, audit_id = null) {
     const where = audit_id ? `WHERE id='${audit_id}'::uuid` : '';
-    const sql = `SELECT json_build_object('id', id::text, 'actor', metadata->>'actorName', 'status', status, 'samples', samples)::text FROM audits ${where} ORDER BY metadata->>'actorName'`;
+    const sql = `SELECT json_build_object('id', id::text, 'actor', metadata->>'actorName', 'status', status, 'samples', samples)::text FROM audits ${where} ORDER BY id`;
     const out = await exec_capture(
-        `docker exec ${DB_CONTAINER} psql -U ${DB_USER} -d ${db_name} -t -A -c ${JSON.stringify(sql)}`,
+        `docker exec -e PGCLIENTENCODING=UTF8 ${DB_CONTAINER} psql -U ${DB_USER} -d ${db_name} -t -A -c ${JSON.stringify(sql)}`,
         { cwd: false }
     );
     return out.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
@@ -60,7 +60,7 @@ async function fetch_audit_rows(db_name, audit_id = null) {
 
 async function update_audit_samples(audit_id, samples) {
     const samples_json = JSON.stringify(samples);
-    const sql = `UPDATE audits SET samples=${dollar_quote(samples_json, 's')}::jsonb, updated_at=NOW() WHERE id='${audit_id}'::uuid;`;
+    const sql = `SET client_encoding = 'UTF8';\nUPDATE audits SET samples=${dollar_quote(samples_json, 's')}::jsonb, updated_at=NOW() WHERE id='${audit_id}'::uuid;`;
     const local_sql = join(tmpdir(), `gv_obs_restore_${audit_id}.sql`);
     const remote_sql = `/tmp/gv_obs_restore_${audit_id}.sql`;
     const container_sql = `/tmp/gv_obs_restore_${audit_id}.sql`;

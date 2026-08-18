@@ -67,6 +67,7 @@ export class ChecklistHandlerClass {
 
     is_dom_built = false;
     last_language_code: string | null = null;
+    last_sample_id: string | null = null;
 
     /** Arrow wrappers så addEventListener anropar ChecklistHandler-instansen, inte DOM-containern. */
     readonly _on_container_pointerdown_flush = (): void => {
@@ -220,6 +221,11 @@ export class ChecklistHandlerClass {
         if (next_def_id !== prev_def_id) {
             this.is_dom_built = false;
             this._status_button_triggers = new Map();
+        }
+        const current_sample_id = typeof this.get_sample_id === 'function' ? this.get_sample_id() : null;
+        if (current_sample_id !== this.last_sample_id) {
+            this.last_sample_id = current_sample_id;
+            this.clear_observation_transient_state();
         }
         this.requirement_definition_ref = requirement_definition;
         this.requirement_result_ref = requirement_result;

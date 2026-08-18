@@ -5,7 +5,7 @@ import { jest } from '@jest/globals';
 import { ChecklistHandler } from '../../js/components/requirement_audit/ChecklistHandler.js';
 
 describe('ChecklistHandler observationstext-synk', () => {
-    test('prioriterar DOM och cache före malltext i store', () => {
+    test('hämtar sparad observationDetail för aktuellt sample', () => {
         const handler = ChecklistHandler;
         handler.requirement_result_ref = {
             checkResults: {
@@ -14,7 +14,7 @@ describe('ChecklistHandler observationstext-synk', () => {
                     passCriteria: {
                         '1.1': {
                             status: 'failed',
-                            observationDetail: 'Malltext från regelfilen'
+                            observationDetail: 'Sparad observation för detta sample'
                         }
                     }
                 }
@@ -29,27 +29,23 @@ describe('ChecklistHandler observationstext-synk', () => {
                 }]
             }]
         };
-        handler.get_pc_observation_draft = () => 'Malltext från regelfilen';
-        handler.on_observation_draft_update_callback = jest.fn();
 
         const textarea = document.createElement('textarea');
-        textarea.value = 'Min egen text';
-
-        handler._cache_observation_text('1', '1.1', 'Min egen text från cache');
+        textarea.value = 'Gammal text från föregående sample';
 
         const target = handler._resolve_observation_target_for_textarea(
             '1',
             '1.1',
-            { status: 'failed', observationDetail: 'Malltext från regelfilen' },
+            { status: 'failed', observationDetail: 'Sparad observation för detta sample' },
             'passed',
             textarea
         );
 
-        expect(target).toBe('Min egen text');
+        expect(target).toBe('Sparad observation för detta sample');
 
         const should_sync = handler._should_apply_observation_textarea_sync(
             textarea,
-            'Malltext från regelfilen',
+            target,
             true,
             'passed',
             'failed',
@@ -57,8 +53,81 @@ describe('ChecklistHandler observationstext-synk', () => {
             '1.1'
         );
 
-        expect(should_sync).toBe(false);
-        expect(textarea.value).toBe('Min egen text');
+        expect(should_sync).toBe(true);
+        handler._sync_observation_textarea_from_target(textarea, target, '1', '1.1');
+        expect(textarea.value).toBe('Sparad observation för detta sample');
+    });
+
+    test('skriver inte över sample 2 med text från sample 1 vid byte av granskningsdel', () => {
+        const handler = ChecklistHandler;
+        handler.Translation = { t: (k) => k };
+        handler.Helpers = {
+            create_element: (tag, opts = {}) => {
+                const el = document.createElement(tag);
+                if (opts.class_name) el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
+                if (opts.text_content) el.textContent = opts.text_content;
+                if (opts.attributes) {
+                    for (const [k, v] of Object.entries(opts.attributes)) el.setAttribute(k, v);
+                }
+                return el;
+            }
+        };
+        handler.last_sample_id = 'sample-1';
+        handler.get_sample_id = () => 'sample-2';
+
+        handler.requirement_result_ref = {
+            checkResults: {
+                '1': {
+                    overallStatus: 'passed',
+                    passCriteria: {
+                        '1.1': {
+                            status: 'failed',
+                            observationDetail: ''
+                        }
+                    }
+                }
+            }
+        };
+        handler.requirement_definition_ref = {
+            checks: [{
+                id: '1',
+                passCriteria: [{
+                    id: '1.1',
+                    failureStatementTemplate: 'Standardmall'
+                }]
+            }]
+        };
+
+        const textarea = document.createElement('textarea');
+        textarea.value = 'Text från sample 1';
+
+        // Vid byte till sample 2 ska transient cache rensas och målvärdet vara sample 2:s data (malltext eller tom)
+        handler.render(handler.requirement_definition_ref, handler.requirement_result_ref, false, null, null);
+
+        const target = handler._resolve_observation_target_for_textarea(
+            '1',
+            '1.1',
+            { status: 'failed', observationDetail: '' },
+            'passed',
+            textarea
+        );
+
+        expect(target).toBe('Standardmall');
+
+        const should_sync = handler._should_apply_observation_textarea_sync(
+            textarea,
+            target,
+            true,
+            'passed',
+            'failed',
+            '1',
+            '1.1'
+        );
+
+        expect(should_sync).toBe(true);
+        handler._sync_observation_textarea_from_target(textarea, target, '1', '1.1');
+        expect(textarea.value).toBe('Standardmall');
+        expect(handler.requirement_result_ref.checkResults['1'].passCriteria['1.1'].observationDetail).toBe('Standardmall');
     });
 
     test('flush vid pointerdown sparar fokuserad textarea innan blur', () => {

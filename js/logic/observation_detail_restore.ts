@@ -23,7 +23,8 @@ type SampleLike = {
     url?: unknown;
     requirementResults?: Record<string, {
         checkResults?: Record<string, {
-            passCriteria?: Record<string, { observationDetail?: unknown } | string>;
+            overallStatus?: string;
+            passCriteria?: Record<string, Record<string, unknown> | string>;
         }>;
     }> | null;
 };
@@ -105,10 +106,40 @@ function set_observation_text(
     text: string
 ): boolean {
     const sample = samples.find((s) => String(s.id) === String(sample_id));
-    const pc = sample?.requirementResults?.[req_key]?.checkResults?.[check_id]?.passCriteria?.[pc_id];
-    if (!pc || typeof pc !== 'object') return false;
-    const prev = typeof pc.observationDetail === 'string' ? pc.observationDetail.trim() : '';
-    if (prev === text.trim()) return false;
+    const req_result = sample?.requirementResults?.[req_key];
+    if (!req_result) return false;
+    if (!req_result.checkResults) req_result.checkResults = {};
+    let chk = req_result.checkResults[check_id];
+    if (!chk) {
+        req_result.checkResults[check_id] = {
+            overallStatus: 'not_audited',
+            passCriteria: {
+                [pc_id]: {
+                    status: 'not_audited',
+                    observationDetail: text,
+                    timestamp: null,
+                    attachedMediaFilenames: []
+                }
+            }
+        };
+        return true;
+    }
+    if (!chk.passCriteria || typeof chk.passCriteria !== 'object') {
+        chk.passCriteria = {};
+    }
+    let pc = chk.passCriteria[pc_id];
+    if (!pc || typeof pc !== 'object') {
+        const status = typeof pc === 'string' ? pc : 'not_audited';
+        chk.passCriteria[pc_id] = {
+            status,
+            observationDetail: text,
+            timestamp: null,
+            attachedMediaFilenames: []
+        };
+        return true;
+    }
+    const prev = typeof pc.observationDetail === 'string' ? pc.observationDetail : '';
+    if (prev === text) return false;
     pc.observationDetail = text;
     return true;
 }

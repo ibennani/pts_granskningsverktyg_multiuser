@@ -110,10 +110,6 @@ export function pick_user_observation_text(
     pc_id: string,
     observation_textarea: HTMLTextAreaElement | null = null
 ): string {
-    const dom_value = observation_textarea?.value ?? '';
-    if (String(dom_value).trim()) {
-        return dom_value;
-    }
     const cached = get_cached_observation_text(host, check_id, pc_id);
     if (typeof cached === 'string') {
         return cached;
@@ -252,13 +248,9 @@ export function resolve_observation_target_for_textarea(
     if (observation_was_hidden_with_user_text(host, check_id, pc_id)) {
         return pick_user_observation_text(host, check_id, pc_id, observation_textarea);
     }
-    const dom_value = observation_textarea?.value ?? '';
-    if (String(dom_value).trim()) {
-        return dom_value;
-    }
-    const cached = get_cached_observation_text(host, check_id, pc_id);
-    if (typeof cached === 'string' && String(cached).trim()) {
-        return cached;
+    const store_value = pc_data?.observationDetail ?? '';
+    if (String(store_value).trim()) {
+        return store_value;
     }
     const draft = typeof host.get_pc_observation_draft === 'function'
         ? host.get_pc_observation_draft(check_id, pc_id)
@@ -266,9 +258,9 @@ export function resolve_observation_target_for_textarea(
     if (typeof draft === 'string' && String(draft).trim()) {
         return draft;
     }
-    const store_value = pc_data?.observationDetail ?? '';
-    if (String(store_value).trim()) {
-        return store_value;
+    const cached = get_cached_observation_text(host, check_id, pc_id);
+    if (typeof cached === 'string' && String(cached).trim()) {
+        return cached;
     }
     if (effective_pc_status(overall_manual_status, pc_data?.status) === 'failed') {
         const template = get_pc_failure_template(host, check_id, pc_id);
@@ -293,13 +285,6 @@ export function should_apply_observation_textarea_sync(
     }
     const current = observation_textarea.value ?? '';
     const target = target_value ?? '';
-    if (String(current).trim() && current !== target) {
-        persist_observation_dom_value(host, check_id, pc_id, current);
-        return false;
-    }
-    if (String(target).trim() === '' && String(current).trim() !== '') {
-        return false;
-    }
     return current !== target;
 }
 
@@ -312,7 +297,8 @@ export function sync_observation_textarea_from_target(
 ): void {
     if (!observation_textarea || observation_textarea.value === target_value) return;
     observation_textarea.value = target_value;
-    persist_observation_dom_value(host, check_id, pc_id, target_value);
+    cache_observation_text(host, check_id, pc_id, target_value);
+    set_pc_observation_detail(host.requirement_result_ref?.checkResults ?? null, check_id, pc_id, target_value);
     if (host.Helpers?.init_auto_resize_for_textarea) {
         host.Helpers.init_auto_resize_for_textarea(observation_textarea);
     }
