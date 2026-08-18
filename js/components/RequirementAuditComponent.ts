@@ -293,8 +293,19 @@ export class RequirementAuditComponent {
         this._apply_pc_observation_drafts_to_result(this.current_result);
     }
 
-    _pc_observation_draft_key(check_id, pc_id) {
-        return `${String(check_id)}\0${String(pc_id)}`;
+    _pc_observation_draft_key(check_id, pc_id, sample_id = this.params?.sampleId) {
+        return `${String(sample_id ?? '')}\0${String(check_id)}\0${String(pc_id)}`;
+    }
+
+    _parse_pc_observation_draft_key(key) {
+        const parts = String(key || '').split('\0');
+        if (parts.length >= 3) {
+            return { sample_id: parts[0], check_id: parts[1], pc_id: parts[2] };
+        }
+        if (parts.length === 2) {
+            return { sample_id: '', check_id: parts[0], pc_id: parts[1] };
+        }
+        return { sample_id: '', check_id: '', pc_id: '' };
     }
 
     /** Uppdaterar utkast från alla synliga/dolda observations-textareas i plåten. */
@@ -308,13 +319,15 @@ export class RequirementAuditComponent {
     }
 
     _get_pc_observation_draft(check_id, pc_id) {
-        const target_key = this._pc_observation_draft_key(check_id, pc_id);
+        const current_sample_id = String(this.params?.sampleId ?? '');
+        const target_key = this._pc_observation_draft_key(check_id, pc_id, current_sample_id);
         if (this._pc_observation_drafts.has(target_key)) {
             return this._pc_observation_drafts.get(target_key);
         }
         for (const [key, text] of this._pc_observation_drafts.entries()) {
-            const [draft_check_id, draft_pc_id] = key.split('\0');
-            if (same_storage_id(draft_check_id, check_id) && same_storage_id(draft_pc_id, pc_id)) {
+            const parsed = this._parse_pc_observation_draft_key(key);
+            if (String(parsed.sample_id) !== current_sample_id) continue;
+            if (same_storage_id(parsed.check_id, check_id) && same_storage_id(parsed.pc_id, pc_id)) {
                 return text;
             }
         }
@@ -323,8 +336,10 @@ export class RequirementAuditComponent {
 
     _apply_pc_observation_drafts_to_result(result) {
         if (!result?.checkResults) return;
+        const current_sample_id = String(this.params?.sampleId ?? '');
         for (const [key, text] of this._pc_observation_drafts.entries()) {
-            const [check_id, pc_id] = key.split('\0');
+            const { sample_id, check_id, pc_id } = this._parse_pc_observation_draft_key(key);
+            if (String(sample_id) !== current_sample_id) continue;
             const chk = resolve_map_entry(result.checkResults, check_id);
             const check_result = chk?.value;
             if (!check_result?.passCriteria) continue;
@@ -442,8 +457,10 @@ export class RequirementAuditComponent {
         for (const item of memory_observations) {
             merge_observation(item.check_id, item.pc_id, item.observationDetail);
         }
+        const overlay_sample_id = String(this.params?.sampleId ?? '');
         for (const [key, text] of this._pc_observation_drafts.entries()) {
-            const [check_id, pc_id] = key.split('\0');
+            const { sample_id, check_id, pc_id } = this._parse_pc_observation_draft_key(key);
+            if (String(sample_id) !== overlay_sample_id) continue;
             merge_observation(check_id, pc_id, text);
         }
         for (const item of dom_observations) {
@@ -2049,6 +2066,7 @@ export class RequirementAuditComponent {
         if (baseline_key !== this._baseline_key) {
             this._baseline_key = baseline_key;
             this._clear_pc_observation_drafts();
+            this.checklist_handler_instance?.clear_observation_transient_state?.();
             establish_baseline_for_current_audit_focus(this.getState());
         }
 

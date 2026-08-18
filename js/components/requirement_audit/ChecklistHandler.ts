@@ -271,6 +271,13 @@ export class ChecklistHandlerClass {
         });
     }
 
+    /** Rensar observationscache mellan granskningsdelar (samma krav, nytt sample). */
+    clear_observation_transient_state(): void {
+        this._observation_dom_cache = new Map();
+        this._observation_hidden_with_text_keys = new Set();
+        this._observation_focus_snapshots = new Map();
+    }
+
     destroy(): void {
         if (this.container_ref) {
             this.flush_observations_before_destroy();
