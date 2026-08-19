@@ -4,6 +4,7 @@
 import { recalculateAuditTimes } from './audit_logic_recalc.js';
 import type { AuditStateShape } from './audit_logic_types.js';
 import { get_default_appendix1_sections_list } from './appendix1_sections_defaults.js';
+import { build_appendix1_sample_placeholder_values } from './appendix1_sample_placeholders.js';
 import type {
     Appendix1AuditSlice,
     Appendix1PlaceholderContext,
@@ -104,6 +105,7 @@ export function build_appendix1_placeholder_context(
     const end_iso = resolve_appendix1_end_iso(audit);
     const actor_link = String(meta.actorLink ?? '').trim();
     const export_iso = export_date_iso ?? new Date().toISOString();
+    const sample_values = build_appendix1_sample_placeholder_values(audit as Record<string, unknown>);
 
     return {
         caseNumber: String(meta.caseNumber ?? '').trim(),
@@ -115,6 +117,9 @@ export function build_appendix1_placeholder_context(
         startDate: format_iso_date(start_iso),
         endDate: format_iso_date(end_iso),
         exportDate: format_iso_date(export_iso),
+        auditSampleCount: sample_values.auditSampleCount,
+        auditSampleList: sample_values.auditSampleList,
+        recurringSampleList: sample_values.recurringSampleList,
     };
 }
 
@@ -128,7 +133,7 @@ export function apply_appendix1_placeholders(
     text: string,
     context: Appendix1PlaceholderContext
 ): string {
-    return text
+    let out = text
         .replaceAll('{{caseNumber}}', context.caseNumber)
         .replaceAll('{{actorName}}', context.actorName)
         .replaceAll('{{actorLink}}', context.actorLink)
@@ -138,6 +143,17 @@ export function apply_appendix1_placeholders(
         .replaceAll('{{startDate}}', context.startDate)
         .replaceAll('{{endDate}}', context.endDate)
         .replaceAll('{{exportDate}}', context.exportDate);
+
+    if (context.auditSampleCount !== undefined) {
+        out = out.replaceAll('{{auditSampleCount}}', context.auditSampleCount);
+    }
+    if (context.auditSampleList !== undefined) {
+        out = out.replaceAll('{{auditSampleList}}', context.auditSampleList);
+    }
+    if (context.recurringSampleList !== undefined) {
+        out = out.replaceAll('{{recurringSampleList}}', context.recurringSampleList);
+    }
+    return out;
 }
 
 /** @deprecated Använd section.headingLevel. */

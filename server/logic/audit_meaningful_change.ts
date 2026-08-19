@@ -11,7 +11,14 @@ import { type AuditPatchBodySlice } from '../schemas/audit_patch.js';
 
 export type { AuditPatchBodySlice, AuditRowMeaningfulSource };
 
-const AUDIT_EDIT_LOG_KEY = 'audit_edit_log';
+const NON_MEANINGFUL_METADATA_KEYS = new Set([
+    'audit_edit_log',
+    'userLastRequirementResumeByUser',
+    'lastInProgressActivityAt',
+    'last_server_sync_at',
+    'last_local_change_at',
+    'skip_render'
+]);
 
 function parse_json_if_string<T>(value: unknown): T | null {
     if (value === null || value === undefined) {
@@ -33,7 +40,9 @@ function normalize_metadata_for_compare(metadata: unknown): Record<string, unkno
         parsed && typeof parsed === 'object' && !Array.isArray(parsed)
             ? { ...parsed }
             : {};
-    delete base[AUDIT_EDIT_LOG_KEY];
+    for (const key of NON_MEANINGFUL_METADATA_KEYS) {
+        delete base[key];
+    }
     return base;
 }
 

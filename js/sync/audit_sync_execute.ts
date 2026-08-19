@@ -237,10 +237,6 @@ async function sync_metadata_only_patch(
     if (!state.auditId) return false;
     try {
         const patch = state_to_metadata_patch(state);
-        patch.metadata = append_audit_edit_log_to_patch_metadata(
-            (patch.metadata || {}) as Record<string, unknown>,
-            state
-        );
         const full_state = (await update_audit(state.auditId, patch)) as Record<string, unknown>;
         apply_successful_sync_response(state, full_state, dispatch_fn);
         krav_vy_sync_slut(krav_vy_sync, {

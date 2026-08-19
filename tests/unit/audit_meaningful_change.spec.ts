@@ -35,6 +35,22 @@ describe('audit_meaningful_change', () => {
         expect(has_meaningful_audit_patch_change(base_row, patch)).toBe(false);
     });
 
+    test('endast läsposition (userLastRequirementResumeByUser) och synktidsstämplar ändrade → ingen meningsfull ändring', () => {
+        const patch = {
+            metadata: {
+                ...((base_row.metadata as Record<string, unknown>) || {}),
+                userLastRequirementResumeByUser: {
+                    user1: { sampleId: 's1', requirementId: 'r1', updatedAt: '2026-08-19T21:00:00.000Z' }
+                },
+                lastInProgressActivityAt: '2026-08-19T21:00:00.000Z',
+                last_server_sync_at: '2026-08-19T21:00:00.000Z',
+                last_local_change_at: '2026-08-19T21:00:00.000Z',
+                skip_render: true
+            }
+        };
+        expect(has_meaningful_audit_patch_change(base_row, patch)).toBe(false);
+    });
+
     test('samples ändrade → meningsfull ändring', () => {
         const patch = {
             samples: [{ id: 's1', requirementResults: { r1: { status: 'pass' } } }]

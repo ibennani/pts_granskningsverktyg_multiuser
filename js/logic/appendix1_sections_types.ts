@@ -79,6 +79,9 @@ export type Appendix1PlaceholderContext = {
     startDate: string;
     endDate: string;
     exportDate: string;
+    auditSampleCount?: string;
+    auditSampleList?: string;
+    recurringSampleList?: string;
 };
 
 export type Appendix1TocEntry = {

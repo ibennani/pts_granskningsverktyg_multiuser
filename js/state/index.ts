@@ -242,6 +242,8 @@ function execute_single_dispatch(
                             } else {
                                 note_metadata_only_changed();
                             }
+                        } else if (action.type === ActionTypes.UPDATE_USER_REQUIREMENT_RESUME) {
+                            note_metadata_only_changed();
                         } else {
                             note_audit_full_sync_required();
                         }

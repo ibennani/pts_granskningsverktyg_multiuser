@@ -74,10 +74,6 @@ function send_single_requirement_keepalive(
 function send_metadata_keepalive(state: SyncPayloadState): boolean {
     if (!state.auditId) return false;
     const patch = state_to_metadata_patch(state);
-    patch.metadata = append_audit_edit_log_to_patch_metadata(
-        (patch.metadata || {}) as Record<string, unknown>,
-        state
-    );
     return send_keepalive_patch(`/audits/${state.auditId}`, patch as unknown as Record<string, unknown>);
 }
 

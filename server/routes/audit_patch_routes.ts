@@ -82,10 +82,6 @@ export function register_audit_patch_routes(router: IRouter): void {
                 values.push(JSON.stringify(lastRulefileUpdateLog));
             }
             updates.push(`version = version + 1`);
-            if (last_updated_by !== null) {
-                updates.push(`last_updated_by = $${i++}`);
-                values.push(last_updated_by);
-            }
 
             const existing_result = await query(
                 `SELECT metadata, status, samples, rule_file_content, archived_requirement_results,
@@ -131,6 +127,10 @@ export function register_audit_patch_routes(router: IRouter): void {
                 lastRulefileUpdateLog
             });
             updates.push(bump_updated_at ? 'updated_at = CURRENT_TIMESTAMP' : 'updated_at = updated_at');
+            if (bump_updated_at && last_updated_by !== null) {
+                updates.push(`last_updated_by = $${i++}`);
+                values.push(last_updated_by);
+            }
 
             const id_placeholder = i;
             const version_placeholder = i + 1;
