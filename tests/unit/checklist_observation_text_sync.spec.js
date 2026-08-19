@@ -101,7 +101,7 @@ describe('ChecklistHandler observationstext-synk', () => {
         const textarea = document.createElement('textarea');
         textarea.value = 'Text från sample 1';
 
-        // Vid byte till sample 2 ska transient cache rensas och målvärdet vara sample 2:s data (malltext eller tom)
+        // Vid byte till sample 2 ska transient cache rensas och målvärdet vara sample 2:s sparade data (tom sträng, inte sample 1:s text eller auto-muterad mall)
         handler.render(handler.requirement_definition_ref, handler.requirement_result_ref, false, null, null);
 
         const target = handler._resolve_observation_target_for_textarea(
@@ -112,7 +112,7 @@ describe('ChecklistHandler observationstext-synk', () => {
             textarea
         );
 
-        expect(target).toBe('Standardmall');
+        expect(target).toBe('');
 
         const should_sync = handler._should_apply_observation_textarea_sync(
             textarea,
@@ -126,8 +126,58 @@ describe('ChecklistHandler observationstext-synk', () => {
 
         expect(should_sync).toBe(true);
         handler._sync_observation_textarea_from_target(textarea, target, '1', '1.1');
-        expect(textarea.value).toBe('Standardmall');
-        expect(handler.requirement_result_ref.checkResults['1'].passCriteria['1.1'].observationDetail).toBe('Standardmall');
+        expect(textarea.value).toBe('');
+        expect(handler.requirement_result_ref.checkResults['1'].passCriteria['1.1'].observationDetail).toBe('');
+    });
+
+    test('behåller befintlig observationstext för sample 2 vid byte av granskningsdel', () => {
+        const handler = ChecklistHandler;
+        handler.Translation = { t: (k) => k };
+        handler.Helpers = {
+            create_element: (tag, opts = {}) => {
+                const el = document.createElement(tag);
+                if (opts.class_name) el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
+                if (opts.text_content) el.textContent = opts.text_content;
+                if (opts.attributes) {
+                    for (const [k, v] of Object.entries(opts.attributes)) el.setAttribute(k, v);
+                }
+                return el;
+            }
+        };
+        handler.last_sample_id = 'sample-1';
+        handler.get_sample_id = () => 'sample-2';
+
+        handler.requirement_result_ref = {
+            checkResults: {
+                '1': {
+                    overallStatus: 'passed',
+                    passCriteria: {
+                        '1.1': {
+                            status: 'failed',
+                            observationDetail: 'Befintlig observation sample 2'
+                        }
+                    }
+                }
+            }
+        };
+
+        const textarea = document.createElement('textarea');
+        textarea.value = 'Text från sample 1';
+
+        handler.render(handler.requirement_definition_ref, handler.requirement_result_ref, false, null, null);
+
+        const target = handler._resolve_observation_target_for_textarea(
+            '1',
+            '1.1',
+            { status: 'failed', observationDetail: 'Befintlig observation sample 2' },
+            'passed',
+            textarea
+        );
+
+        expect(target).toBe('Befintlig observation sample 2');
+        handler._sync_observation_textarea_from_target(textarea, target, '1', '1.1');
+        expect(textarea.value).toBe('Befintlig observation sample 2');
+        expect(handler.requirement_result_ref.checkResults['1'].passCriteria['1.1'].observationDetail).toBe('Befintlig observation sample 2');
     });
 
     test('flush vid pointerdown sparar fokuserad textarea innan blur', () => {

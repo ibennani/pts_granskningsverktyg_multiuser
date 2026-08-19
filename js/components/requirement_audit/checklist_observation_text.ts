@@ -262,11 +262,7 @@ export function resolve_observation_target_for_textarea(
     if (typeof cached === 'string' && String(cached).trim()) {
         return cached;
     }
-    if (effective_pc_status(overall_manual_status, pc_data?.status) === 'failed') {
-        const template = get_pc_failure_template(host, check_id, pc_id);
-        if (template) return template;
-    }
-    return '';
+    return typeof store_value === 'string' ? store_value : '';
 }
 
 export function should_apply_observation_textarea_sync(

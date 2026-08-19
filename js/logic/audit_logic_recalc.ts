@@ -155,22 +155,97 @@ export function get_last_activity_timestamp(audit_state: AuditStateShape | null 
     return maxTime;
 }
 
+function normalize_pass_criterion_for_compare(pc: unknown): Record<string, unknown> | null {
+    if (pc === null || pc === undefined) return null;
+    const status = (typeof pc === 'string' ? pc : (typeof pc === 'object' && pc !== null && 'status' in pc ? (pc as { status?: string }).status : 'not_audited')) || 'not_audited';
+    const obs = typeof pc === 'object' && pc !== null && 'observationDetail' in pc && typeof (pc as { observationDetail?: unknown }).observationDetail === 'string'
+        ? (pc as { observationDetail: string }).observationDetail.trim()
+        : '';
+    const ts = typeof pc === 'object' && pc !== null && 'timestamp' in pc && typeof (pc as { timestamp?: unknown }).timestamp === 'string'
+        ? (pc as { timestamp: string }).timestamp
+        : null;
+    const by = typeof pc === 'object' && pc !== null && 'updatedBy' in pc && typeof (pc as { updatedBy?: unknown }).updatedBy === 'string'
+        ? (pc as { updatedBy: string }).updatedBy
+        : null;
+    const media = typeof pc === 'object' && pc !== null && 'attachedMediaFilenames' in pc && Array.isArray((pc as { attachedMediaFilenames?: unknown[] }).attachedMediaFilenames)
+        ? (pc as { attachedMediaFilenames: unknown[] }).attachedMediaFilenames.filter(f => typeof f === 'string' && f.trim()).map(f => (f as string).trim()).sort()
+        : [];
+
+    if (status === 'not_audited' && !obs && !ts && !by && media.length === 0) {
+        return null;
+    }
+
+    const norm: Record<string, unknown> = { status };
+    if (obs) norm.observationDetail = obs;
+    if (ts) norm.timestamp = ts;
+    if (by) norm.updatedBy = by;
+    if (media.length > 0) norm.attachedMediaFilenames = media;
+    return norm;
+}
+
+function normalize_check_result_for_compare(check: unknown): Record<string, unknown> | null {
+    if (check === null || check === undefined || typeof check !== 'object') return null;
+    const c = check as Record<string, unknown>;
+    const overall = (typeof c.overallStatus === 'string' ? c.overallStatus : 'not_audited') || 'not_audited';
+    const status = (typeof c.status === 'string' ? c.status : 'not_audited') || 'not_audited';
+    const ts = typeof c.timestamp === 'string' ? c.timestamp : null;
+    const by = typeof c.updatedBy === 'string' ? c.updatedBy : null;
+
+    const pcs: Record<string, unknown> = {};
+    if (c.passCriteria && typeof c.passCriteria === 'object') {
+        const sortedKeys = Object.keys(c.passCriteria).sort();
+        for (const k of sortedKeys) {
+            const pcnorm = normalize_pass_criterion_for_compare((c.passCriteria as Record<string, unknown>)[k]);
+            if (pcnorm) {
+                pcs[k] = pcnorm;
+            }
+        }
+    }
+
+    if (overall === 'not_audited' && status === 'not_audited' && !ts && !by && Object.keys(pcs).length === 0) {
+        return null;
+    }
+
+    const norm: Record<string, unknown> = { overallStatus: overall, status };
+    if (ts) norm.timestamp = ts;
+    if (by) norm.updatedBy = by;
+    if (Object.keys(pcs).length > 0) norm.passCriteria = pcs;
+    return norm;
+}
+
+function normalize_requirement_result_for_compare(req: unknown): Record<string, unknown> {
+    if (req === null || req === undefined || typeof req !== 'object') return { status: 'not_audited' };
+    const r = req as Record<string, unknown>;
+    const status = (typeof r.status === 'string' ? r.status : 'not_audited') || 'not_audited';
+    const commentAuditor = typeof r.commentToAuditor === 'string' ? r.commentToAuditor.trim() : '';
+    const commentActor = typeof r.commentToActor === 'string' ? r.commentToActor.trim() : '';
+    const stuck = typeof r.stuckProblemDescription === 'string' ? r.stuckProblemDescription.trim() : '';
+
+    const checks: Record<string, unknown> = {};
+    if (r.checkResults && typeof r.checkResults === 'object') {
+        const sortedKeys = Object.keys(r.checkResults).sort();
+        for (const k of sortedKeys) {
+            const cnorm = normalize_check_result_for_compare((r.checkResults as Record<string, unknown>)[k]);
+            if (cnorm) {
+                checks[k] = cnorm;
+            }
+        }
+    }
+
+    const norm: Record<string, unknown> = { status };
+    if (commentAuditor) norm.commentToAuditor = commentAuditor;
+    if (commentActor) norm.commentToActor = commentActor;
+    if (stuck) norm.stuckProblemDescription = stuck;
+    if (Object.keys(checks).length > 0) norm.checkResults = checks;
+    return norm;
+}
+
 export function requirement_results_equal_for_last_updated(a: unknown, b: unknown): boolean {
     if (a === b) return true;
-    if (!a || !b) return false;
-    let ca: Record<string, unknown>;
-    let cb: Record<string, unknown>;
-    try {
-        ca = JSON.parse(JSON.stringify(a)) as Record<string, unknown>;
-        cb = JSON.parse(JSON.stringify(b)) as Record<string, unknown>;
-    } catch {
-        return false;
-    }
-    delete ca.lastStatusUpdate;
-    delete ca.lastStatusUpdateBy;
-    delete cb.lastStatusUpdate;
-    delete cb.lastStatusUpdateBy;
-    return JSON.stringify(ca) === JSON.stringify(cb);
+    if (!a && !b) return true;
+    const na = normalize_requirement_result_for_compare(a);
+    const nb = normalize_requirement_result_for_compare(b);
+    return JSON.stringify(na) === JSON.stringify(nb);
 }
 
 export function compute_audit_last_updated_live_timestamp(audit_state: AuditStateShape | null | undefined): string | null {

@@ -635,7 +635,7 @@ export class RequirementAuditComponent {
             should_trim: false,
             skip_last_status_bump: false,
             sync_persist: true,
-            force_persist: true
+            force_persist: false
         });
     }
 
