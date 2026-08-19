@@ -54,13 +54,7 @@ function fix_samples_deficiency_ids(samples) {
 }
 
 async function fetch_audits_with_samples() {
-    const sql = `SELECT json_build_object(
-        'id', id::text,
-        'status', status,
-        'version', version,
-        'metadata', metadata,
-        'samples', samples
-    )::text FROM audits ORDER BY metadata->>'actorName', metadata->>'caseNumber'`;
+    const sql = `SELECT json_build_object('id', id::text, 'status', status, 'version', version, 'metadata', metadata, 'samples', samples)::text FROM audits ORDER BY metadata->>'actorName', metadata->>'caseNumber'`;
     const out = await exec_capture(
         `docker exec -e PGCLIENTENCODING=UTF8 ${DB_CONTAINER} psql -U ${DB_USER} -d ${DB_NAME} -t -A -c ${JSON.stringify(sql)}`,
         { cwd: false }
