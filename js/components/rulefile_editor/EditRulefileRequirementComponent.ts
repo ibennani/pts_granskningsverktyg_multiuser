@@ -19,6 +19,7 @@ import {
 } from '../../logic/rulefile_lock_service.js';
 import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js';
 import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
+import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
 import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import { find_requirement_definition } from '../../audit_logic.js';
 import './requirement_audit_component.css';
@@ -402,7 +403,7 @@ export class EditRulefileRequirementComponent {
         });
     }
 
-    handle_form_submit(event) {
+    async handle_form_submit(event) {
         event.preventDefault();
         this._update_local_data_from_form(true);
 
@@ -416,10 +417,11 @@ export class EditRulefileRequirementComponent {
         }
         
         const is_new_requirement = this.params.id === 'new';
-        
+        let new_key = null;
+
         if (is_new_requirement) {
             const new_id = this.Helpers.generate_uuid_v4();
-            const new_key = (this.local_requirement_data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 50) || 'req') + '-' + new_id.substring(0, 8);
+            new_key = (this.local_requirement_data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 50) || 'req') + '-' + new_id.substring(0, 8);
             
             this.local_requirement_data.id = new_id;
             this.local_requirement_data.key = new_key;
@@ -431,12 +433,6 @@ export class EditRulefileRequirementComponent {
                     newRequirementData: this.local_requirement_data
                 }
             });
-            if (window.DraftManager?.commitCurrentDraft) {
-                window.DraftManager.commitCurrentDraft();
-            }
-            
-            this.NotificationComponent.show_global_message(t('requirement_added_successfully', { reqTitle: this.local_requirement_data.title }), 'success');
-            this.router('rulefile_view_requirement', { id: new_key });
         } else {
             this.dispatch({
                 type: this.StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
@@ -446,10 +442,23 @@ export class EditRulefileRequirementComponent {
                     skip_render: true
                 }
             });
-            if (window.DraftManager?.commitCurrentDraft) {
-                window.DraftManager.commitCurrentDraft();
-            }
-            
+        }
+
+        this.skip_autosave_on_destroy = true;
+        try {
+            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch, { bump_version: true });
+        } catch {
+            // Fel visas av sync-tjänsten
+        }
+
+        if (window.DraftManager?.commitCurrentDraft) {
+            window.DraftManager.commitCurrentDraft();
+        }
+
+        if (is_new_requirement) {
+            this.NotificationComponent.show_global_message(t('requirement_added_successfully', { reqTitle: this.local_requirement_data.title }), 'success');
+            this.router('rulefile_view_requirement', { id: new_key });
+        } else {
             this.NotificationComponent.show_global_message(t('rulefile_requirement_saved'), 'success');
             this.router('rulefile_view_requirement', { id: this.params.id });
         }

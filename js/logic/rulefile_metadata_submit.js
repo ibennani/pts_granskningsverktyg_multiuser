@@ -376,7 +376,7 @@ export async function handle_submit(deps) {
         payload: { ruleFileContent: updatedRulefileContent }
     });
 
-    await flush_rulefile_editing_sync_if_active(getState, dispatch);
+    await flush_rulefile_editing_sync_if_active(getState, dispatch, { bump_version: true });
 
     NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
     router('edit_rulefile_main');

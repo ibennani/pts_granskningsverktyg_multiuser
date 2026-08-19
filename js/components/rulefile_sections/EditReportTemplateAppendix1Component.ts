@@ -102,7 +102,9 @@ export class EditReportTemplateAppendix1Component {
         );
 
         try {
-            await flush_rulefile_editing_sync_if_active(deps.getState, deps.dispatch);
+            await flush_rulefile_editing_sync_if_active(deps.getState, deps.dispatch, {
+                bump_version: true
+            });
         } catch {
             // Fel visas av sync
         }

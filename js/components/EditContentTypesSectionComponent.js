@@ -265,7 +265,8 @@ export const EditContentTypesSectionComponent = {
 
     async _save_and_return_to_overview() {
         this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
-        await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
+        this.skip_autosave_on_destroy = true;
+        await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch, { bump_version: true });
         this.NotificationComponent.show_global_message?.(
             this.Translation.t('rulefile_metadata_edit_saved'),
             'success'
@@ -436,8 +437,8 @@ export const EditContentTypesSectionComponent = {
     destroy() {
         if (!this.skip_autosave_on_destroy && this.working_metadata && this.edit_mode !== 'overview') {
             this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
+            void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         }
-        void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy();
         this.autosave_session = null;
 

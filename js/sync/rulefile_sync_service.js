@@ -14,8 +14,13 @@ import { prepare_rulefile_content_for_persist } from '../logic/prepare_rulefile_
 let rulefile_debounce_timer = null;
 const RULEFILE_DEBOUNCE_MS = 500;
 
-async function run_sync_rulefile(state, dispatch_fn) {
+/**
+ * @param {{ bump_version?: boolean }} [options]
+ */
+async function run_sync_rulefile(state, dispatch_fn, options = {}) {
     if (!state?.ruleSetId || !state?.ruleFileContent || typeof window === 'undefined') return;
+
+    const bump_metadata_version = options.bump_version === true;
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
         mark_rulefile_sync_pending();
@@ -64,12 +69,15 @@ async function run_sync_rulefile(state, dispatch_fn) {
 
         const today = new Date();
         const content_to_send = prepare_rulefile_content_for_persist(state.ruleFileContent, {
-            bump_version: true,
+            bump_version: false,
             reference_date: today
         });
         if (!content_to_send) return;
 
-        const updated = await update_rule(state.ruleSetId, { content: content_to_send });
+        const updated = await update_rule(state.ruleSetId, {
+            content: content_to_send,
+            bump_metadata_version
+        });
         if (updated?.content && typeof dispatch_fn === 'function') {
             let content = updated.content;
             if (typeof content === 'string') {
@@ -126,7 +134,7 @@ async function run_sync_rulefile(state, dispatch_fn) {
 /**
  * Schemalägg debounced sparande av regelfilinnehåll till servern.
  * Anropas vid UPDATE_RULEFILE_CONTENT när användaren redigerar regelfil (metadata, krav, etc.).
- * Serverns updated_at och metadata.dateModified blir då "senast ändrad (något redigerbart)".
+ * Utkast sparas utan att metadata.version ökas.
  * @param {function} get_state_fn - Funktion som returnerar aktuell state (anropas när timern går).
  * @param {function} [dispatch_fn] - Om angiven anropas efter lyckad sync med serverns svar så att state får uppdaterad dateModified.
  */
@@ -138,7 +146,7 @@ export function schedule_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
         rulefile_debounce_timer = null;
         const state = get_state_fn();
         if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
-            await run_sync_rulefile(state, dispatch_fn);
+            await run_sync_rulefile(state, dispatch_fn, { bump_version: false });
         }
     }, RULEFILE_DEBOUNCE_MS);
 }
@@ -147,28 +155,29 @@ export function schedule_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
  * Sparar regelfilinnehåll till servern omedelbart (t.ex. vid navigering bort från redigeringsvyn).
  * @param {function} get_state_fn - Funktion som returnerar aktuell state.
  * @param {function} [dispatch_fn] - Om angiven anropas efter lyckad sync med serverns svar så att state får uppdaterad dateModified.
+ * @param {{ bump_version?: boolean }} [options] - bump_version true vid explicit Spara.
  */
-export async function flush_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
+export async function flush_sync_rulefile_to_server(get_state_fn, dispatch_fn, options = {}) {
     if (rulefile_debounce_timer) {
         clearTimeout(rulefile_debounce_timer);
         rulefile_debounce_timer = null;
     }
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
     if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
-        await run_sync_rulefile(state, dispatch_fn);
+        await run_sync_rulefile(state, dispatch_fn, options);
     }
 }
 
 /**
- * Sparar arbetskopia till servern direkt så metadata.version uppdateras i listan.
+ * Sparar arbetskopia till servern direkt.
  * @param {function} get_state_fn
  * @param {function} [dispatch_fn]
+ * @param {{ bump_version?: boolean }} [options]
  */
-export async function flush_rulefile_editing_sync_if_active(get_state_fn, dispatch_fn) {
+export async function flush_rulefile_editing_sync_if_active(get_state_fn, dispatch_fn, options = {}) {
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
     if (state?.auditStatus !== 'rulefile_editing' || !state?.ruleSetId || !state?.ruleFileContent) {
         return;
     }
-    await flush_sync_rulefile_to_server(get_state_fn, dispatch_fn);
+    await flush_sync_rulefile_to_server(get_state_fn, dispatch_fn, options);
 }
-

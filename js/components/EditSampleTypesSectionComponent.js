@@ -182,7 +182,8 @@ export const EditSampleTypesSectionComponent = {
         });
         save_button.addEventListener('click', async () => {
             this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
-            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
+            this.skip_autosave_on_destroy = true;
+            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch, { bump_version: true });
             if (window.DraftManager?.commitCurrentDraft) {
                 window.DraftManager.commitCurrentDraft();
             }
@@ -236,8 +237,8 @@ export const EditSampleTypesSectionComponent = {
     destroy() {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
             this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
+            void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         }
-        void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy?.();
         this.autosave_session = null;
 

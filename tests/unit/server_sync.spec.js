@@ -281,15 +281,30 @@ describe('server_sync', () => {
         expect(update_rule).toHaveBeenCalledWith(
             'rs',
             expect.objectContaining({
+                bump_metadata_version: false,
                 content: expect.objectContaining({
                     metadata: expect.objectContaining({
-                        version: expect.stringMatching(/^\d{4}\.\d{1,2}\.r\d+$/),
                         dateModified: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
                     })
                 })
             })
         );
         expect(clear_rulefile_sync_pending).toHaveBeenCalled();
+    });
+
+    test('flush_sync_rulefile_to_server skickar bump_metadata_version vid explicit sparning', async () => {
+        update_rule.mockClear();
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditStatus: 'rulefile_editing',
+            ruleSetId: 'rs-bump',
+            ruleFileIsPublished: false
+        });
+        await flush_sync_rulefile_to_server(() => state, dispatch, { bump_version: true });
+        expect(update_rule).toHaveBeenCalledWith(
+            'rs-bump',
+            expect.objectContaining({ bump_metadata_version: true })
+        );
     });
 
     test('flush_sync_rulefile_to_server synkar även när ruleFileIsPublished är true', async () => {

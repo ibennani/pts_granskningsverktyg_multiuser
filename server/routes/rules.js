@@ -358,7 +358,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, content } = req.body;
+        const { name, content, bump_metadata_version } = req.body;
         const updates = [];
         const values = [];
         let i = 1;
@@ -376,7 +376,7 @@ router.put('/:id', async (req, res) => {
                 ? prepare_rulefile_content_for_server_put(
                     existing_content?.metadata?.version,
                     content,
-                    { reference_date: now }
+                    { reference_date: now, bump_version: bump_metadata_version === true }
                 )
                 : content;
             if (content !== null && typeof content === 'object' && !content_with_metadata) {
@@ -436,30 +436,20 @@ router.patch('/:id/content-part', async (req, res) => {
             return res.status(409).json({ error: 'Versionskonflikt', version: current.rows[0].version });
         }
 
-        const content_obj = normalize_rulefile_content_object(select_result.rows[0].content);
         const now = new Date();
-        const next_metadata_version = compute_next_rulefile_metadata_version(
-            content_obj?.metadata?.version,
-            now
-        );
         const date_modified = format_rulefile_date_modified(now);
 
         const patch_result = await query(
             `UPDATE rule_sets
              SET content = jsonb_set(
                  jsonb_set(
-                     jsonb_set(
-                         content,
-                         $2::text[],
-                         to_jsonb($3::text),
-                         true
-                     ),
-                     '{metadata,version}'::text[],
-                     to_jsonb($5::text),
+                     content,
+                     $2::text[],
+                     to_jsonb($3::text),
                      true
                  ),
                  '{metadata,dateModified}'::text[],
-                 to_jsonb($6::text),
+                 to_jsonb($5::text),
                  true
              ),
                  content_updated_at = CURRENT_TIMESTAMP,
@@ -468,7 +458,7 @@ router.patch('/:id/content-part', async (req, res) => {
              WHERE id = $1
                AND version = $4
              RETURNING *`,
-            [id, json_path, value, base_version, next_metadata_version, date_modified]
+            [id, json_path, value, base_version, date_modified]
         );
 
         if (patch_result.rows.length === 0) {

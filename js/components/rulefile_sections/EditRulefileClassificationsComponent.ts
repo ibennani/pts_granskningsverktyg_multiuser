@@ -511,7 +511,9 @@ export class EditRulefileClassificationsComponent {
 
         try {
 
-            await flush_rulefile_editing_sync_if_active(this.deps.getState, this.deps.dispatch);
+            await flush_rulefile_editing_sync_if_active(this.deps.getState, this.deps.dispatch, {
+                bump_version: true
+            });
 
         } catch {
 
