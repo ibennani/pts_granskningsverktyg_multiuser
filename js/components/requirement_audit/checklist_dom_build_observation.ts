@@ -40,7 +40,9 @@ export function append_pc_observation_section(
         class_name: 'form-control pc-observation-detail-textarea',
         attributes: { rows: '4' }
     }) as HTMLTextAreaElement;
-    const initial_observation = pc_data_init.observationDetail || host._pick_user_observation_text(check_id, pc_id);
+    const initial_observation = typeof pc_data_init.observationDetail === 'string'
+        ? pc_data_init.observationDetail
+        : host._pick_user_observation_text(check_id, pc_id);
     if (initial_observation) {
         observation_textarea.value = initial_observation;
     }

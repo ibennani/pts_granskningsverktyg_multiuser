@@ -225,6 +225,8 @@ export class ChecklistHandlerClass {
         const current_sample_id = typeof this.get_sample_id === 'function' ? this.get_sample_id() : null;
         if (current_sample_id !== this.last_sample_id) {
             this.last_sample_id = current_sample_id;
+            this.is_dom_built = false;
+            this._status_button_triggers = new Map();
             this.clear_observation_transient_state();
         }
         this.requirement_definition_ref = requirement_definition;
@@ -301,6 +303,8 @@ export class ChecklistHandlerClass {
         this._status_button_triggers = new Map();
         this._status_change_flights = new Set();
         this.is_dom_built = false;
+        this.last_sample_id = null;
+        this.last_language_code = null;
         this.get_dom_focus_sync_root = null;
         this.get_is_audit_archived = null;
         this.get_is_audit_frozen = null;

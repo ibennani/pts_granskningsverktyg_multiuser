@@ -31,7 +31,6 @@ export {
 export function build_initial_dom(host: ChecklistDomBuildHost & { _audit_frozen_for_ui(): boolean }): void {
     const t = host.Translation.t;
     const details = host.requirement_update_details;
-    host._flush_all_observation_textareas_to_memory();
     if (!host.container_ref) return;
     host.container_ref.innerHTML = '';
 
