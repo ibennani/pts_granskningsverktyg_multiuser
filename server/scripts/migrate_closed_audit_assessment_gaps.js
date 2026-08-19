@@ -8,6 +8,8 @@
  *   npx tsx server/scripts/migrate_closed_audit_assessment_gaps.js --apply
  */
 import 'dotenv/config';
+import { register_translation_module } from '../../js/utils/translation_access.js';
+import * as TranslationLogic from '../../js/translation_logic.js';
 import { query } from '../db.js';
 import { build_full_state } from '../routes/audit_build_state.js';
 import {
@@ -16,6 +18,8 @@ import {
     count_incomplete_assessments_in_audit
 } from '../../js/logic/closed_audit_assessment_gap_fill.js';
 import { compute_audit_progress_percent } from '../../js/logic/audit_list_progress.js';
+
+register_translation_module(TranslationLogic);
 
 const MIGRATION_ACTOR = 'migration:closed_audit_gap_fill';
 

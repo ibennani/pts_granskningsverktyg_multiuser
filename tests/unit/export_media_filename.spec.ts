@@ -94,4 +94,18 @@ describe('export_media_filename', () => {
             })
         ).toBe('0000_2_WEBB_1_2026-04-11_26-11111.png');
     });
+
+    test('korrupt legacy-brist-id ger korrekt exportfilnamn', () => {
+        expect(
+            build_requirement_media_export_filename({
+                deficiency_id: '**deficiency_prefix**07',
+                image_index: 1,
+                audit_type_label: 'WEBB',
+                granskning_sequence: 1,
+                capture_date: '2026-08-18',
+                case_number: '25-20462',
+                original_filename: 'skarm.png'
+            })
+        ).toBe('07_1_WEBB_1_2026-08-18_25-20462.png');
+    });
 });

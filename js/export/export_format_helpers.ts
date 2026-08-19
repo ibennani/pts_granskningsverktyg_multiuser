@@ -8,6 +8,9 @@ import {
     resolve_taxonomy_concepts,
 } from '../../shared/classification/taxonomy_grouping.js';
 import {
+    extract_deficiency_number,
+} from '../logic/deficiency_id_format.js';
+import {
     get_export_concept_ids_for_requirement,
     get_export_grouping_taxonomy_id,
 } from './export_taxonomy_mapping.js';
@@ -147,14 +150,11 @@ export function get_audit_last_updated_iso_for_export(audit: unknown): string | 
     return typeof updated_at === 'string' && updated_at.trim() ? updated_at : null;
 }
 
-export function extractDeficiencyNumber(deficiencyId: unknown): string {
-    if (!deficiencyId) return '';
-    return String(deficiencyId).replace(/^B/, '');
-}
+export { extract_deficiency_number as extractDeficiencyNumber };
 
 export function formatDeficiencyForWord(deficiencyId: unknown): string {
     if (!deficiencyId) return '';
-    const number = extractDeficiencyNumber(deficiencyId);
+    const number = extract_deficiency_number(deficiencyId);
     return `Brist\u00A0${number}`;
 }
 

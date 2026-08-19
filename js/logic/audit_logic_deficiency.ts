@@ -20,7 +20,7 @@ import {
     find_pass_criterion_def_by_storage_id,
     same_storage_id
 } from './entity_id_match.js';
-import { get_audit_translation_t } from './audit_logic_i18n.js';
+import { build_deficiency_id } from './deficiency_id_format.js';
 
 type FailedCriterionRow = {
     sampleDescription?: string;
@@ -30,16 +30,7 @@ type FailedCriterionRow = {
 };
 
 export function formatDeficiencyId(number: number, totalCount: number): string {
-    const t = get_audit_translation_t();
-
-    let padding = 1;
-    if (totalCount >= 100) {
-        padding = 3;
-    } else if (totalCount >= 10) {
-        padding = 2;
-    }
-
-    return `${t('deficiency_prefix', { defaultValue: 'B' })}${String(number).padStart(padding, '0')}`;
+    return build_deficiency_id(number, totalCount);
 }
 
 export function removeAllDeficiencyIds(auditState: AuditStateShape): AuditStateShape {

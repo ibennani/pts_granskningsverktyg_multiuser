@@ -27,7 +27,12 @@ export function get_translation_t() {
     if (translation_module_ref && typeof translation_module_ref.t === 'function') {
         return translation_module_ref.t.bind(translation_module_ref);
     }
-    return (key) => `**${key}**`;
+    return (key, opts = {}) => {
+        if (opts && opts.defaultValue !== undefined) {
+            return String(opts.defaultValue);
+        }
+        return `**${key}**`;
+    };
 }
 
 /**

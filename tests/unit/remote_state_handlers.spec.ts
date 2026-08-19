@@ -181,6 +181,56 @@ describe('reduce_replace_state_from_remote', () => {
         });
         expect(next.samples[0].requirementResults.R1.stuckProblemDescription).toBe('Nyare server');
     });
+
+    test('rättar korrupta brist-id vid fjärrersättning av låst granskning', () => {
+        const current = {
+            auditStatus: 'locked',
+            ruleFileContent: {
+                requirements: {
+                    R1: {
+                        key: 'R1',
+                        title: 'Krav 1',
+                        checks: [
+                            {
+                                id: 'c1',
+                                passCriteria: [{ id: 'pc1', requirement: 'Kravtext' }]
+                            }
+                        ]
+                    }
+                }
+            },
+            samples: []
+        };
+        const next = reduce_replace_state_from_remote(current, {
+            payload: {
+                auditStatus: 'locked',
+                ruleFileContent: current.ruleFileContent,
+                samples: [
+                    {
+                        id: 's1',
+                        requirementResults: {
+                            R1: {
+                                status: 'failed',
+                                checkResults: {
+                                    c1: {
+                                        overallStatus: 'passed',
+                                        passCriteria: {
+                                            pc1: {
+                                                status: 'failed',
+                                                deficiencyId: '**deficiency_prefix**07'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        });
+        const fixed_id = next.samples[0].requirementResults.R1.checkResults.c1.passCriteria.pc1.deficiencyId;
+        expect(fixed_id).toBe('B1');
+    });
 });
 
 describe('reduce_set_remote_audit_id', () => {

@@ -228,6 +228,7 @@ export function reduce_replace_state_from_remote (current_state: any, action: an
         if (frozen) {
             merged_remote = { ...merged_remote, auditLastUpdatedAtFrozen: frozen };
         }
+        merged_remote = AuditLogic.recalculateStatusesOnLoad(merged_remote) ?? merged_remote;
     }
     return merged_remote;
 }

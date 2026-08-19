@@ -11,6 +11,7 @@ export default {
     '^.+/audit_logic_status\\.js$': '<rootDir>/js/logic/audit_logic_status.ts',
     '^.+[\\\\/]entity_id_match\\.js$': '<rootDir>/js/logic/entity_id_match.ts',
     '^.+[\\\\/]deficiency_type_display_format\\.js$': '<rootDir>/js/logic/deficiency_type_display_format.ts',
+    '^.+[\\\\/]deficiency_id_format\\.js$': '<rootDir>/js/logic/deficiency_id_format.ts',
     '^.+/audit_logic_deficiency\\.js$': '<rootDir>/js/logic/audit_logic_deficiency.ts',
     '^.+/audit_logic_requirements_lists\\.js$': '<rootDir>/js/logic/audit_logic_requirements_lists.ts',
     '^.+/audit_logic_progress\\.js$': '<rootDir>/js/logic/audit_logic_progress.ts',
