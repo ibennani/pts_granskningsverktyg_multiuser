@@ -46,6 +46,17 @@ describe('send_audit_sync_keepalive', () => {
         expect(String(options.body)).toContain('"status":"passed"');
     });
 
+    test('returnerar false om inga ändringar eller synkplan väntar', () => {
+        const state = build_state();
+        // last_server_sync_at matches or no unsynced changes
+        state.auditMetadata = {
+            last_server_sync_at: '2026-08-20T12:00:00.000Z',
+            last_local_change_at: '2026-08-20T12:00:00.000Z'
+        };
+        expect(send_audit_sync_keepalive(state)).toBe(false);
+        expect(fetch_mock).not.toHaveBeenCalled();
+    });
+
     test('returnerar false utan inloggning', () => {
         app_session_storage.removeItem('gv_auth_token');
         expect(send_audit_sync_keepalive(build_state())).toBe(false);

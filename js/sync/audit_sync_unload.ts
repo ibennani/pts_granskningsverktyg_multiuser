@@ -5,9 +5,14 @@
 import { get_auth_token, api_patch_keepalive } from '../api/client.js';
 import {
     peek_audit_sync_strategy,
+    has_pending_audit_sync_plan,
     should_include_rule_file_in_patch,
     type AuditSyncStrategy
 } from './audit_sync_planning.js';
+import {
+    has_unsynced_local_audit_changes,
+    type AuditStateLike
+} from '../logic/audit_sync_tracking.js';
 import {
     state_to_metadata_patch,
     state_to_patch,
@@ -16,20 +21,6 @@ import {
 
 /** Chrome/Firefox-gräns för keepalive-request body (ca 64 KiB). */
 export const KEEPALIVE_BODY_MAX_BYTES = 64000;
-
-function append_audit_edit_log_to_patch_metadata(
-    patch_metadata: Record<string, unknown>,
-    state: SyncPayloadState
-): Record<string, unknown> {
-    const prev_log = Array.isArray(state.auditMetadata?.audit_edit_log)
-        ? state.auditMetadata.audit_edit_log
-        : [];
-    const entry = { at: new Date().toISOString(), auditStatus: state.auditStatus };
-    return {
-        ...patch_metadata,
-        audit_edit_log: [...prev_log, entry].slice(-400)
-    };
-}
 
 function find_requirement_result_in_state(
     state: SyncPayloadState,
@@ -81,10 +72,6 @@ function send_full_patch_keepalive(state: SyncPayloadState): boolean {
     if (!state.auditId) return false;
     const include_rule = should_include_rule_file_in_patch(state.ruleFileContent);
     const patch = state_to_patch(state, { include_rule_file_content: include_rule });
-    patch.metadata = append_audit_edit_log_to_patch_metadata(
-        (patch.metadata || {}) as Record<string, unknown>,
-        state
-    );
     if (send_keepalive_patch(`/audits/${state.auditId}`, patch as unknown as Record<string, unknown>)) {
         return true;
     }
@@ -112,6 +99,10 @@ export function send_audit_sync_keepalive(state: SyncPayloadState | null | undef
     try {
         if (typeof get_auth_token !== 'function' || !get_auth_token()) return false;
     } catch {
+        return false;
+    }
+
+    if (!has_pending_audit_sync_plan() && !has_unsynced_local_audit_changes(state as unknown as AuditStateLike)) {
         return false;
     }
 

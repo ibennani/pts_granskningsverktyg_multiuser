@@ -51,6 +51,20 @@ describe('audit_meaningful_change', () => {
         expect(has_meaningful_audit_patch_change(base_row, patch)).toBe(false);
     });
 
+    test('endast formattering/normalisering av tomma fält i samples → ingen meningsfull ändring', () => {
+        const patch = {
+            samples: [{
+                id: 's1',
+                attachedMediaFilenames: [],
+                urlAutoScreenshotFilename: null,
+                selectedContentTypes: [],
+                skip_render: true,
+                requirementResults: {}
+            }]
+        };
+        expect(has_meaningful_audit_patch_change(base_row, patch)).toBe(false);
+    });
+
     test('samples ändrade → meningsfull ändring', () => {
         const patch = {
             samples: [{ id: 's1', requirementResults: { r1: { status: 'pass' } } }]
