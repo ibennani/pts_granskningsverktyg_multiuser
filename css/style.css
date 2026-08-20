@@ -86,15 +86,16 @@
     --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
     /* Accordion-rubrikknappar (alla teman) */
-    --accordion-header-padding-block: calc(0.6rem + var(--focus-clearance));
-    --accordion-header-padding-inline: calc(0.75rem + var(--focus-clearance));
-    --accordion-header-title-size: 0.95rem;
-    --accordion-header-line-height: 1.25;
+    --accordion-header-padding-block: 0.4rem;
+    --accordion-header-padding-inline: 0.65rem;
+    --accordion-header-title-size: 0.875rem;
+    --accordion-header-line-height: 1.2;
+    --accordion-header-inner-gap: 0.35rem;
     --accordion-header-chevron-side: 5px;
-    --accordion-header-chevron-height: 7px;
-    --accordion-panel-inner-padding-block-start: calc(0.65rem + var(--focus-clearance));
-    --accordion-panel-inner-padding-inline: calc(0.75rem + var(--focus-clearance));
-    --accordion-panel-inner-padding-block-end: calc(0.15rem + var(--focus-clearance));
+    --accordion-header-chevron-height: 6px;
+    --accordion-panel-inner-padding-block-start: 0.55rem;
+    --accordion-panel-inner-padding-inline: 0.65rem;
+    --accordion-panel-inner-padding-block-end: 0.1rem;
 
     --status-icon-tooltip-color: #1a1a1a;
     --status-icon-tooltip-bg: #fff;
@@ -1077,6 +1078,33 @@ select:-webkit-autofill:focus {
     height: 1em;
 }
 
+/* Accordion-rubrikknappar: kompaktare än vanliga .button (gäller alla teman) */
+button.content-types-section-accordion__header,
+button.rulefile-change-log__accordion-header,
+button.info-block-header {
+    padding: var(--accordion-header-padding-block) var(--accordion-header-padding-inline);
+    font-size: var(--accordion-header-title-size);
+    font-weight: 600;
+    line-height: var(--accordion-header-line-height);
+    gap: var(--accordion-header-inner-gap);
+    min-height: unset;
+    border-radius: 0;
+}
+
+.content-types-section-accordion__header-inner,
+.rulefile-change-log__accordion-header-inner,
+.info-block-header__inner {
+    gap: var(--accordion-header-inner-gap);
+}
+
+.content-types-section-accordion__title,
+.rulefile-change-log__accordion-title,
+.info-block-header__title {
+    font-size: var(--accordion-header-title-size);
+    font-weight: 600;
+    line-height: var(--accordion-header-line-height);
+}
+
 @media (max-width: 600px) {
     .item-list-item .sample-actions-wrapper {
         flex-direction: column;
@@ -1120,6 +1148,13 @@ select:-webkit-autofill:focus {
     .button {
         padding: 0.5rem 1rem;
         font-size: 0.9rem;
+    }
+
+    button.content-types-section-accordion__header,
+    button.rulefile-change-log__accordion-header,
+    button.info-block-header {
+        padding: var(--accordion-header-padding-block) var(--accordion-header-padding-inline);
+        font-size: var(--accordion-header-title-size);
     }
 }
 
