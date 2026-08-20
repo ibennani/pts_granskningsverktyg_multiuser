@@ -108,13 +108,13 @@
     justify-content: flex-start;
     align-items: center;
     text-align: left;
-    padding: 0.9rem 1rem;
+    padding: var(--accordion-header-padding-block) var(--accordion-header-padding-inline);
     border: none;
     border-radius: 0;
     /* Samma känsla som sekundär knapp (button-default) */
     background-color: var(--button-default-bg);
     font-weight: 600;
-    line-height: 1.3;
+    line-height: var(--accordion-header-line-height);
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-header:hover {
@@ -134,7 +134,7 @@
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-title {
-    font-size: 1.05rem;
+    font-size: var(--accordion-header-title-size);
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-count {
@@ -146,9 +146,9 @@
     margin-left: auto;
     width: 0;
     height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid currentColor;
+    border-left: var(--accordion-header-chevron-side) solid transparent;
+    border-right: var(--accordion-header-chevron-side) solid transparent;
+    border-top: var(--accordion-header-chevron-height) solid currentColor;
     opacity: 0.75;
     transform-origin: center;
     transform: rotate(0deg);
@@ -168,7 +168,10 @@
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-content-inner {
-    padding: 0.9rem 1rem 0.2rem;
+    padding:
+        var(--accordion-panel-inner-padding-block-start)
+        var(--accordion-panel-inner-padding-inline)
+        var(--accordion-panel-inner-padding-block-end);
     background-color: var(--plate-background-color);
 }
 

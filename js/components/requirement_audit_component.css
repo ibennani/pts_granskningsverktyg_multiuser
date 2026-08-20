@@ -790,12 +790,12 @@
     justify-content: flex-start;
     align-items: center;
     text-align: left;
-    padding: 0.75rem 0;
+    padding: var(--accordion-header-padding-block) 0;
     border: none;
     border-radius: 0;
     background: transparent;
     font-weight: inherit;
-    line-height: 1.3;
+    line-height: var(--accordion-header-line-height);
     color: inherit;
     cursor: pointer;
 }
@@ -822,9 +822,9 @@
     flex-shrink: 0;
     width: 0;
     height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid currentColor;
+    border-left: var(--accordion-header-chevron-side) solid transparent;
+    border-right: var(--accordion-header-chevron-side) solid transparent;
+    border-top: var(--accordion-header-chevron-height) solid currentColor;
     opacity: 0.75;
     transform-origin: center;
     transform: rotate(0deg);

@@ -61,7 +61,17 @@
     margin-top: 0.75rem;
 }
 
-.audit-actions__appendix-download-actions .button {
+.audit-actions__appendix-download-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    margin-top: 0.75rem;
+    width: 100%;
+}
+
+.audit-actions__appendix-download-actions .button,
+.audit-actions__appendix-download-group .button {
     margin-right: 0;
 }
 
@@ -70,7 +80,7 @@
 }
 
 .audit-actions__export-section {
-    margin-top: 1.25rem;
+    margin-top: 2rem;
 }
 
 /* Samma accordion som innehållstyper i granskningsdelsformuläret (content_type_accordion.ts) */
@@ -88,12 +98,12 @@
     justify-content: flex-start;
     align-items: center;
     text-align: left;
-    padding: calc(0.9rem + var(--focus-clearance)) calc(1rem + var(--focus-clearance));
+    padding: var(--accordion-header-padding-block) var(--accordion-header-padding-inline);
     border: none;
     border-radius: 0;
     background-color: var(--button-default-bg);
     font-weight: 600;
-    line-height: 1.3;
+    line-height: var(--accordion-header-line-height);
     color: var(--text-color);
     cursor: pointer;
 }
@@ -119,9 +129,9 @@
 .content-types-section-accordion__title {
     margin: 0;
     padding: 0;
-    font-size: 1.05rem;
+    font-size: var(--accordion-header-title-size);
     font-weight: 600;
-    line-height: 1.3;
+    line-height: var(--accordion-header-line-height);
     color: var(--primary-color);
     scroll-margin-top: var(--focus-clearance);
 }
@@ -134,9 +144,9 @@
     margin-left: auto;
     width: 0;
     height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid currentColor;
+    border-left: var(--accordion-header-chevron-side) solid transparent;
+    border-right: var(--accordion-header-chevron-side) solid transparent;
+    border-top: var(--accordion-header-chevron-height) solid currentColor;
     opacity: 0.75;
     transform-origin: center;
     transform: rotate(0deg);
@@ -156,7 +166,10 @@
 }
 
 .content-types-section-accordion__panel-inner {
-    padding: calc(0.9rem + var(--focus-clearance)) calc(1rem + var(--focus-clearance)) calc(0.2rem + var(--focus-clearance));
+    padding:
+        var(--accordion-panel-inner-padding-block-start)
+        var(--accordion-panel-inner-padding-inline)
+        var(--accordion-panel-inner-padding-block-end);
     background-color: var(--plate-background-color);
     scroll-padding: var(--focus-clearance);
 }

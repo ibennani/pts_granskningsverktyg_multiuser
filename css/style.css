@@ -85,6 +85,17 @@
     --focus-z-index: 10000;
     --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
+    /* Accordion-rubrikknappar (alla teman) */
+    --accordion-header-padding-block: calc(0.6rem + var(--focus-clearance));
+    --accordion-header-padding-inline: calc(0.75rem + var(--focus-clearance));
+    --accordion-header-title-size: 0.95rem;
+    --accordion-header-line-height: 1.25;
+    --accordion-header-chevron-side: 5px;
+    --accordion-header-chevron-height: 7px;
+    --accordion-panel-inner-padding-block-start: calc(0.65rem + var(--focus-clearance));
+    --accordion-panel-inner-padding-inline: calc(0.75rem + var(--focus-clearance));
+    --accordion-panel-inner-padding-block-end: calc(0.15rem + var(--focus-clearance));
+
     --status-icon-tooltip-color: #1a1a1a;
     --status-icon-tooltip-bg: #fff;
     --status-icon-tooltip-border: #333;

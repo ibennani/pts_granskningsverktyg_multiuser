@@ -193,48 +193,56 @@ export function build_audit_actions_appendix_download_section(view, state, t) {
         attributes: { id: 'audit-action-desc-appendix-download' },
     }));
 
-    if (has_appendix_1) {
-        actions.appendChild(view.create_file_download_action_button({
-            label: t('audit_actions_appendix_1_summary_button'),
-            on_download: () => view.handle_export_pdf_deficiency_types(),
-            variant: 'button-default',
-            icon_name: 'export',
-            id: 'audit-action-btn-appendix-1-summary',
-            aria_describedby: 'audit-action-desc-appendix-download',
-        }));
-    }
-
-    if (has_appendix_2) {
-        actions.appendChild(view.create_file_download_action_button({
-            label: t('audit_actions_appendix_2_protocol_button'),
-            on_download: () => view.handle_export_excel(),
-            variant: 'button-default',
-            icon_name: 'export',
-            id: 'audit-action-btn-appendix-2-protocol',
-            aria_describedby: 'audit-action-desc-appendix-download',
-        }));
-    }
-
-    if (has_appendix_3) {
-        actions.appendChild(view.create_file_download_action_button({
-            label: t('audit_actions_appendix_3_images_button'),
-            on_download: () => view.handle_export_pdf_screenshots_appendix(),
-            variant: 'button-default',
-            icon_name: 'export',
-            id: 'audit-action-btn-appendix-3-images',
-            aria_describedby: 'audit-action-desc-appendix-download',
-        }));
-    }
-
     if (has_zip) {
         actions.appendChild(view.create_file_download_action_button({
             label: t('audit_actions_download_all_appendices_zip_button'),
             on_download: () => view.handle_export_all_appendices_zip(),
-            variant: 'button-default',
+            variant: 'button-primary',
             icon_name: 'export',
             id: 'audit-action-btn-appendix-all-zip',
             aria_describedby: 'audit-action-desc-appendix-download',
         }));
+    }
+
+    if (has_appendix_1 || has_appendix_2 || has_appendix_3) {
+        const appendix_group = view.Helpers.create_element('div', {
+            class_name: 'audit-actions__appendix-download-group',
+        });
+
+        if (has_appendix_1) {
+            appendix_group.appendChild(view.create_file_download_action_button({
+                label: t('audit_actions_appendix_1_summary_button'),
+                on_download: () => view.handle_export_pdf_deficiency_types(),
+                variant: 'button-default',
+                icon_name: 'export',
+                id: 'audit-action-btn-appendix-1-summary',
+                aria_describedby: 'audit-action-desc-appendix-download',
+            }));
+        }
+
+        if (has_appendix_2) {
+            appendix_group.appendChild(view.create_file_download_action_button({
+                label: t('audit_actions_appendix_2_protocol_button'),
+                on_download: () => view.handle_export_excel(),
+                variant: 'button-default',
+                icon_name: 'export',
+                id: 'audit-action-btn-appendix-2-protocol',
+                aria_describedby: 'audit-action-desc-appendix-download',
+            }));
+        }
+
+        if (has_appendix_3) {
+            appendix_group.appendChild(view.create_file_download_action_button({
+                label: t('audit_actions_appendix_3_images_button'),
+                on_download: () => view.handle_export_pdf_screenshots_appendix(),
+                variant: 'button-default',
+                icon_name: 'export',
+                id: 'audit-action-btn-appendix-3-images',
+                aria_describedby: 'audit-action-desc-appendix-download',
+            }));
+        }
+
+        actions.appendChild(appendix_group);
     }
 
     section.appendChild(actions);
