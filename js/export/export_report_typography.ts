@@ -75,7 +75,7 @@ ol { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; list-style: decimal;
 ol[type="a"] { list-style: lower-alpha; }
 li { margin: 0 0 ${paragraph_after}pt; }
 .deficiency-types-appendix h2:first-of-type { page-break-before: auto; }
-.screenshots-appendix h2 { page-break-before: auto; page-break-after: avoid; break-after: avoid; }
+.screenshots-appendix h2 { page-break-before: auto; page-break-after: avoid; break-after: avoid; text-align: left; }
 .screenshots-appendix__item { page-break-inside: avoid; break-inside: avoid; margin: 0 0 ${paragraph_after}pt; }
 .screenshots-appendix__item img { display: block; max-width: 100%; max-height: ${screenshots_max_height_cm}cm; width: auto; height: auto; object-fit: contain; page-break-before: avoid; break-before: avoid; }
 `.trim();

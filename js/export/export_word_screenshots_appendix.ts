@@ -1,13 +1,14 @@
 /**
  * @fileoverview Word-export av bilaga 3 med alla skärmbilder (H1 + H2/bild-block).
  */
-import { ImageRun, Paragraph, TextRun } from 'docx';
+import { AlignmentType, ImageRun, Paragraph, TextRun } from 'docx';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { build_screenshots_appendix_word_filename } from './export_report_filename.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
 import { finalize_export_catch } from './export_error_handling.js';
 import {
+    format_screenshots_appendix_display_filename,
     prepare_screenshots_appendix_media,
     type PreparedScreenshotsAppendixItem,
 } from './export_screenshots_appendix_media.js';
@@ -22,8 +23,13 @@ function append_screenshot_image_block(
 ): void {
     children.push(
         new Paragraph({
-            children: [new TextRun({ text: item.export_filename })],
+            children: [
+                new TextRun({
+                    text: format_screenshots_appendix_display_filename(item.export_filename),
+                }),
+            ],
             heading: 'Heading2',
+            alignment: AlignmentType.LEFT,
             keepNext: true,
             widowControl: true,
         })

@@ -6,10 +6,25 @@ import { fetch_audit_media_bytes, list_audit_media } from '../api/audit_media_ap
 import { build_audit_media_filename_migration_map, resolve_migrated_media_filename } from '../logic/audit_media_filename_migrations.js';
 import { is_upload_video_file } from '../../shared/media/image_png_upload.js';
 import { get_media_export_file_extension } from './export_media_filename.js';
+import { HTML_EXPORT_MEDIA_DIR } from './export_html_media.js';
 import {
     collect_screenshots_appendix_entries,
     type ScreenshotsAppendixEntry,
 } from './export_screenshots_appendix_collect.js';
+
+/** Visningsnamn för bilaga 3: utan zip-prefixet media/. */
+export function format_screenshots_appendix_display_filename(export_filename: string): string {
+    const trimmed = String(export_filename || '').trim();
+    const prefix = `${HTML_EXPORT_MEDIA_DIR}/`;
+    if (trimmed.startsWith(prefix)) {
+        return trimmed.slice(prefix.length);
+    }
+    const windows_prefix = `${HTML_EXPORT_MEDIA_DIR}\\`;
+    if (trimmed.startsWith(windows_prefix)) {
+        return trimmed.slice(windows_prefix.length);
+    }
+    return trimmed;
+}
 
 /** Innehållsbredd A4 med 15 mm sidmarginaler (mm). */
 export const SCREENSHOTS_APPENDIX_CONTENT_WIDTH_MM = 180;
