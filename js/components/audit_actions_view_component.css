@@ -94,13 +94,13 @@
     margin-top: 2.5rem;
 }
 
-.audit-actions__export-section {
-    margin-top: 3rem;
-}
-
 /* Samma accordion som innehållstyper i granskningsdelsformuläret (content_type_accordion.ts) */
 .content-types-section-accordion {
     margin: 0;
+}
+
+.audit-actions__export-section.content-types-section-accordion {
+    margin-top: 3rem;
 }
 
 .content-types-section-accordion__header {
