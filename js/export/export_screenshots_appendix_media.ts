@@ -36,7 +36,10 @@ export const SCREENSHOTS_APPENDIX_CONTENT_HEIGHT_MM = 257;
 export const SCREENSHOTS_APPENDIX_H2_RESERVED_MM = 12;
 
 const MM_PER_INCH = 25.4;
-const PX_PER_INCH = 96;
+const SCREEN_PX_PER_INCH = 96;
+
+/** Högre upplösning vid PDF-inbäddning (150 dpi motsvarar ~59 px/cm). */
+export const SCREENSHOTS_APPENDIX_PDF_PX_PER_INCH = 150;
 
 export type ScreenshotsAppendixDisplaySize = {
     width_px: number;
@@ -52,6 +55,8 @@ export type PreparedScreenshotsAppendixItem = {
     bytes: ArrayBuffer;
     mime_type: string;
     docx_image_type: 'png' | 'jpg' | 'gif' | 'bmp';
+    native_width_px: number;
+    native_height_px: number;
     display_width_px: number;
     display_height_px: number;
     max_height_cm: number;
@@ -68,8 +73,8 @@ export type PrepareScreenshotsAppendixMediaResult = {
     missing_filenames: string[];
 };
 
-function mm_to_px(mm: number): number {
-    return Math.round((mm / MM_PER_INCH) * PX_PER_INCH);
+function mm_to_px(mm: number, px_per_inch: number = SCREEN_PX_PER_INCH): number {
+    return Math.round((mm / MM_PER_INCH) * px_per_inch);
 }
 
 /** Max bildhöjd (cm) så H2 + bild ryms på en och samma sida. */
@@ -83,12 +88,13 @@ export function get_screenshots_appendix_max_image_height_cm(): number {
  */
 export function compute_screenshots_appendix_display_size(
     native_width_px: number,
-    native_height_px: number
+    native_height_px: number,
+    px_per_inch: number = SCREEN_PX_PER_INCH
 ): ScreenshotsAppendixDisplaySize {
-    const max_width_px = mm_to_px(SCREENSHOTS_APPENDIX_CONTENT_WIDTH_MM);
+    const max_width_px = mm_to_px(SCREENSHOTS_APPENDIX_CONTENT_WIDTH_MM, px_per_inch);
     const max_image_height_mm =
         SCREENSHOTS_APPENDIX_CONTENT_HEIGHT_MM - SCREENSHOTS_APPENDIX_H2_RESERVED_MM;
-    const max_height_px = mm_to_px(max_image_height_mm);
+    const max_height_px = mm_to_px(max_image_height_mm, px_per_inch);
     const max_height_cm = max_image_height_mm / 10;
 
     if (native_width_px <= 0 || native_height_px <= 0) {
@@ -111,6 +117,18 @@ export function compute_screenshots_appendix_display_size(
         max_height_cm,
         scaled_for_page_fit,
     };
+}
+
+/** Visningsdimensioner för PDF-export vid högre upplösning, begränsat till native storlek. */
+export function compute_screenshots_appendix_pdf_encode_size(
+    native_width_px: number,
+    native_height_px: number
+): ScreenshotsAppendixDisplaySize {
+    return compute_screenshots_appendix_display_size(
+        native_width_px,
+        native_height_px,
+        SCREENSHOTS_APPENDIX_PDF_PX_PER_INCH
+    );
 }
 
 function mime_type_for_audit_media(filename: string): string {
@@ -183,6 +201,8 @@ async function prepare_single_screenshot_item(
             bytes,
             mime_type,
             docx_image_type: docx_image_type_for_audit_media(entry.original_filename),
+            native_width_px: dims.width,
+            native_height_px: dims.height,
             display_width_px: display.width_px,
             display_height_px: display.height_px,
             max_height_cm: display.max_height_cm,

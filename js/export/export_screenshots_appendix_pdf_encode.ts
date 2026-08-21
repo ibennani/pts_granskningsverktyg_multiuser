@@ -5,6 +5,7 @@
 
 import {
     array_buffer_to_base64_data_uri,
+    compute_screenshots_appendix_pdf_encode_size,
     type PreparedScreenshotsAppendixItem,
     type PreparedScreenshotsAppendixPdfItem,
 } from './export_screenshots_appendix_media.js';
@@ -22,9 +23,9 @@ import {
 export type { PreparedScreenshotsAppendixPdfItem };
 
 /** JPEG-kvalitet i fallande ordning om HTML fortfarande överskrider maxgränsen. */
-export const PDF_SCREENSHOT_JPEG_QUALITY_STEPS = [0.88, 0.78, 0.68, 0.58, 0.5, 0.4] as const;
+export const PDF_SCREENSHOT_JPEG_QUALITY_STEPS = [0.92, 0.86, 0.78, 0.68, 0.58, 0.5, 0.4] as const;
 
-const LARGE_ORIGINAL_BYTES = 300_000;
+const PDF_ENCODE_SCALE_STEPS = [1, 0.85, 0.7] as const;
 
 async function blob_to_jpeg_data_uri(
     blob: Blob,
@@ -62,18 +63,17 @@ async function blob_to_jpeg_data_uri(
     }
 }
 
-function build_encode_dimensions(item: PreparedScreenshotsAppendixItem): Array<{ width_px: number; height_px: number }> {
-    const primary = { width_px: item.display_width_px, height_px: item.display_height_px };
-    if (item.bytes.byteLength <= LARGE_ORIGINAL_BYTES) {
-        return [primary];
-    }
-    return [
-        primary,
-        {
-            width_px: Math.max(1, Math.round(item.display_width_px * 0.65)),
-            height_px: Math.max(1, Math.round(item.display_height_px * 0.65)),
-        },
-    ];
+function build_encode_dimensions(
+    item: PreparedScreenshotsAppendixItem
+): Array<{ width_px: number; height_px: number }> {
+    const base = compute_screenshots_appendix_pdf_encode_size(
+        item.native_width_px,
+        item.native_height_px
+    );
+    return PDF_ENCODE_SCALE_STEPS.map((scale) => ({
+        width_px: Math.max(1, Math.round(base.width_px * scale)),
+        height_px: Math.max(1, Math.round(base.height_px * scale)),
+    }));
 }
 
 export async function encode_screenshot_item_for_pdf_html(

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Bygger taggad HTML för PDF-bilaga 3: main, h1, figure/figcaption, img med alt.
+ * @fileoverview Bygger taggad HTML för PDF-bilaga 3: main, h1, h2 per bild, img med alt.
  */
 import { escape_html_internal, render_markdown_to_html } from './export_html_build_primitives.js';
 import { build_report_pdf_print_css } from './export_report_typography.js';
@@ -52,10 +52,10 @@ function build_screenshot_item_html(item: PreparedScreenshotsAppendixPdfItem): s
     const alt_text = escape_html_internal(display_filename);
     const safe_src = escape_html_internal(item.pdf_data_uri);
     return (
-        `<figure class="screenshots-appendix__item">` +
-        `<figcaption class="screenshots-appendix__caption">${heading_text}</figcaption>` +
+        `<section class="screenshots-appendix__item">` +
+        `<h2 class="screenshots-appendix__heading">${heading_text}</h2>` +
         `<img src="${safe_src}" alt="${alt_text}">` +
-        `</figure>`
+        `</section>`
     );
 }
 

@@ -40,8 +40,22 @@ import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import { resolve_rule_set_row_for_audit_overlay } from '../utils/audit_rule_set_overlay_resolve.js';
 import { generate_pdf_from_html, generate_pdf_from_html_chunks } from '../services/pdf_generation_service.ts';
 import { PDF_EXPORT_HTML_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
+import { FILE_MAX_BYTES } from '../../shared/constants/file_size_limits.js';
 
 const router = express.Router();
+
+function send_pdf_export_buffer(res, pdf_buffer) {
+    if (pdf_buffer.length > FILE_MAX_BYTES) {
+        return res.status(400).json({
+            code: 'PDF_EXPORT_HTML_TOO_LARGE',
+            error: 'PDF_EXPORT_HTML_TOO_LARGE',
+            byte_size: pdf_buffer.length,
+            max_bytes: FILE_MAX_BYTES,
+        });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    return res.send(pdf_buffer);
+}
 
 const __dirname_audits = path.dirname(fileURLToPath(import.meta.url));
 const SV_I18N_PATH = path.join(__dirname_audits, '../../js/i18n/sv-SE.json');
@@ -525,8 +539,7 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
                 }
             }
             const pdf_buffer = await generate_pdf_from_html_chunks(chunks);
-            res.setHeader('Content-Type', 'application/pdf');
-            return res.send(pdf_buffer);
+            return send_pdf_export_buffer(res, pdf_buffer);
         }
         if (!htmlContent || typeof htmlContent !== 'string') {
             return res.status(400).json({ error: 'htmlContent eller htmlChunks krävs' });
@@ -544,8 +557,7 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
             htmlContent,
             documentKind: pdfDocumentKind === 'appendix1' ? 'appendix1' : 'default',
         });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.send(pdf_buffer);
+        return send_pdf_export_buffer(res, pdf_buffer);
     } catch (err) {
         console.error('[audits] PDF export error:', err);
         res.status(500).json({

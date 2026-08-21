@@ -116,7 +116,10 @@ function compute_struct_depth(node_number: number, nodes: Map<number, StructElem
     return depth;
 }
 
-function unwrap_one_nonstruct(nodes: Map<number, StructElemNode>): boolean {
+function unwrap_one_nonstruct(
+    nodes: Map<number, StructElemNode>,
+    dirty_object_numbers: Set<number>
+): boolean {
     const memo = new Map<number, number>();
     const nonstruct_nodes = [...nodes.values()]
         .filter((node) => node.struct_type === 'NonStruct')
@@ -143,6 +146,7 @@ function unwrap_one_nonstruct(nodes: Map<number, StructElemNode>): boolean {
             nonstruct.object_number,
             nonstruct.k_entries
         );
+        dirty_object_numbers.add(parent.object_number);
         for (const entry of nonstruct.k_entries) {
             if (entry.kind !== 'ref') {
                 continue;
@@ -152,6 +156,7 @@ function unwrap_one_nonstruct(nodes: Map<number, StructElemNode>): boolean {
                 continue;
             }
             child.parent_number = parent.object_number;
+            dirty_object_numbers.add(child.object_number);
         }
         if (nonstruct.page_number !== null && parent.page_number === null) {
             const only_mcid =
@@ -159,6 +164,7 @@ function unwrap_one_nonstruct(nodes: Map<number, StructElemNode>): boolean {
                 nonstruct.k_entries.every((entry) => entry.kind === 'mcid' || entry.kind === 'inline');
             if (only_mcid) {
                 parent.page_number = nonstruct.page_number;
+                dirty_object_numbers.add(parent.object_number);
             }
         }
         nodes.delete(nonstruct.object_number);
@@ -167,10 +173,17 @@ function unwrap_one_nonstruct(nodes: Map<number, StructElemNode>): boolean {
     return false;
 }
 
-function collect_updated_object_bodies(nodes: Map<number, StructElemNode>): Map<number, string> {
+function collect_updated_object_bodies(
+    nodes: Map<number, StructElemNode>,
+    dirty_object_numbers: Set<number>
+): Map<number, string> {
     const bodies = new Map<number, string>();
-    for (const node of nodes.values()) {
-        bodies.set(node.object_number, serialize_struct_elem_dict(node));
+    for (const object_number of dirty_object_numbers) {
+        const node = nodes.get(object_number);
+        if (!node) {
+            continue;
+        }
+        bodies.set(object_number, serialize_struct_elem_dict(node));
     }
     return bodies;
 }
@@ -189,12 +202,17 @@ export function remove_nonstruct_wrappers_from_pdf(pdf_buffer: Buffer): Buffer {
     }
 
     let guard = 0;
-    while (unwrap_one_nonstruct(nodes) && guard < 512) {
+    const dirty_object_numbers = new Set<number>();
+    while (unwrap_one_nonstruct(nodes, dirty_object_numbers) && guard < 512) {
         guard += 1;
     }
 
+    if (dirty_object_numbers.size === 0) {
+        return pdf_buffer;
+    }
+
     let updated = pdf_buffer;
-    for (const [object_number, dict_body] of collect_updated_object_bodies(nodes)) {
+    for (const [object_number, dict_body] of collect_updated_object_bodies(nodes, dirty_object_numbers)) {
         updated = replace_object_body_incrementally(updated, object_number, dict_body);
     }
 
