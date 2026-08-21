@@ -74,6 +74,13 @@ function resolve_pdf_document_kind(pdf_document_kind, html_probe) {
     return detect_pdf_document_kind_from_html(html_probe);
 }
 
+function map_pdf_generation_document_kind(resolved_document_kind) {
+    if (resolved_document_kind === 'appendix1' || resolved_document_kind === 'appendix3') {
+        return resolved_document_kind;
+    }
+    return 'default';
+}
+
 function send_pdf_export_buffer(res, pdf_buffer, max_bytes = FILE_MAX_BYTES) {
     if (pdf_buffer.length > max_bytes) {
         return res.status(400).json({
@@ -570,7 +577,10 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
                     });
                 }
             }
-            const pdf_buffer = await generate_pdf_from_html_chunks(chunks);
+            const pdf_buffer = await generate_pdf_from_html_chunks(
+                chunks,
+                map_pdf_generation_document_kind(resolved_document_kind)
+            );
             return send_pdf_export_buffer(res, pdf_buffer, max_pdf_bytes);
         }
         if (!htmlContent || typeof htmlContent !== 'string') {
@@ -589,7 +599,7 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
         const max_pdf_bytes = resolve_pdf_export_max_bytes(resolved_document_kind);
         const pdf_buffer = await generate_pdf_from_html({
             htmlContent,
-            documentKind: resolved_document_kind === 'appendix1' ? 'appendix1' : 'default',
+            documentKind: map_pdf_generation_document_kind(resolved_document_kind),
         });
         return send_pdf_export_buffer(res, pdf_buffer, max_pdf_bytes);
     } catch (err) {

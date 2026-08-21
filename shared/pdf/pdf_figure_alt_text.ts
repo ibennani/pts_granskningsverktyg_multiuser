@@ -17,18 +17,35 @@ function decode_basic_html_entities(text: string): string {
         .replace(/&amp;/g, '&');
 }
 
+function resolve_screenshots_appendix_html_scope(html_content: string): string | null {
+    if (!html_content.includes('screenshots-appendix')) {
+        return null;
+    }
+
+    const main_match = html_content.match(
+        /<main\b[^>]*\bclass="[^"]*\bscreenshots-appendix-document\b[^"]*"[^>]*>([\s\S]*?)<\/main>/i
+    );
+    if (main_match?.[1] !== undefined) {
+        return main_match[1];
+    }
+
+    return html_content;
+}
+
 /** Extraherar alt-text från bilder i bilaga 3 HTML (exportfilnamn). */
 export function extract_screenshots_appendix_img_alt_texts(html_content: string): string[] {
-    const section_pattern = /<section class="screenshots-appendix"[\s\S]*?<\/section>/g;
+    const scope = resolve_screenshots_appendix_html_scope(html_content);
+    if (!scope) {
+        return [];
+    }
+
     const img_pattern = /<img\b[^>]*\balt="([^"]*)"[^>]*>/gi;
     const alt_texts: string[] = [];
 
-    for (const section_match of html_content.matchAll(section_pattern)) {
-        for (const img_match of section_match[0].matchAll(img_pattern)) {
-            const alt_text = img_match[1]?.trim();
-            if (alt_text) {
-                alt_texts.push(decode_basic_html_entities(alt_text));
-            }
+    for (const img_match of scope.matchAll(img_pattern)) {
+        const alt_text = img_match[1]?.trim();
+        if (alt_text) {
+            alt_texts.push(decode_basic_html_entities(alt_text));
         }
     }
 

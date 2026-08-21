@@ -9,7 +9,7 @@ import { inject_appendix1_toc_page_numbers } from './appendix1_toc_page_numbers.
 import { postprocess_tagged_export_pdf } from '../../shared/pdf/appendix1_pdf_accessibility_postprocess.js';
 import { inject_pdf_font_faces } from './pdf_font_faces.js';
 
-export type PdfDocumentKind = 'default' | 'appendix1';
+export type PdfDocumentKind = 'default' | 'appendix1' | 'appendix3';
 
 export interface GeneratePdfInput {
     htmlContent: string;
@@ -151,7 +151,10 @@ export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<B
  * Slår ihop HTML-delar till ett dokument och renderar en taggad PDF.
  * (pdf-lib-sammanslagning tar bort tillgänglighetstaggar — därför HTML-merge + en printToPDF.)
  */
-export async function generate_pdf_from_html_chunks(html_chunks: string[]): Promise<Buffer> {
+export async function generate_pdf_from_html_chunks(
+    html_chunks: string[],
+    document_kind: PdfDocumentKind = 'default'
+): Promise<Buffer> {
     const merged_html = merge_pdf_export_html_chunks(html_chunks);
-    return generate_pdf_from_html({ htmlContent: merged_html });
+    return generate_pdf_from_html({ htmlContent: merged_html, documentKind: document_kind });
 }
