@@ -245,10 +245,6 @@
 }
 
 .content-types-section-accordion {
-    border: 2px solid var(--border-color);
-    border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
-    border-radius: var(--border-radius);
-    background: var(--plate-background-color, transparent);
     margin: 0;
 }
 
@@ -261,7 +257,7 @@
     padding: var(--accordion-header-padding-block) var(--accordion-header-padding-inline);
     border: none;
     border-radius: 0;
-    background-color: var(--button-default-bg);
+    background-color: var(--accordion-header-bg);
     font-weight: 600;
     line-height: var(--accordion-header-line-height);
     color: var(--text-color);
@@ -269,7 +265,7 @@
 }
 
 .content-types-section-accordion__header:hover {
-    background-color: var(--button-default-hover-bg);
+    background-color: var(--accordion-header-hover-bg);
 }
 
 .content-types-section-accordion__header:focus-visible {

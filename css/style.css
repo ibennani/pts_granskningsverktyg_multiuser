@@ -96,6 +96,10 @@
     --accordion-panel-inner-padding-block-start: 0.55rem;
     --accordion-panel-inner-padding-inline: 0.65rem;
     --accordion-panel-inner-padding-block-end: 0.1rem;
+    --accordion-shell-accent-width: 3px;
+    --accordion-shell-accent-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
+    --accordion-header-bg: var(--plate-background-color, transparent);
+    --accordion-header-hover-bg: color-mix(in srgb, var(--plate-background-color) 88%, var(--primary-color));
 
     --status-icon-tooltip-color: #1a1a1a;
     --status-icon-tooltip-bg: #fff;
@@ -1089,6 +1093,32 @@ button.info-block-header {
     gap: var(--accordion-header-inner-gap);
     min-height: unset;
     border-radius: 0;
+}
+
+button.content-types-section-accordion__header,
+button.rulefile-change-log__accordion-header {
+    border: none;
+    background-color: var(--accordion-header-bg);
+}
+
+button.content-types-section-accordion__header:hover,
+button.rulefile-change-log__accordion-header:hover {
+    background-color: var(--accordion-header-hover-bg);
+}
+
+/* Accordion-panel: en ram, inset-accent, inga dubbla kanter mot rubrikknappen */
+.content-types-section-accordion,
+.update-rulefile-view-plate .rulefile-change-log__accordion {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--plate-background-color, transparent);
+    overflow: hidden;
+    box-shadow: inset var(--accordion-shell-accent-width) 0 0 var(--accordion-shell-accent-color);
+}
+
+.content-types-section-accordion--open .content-types-section-accordion__header,
+.update-rulefile-view-plate .rulefile-change-log__accordion--open .rulefile-change-log__accordion-header {
+    border-bottom: 1px solid var(--border-color);
 }
 
 .content-types-section-accordion__header-inner,
