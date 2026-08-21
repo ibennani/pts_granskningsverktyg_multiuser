@@ -70,7 +70,9 @@ p.comment-block { margin-top: ${comment_before}pt; }
 a { color: #${hyperlink}; text-decoration: underline; }
 strong { font-weight: 700; }
 em, i { font-style: normal; font-weight: inherit; }
-ul { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; }
+ul { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; list-style: disc; }
+ol { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; list-style: decimal; }
+ol[type="a"] { list-style: lower-alpha; }
 li { margin: 0 0 ${paragraph_after}pt; }
 .deficiency-types-appendix h2:first-of-type { page-break-before: auto; }
 .screenshots-appendix h2 { page-break-before: auto; page-break-after: avoid; break-after: avoid; }

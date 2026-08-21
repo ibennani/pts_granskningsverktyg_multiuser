@@ -83,6 +83,20 @@ function inline_nodes_to_runs(node: Node, inherited: { bold?: boolean; italics?:
     return runs;
 }
 
+function get_ordered_list_item_prefix(list_element: HTMLElement, index: number): string {
+    const type = (list_element.getAttribute('type') || '').toLowerCase();
+    const start = Number.parseInt(list_element.getAttribute('start') || '1', 10);
+    const item_number = (Number.isFinite(start) ? start : 1) + index;
+
+    if (type === 'a') {
+        return `${String.fromCharCode(97 + index)}.\t`;
+    }
+    if (type === 'A') {
+        return `${String.fromCharCode(65 + index)}.\t`;
+    }
+    return `${item_number}.\t`;
+}
+
 function block_element_to_paragraphs(el: HTMLElement, options: HtmlToWordOptions): Paragraph[] {
     const tag = el.tagName.toUpperCase();
     if (tag === 'H1' && options.include_h1 === false) {
@@ -104,12 +118,14 @@ function block_element_to_paragraphs(el: HTMLElement, options: HtmlToWordOptions
     }
     if (tag === 'UL' || tag === 'OL') {
         const paragraphs: Paragraph[] = [];
-        el.querySelectorAll(':scope > li').forEach((li) => {
+        el.querySelectorAll(':scope > li').forEach((li, index) => {
             const runs = inline_nodes_to_runs(li);
+            const prefix =
+                tag === 'UL' ? '•\t' : get_ordered_list_item_prefix(el, index);
             paragraphs.push(
                 new Paragraph({
                     children: [
-                        new TextRun({ text: '• ' }),
+                        new TextRun({ text: prefix }),
                         ...(runs.length ? runs : [new TextRun({ text: li.textContent ?? '' })]),
                     ],
                     indent: { left: 283, hanging: 142 },

@@ -219,14 +219,13 @@ function append_markdown_content_paragraphs(
 
 
 
-function append_deficiency_numbered_list(
+function append_deficiency_bullet_list(
     children: Array<InstanceType<typeof Paragraph>>,
     types: Array<{ primary: string; secondary: string }>
 ): void {
-    for (let index = 0; index < types.length; index += 1) {
-        const entry = types[index];
+    for (const entry of types) {
         const runs = [
-            new TextRun({ text: `${index + 1}.\t` }),
+            new TextRun({ text: '•\t' }),
             new TextRun({ text: entry.primary, bold: true }),
         ];
         if (entry.secondary) runs.push(new TextRun({ text: ` ${entry.secondary}` }));
@@ -263,6 +262,9 @@ export function append_word_appendix1_pts_paragraphs(
 
     append_heading_paragraph(c, t('export_appendix1_cover_title'), 1);
     c.push(new Paragraph({ children: [new TextRun({ text: t('export_appendix1_cover_subtitle') })] }));
+    if (context.caseNumber) {
+        c.push(new Paragraph({ children: [new TextRun({ text: context.caseNumber })] }));
+    }
 
     append_heading_paragraph(
         c,
@@ -392,7 +394,7 @@ export function append_word_appendix1_pts_paragraphs(
 
         if (section.kind === 'deficiency_group' && section.conceptId) {
 
-            append_deficiency_numbered_list(c, deficiency_by_concept.get(section.conceptId) ?? []);
+            append_deficiency_bullet_list(c, deficiency_by_concept.get(section.conceptId) ?? []);
 
         }
 

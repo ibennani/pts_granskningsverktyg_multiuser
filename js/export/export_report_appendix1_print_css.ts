@@ -81,6 +81,12 @@ main.appendix1-document {
     font-size: ${metadata}pt;
     margin: 0 0 4pt;
 }
+.appendix1-cover__case-number {
+    margin: 0 0 4pt;
+}
+.appendix1-cover__meta-row p {
+    margin: 0;
+}
 .appendix1-cover__title {
     font-size: ${cover_title}pt;
     font-weight: 700;
@@ -192,13 +198,21 @@ p {
     padding-left: 12.7mm;
     list-style: disc;
 }
-.appendix1-section__content li {
-    margin: 0 0 4pt;
-}
-.appendix1-deficiency-list ol {
+.appendix1-section__content ol {
     margin: 0 0 8pt;
     padding-left: 12.7mm;
     list-style: decimal;
+}
+.appendix1-section__content ol[type="a"] {
+    list-style: lower-alpha;
+}
+.appendix1-section__content li {
+    margin: 0 0 4pt;
+}
+.appendix1-deficiency-list ul {
+    margin: 0 0 8pt;
+    padding-left: 12.7mm;
+    list-style: disc;
 }
 .appendix1-deficiency-list li {
     margin: 0 0 4pt;

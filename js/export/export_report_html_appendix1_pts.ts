@@ -43,12 +43,17 @@ function build_cover_html(
     const context = build_appendix1_placeholder_context(audit);
     const domain = context.actorLinkDomain || context.actorLink;
 
+    const case_number_html = context.caseNumber
+        ? `<p class="appendix1-cover__case-number">${escape_html_internal(context.caseNumber)}</p>`
+        : '';
+    const export_date = escape_html_internal(context.exportDate || context.endDate);
+
     return (
         `<section class="appendix1-cover" aria-label="${escape_html_internal(t('export_appendix1_cover_aria'))}">` +
         `<img class="appendix1-cover__image" src="${APPENDIX1_COVER_IMAGE_PLACEHOLDER}" alt="${escape_html_internal(t('export_appendix1_cover_image_alt'))}">` +
         `<div class="appendix1-cover__content">` +
         `<div class="appendix1-cover__meta-row">` +
-        `<p>${escape_html_internal(context.exportDate || context.endDate)}</p>` +
+        `<div>${case_number_html}<p>${export_date}</p></div>` +
         `<div><p>${escape_html_internal(domain)}</p><p>PTS</p></div>` +
         `</div>` +
         `<p class="appendix1-cover__title">${escape_html_internal(t('export_appendix1_cover_title'))}</p>` +

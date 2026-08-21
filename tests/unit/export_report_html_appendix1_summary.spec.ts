@@ -377,6 +377,8 @@ describe('export_report_html_appendix1_pts', () => {
     test('build_appendix1_summary_body_html renderar PTS-struktur med sektioner och bristtyper', () => {
         const html = build_appendix1_summary_body_html(create_audit_with_deficiency_types(), t);
         expect(html).toContain('class="appendix1-cover"');
+        expect(html).toContain('appendix1-cover__case-number');
+        expect(html).toContain('2026-001');
         expect(html).toContain('id="section-audit-info"');
         expect(html).toContain('<nav aria-label="Innehållsförteckning"');
         expect(html).toContain('id="section-introduction"');
@@ -468,9 +470,9 @@ describe('export_report_html_appendix1_pts', () => {
         expect(html).toContain('href="#section-audit-info"');
     });
 
-    test('PDF HTML har numrerade bristtypslistor under 3.x', () => {
+    test('PDF HTML har punktlistor med bristtyper under 3.x', () => {
         const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
-        expect(html).toContain('<div class="appendix1-deficiency-list"><ol>');
+        expect(html).toContain('<div class="appendix1-deficiency-list"><ul>');
         expect(html).toContain('<strong>Semantiska element används inte.</strong>');
     });
 

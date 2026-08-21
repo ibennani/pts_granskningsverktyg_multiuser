@@ -89,7 +89,7 @@ function create_audit_state_with_deficiency() {
 }
 
 describe('render_audit_appendix1_view_section', () => {
-    test('visar numrerad bristtypslista under rätt 3.x-sektion', () => {
+    test('visar punktlista med bristtyper under rätt 3.x-sektion', () => {
         const section = render_audit_appendix1_view_section(
             {
                 Helpers: create_helpers(),
@@ -110,7 +110,7 @@ describe('render_audit_appendix1_view_section', () => {
         expect(section.querySelector('.appendix1-deficiency-list li')?.textContent).toBe(
             'Semantiska element används inte. Till exempel rubriker.'
         );
-        expect(section.querySelector('.appendix1-deficiency-list ol')).toBeTruthy();
+        expect(section.querySelector('.appendix1-deficiency-list ul')).toBeTruthy();
     });
 
     test('visar ingen bristtypslista när granskningen saknar underkända brister', () => {
@@ -159,7 +159,7 @@ describe('render_audit_appendix1_view_section', () => {
             { can_edit: false }
         );
 
-        expect(section.querySelector('.appendix1-deficiency-list ol')).toBeTruthy();
+        expect(section.querySelector('.appendix1-deficiency-list ul')).toBeTruthy();
         expect(section.querySelector('.appendix1-deficiency-list li strong')?.textContent).toBe(
             'Semantiska element används inte.'
         );
