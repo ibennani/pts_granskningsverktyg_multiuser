@@ -1,4 +1,7 @@
-import { PDF_EXPORT_HTML_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
+import {
+    PDF_EXPORT_HTML_MAX_BYTES,
+    SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
+} from '../../shared/constants/pdf_export_limits.js';
 import {
     ExportPdfHtmlTooLargeError,
     assert_pdf_export_html_within_limit,
@@ -47,14 +50,14 @@ describe('export_pdf_html_size_error', () => {
 
     test('build_export_pdf_html_too_large_message använder klartext', () => {
         const error = new ExportPdfHtmlTooLargeError(
-            52 * 1024 * 1024,
-            50 * 1024 * 1024,
+            22 * 1024 * 1024,
+            SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
             'export_screenshots_appendix_too_large'
         );
         const message = build_export_pdf_html_too_large_message(() => '', error);
         expect(message).toContain('Bilagan med skärmbilder är för stor');
-        expect(message).toContain('52 MByte');
-        expect(message).toContain('Maxgräns: 50 Mbyte');
+        expect(message).toContain('22 MByte');
+        expect(message).toContain('Maxgräns: 20 Mbyte');
         expect(message).not.toContain('htmlContent');
     });
 });

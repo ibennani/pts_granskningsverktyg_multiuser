@@ -13,6 +13,8 @@ import {
 import { DownloadFileTooLargeError, FILE_DOWNLOAD_MAX_BYTES } from '../../js/utils/download_filename_utils.ts';
 import { ExportPdfHtmlTooLargeError } from '../../js/export/export_pdf_html_size_error.ts';
 import { ExportPdfFailedError } from '../../js/export/export_pdf_user_errors.ts';
+import { SCREENSHOTS_APPENDIX_PDF_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
+import { set_language } from '../../js/translation_logic.ts';
 
 const Helpers = {
     create_element,
@@ -57,6 +59,10 @@ describe('generic_tooltip integration', () => {
 });
 
 describe('file_download_button_ui', () => {
+    beforeAll(async () => {
+        await set_language('sv-SE');
+    });
+
     beforeEach(() => {
         jest.useFakeTimers();
         jest.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -212,8 +218,8 @@ describe('file_download_button_ui', () => {
             t,
             on_download: async () => {
                 throw new ExportPdfHtmlTooLargeError(
-                    52 * 1024 * 1024,
-                    50 * 1024 * 1024,
+                    22 * 1024 * 1024,
+                    SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
                     'export_screenshots_appendix_too_large'
                 );
             },
@@ -226,8 +232,8 @@ describe('file_download_button_ui', () => {
 
         const tooltip_text = parts.tooltip.get_text_element()?.textContent;
         expect(tooltip_text).toContain('Bilagan med skärmbilder är för stor');
-        expect(tooltip_text).toContain('52 MByte');
-        expect(tooltip_text).toContain('Maxgräns: 50 Mbyte');
+        expect(tooltip_text).toContain('22 MByte');
+        expect(tooltip_text).toContain('Maxgräns: 20 Mbyte');
         expect(tooltip_text).not.toContain('htmlContent');
 
         jest.advanceTimersByTime(READY_RESET_MS);

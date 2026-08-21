@@ -3,6 +3,7 @@ import { DownloadFileTooLargeError } from '../../js/utils/download_filename_util
 import { ExportPdfHtmlTooLargeError } from '../../js/export/export_pdf_html_size_error.ts';
 import { ExportPdfFailedError } from '../../js/export/export_pdf_user_errors.ts';
 import { finalize_export_catch } from '../../js/export/export_error_handling.ts';
+import { SCREENSHOTS_APPENDIX_PDF_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
 
 describe('export_error_handling', () => {
     test('finalize_export_catch kastar storleksfel utan notify', () => {
@@ -16,8 +17,8 @@ describe('export_error_handling', () => {
     test('finalize_export_catch kastar PDF-HTML-storleksfel utan notify', () => {
         const notify = jest.fn();
         const err = new ExportPdfHtmlTooLargeError(
-            52 * 1024 * 1024,
-            50 * 1024 * 1024,
+            22 * 1024 * 1024,
+            SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
             'export_screenshots_appendix_too_large'
         );
 
