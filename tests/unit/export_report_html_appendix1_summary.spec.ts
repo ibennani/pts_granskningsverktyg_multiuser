@@ -378,7 +378,7 @@ describe('export_report_html_appendix1_pts', () => {
         const html = build_appendix1_summary_body_html(create_audit_with_deficiency_types(), t);
         expect(html).toContain('class="appendix1-cover"');
         expect(html).toContain('appendix1-cover__case-number');
-        expect(html).toContain('2026-001');
+        expect(html).toContain('Diarienummer 2026-001');
         expect(html).toContain('id="section-audit-info"');
         expect(html).toContain('<nav aria-label="Innehållsförteckning"');
         expect(html).toContain('id="section-introduction"');
@@ -386,6 +386,21 @@ describe('export_report_html_appendix1_pts', () => {
         expect(html).toContain('<strong>markdown</strong>');
         expect(html).toContain('<h2>3.1 Uppfattningsbar – sammanfattning av brister</h2>');
         expect(html).toContain('<strong>Semantiska element används inte.</strong>');
+    });
+
+    test('build_appendix1_summary_body_html visar diarienummer på omslaget utan domän', () => {
+        const audit = {
+            ...create_audit_with_deficiency_types(),
+            auditMetadata: {
+                ...create_audit_with_deficiency_types().auditMetadata,
+                actorLink: 'https://www.xxl.se/',
+                caseNumber: '25-20478',
+            },
+        };
+        const html = build_appendix1_summary_body_html(audit, t);
+        const cover_html = html.split('</section>')[0];
+        expect(cover_html).toContain('Diarienummer 25-20478');
+        expect(cover_html).not.toContain('xxl.se');
     });
 
     test('build_appendix1_pts_pdf_document har lang och semantiska element', () => {
