@@ -8,6 +8,7 @@ import {
     replace_flate_stream_object_incrementally,
 } from './pdf_incremental_object_replace.js';
 import { remove_nonstruct_wrappers_from_pdf } from './pdf_remove_nonstruct_wrappers.js';
+import { apply_figure_alt_texts_from_html } from './pdf_figure_alt_text.js';
 
 const PAGE_TYPE_PATTERN = /\/Type\s+\/Page\b/;
 const PAGES_TYPE_PATTERN = /\/Type\s+\/Pages\b/;
@@ -109,6 +110,9 @@ export function postprocess_tagged_export_pdf(
     let updated = pdf_buffer;
     if (should_unwrap_nonstruct) {
         updated = remove_nonstruct_wrappers_from_pdf(updated);
+    }
+    if (is_appendix3_html(options.html_content)) {
+        updated = apply_figure_alt_texts_from_html(updated, options.html_content);
     }
     if (options.document_kind === 'appendix1') {
         updated = mark_first_page_as_artifact(updated);
