@@ -46,16 +46,30 @@ describe('export_report_html_screenshots_appendix appendix3 template', () => {
             t
         );
 
-        expect(html).toContain('<div class="screenshots-appendix">');
-        expect(html).toContain('<div class="screenshots-appendix__item">');
-        expect(html).toContain('<h2>047_1_WEBB_1_2026-04-11_26-11111.png</h2>');
+        expect(html).toContain('<main class="screenshots-appendix-document">');
+        expect(html).toContain('<section class="screenshots-appendix">');
+        expect(html).toContain('<figure class="screenshots-appendix__item">');
+        expect(html).toContain(
+            '<figcaption class="screenshots-appendix__caption">047_1_WEBB_1_2026-04-11_26-11111.png</figcaption>'
+        );
+        expect(html).not.toContain('<h2>047_1_WEBB_1_2026-04-11_26-11111.png</h2>');
         expect(html).not.toContain('media/047_1_WEBB_1_2026-04-11_26-11111.png');
         expect(html).toContain('alt="047_1_WEBB_1_2026-04-11_26-11111.png"');
     });
 
+    test('tom bilaga har p-tagg för tomt meddelande', () => {
+        const audit = {
+            ruleFileContent: normalize_rulefile_appendix3({}),
+            auditMetadata: { caseNumber: 'DNR-99', actorName: 'Test' },
+        };
+        const html = build_screenshots_appendix_body_html([], audit, t);
+        expect(html).toContain('<p class="screenshots-appendix__empty">export_screenshots_appendix_empty</p>');
+    });
+
     test('print-CSS vänsterställer bildrubriker i bilaga 3', () => {
         const css = build_report_pdf_print_css();
-        expect(css).toMatch(/\.screenshots-appendix h2[\s\S]*text-align:\s*left/);
+        expect(css).toMatch(/\.screenshots-appendix__caption[\s\S]*text-align:\s*left/);
+        expect(css).not.toContain('.screenshots-appendix h2');
     });
 });
 

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Bygger minimal taggad HTML för PDF-bilaga 3: h1, h2 (filnamn) och img med alt.
+ * @fileoverview Bygger taggad HTML för PDF-bilaga 3: main, h1, figure/figcaption, img med alt.
  */
 import { escape_html_internal, render_markdown_to_html } from './export_html_build_primitives.js';
 import { build_report_pdf_print_css } from './export_report_typography.js';
@@ -52,16 +52,20 @@ function build_screenshot_item_html(item: PreparedScreenshotsAppendixPdfItem): s
     const alt_text = escape_html_internal(display_filename);
     const safe_src = escape_html_internal(item.pdf_data_uri);
     return (
-        `<div class="screenshots-appendix__item">` +
-        `<h2>${heading_text}</h2>` +
+        `<figure class="screenshots-appendix__item">` +
+        `<figcaption class="screenshots-appendix__caption">${heading_text}</figcaption>` +
         `<img src="${safe_src}" alt="${alt_text}">` +
-        `</div>`
+        `</figure>`
     );
 }
 
 function wrap_screenshots_appendix_items_html(items_html: string): string {
     if (!items_html) return '';
-    return `<div class="screenshots-appendix">${items_html}</div>`;
+    return `<section class="screenshots-appendix">${items_html}</section>`;
+}
+
+function wrap_screenshots_appendix_main_html(inner_html: string): string {
+    return `<main class="screenshots-appendix-document">${inner_html}</main>`;
 }
 
 export function build_screenshots_appendix_body_html(
@@ -76,7 +80,7 @@ export function build_screenshots_appendix_body_html(
     }
 
     if (items.length === 0) {
-        html += escape_html_internal(t('export_screenshots_appendix_empty'));
+        html += `<p class="screenshots-appendix__empty">${escape_html_internal(t('export_screenshots_appendix_empty'))}</p>`;
     } else {
         let items_html = '';
         for (const item of items) {
@@ -85,7 +89,7 @@ export function build_screenshots_appendix_body_html(
         html += wrap_screenshots_appendix_items_html(items_html);
     }
 
-    return html;
+    return wrap_screenshots_appendix_main_html(html);
 }
 
 export function build_screenshots_appendix_pdf_document(
@@ -110,7 +114,10 @@ export function build_screenshots_appendix_pdf_title_chunk(
     if (intro_html) {
         body_html += intro_html;
     }
-    return build_screenshots_appendix_pdf_html_document(doc_title, body_html);
+    return build_screenshots_appendix_pdf_html_document(
+        doc_title,
+        wrap_screenshots_appendix_main_html(body_html)
+    );
 }
 
 export function build_screenshots_appendix_pdf_image_chunks(
@@ -130,7 +137,7 @@ export function build_screenshots_appendix_pdf_image_chunks(
         chunks.push(
             build_screenshots_appendix_pdf_html_document(
                 doc_title,
-                wrap_screenshots_appendix_items_html(items_html)
+                wrap_screenshots_appendix_main_html(wrap_screenshots_appendix_items_html(items_html))
             )
         );
     }

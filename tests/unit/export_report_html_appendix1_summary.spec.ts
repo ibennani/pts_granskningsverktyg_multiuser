@@ -406,8 +406,16 @@ describe('export_report_html_appendix1_pts', () => {
     test('build_appendix1_pts_pdf_document har lang och semantiska element', () => {
         const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
         expect(html).toContain('lang="sv"');
-        expect(html).toContain('<dl>');
+        expect(html).toContain('<table class="appendix1-audit-info__meta">');
+        expect(html).toContain('<th scope="row">');
         expect(html).toContain('{{APPENDIX1_COVER_SRC}}');
+    });
+
+    test('PDF HTML har omslag dolt från taggträd och TOC-rubrik som h1', () => {
+        const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
+        expect(html).toContain('<section class="appendix1-cover" aria-hidden="true">');
+        expect(html).toContain('<h1 class="appendix1-toc-title">Innehåll</h1>');
+        expect(html).not.toContain('role="heading"');
     });
 
     test('PDF HTML visar granskning avslutad när sluttid finns', () => {
@@ -467,17 +475,18 @@ describe('export_report_html_appendix1_pts', () => {
         expect(css).not.toContain('Cambria');
         expect(css).toContain('.appendix1-audit-info__contact');
         expect(css).toMatch(/line-height:\s*1\.15/);
-        expect(css).toContain('.appendix1-toc__leader');
+        expect(css).toContain('.appendix1-toc__label::after');
         expect(css).toMatch(/dotted #000000/);
         expect(css).toContain('.appendix1-toc__item--level-1 .appendix1-toc__label');
         expect(css).toContain('.appendix1-toc__item--level-2 .appendix1-toc__label');
         expect(css).toMatch(/text-align:\s*right/);
         expect(css).not.toContain('transform: translateY');
+        expect(css).not.toContain('.appendix1-toc__leader');
     });
 
-    test('PDF HTML har innehållsförteckning med punktledare', () => {
+    test('PDF HTML har innehållsförteckning utan ledare-span och med sidnummer-span', () => {
         const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
-        expect(html).toContain('class="appendix1-toc__leader"');
+        expect(html).not.toContain('class="appendix1-toc__leader"');
         expect(html).toContain('class="appendix1-toc__page"');
         expect(html).toContain('class="appendix1-toc__link"');
         expect(html).toContain('appendix1-toc__item--level-1');

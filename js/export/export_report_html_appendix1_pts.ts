@@ -51,8 +51,8 @@ function build_cover_html(
     const case_number_line = build_cover_case_number_line(context.caseNumber, t);
 
     return (
-        `<section class="appendix1-cover" aria-label="${escape_html_internal(t('export_appendix1_cover_aria'))}">` +
-        `<img class="appendix1-cover__image" src="${APPENDIX1_COVER_IMAGE_PLACEHOLDER}" alt="${escape_html_internal(t('export_appendix1_cover_image_alt'))}">` +
+        `<section class="appendix1-cover" aria-hidden="true">` +
+        `<img class="appendix1-cover__image" src="${APPENDIX1_COVER_IMAGE_PLACEHOLDER}" alt="">` +
         `<div class="appendix1-cover__content">` +
         `<div class="appendix1-cover__meta-row">` +
         `<p>${export_date}</p>` +
@@ -100,9 +100,10 @@ function build_audit_info_html(
         }
     );
 
-    let dl = '';
+    let table_rows = '';
     for (const row of rows) {
-        dl += `<dt>${escape_html_internal(row.label)}</dt><dd>${row.value_html}</dd>`;
+        table_rows +=
+            `<tr><th scope="row">${escape_html_internal(row.label)}</th><td>${row.value_html}</td></tr>`;
     }
 
     const contact_html =
@@ -118,7 +119,7 @@ function build_audit_info_html(
     return (
         `<section class="appendix1-page appendix1-audit-info" id="section-audit-info">` +
         `<h1>${escape_html_internal(t('export_appendix1_audit_info_heading'))}</h1>` +
-        `<dl>${dl}</dl>${contact_html}</section>`
+        `<table class="appendix1-audit-info__meta"><tbody>${table_rows}</tbody></table>${contact_html}</section>`
     );
 }
 
@@ -138,7 +139,6 @@ function build_toc_html(
             `<li class="appendix1-toc__item${level_class}">` +
             `<a class="appendix1-toc__link" href="${href}">` +
             `<span class="appendix1-toc__label">${escape_html_internal(entry.title)}</span>` +
-            `<span class="appendix1-toc__leader" aria-hidden="true"></span>` +
             `<span class="appendix1-toc__page" aria-hidden="true"></span>` +
             `</a></li>`;
     }
@@ -146,7 +146,7 @@ function build_toc_html(
 
     return (
         `<section class="appendix1-page appendix1-toc">` +
-        `<p class="appendix1-toc-title" role="heading" aria-level="1">${escape_html_internal(t('export_appendix1_toc_heading'))}</p>` +
+        `<h1 class="appendix1-toc-title">${escape_html_internal(t('export_appendix1_toc_heading'))}</h1>` +
         `<nav aria-label="${escape_html_internal(t('export_appendix1_toc_nav_aria'))}">${list_html}</nav>` +
         `</section>`
     );

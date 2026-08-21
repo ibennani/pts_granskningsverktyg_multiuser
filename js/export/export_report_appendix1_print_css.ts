@@ -121,15 +121,27 @@ h2 {
 p {
     margin: 0 0 8pt;
 }
-.appendix1-audit-info dl {
+.appendix1-audit-info__meta {
     margin: 12mm 0 0;
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
 }
-.appendix1-audit-info dt {
+.appendix1-audit-info__meta th,
+.appendix1-audit-info__meta td {
+    padding: 0;
+    border: none;
+    vertical-align: top;
+    text-align: left;
+    font-weight: 400;
+}
+.appendix1-audit-info__meta th {
     font-weight: 700;
-    margin: 0;
+    padding-right: 4pt;
 }
-.appendix1-audit-info dd {
-    margin: 0 0 8pt;
+.appendix1-audit-info__meta tbody tr:not(:last-child) th,
+.appendix1-audit-info__meta tbody tr:not(:last-child) td {
+    padding-bottom: 8pt;
 }
 .appendix1-audit-info__contact {
     margin: 8pt 0 0;
@@ -141,6 +153,7 @@ p {
     font-size: ${heading1}pt;
     font-weight: 700;
     margin: 0 0 12mm;
+    line-height: 1.15;
 }
 .appendix1-toc nav {
     font-size: ${toc_entry}pt;
@@ -176,11 +189,15 @@ p {
     print-color-adjust: exact;
 }
 .appendix1-toc nav .appendix1-toc__label {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
     background: #ffffff;
     padding-right: 4pt;
 }
-.appendix1-toc nav .appendix1-toc__leader {
+.appendix1-toc nav .appendix1-toc__label::after {
+    content: '';
     flex: 1 1 auto;
     border-bottom: 0.75pt dotted #000000;
     min-width: 12pt;
