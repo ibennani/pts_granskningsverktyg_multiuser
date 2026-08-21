@@ -47,9 +47,13 @@ export function report_export_font_size_half_points(size_pt: number): number {
     return size_pt * 2;
 }
 
+/** PDF-säker font för bilaga 3 (Aeonik bold saknar glyfer i Chromiums PDF-inbäddning). */
+export const PDF_SCREENSHOTS_APPENDIX_FONT_STACK = 'Arial, Helvetica, sans-serif';
+
 /** Print-CSS med Aeonik och PTS-typografihierarki för huvudrapport och bilaga 3. */
 export function build_report_pdf_print_css(): string {
     const font_stack = build_pdf_font_stack();
+    const screenshots_font_stack = PDF_SCREENSHOTS_APPENDIX_FONT_STACK;
     const { body, heading1, heading2 } = PDF_EXPORT_FONT_SIZES_PT;
     const { heading_before, heading_after, paragraph_after, comment_before } = REPORT_EXPORT_SPACING_PT;
     const { hyperlink, comment_label } = REPORT_EXPORT_COLORS;
@@ -75,13 +79,20 @@ ol { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; list-style: decimal;
 ol[type="a"] { list-style: lower-alpha; }
 li { margin: 0 0 ${paragraph_after}pt; }
 .deficiency-types-appendix h2:first-of-type { page-break-before: auto; }
+.screenshots-appendix-document,
+.screenshots-appendix-document h1,
+.screenshots-appendix-document h2,
+.screenshots-appendix-document h3,
+.screenshots-appendix-document p,
+.screenshots-appendix-document li {
+    font-family: ${screenshots_font_stack};
+}
 .screenshots-appendix h2,
 .screenshots-appendix__heading {
     page-break-before: auto;
     page-break-after: avoid;
     break-after: avoid;
     text-align: left;
-    font-family: ${font_stack};
     font-size: ${heading1}pt;
     font-weight: 700;
     color: #${REPORT_EXPORT_COLORS.text};

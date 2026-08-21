@@ -4,7 +4,7 @@
 import {
     pdf_buffer_contains_marker,
     read_object_dictionary_at,
-    replace_object_body_incrementally,
+    replace_object_bodies_incrementally,
 } from './pdf_incremental_object_replace.js';
 import {
     parse_struct_elem_dict,
@@ -212,8 +212,9 @@ export function remove_nonstruct_wrappers_from_pdf(pdf_buffer: Buffer): Buffer {
     }
 
     let updated = pdf_buffer;
-    for (const [object_number, dict_body] of collect_updated_object_bodies(nodes, dirty_object_numbers)) {
-        updated = replace_object_body_incrementally(updated, object_number, dict_body);
+    const object_bodies = collect_updated_object_bodies(nodes, dirty_object_numbers);
+    if (object_bodies.size > 0) {
+        updated = replace_object_bodies_incrementally(updated, object_bodies);
     }
 
     const updated_nodes = load_struct_elem_nodes(updated);

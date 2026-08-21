@@ -5,6 +5,9 @@
 /** Max storlek per fil (50 MiB). */
 export const FILE_MAX_BYTES = 50 * 1024 * 1024;
 
+/** Max storlek för PDF bilaga 3 (20 MiB). */
+export const SCREENSHOTS_APPENDIX_PDF_MAX_BYTES = 20 * 1024 * 1024;
+
 /** Max storlek för zip med alla sidrapporter (100 MiB). */
 export const SNAPSHOTS_DOWNLOAD_ALL_MAX_BYTES = 100 * 1024 * 1024;
 

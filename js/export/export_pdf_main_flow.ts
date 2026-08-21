@@ -16,13 +16,21 @@ import {
     type ExportReportHtmlT,
 } from './export_report_html_criterias.js';
 import { build_appendix1_summary_pdf_document } from './export_report_html_appendix1_summary.js';
-import { build_screenshots_appendix_pdf_html_chunks_within_limit } from './export_screenshots_appendix_pdf_encode.js';
+import {
+    build_screenshots_appendix_pdf_html_chunks_for_items,
+    prepare_screenshots_appendix_items_for_pdf_profile,
+    SCREENSHOTS_APPENDIX_PDF_ENCODE_PROFILES,
+} from './export_screenshots_appendix_pdf_encode.js';
 import { prepare_screenshots_appendix_media } from './export_screenshots_appendix_media.js';
 import { api_post_pdf } from '../api/client.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import {
     assert_pdf_export_html_within_limit,
+    ExportPdfHtmlTooLargeError,
+    is_export_pdf_html_too_large_error,
+    normalize_export_pdf_html_too_large_error,
 } from './export_pdf_html_size_error.js';
+import { SCREENSHOTS_APPENDIX_PDF_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
 import { throw_pdf_export_user_error } from './export_pdf_user_errors.js';
 
 function handle_pdf_export_error(
@@ -191,21 +199,61 @@ export async function build_screenshots_appendix_pdf_blob(
         return null;
     }
 
-    const html_chunks = await build_screenshots_appendix_pdf_html_chunks_within_limit(
-        current_audit,
-        items,
-        t
-    );
-    const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
-        htmlChunks: html_chunks,
-    });
-
     const filename = build_screenshots_appendix_pdf_filename(
         current_audit as AuditExportMeta,
         t
     );
 
-    return { blob: pdf_blob, filename, missing_filenames };
+    let last_too_large: ExportPdfHtmlTooLargeError | null = null;
+
+    for (const profile of SCREENSHOTS_APPENDIX_PDF_ENCODE_PROFILES) {
+        const pdf_items = await prepare_screenshots_appendix_items_for_pdf_profile(items, profile);
+        let html_chunks: string[];
+        try {
+            html_chunks = build_screenshots_appendix_pdf_html_chunks_for_items(
+                current_audit,
+                pdf_items,
+                t
+            );
+        } catch (error: unknown) {
+            if (is_export_pdf_html_too_large_error(error)) {
+                last_too_large = error;
+                continue;
+            }
+            throw error;
+        }
+
+        let pdf_blob: Blob;
+        try {
+            pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
+                htmlChunks: html_chunks,
+                pdfDocumentKind: 'appendix3',
+            });
+        } catch (error: unknown) {
+            const api_too_large = normalize_export_pdf_html_too_large_error(
+                error,
+                'export_screenshots_appendix_too_large'
+            );
+            if (api_too_large) {
+                last_too_large = api_too_large;
+                continue;
+            }
+            throw error;
+        }
+
+        if (pdf_blob.size <= SCREENSHOTS_APPENDIX_PDF_MAX_BYTES) {
+            return { blob: pdf_blob, filename, missing_filenames };
+        }
+    }
+
+    throw (
+        last_too_large ??
+        new ExportPdfHtmlTooLargeError(
+            SCREENSHOTS_APPENDIX_PDF_MAX_BYTES + 1,
+            SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
+            'export_screenshots_appendix_too_large'
+        )
+    );
 }
 
 export async function export_to_pdf_appendix1_summary(

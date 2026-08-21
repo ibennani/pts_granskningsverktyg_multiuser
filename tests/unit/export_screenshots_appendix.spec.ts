@@ -57,6 +57,7 @@ describe('export_report_html_screenshots_appendix appendix3 template', () => {
         expect(html).not.toContain('<figcaption');
         expect(html).not.toContain('media/047_1_WEBB_1_2026-04-11_26-11111.png');
         expect(html).toContain('alt="047_1_WEBB_1_2026-04-11_26-11111.png"');
+        expect(html).toContain('title="047_1_WEBB_1_2026-04-11_26-11111.png"');
     });
 
     test('tom bilaga har p-tagg för tomt meddelande', () => {
@@ -68,10 +69,11 @@ describe('export_report_html_screenshots_appendix appendix3 template', () => {
         expect(html).toContain('<p class="screenshots-appendix__empty">export_screenshots_appendix_empty</p>');
     });
 
-    test('print-CSS vänsterställer h2-rubriker i bilaga 3', () => {
+    test('print-CSS vänsterställer h2-rubriker i bilaga 3 med PDF-säker font', () => {
         const css = build_report_pdf_print_css();
         expect(css).toMatch(/\.screenshots-appendix h2[\s\S]*text-align:\s*left/);
         expect(css).toMatch(/\.screenshots-appendix__heading[\s\S]*text-align:\s*left/);
+        expect(css).toMatch(/\.screenshots-appendix-document[\s\S]*Arial, Helvetica, sans-serif/);
     });
 });
 

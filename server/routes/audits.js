@@ -40,17 +40,47 @@ import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import { resolve_rule_set_row_for_audit_overlay } from '../utils/audit_rule_set_overlay_resolve.js';
 import { generate_pdf_from_html, generate_pdf_from_html_chunks } from '../services/pdf_generation_service.ts';
 import { PDF_EXPORT_HTML_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
-import { FILE_MAX_BYTES } from '../../shared/constants/file_size_limits.js';
+import {
+    FILE_MAX_BYTES,
+    SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
+} from '../../shared/constants/file_size_limits.js';
 
 const router = express.Router();
 
-function send_pdf_export_buffer(res, pdf_buffer) {
-    if (pdf_buffer.length > FILE_MAX_BYTES) {
+function resolve_pdf_export_max_bytes(pdf_document_kind) {
+    if (pdf_document_kind === 'appendix3') {
+        return SCREENSHOTS_APPENDIX_PDF_MAX_BYTES;
+    }
+    return FILE_MAX_BYTES;
+}
+
+function detect_pdf_document_kind_from_html(html_content) {
+    if (typeof html_content !== 'string') {
+        return 'default';
+    }
+    if (html_content.includes('screenshots-appendix-document')) {
+        return 'appendix3';
+    }
+    return 'default';
+}
+
+function resolve_pdf_document_kind(pdf_document_kind, html_probe) {
+    if (pdf_document_kind === 'appendix1') {
+        return 'appendix1';
+    }
+    if (pdf_document_kind === 'appendix3') {
+        return 'appendix3';
+    }
+    return detect_pdf_document_kind_from_html(html_probe);
+}
+
+function send_pdf_export_buffer(res, pdf_buffer, max_bytes = FILE_MAX_BYTES) {
+    if (pdf_buffer.length > max_bytes) {
         return res.status(400).json({
             code: 'PDF_EXPORT_HTML_TOO_LARGE',
             error: 'PDF_EXPORT_HTML_TOO_LARGE',
             byte_size: pdf_buffer.length,
-            max_bytes: FILE_MAX_BYTES,
+            max_bytes,
         });
     }
     res.setHeader('Content-Type', 'application/pdf');
@@ -527,6 +557,8 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
             ? htmlChunks.filter((chunk) => typeof chunk === 'string')
             : [];
         if (chunks.length > 0) {
+            const resolved_document_kind = resolve_pdf_document_kind(pdfDocumentKind, chunks[0]);
+            const max_pdf_bytes = resolve_pdf_export_max_bytes(resolved_document_kind);
             for (const chunk of chunks) {
                 const chunk_size = Buffer.byteLength(chunk, 'utf8');
                 if (chunk_size > PDF_EXPORT_HTML_MAX_BYTES) {
@@ -539,7 +571,7 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
                 }
             }
             const pdf_buffer = await generate_pdf_from_html_chunks(chunks);
-            return send_pdf_export_buffer(res, pdf_buffer);
+            return send_pdf_export_buffer(res, pdf_buffer, max_pdf_bytes);
         }
         if (!htmlContent || typeof htmlContent !== 'string') {
             return res.status(400).json({ error: 'htmlContent eller htmlChunks krävs' });
@@ -553,11 +585,13 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
                 max_bytes: PDF_EXPORT_HTML_MAX_BYTES,
             });
         }
+        const resolved_document_kind = resolve_pdf_document_kind(pdfDocumentKind, htmlContent);
+        const max_pdf_bytes = resolve_pdf_export_max_bytes(resolved_document_kind);
         const pdf_buffer = await generate_pdf_from_html({
             htmlContent,
-            documentKind: pdfDocumentKind === 'appendix1' ? 'appendix1' : 'default',
+            documentKind: resolved_document_kind === 'appendix1' ? 'appendix1' : 'default',
         });
-        return send_pdf_export_buffer(res, pdf_buffer);
+        return send_pdf_export_buffer(res, pdf_buffer, max_pdf_bytes);
     } catch (err) {
         console.error('[audits] PDF export error:', err);
         res.status(500).json({

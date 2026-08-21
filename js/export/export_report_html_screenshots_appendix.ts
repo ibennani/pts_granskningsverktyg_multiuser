@@ -54,7 +54,7 @@ function build_screenshot_item_html(item: PreparedScreenshotsAppendixPdfItem): s
     return (
         `<section class="screenshots-appendix__item">` +
         `<h2 class="screenshots-appendix__heading">${heading_text}</h2>` +
-        `<img src="${safe_src}" alt="${alt_text}">` +
+        `<img src="${safe_src}" alt="${alt_text}" title="${alt_text}">` +
         `</section>`
     );
 }

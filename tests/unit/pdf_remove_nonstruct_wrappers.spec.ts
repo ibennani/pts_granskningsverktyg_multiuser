@@ -25,6 +25,7 @@ describe('pdf_remove_nonstruct_wrappers', () => {
         const updated = remove_nonstruct_wrappers_from_pdf(original);
         expect(count_nonstruct_markers(updated)).toBe(0);
         expect(updated.includes(Buffer.from('StructTreeRoot'))).toBe(true);
+        expect(updated.length).toBeLessThan(original.length * 2);
 
         const document_dict = read_object_dictionary_at(updated, 13);
         const document_node = parse_struct_elem_dict(13, document_dict);

@@ -17,7 +17,8 @@ describe('export_report_typography', () => {
         expect(css).toContain(PDF_AEONIK_FONT_FACE_PLACEHOLDER);
         expect(css).not.toContain("'Calibri'");
         expect(css).not.toContain('Segoe UI');
-        expect(css).not.toContain('Arial');
+        expect(css).toContain('.screenshots-appendix-document');
+        expect(css).toMatch(/\.screenshots-appendix-document[\s\S]*Arial, Helvetica, sans-serif/);
         expect(css).toContain(`font-size: ${PDF_EXPORT_FONT_SIZES_PT.body}pt`);
         expect(css).toContain(`font-size: ${PDF_EXPORT_FONT_SIZES_PT.heading1}pt`);
         expect(css).toContain(`font-size: ${PDF_EXPORT_FONT_SIZES_PT.heading2}pt`);

@@ -21,11 +21,12 @@ function append_screenshot_image_block(
     children: Array<InstanceType<typeof Paragraph>>,
     item: PreparedScreenshotsAppendixItem
 ): void {
+    const display_filename = format_screenshots_appendix_display_filename(item.export_filename);
     children.push(
         new Paragraph({
             children: [
                 new TextRun({
-                    text: format_screenshots_appendix_display_filename(item.export_filename),
+                    text: display_filename,
                 }),
             ],
             heading: 'Heading2',
@@ -43,6 +44,11 @@ function append_screenshot_image_block(
                     transformation: {
                         width: item.display_width_px,
                         height: item.display_height_px,
+                    },
+                    altText: {
+                        title: display_filename,
+                        description: display_filename,
+                        name: display_filename,
                     },
                 }),
             ],

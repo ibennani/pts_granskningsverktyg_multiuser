@@ -244,6 +244,80 @@ function build_object_tail(
     return build_incremental_tail(object_number, object_offset, xref_offset, trailer);
 }
 
+function build_xref_subsections(entries: Array<{ object_number: number; object_offset: number }>): string {
+    const sorted = [...entries].sort((left, right) => left.object_number - right.object_number);
+    let xref = 'xref\n';
+    let index = 0;
+    while (index < sorted.length) {
+        const start_number = sorted[index].object_number;
+        let end_index = index;
+        while (
+            end_index + 1 < sorted.length &&
+            sorted[end_index + 1].object_number === sorted[end_index].object_number + 1
+        ) {
+            end_index += 1;
+        }
+        const count = end_index - index + 1;
+        xref += `${start_number} ${count}\n`;
+        for (let entry_index = index; entry_index <= end_index; entry_index += 1) {
+            xref += `${String(sorted[entry_index].object_offset).padStart(10, '0')} 00000 n \n`;
+        }
+        index = end_index + 1;
+    }
+    return xref;
+}
+
+function build_multi_object_incremental_tail(
+    entries: Array<{ object_number: number; object_offset: number }>,
+    xref_offset: number,
+    trailer: PdfTrailerInfo
+): Buffer {
+    const info_part = trailer.info_ref ? `\n/Info ${trailer.info_ref}` : '';
+    const trailer_text =
+        `trailer\n<< /Size ${trailer.size}\n/Root ${trailer.root_ref}${info_part}\n/Prev ${trailer.prev_xref_offset} >>\n` +
+        `startxref\n${xref_offset}\n${PDF_EOF}\n`;
+    return Buffer.from(build_xref_subsections(entries) + trailer_text, 'latin1');
+}
+
+/**
+ * Ersätter flera objekt i en enda inkrementell PDF-uppdatering.
+ */
+export function replace_object_bodies_incrementally(
+    pdf_buffer: Buffer,
+    object_bodies: Map<number, string>
+): Buffer {
+    if (object_bodies.size === 0) {
+        return pdf_buffer;
+    }
+    if (object_bodies.size === 1) {
+        const [object_number, body] = object_bodies.entries().next().value ?? [];
+        if (object_number === undefined || body === undefined) {
+            return pdf_buffer;
+        }
+        return replace_object_body_incrementally(pdf_buffer, object_number, body);
+    }
+
+    const prev_xref = find_last_startxref(pdf_buffer);
+    const trailer = parse_trailer_at_xref(pdf_buffer, prev_xref);
+    const object_parts: Buffer[] = [];
+    const xref_entries: Array<{ object_number: number; object_offset: number }> = [];
+    let next_offset = pdf_buffer.length;
+
+    for (const object_number of [...object_bodies.keys()].sort((left, right) => left - right)) {
+        const body = object_bodies.get(object_number);
+        if (!body) {
+            continue;
+        }
+        const object_bytes = Buffer.from(`${object_number} 0 obj\n${body}\nendobj\n`, 'latin1');
+        xref_entries.push({ object_number, object_offset: next_offset });
+        object_parts.push(object_bytes);
+        next_offset += object_bytes.length;
+    }
+
+    const tail = build_multi_object_incremental_tail(xref_entries, next_offset, trailer);
+    return Buffer.concat([pdf_buffer, ...object_parts, tail]);
+}
+
 /**
  * Ersätter ett objekt med nytt innehåll via inkrementell PDF-uppdatering.
  */

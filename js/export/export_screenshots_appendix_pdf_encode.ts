@@ -1,11 +1,9 @@
 /**
- * @fileoverview Omkodar serverlagrade PNG-bilder till PDF-exportdimensioner (JPEG) för mindre HTML-payload.
- * JPEG här är ett exportderivat, inte originaluppladdningen.
+ * @fileoverview Förbereder bilaga 3-bilder för PDF-HTML: original först, JPEG endast vid behov.
  */
 
 import {
     array_buffer_to_base64_data_uri,
-    compute_screenshots_appendix_pdf_encode_size,
     type PreparedScreenshotsAppendixItem,
     type PreparedScreenshotsAppendixPdfItem,
 } from './export_screenshots_appendix_media.js';
@@ -22,10 +20,21 @@ import {
 
 export type { PreparedScreenshotsAppendixPdfItem };
 
-/** JPEG-kvalitet i fallande ordning om HTML fortfarande överskrider maxgränsen. */
-export const PDF_SCREENSHOT_JPEG_QUALITY_STEPS = [0.92, 0.86, 0.78, 0.68, 0.58, 0.5, 0.4] as const;
+export type ScreenshotPdfEncodeProfile =
+    | { kind: 'original' }
+    | { kind: 'jpeg'; quality: number; scale: number };
 
-const PDF_ENCODE_SCALE_STEPS = [1, 0.85, 0.7] as const;
+/** Original först; JPEG med fallande kvalitet/skala endast om PDF/HTML blir för stor. */
+export const SCREENSHOTS_APPENDIX_PDF_ENCODE_PROFILES: readonly ScreenshotPdfEncodeProfile[] = [
+    { kind: 'original' },
+    { kind: 'jpeg', quality: 0.98, scale: 1 },
+    { kind: 'jpeg', quality: 0.95, scale: 1 },
+    { kind: 'jpeg', quality: 0.92, scale: 0.92 },
+    { kind: 'jpeg', quality: 0.85, scale: 0.85 },
+    { kind: 'jpeg', quality: 0.75, scale: 0.75 },
+    { kind: 'jpeg', quality: 0.65, scale: 0.65 },
+    { kind: 'jpeg', quality: 0.55, scale: 0.55 },
+] as const;
 
 async function blob_to_jpeg_data_uri(
     blob: Blob,
@@ -63,55 +72,61 @@ async function blob_to_jpeg_data_uri(
     }
 }
 
-function build_encode_dimensions(
-    item: PreparedScreenshotsAppendixItem
-): Array<{ width_px: number; height_px: number }> {
-    const base = compute_screenshots_appendix_pdf_encode_size(
-        item.native_width_px,
-        item.native_height_px
-    );
-    return PDF_ENCODE_SCALE_STEPS.map((scale) => ({
-        width_px: Math.max(1, Math.round(base.width_px * scale)),
-        height_px: Math.max(1, Math.round(base.height_px * scale)),
-    }));
+function build_jpeg_encode_dimensions(
+    item: PreparedScreenshotsAppendixItem,
+    scale: number
+): { width_px: number; height_px: number } {
+    return {
+        width_px: Math.max(1, Math.round(item.native_width_px * scale)),
+        height_px: Math.max(1, Math.round(item.native_height_px * scale)),
+    };
 }
 
-export async function encode_screenshot_item_for_pdf_html(
-    item: PreparedScreenshotsAppendixItem,
-    jpeg_quality: number
-): Promise<PreparedScreenshotsAppendixPdfItem> {
-    const source_blob = new Blob([item.bytes], { type: item.mime_type });
-    for (const dims of build_encode_dimensions(item)) {
-        try {
-            const pdf_data_uri = await blob_to_jpeg_data_uri(
-                source_blob,
-                dims.width_px,
-                dims.height_px,
-                jpeg_quality
-            );
-            return {
-                ...item,
-                display_width_px: dims.width_px,
-                display_height_px: dims.height_px,
-                pdf_data_uri,
-            };
-        } catch {
-            /* prova nästa dimension */
-        }
-    }
+export function encode_screenshot_item_as_original(
+    item: PreparedScreenshotsAppendixItem
+): PreparedScreenshotsAppendixPdfItem {
     return {
         ...item,
         pdf_data_uri: array_buffer_to_base64_data_uri(item.bytes, item.mime_type),
     };
 }
 
-export async function prepare_screenshots_appendix_items_for_pdf_html(
+export async function encode_screenshot_item_as_jpeg(
+    item: PreparedScreenshotsAppendixItem,
+    jpeg_quality: number,
+    scale: number
+): Promise<PreparedScreenshotsAppendixPdfItem> {
+    const source_blob = new Blob([item.bytes], { type: item.mime_type });
+    const dims = build_jpeg_encode_dimensions(item, scale);
+    try {
+        const pdf_data_uri = await blob_to_jpeg_data_uri(
+            source_blob,
+            dims.width_px,
+            dims.height_px,
+            jpeg_quality
+        );
+        return {
+            ...item,
+            display_width_px: dims.width_px,
+            display_height_px: dims.height_px,
+            pdf_data_uri,
+        };
+    } catch {
+        return encode_screenshot_item_as_original(item);
+    }
+}
+
+export async function prepare_screenshots_appendix_items_for_pdf_profile(
     items: PreparedScreenshotsAppendixItem[],
-    jpeg_quality: number
+    profile: ScreenshotPdfEncodeProfile
 ): Promise<PreparedScreenshotsAppendixPdfItem[]> {
+    if (profile.kind === 'original') {
+        return items.map(encode_screenshot_item_as_original);
+    }
+
     const prepared: PreparedScreenshotsAppendixPdfItem[] = [];
     for (const item of items) {
-        prepared.push(await encode_screenshot_item_for_pdf_html(item, jpeg_quality));
+        prepared.push(await encode_screenshot_item_as_jpeg(item, profile.quality, profile.scale));
     }
     return prepared;
 }
@@ -125,39 +140,41 @@ function assert_all_chunks_within_limit(
     }
 }
 
+export function build_screenshots_appendix_pdf_html_chunks_for_items(
+    current_audit: Record<string, unknown>,
+    pdf_items: PreparedScreenshotsAppendixPdfItem[],
+    t: ExportScreenshotsAppendixHtmlT,
+    message_key: ExportPdfHtmlTooLargeMessageKey = 'export_screenshots_appendix_too_large'
+): string[] {
+    const single_html = build_screenshots_appendix_pdf_document(current_audit, pdf_items, t);
+    try {
+        assert_pdf_export_html_within_limit(single_html, message_key);
+        return [single_html];
+    } catch (error: unknown) {
+        if (!is_export_pdf_html_too_large_error(error)) {
+            throw error;
+        }
+    }
+
+    const html_chunks = build_screenshots_appendix_pdf_document_chunks(current_audit, pdf_items, t);
+    assert_all_chunks_within_limit(html_chunks, message_key);
+    return html_chunks;
+}
+
+/** @deprecated Använd prepare_screenshots_appendix_items_for_pdf_profile + build_screenshots_appendix_pdf_html_chunks_for_items */
 export async function build_screenshots_appendix_pdf_html_chunks_within_limit(
     current_audit: Record<string, unknown>,
     items: PreparedScreenshotsAppendixItem[],
     t: ExportScreenshotsAppendixHtmlT,
     message_key: ExportPdfHtmlTooLargeMessageKey = 'export_screenshots_appendix_too_large'
 ): Promise<string[]> {
-    let last_too_large: unknown = null;
-
-    for (const jpeg_quality of PDF_SCREENSHOT_JPEG_QUALITY_STEPS) {
-        const pdf_items = await prepare_screenshots_appendix_items_for_pdf_html(items, jpeg_quality);
-        const single_html = build_screenshots_appendix_pdf_document(current_audit, pdf_items, t);
-        try {
-            assert_pdf_export_html_within_limit(single_html, message_key);
-            return [single_html];
-        } catch (error: unknown) {
-            if (!is_export_pdf_html_too_large_error(error)) {
-                throw error;
-            }
-            last_too_large = error;
-        }
-
-        const html_chunks = build_screenshots_appendix_pdf_document_chunks(current_audit, pdf_items, t);
-        try {
-            assert_all_chunks_within_limit(html_chunks, message_key);
-            return html_chunks;
-        } catch (error: unknown) {
-            if (is_export_pdf_html_too_large_error(error)) {
-                last_too_large = error;
-                continue;
-            }
-            throw error;
-        }
-    }
-
-    throw last_too_large;
+    const pdf_items = await prepare_screenshots_appendix_items_for_pdf_profile(items, {
+        kind: 'original',
+    });
+    return build_screenshots_appendix_pdf_html_chunks_for_items(
+        current_audit,
+        pdf_items,
+        t,
+        message_key
+    );
 }

@@ -4,6 +4,7 @@
 
 export {
     FILE_MAX_BYTES as PDF_EXPORT_HTML_MAX_BYTES,
+    SCREENSHOTS_APPENDIX_PDF_MAX_BYTES,
     format_file_max_size_label as format_pdf_export_html_max_size_label,
 } from './file_size_limits.js';
 
