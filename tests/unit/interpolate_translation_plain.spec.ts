@@ -36,4 +36,17 @@ describe('interpolate_translation_plain', () => {
         expect(plain).toContain('rapport & bilaga.docx');
         expect(plain).not.toContain('&amp;');
     });
+
+    test('interpolerar exportfilnamn med & utan escape', () => {
+        const plain = interpolate_translation_plain('audit_saved_as_file', {
+            filename: '26-1559_XXL_Sport_&_Vildmark_AB_Tillsyn_LPTT_bilaga_3_skarmbilder.pdf',
+        });
+        const escaped = t('audit_saved_as_file', {
+            filename: '26-1559_XXL_Sport_&_Vildmark_AB_Tillsyn_LPTT_bilaga_3_skarmbilder.pdf',
+        });
+
+        expect(plain).toContain('Sport_&_Vildmark');
+        expect(plain).not.toContain('&amp;');
+        expect(escaped).toContain('&amp;');
+    });
 });

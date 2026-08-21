@@ -4,11 +4,20 @@
 
 import { get_stored_requirement_result_for_def } from '../audit_logic.js';
 import type { RequirementResultStored } from '../logic/audit_logic_types.js';
+import { interpolate_translation_plain } from '../translation_logic.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { get_translation_t } from '../utils/translation_access.js';
 
 export function get_t_internal() {
     return get_translation_t();
+}
+
+/** Översättning med platshållare utan HTML-escape (textContent, global notis). */
+export function t_plain_internal(
+    key: string,
+    replacements: Record<string, string | number | boolean | null | undefined> = {}
+): string {
+    return interpolate_translation_plain(key, replacements);
 }
 
 type NotificationLike = { show_global_message?: (message: string, type: string, duration?: number) => void };

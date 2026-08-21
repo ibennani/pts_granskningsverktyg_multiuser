@@ -3,7 +3,7 @@
  */
 import { AlignmentType, ImageRun, Paragraph, TextRun } from 'docx';
 import { consoleManager } from '../utils/console_manager.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import { build_screenshots_appendix_word_filename } from './export_report_filename.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
 import { finalize_export_catch } from './export_error_handling.js';
@@ -128,7 +128,7 @@ export async function export_to_word_screenshots_appendix(
 
         if (missing_filenames.length > 0) {
             show_global_message_internal(
-                t('screenshots_appendix_missing_media_warning', {
+                t_plain_internal('screenshots_appendix_missing_media_warning', {
                     count: String(missing_filenames.length),
                 }),
                 'success'

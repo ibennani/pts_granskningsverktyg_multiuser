@@ -7,23 +7,12 @@ import {
     normalize_export_pdf_html_too_large_error,
     utf8_byte_length,
 } from '../../js/export/export_pdf_html_size_error.ts';
-
-const t = (key, params) => {
-    const map = {
-        export_screenshots_appendix_too_large:
-            'Bilagan med skärmbilder är för stor ({actual_size}). Maxgräns: {max_size}',
-        export_pdf_html_too_large: 'Exporten är för stor ({actual_size}). Maxgräns: {max_size}',
-    };
-    let text = map[key] ?? key;
-    if (params) {
-        for (const [name, value] of Object.entries(params)) {
-            text = text.replace(`{${name}}`, String(value));
-        }
-    }
-    return text;
-};
+import { set_language } from '../../js/translation_logic.ts';
 
 describe('export_pdf_html_size_error', () => {
+    beforeAll(async () => {
+        await set_language('sv-SE');
+    });
     test('assert_pdf_export_html_within_limit kastar med rätt storlek', () => {
         const over_limit = 'x'.repeat(PDF_EXPORT_HTML_MAX_BYTES + 1);
         expect(() =>
@@ -62,7 +51,7 @@ describe('export_pdf_html_size_error', () => {
             50 * 1024 * 1024,
             'export_screenshots_appendix_too_large'
         );
-        const message = build_export_pdf_html_too_large_message(t, error);
+        const message = build_export_pdf_html_too_large_message(() => '', error);
         expect(message).toContain('Bilagan med skärmbilder är för stor');
         expect(message).toContain('52 MByte');
         expect(message).toContain('Maxgräns: 50 Mbyte');

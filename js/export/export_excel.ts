@@ -13,7 +13,7 @@ import {
 } from './export_format_helpers.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { finalize_export_catch } from './export_error_handling.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import { prepare_deficiencies_for_export } from './export_deficiency_rows.js';
 import { populate_deficiencies_excel_sheet } from './excel_deficiencies_sheet.js';
 import {
@@ -130,7 +130,7 @@ export async function export_to_excel(current_audit: unknown) {
             return;
         }
         trigger_browser_blob_download(result.blob, result.filename);
-        show_global_message_internal(t('audit_saved_as_file', { filename: result.filename }), 'success');
+        show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: result.filename }), 'success');
     } catch (error: unknown) {
         finalize_export_catch(error, (err) => {
             if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to Excel with ExcelJS:', err);

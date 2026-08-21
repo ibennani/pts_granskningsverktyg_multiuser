@@ -4,7 +4,7 @@ import * as Helpers from '../utils/helpers.js';
 import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
 import { sanitize_filename_segment, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
 import {
     create_observation_paragraphs,
@@ -297,7 +297,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
 
         trigger_browser_blob_download(blob, filename);
 
-        show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+        show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error exporting to Word (Textexport):", error);

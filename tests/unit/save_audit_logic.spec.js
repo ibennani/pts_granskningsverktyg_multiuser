@@ -7,6 +7,8 @@ import { jest, describe, test, expect, beforeAll, beforeEach, afterEach } from '
 let save_audit_to_json_file;
 
 beforeAll(async () => {
+    const { ensure_initial_load } = await import('../../js/translation_logic.ts');
+    await ensure_initial_load();
     const mod = await import('../../js/logic/save_audit_logic.ts');
     save_audit_to_json_file = mod.save_audit_to_json_file;
 });
@@ -116,7 +118,7 @@ describe('save_audit_logic', () => {
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-url');
         expect(window.DraftManager.commitCurrentDraft).toHaveBeenCalled();
         expect(show_notification).toHaveBeenCalledWith(
-            expect.stringContaining('audit_saved_as_file'),
+            expect.stringMatching(/Granskning sparad som|Audit saved as/),
             'success'
         );
     });
@@ -128,7 +130,7 @@ describe('save_audit_logic', () => {
         });
         await save_audit_to_json_file({ samples: [] }, t, show_notification, undefined, test_deps());
         expect(show_notification).toHaveBeenCalledWith(
-            expect.stringContaining('audit_backup_export_missing_media'),
+            expect.stringMatching(/bilder kunde inte|images could not|bilder kunne ikke/),
             'warning'
         );
     });
@@ -149,7 +151,7 @@ describe('save_audit_logic', () => {
         const audit = { x: 1 };
         await save_audit_to_json_file(audit, t, show_notification, undefined, test_deps());
         expect(show_notification).toHaveBeenCalledWith(
-            expect.stringContaining('audit_saved_as_file'),
+            expect.stringMatching(/Granskning sparad som|Audit saved as/),
             'success'
         );
     });

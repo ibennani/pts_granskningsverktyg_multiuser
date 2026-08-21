@@ -1,5 +1,6 @@
 // js/logic/save_audit_logic.ts
 
+import { interpolate_translation_plain } from '../translation_logic.js';
 import { generate_audit_filename, type GenerateAuditFilenameOptions } from '../utils/filename_utils';
 import { attach_export_integrity_to_audit_payload } from '../utils/export_integrity.js';
 import { consoleManager } from '../utils/console_manager.js';
@@ -79,10 +80,13 @@ export async function save_audit_to_json_file(
     }
 
     if (show_notification_func) {
-        show_notification_func(t_func('audit_saved_as_file', { filename: download_filename }), 'success');
+        show_notification_func(
+            interpolate_translation_plain('audit_saved_as_file', { filename: download_filename }),
+            'success'
+        );
         if (missing_media.length > 0) {
             show_notification_func(
-                t_func('audit_backup_export_missing_media', { count: missing_media.length }),
+                interpolate_translation_plain('audit_backup_export_missing_media', { count: missing_media.length }),
                 'warning'
             );
         }

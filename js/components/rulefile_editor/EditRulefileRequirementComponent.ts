@@ -6,6 +6,7 @@
 
 import { app_session_storage } from '../../utils/scoped_browser_storage.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
+import { interpolate_translation_plain } from '../../translation_logic.js';
 import { patch_rule_content_part } from '../../api/client.js';
 import { subscribe_rule_locks } from '../../logic/list_push_service.js';
 import { get_current_user_id } from '../../api/client.js';
@@ -409,7 +410,10 @@ export class EditRulefileRequirementComponent {
 
         const t = this.Translation.t;
         if (!this.local_requirement_data.title.trim()) {
-            this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('requirement_title') }), 'error');
+            this.NotificationComponent.show_global_message(
+                interpolate_translation_plain('field_is_required', { fieldName: t('requirement_title') }),
+                'error'
+            );
             if (!window.focusProtectionActive && !window.customFocusApplied) {
                 this.form_element_ref.querySelector('#title')?.focus();
             }
@@ -456,7 +460,12 @@ export class EditRulefileRequirementComponent {
         }
 
         if (is_new_requirement) {
-            this.NotificationComponent.show_global_message(t('requirement_added_successfully', { reqTitle: this.local_requirement_data.title }), 'success');
+            this.NotificationComponent.show_global_message(
+                interpolate_translation_plain('requirement_added_successfully', {
+                    reqTitle: this.local_requirement_data.title,
+                }),
+                'success'
+            );
             this.router('rulefile_view_requirement', { id: new_key });
         } else {
             this.NotificationComponent.show_global_message(t('rulefile_requirement_saved'), 'success');

@@ -2,7 +2,7 @@
  * @fileoverview PDF-export (krav): bygger HTML och anropar server-Puppeteer.
  */
 import { consoleManager } from '../utils/console_manager.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import {
     build_report_export_filename,
     build_appendix1_summary_pdf_filename,
@@ -86,7 +86,7 @@ export async function export_to_pdf_criterias(current_audit: Record<string, unkn
         );
 
         trigger_browser_blob_download(pdf_blob, filename);
-        show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
+        show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
         handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting to PDF:');
     }
@@ -133,7 +133,7 @@ export async function export_to_pdf_samples(current_audit: Record<string, unknow
         );
 
         trigger_browser_blob_download(pdf_blob, filename);
-        show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
+        show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
         handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting samples PDF:');
     }
@@ -281,7 +281,7 @@ export async function export_to_pdf_appendix1_summary(
         }
 
         trigger_browser_blob_download(result.blob, result.filename);
-        show_global_message_internal(t('audit_saved_as_file', { filename: result.filename }), 'success');
+        show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: result.filename }), 'success');
     } catch (error: unknown) {
         handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting appendix1 summary PDF:');
     }
@@ -321,13 +321,13 @@ export async function export_to_pdf_screenshots_appendix(
         trigger_browser_blob_download(result.blob, result.filename);
         if (result.missing_filenames.length > 0) {
             show_global_message_internal(
-                t('screenshots_appendix_missing_media_warning', {
+                t_plain_internal('screenshots_appendix_missing_media_warning', {
                     count: String(result.missing_filenames.length),
                 }),
                 'success'
             );
         } else {
-            show_global_message_internal(t('audit_saved_as_file', { filename: result.filename }), 'success');
+            show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: result.filename }), 'success');
         }
     } catch (error: unknown) {
         handle_pdf_export_error(

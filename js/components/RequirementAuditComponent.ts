@@ -1957,7 +1957,9 @@ export class RequirementAuditComponent {
                 if (hint_el) {
                     if (locked_by_other) {
                         const display_name = remote_lock?.user_name || this.Translation.t('another_user');
-                        hint_el.textContent = this.Translation.t('user_is_editing_field', { name: display_name });
+                        hint_el.textContent = this.Translation.interpolate_translation_plain('user_is_editing_field', {
+                            name: display_name,
+                        });
                         hint_el.style.marginBottom = '4px';
                         textarea.setAttribute('aria-describedby', hint_el.id);
                         textarea.style.border = '4px solid #d32f2f';

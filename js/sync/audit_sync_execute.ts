@@ -23,6 +23,7 @@ import {
     type AuditStateLike
 } from '../logic/audit_sync_tracking.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { interpolate_translation_plain } from '../translation_logic.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { show_audit_deleted_modal_and_navigate } from '../logic/audit_deleted_modal_flow.js';
 import {
@@ -325,15 +326,13 @@ async function handle_audit_not_found_sync_error(
                 ? 'PATCH gav 404 men granskningen finns på servern'
                 : 'PATCH gav 404 men saknad granskning kunde inte bekräftas'
     });
-    if (window.Translation?.t) {
-        const nc_missing = get_notification_component();
-        if (nc_missing?.show_global_message) {
-            nc_missing.show_global_message(
-                window.Translation.t('server_sync_error', { message: e.message }) ||
-                    `Kunde inte spara till servern: ${e.message}`,
-                'error'
-            );
-        }
+    const nc_missing = get_notification_component();
+    if (nc_missing?.show_global_message) {
+        nc_missing.show_global_message(
+            interpolate_translation_plain('server_sync_error', { message: e.message }) ||
+                `Kunde inte spara till servern: ${e.message}`,
+            'error'
+        );
     }
     return true;
 }
@@ -384,15 +383,13 @@ async function handle_sync_error(
         return;
     }
     mark_audit_sync_pending();
-    if (window.Translation?.t) {
-        const nc3 = get_notification_component();
-        if (nc3?.show_global_message) {
-            nc3.show_global_message(
-                window.Translation.t('server_sync_error', { message: e.message }) ||
-                    `Kunde inte spara till servern: ${e.message}`,
-                'error'
-            );
-        }
+    const nc3 = get_notification_component();
+    if (nc3?.show_global_message) {
+        nc3.show_global_message(
+            interpolate_translation_plain('server_sync_error', { message: e.message }) ||
+                `Kunde inte spara till servern: ${e.message}`,
+            'error'
+        );
     }
     krav_vy_sync_fel(krav_vy_sync, {
         http_status: e.status ?? null,
@@ -502,13 +499,13 @@ async function handle_version_conflict_409(
                 meddelande: is_api_error(load_err) ? load_err.message : String(load_err),
                 anledning: 'Nätverksfel vid laddning efter versionskonflikt'
             });
-        } else if (window.Translation?.t) {
+        } else {
             const nc2 = get_notification_component();
             if (nc2?.show_global_message) {
                 mark_audit_sync_pending();
                 const le = load_err as Error;
                 nc2.show_global_message(
-                    window.Translation.t('server_sync_error', { message: le.message }) || le.message,
+                    interpolate_translation_plain('server_sync_error', { message: le.message }) || le.message,
                     'warning'
                 );
             }

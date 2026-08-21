@@ -4,7 +4,7 @@
 import JSZip from 'jszip';
 import { consoleManager } from '../utils/console_manager.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import { build_excel_export_blob } from './export_excel.js';
 import {
     build_deficiency_types_appendix_pdf_blob,
@@ -90,13 +90,13 @@ export async function export_audit_appendices_zip(
 
         if (missing_media_count > 0) {
             show_global_message_internal(
-                t('screenshots_appendix_missing_media_warning', {
+                t_plain_internal('screenshots_appendix_missing_media_warning', {
                     count: String(missing_media_count),
                 }),
                 'success'
             );
         } else {
-            show_global_message_internal(t('audit_saved_as_file', { filename: zip_filename }), 'success');
+            show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: zip_filename }), 'success');
         }
     } catch (error: unknown) {
         finalize_export_catch(error, (err) => {

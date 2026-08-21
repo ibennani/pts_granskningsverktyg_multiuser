@@ -122,9 +122,10 @@ async function run_sync_rulefile(state, dispatch_fn, options = {}) {
             return;
         }
         mark_rulefile_sync_pending();
-        if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+        if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.interpolate_translation_plain) {
             app_runtime_refs.notification_component.show_global_message(
-                window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara regelfilen: ${err.message}`,
+                window.Translation.interpolate_translation_plain('server_sync_error', { message: err.message })
+                    || `Kunde inte spara regelfilen: ${err.message}`,
                 'error'
             );
         }

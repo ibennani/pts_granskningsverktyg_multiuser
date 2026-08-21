@@ -4,7 +4,7 @@
 import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
 import { sanitize_filename_segment, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import {
     build_content_sorted_by_requirement,
     build_content_sorted_by_sample,
@@ -184,14 +184,14 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
 
         if (missing_filenames.length > 0) {
             show_global_message_internal(
-                t('html_export_missing_media_warning', {
+                t_plain_internal('html_export_missing_media_warning', {
                     filename: zip_filename,
                     count: String(missing_filenames.length)
                 }),
                 'success'
             );
         } else {
-            show_global_message_internal(t('audit_saved_as_file', { filename: zip_filename }), 'success');
+            show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: zip_filename }), 'success');
         }
 
     } catch (error: unknown) {

@@ -8,7 +8,7 @@ import {
     SectionType,
     PageOrientation
 } from 'docx';
-import { show_global_message_internal } from './export_bootstrap.js';
+import { show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import { build_report_export_filename } from './export_report_filename.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import {
@@ -143,5 +143,5 @@ export async function finalize_word_export_download (options: {
         build_report_export_filename(current_audit, isSortByRequirements, 'docx', t);
 
     trigger_browser_blob_download(buffer, filename);
-    show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+    show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: filename }), 'success');
 }

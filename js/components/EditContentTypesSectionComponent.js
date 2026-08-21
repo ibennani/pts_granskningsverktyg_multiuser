@@ -210,7 +210,8 @@ export const EditContentTypesSectionComponent = {
             || document.getElementById('rulefile-section-content_types-heading');
         if (!heading) return;
         const t = this.Translation.t;
-        heading.textContent = t('rulefile_content_types_edit_heading', {
+        const t_plain = this.Translation.interpolate_translation_plain;
+        heading.textContent = t_plain('rulefile_content_types_edit_heading', {
             name: name || t('rulefile_metadata_untitled_item')
         });
     },

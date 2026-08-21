@@ -7,6 +7,7 @@ import {
     format_pdf_export_actual_size_label,
     format_pdf_export_max_size_label,
 } from '../../shared/constants/pdf_export_limits.js';
+import { interpolate_translation_plain } from '../translation_logic.js';
 
 export { PDF_EXPORT_HTML_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
 
@@ -82,10 +83,10 @@ export function normalize_export_pdf_html_too_large_error(
 }
 
 export function build_export_pdf_html_too_large_message(
-    t: (key: string, params?: Record<string, string>) => string,
+    _t: (key: string, params?: Record<string, string>) => string,
     error: ExportPdfHtmlTooLargeError
 ): string {
-    return t(error.message_key, {
+    return interpolate_translation_plain(error.message_key, {
         actual_size: format_pdf_export_actual_size_label(error.byte_size),
         max_size: format_pdf_export_max_size_label(error.max_bytes),
     });

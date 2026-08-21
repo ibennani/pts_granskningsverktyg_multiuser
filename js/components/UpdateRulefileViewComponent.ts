@@ -290,7 +290,12 @@ export class UpdateRulefileViewComponent {
         });
 
         if (needs_review_count > 0) {
-            this.NotificationComponent?.show_global_message(t('update_rulefile_success_needs_review', { count: needs_review_count }), 'success');
+            this.NotificationComponent?.show_global_message(
+                this.Translation.interpolate_translation_plain('update_rulefile_success_needs_review', {
+                    count: needs_review_count,
+                }),
+                'success'
+            );
             this.router('confirm_updates');
         } else {
             this.NotificationComponent?.show_global_message(t('update_rulefile_success'), 'success');

@@ -3,7 +3,7 @@
  */
 
 import { escape_for_csv } from './export_format_helpers.js';
-import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal, t_plain_internal } from './export_bootstrap.js';
 import {
     deficiency_row_to_flat_values,
     prepare_deficiencies_for_export
@@ -40,5 +40,5 @@ export async function export_to_csv(current_audit: unknown) {
     const filename = build_deficiency_export_filename(current_audit as never, t, export_date, 'csv');
 
     trigger_browser_blob_download(blob, filename);
-    show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+    show_global_message_internal(t_plain_internal('audit_saved_as_file', { filename: filename }), 'success');
 }
