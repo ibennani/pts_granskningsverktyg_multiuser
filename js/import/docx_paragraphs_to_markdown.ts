@@ -21,16 +21,24 @@ function escape_markdown_text(text: string): string {
     return text.replace(/([\\`*_[\]()#+\-.!|>{}])/g, '\\$1');
 }
 
+function run_property_is_on(r_pr: Element, local_name: string): boolean {
+    const el = first_child_by_local_name(r_pr, local_name);
+    if (!el) return false;
+    const val = get_w_attr(el, 'val').trim().toLowerCase();
+    if (val === '0' || val === 'false' || val === 'off') return false;
+    return true;
+}
+
 function run_is_bold(run: Element): boolean {
     const r_pr = first_child_by_local_name(run, 'rPr');
     if (!r_pr) return false;
-    return Boolean(first_child_by_local_name(r_pr, 'b'));
+    return run_property_is_on(r_pr, 'b') || run_property_is_on(r_pr, 'bCs');
 }
 
 function run_is_italic(run: Element): boolean {
     const r_pr = first_child_by_local_name(run, 'rPr');
     if (!r_pr) return false;
-    return Boolean(first_child_by_local_name(r_pr, 'i'));
+    return run_property_is_on(r_pr, 'i') || run_property_is_on(r_pr, 'iCs');
 }
 
 function normalize_docx_text_fragment(text: string): string {
