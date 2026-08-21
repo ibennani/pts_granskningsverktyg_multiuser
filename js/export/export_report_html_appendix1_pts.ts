@@ -119,7 +119,7 @@ function build_audit_info_html(
     return (
         `<section class="appendix1-page appendix1-audit-info" id="section-audit-info">` +
         `<h1>${escape_html_internal(t('export_appendix1_audit_info_heading'))}</h1>` +
-        `<table class="appendix1-audit-info__meta"><tbody>${table_rows}</tbody></table>${contact_html}</section>`
+        `<table class="appendix1-audit-info__meta" summary="${escape_html_internal(t('export_appendix1_audit_info_table_summary'))}"><tbody>${table_rows}</tbody></table>${contact_html}</section>`
     );
 }
 
@@ -139,7 +139,8 @@ function build_toc_html(
             `<li class="appendix1-toc__item${level_class}">` +
             `<a class="appendix1-toc__link" href="${href}">` +
             `<span class="appendix1-toc__label">${escape_html_internal(entry.title)}</span>` +
-            `<span class="appendix1-toc__page" aria-hidden="true"></span>` +
+            `<span class="appendix1-toc__leader" role="presentation"></span>` +
+            `<span class="appendix1-toc__page"></span>` +
             `</a></li>`;
     }
     list_html += '</ul>';

@@ -119,6 +119,12 @@ export default {
       '<rootDir>/shared/pdf/pdf_aeonik_font_faces.ts',
     '^.+[\\\\/]shared/pdf/pdf_export_typography_constants\\.js$':
       '<rootDir>/shared/pdf/pdf_export_typography_constants.ts',
+    '^.+[\\\\/]shared/pdf/pdf_incremental_object_replace\\.js$':
+      '<rootDir>/shared/pdf/pdf_incremental_object_replace.ts',
+    '^.+[\\\\/]shared/pdf/appendix1_pdf_accessibility_postprocess\\.js$':
+      '<rootDir>/shared/pdf/appendix1_pdf_accessibility_postprocess.ts',
+    '^\\./pdf_incremental_object_replace\\.js$':
+      '<rootDir>/shared/pdf/pdf_incremental_object_replace.ts',
     '^.+[\\\\/]requirement_classifications\\.js$': '<rootDir>/js/logic/requirement_classifications.ts',
     '^.+[\\\\/]appendix1_cover_image\\.js$': '<rootDir>/server/services/appendix1_cover_image.ts',
     '^.+[\\\\/]pdf_font_faces\\.js$': '<rootDir>/server/services/pdf_font_faces.ts',

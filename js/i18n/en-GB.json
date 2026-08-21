@@ -1578,6 +1578,7 @@
   "rule_file_err_appendix1_section_content_string": "appendix1.sections['{sectionKey}'].content must be a string",
   "rule_file_err_appendix1_section_format_invalid": "appendix1.sections['{sectionKey}'].format must be paragraphs or list",
   "export_appendix1_audit_info_heading": "Audit information",
+  "export_appendix1_audit_info_table_summary": "Summary of audit metadata",
   "export_appendix1_toc_heading": "Contents",
   "export_appendix1_toc_nav_aria": "Table of contents",
   "export_appendix1_cover_aria": "Cover",

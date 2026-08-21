@@ -1617,6 +1617,7 @@
   "rule_file_err_appendix1_section_content_string": "appendix1.sections['{sectionKey}'].content må være en streng",
   "rule_file_err_appendix1_section_format_invalid": "appendix1.sections['{sectionKey}'].format må være paragraphs eller list",
   "export_appendix1_audit_info_heading": "Informasjon om tilsynet",
+  "export_appendix1_audit_info_table_summary": "Sammendrag av tilsynets metadata",
   "export_appendix1_toc_heading": "Innhold",
   "export_appendix1_toc_nav_aria": "Innholdsfortegnelse",
   "export_appendix1_cover_aria": "Forside",

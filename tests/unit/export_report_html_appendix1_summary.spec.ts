@@ -24,6 +24,7 @@ const t = (key: string) => {
         case_number: 'Diarienummer',
         filename_fallback_actor: 'Aktör',
         export_appendix1_audit_info_heading: 'Information om granskningen',
+        export_appendix1_audit_info_table_summary: 'Sammanfattning av granskningens metadata',
         export_appendix1_toc_heading: 'Innehåll',
         export_appendix1_toc_nav_aria: 'Innehållsförteckning',
         export_appendix1_cover_aria: 'Omslag',
@@ -406,7 +407,9 @@ describe('export_report_html_appendix1_pts', () => {
     test('build_appendix1_pts_pdf_document har lang och semantiska element', () => {
         const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
         expect(html).toContain('lang="sv"');
-        expect(html).toContain('<table class="appendix1-audit-info__meta">');
+        expect(html).toContain(
+            '<table class="appendix1-audit-info__meta" summary="Sammanfattning av granskningens metadata">'
+        );
         expect(html).toContain('<th scope="row">');
         expect(html).toContain('{{APPENDIX1_COVER_SRC}}');
     });
@@ -475,23 +478,26 @@ describe('export_report_html_appendix1_pts', () => {
         expect(css).not.toContain('Cambria');
         expect(css).toContain('.appendix1-audit-info__contact');
         expect(css).toMatch(/line-height:\s*1\.15/);
+        expect(css).toContain('.appendix1-toc__leader');
         expect(css).toContain('.appendix1-toc__label::after');
-        expect(css).toMatch(/dotted #000000/);
+        expect(css).toContain('content: none');
         expect(css).toContain('.appendix1-toc__item--level-1 .appendix1-toc__label');
         expect(css).toContain('.appendix1-toc__item--level-2 .appendix1-toc__label');
         expect(css).toMatch(/text-align:\s*right/);
         expect(css).not.toContain('transform: translateY');
-        expect(css).not.toContain('.appendix1-toc__leader');
     });
 
-    test('PDF HTML har innehållsförteckning utan ledare-span och med sidnummer-span', () => {
+    test('PDF HTML har innehållsförteckning med ledare-span och taggade sidnummer', () => {
         const html = build_appendix1_pts_pdf_document(create_audit_with_deficiency_types(), t);
-        expect(html).not.toContain('class="appendix1-toc__leader"');
+        expect(html).toContain('class="appendix1-toc__leader"');
+        expect(html).toContain('role="presentation"');
         expect(html).toContain('class="appendix1-toc__page"');
+        expect(html).not.toContain('appendix1-toc__page" aria-hidden="true"');
         expect(html).toContain('class="appendix1-toc__link"');
         expect(html).toContain('appendix1-toc__item--level-1');
         expect(html).toContain('appendix1-toc__item--level-2');
         expect(html).toContain('href="#section-audit-info"');
+        expect(html).toContain('summary="Sammanfattning av granskningens metadata"');
     });
 
     test('PDF HTML har punktlistor med bristtyper under 3.x', () => {

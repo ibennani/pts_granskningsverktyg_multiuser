@@ -189,23 +189,26 @@ p {
     print-color-adjust: exact;
 }
 .appendix1-toc nav .appendix1-toc__label {
-    flex: 1 1 auto;
-    display: flex;
-    align-items: baseline;
+    flex: 0 1 auto;
+    display: block;
     min-width: 0;
     background: #ffffff;
     padding-right: 4pt;
 }
-.appendix1-toc nav .appendix1-toc__label::after {
-    content: '';
+.appendix1-toc nav .appendix1-toc__leader {
     flex: 1 1 auto;
-    border-bottom: 0.75pt dotted #000000;
-    min-width: 12pt;
-    height: 0;
-    margin: 0 4pt;
-    align-self: baseline;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: left;
+    letter-spacing: 0.35pt;
+    color: #000000;
+    background: #ffffff;
+    padding: 0 4pt;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+}
+.appendix1-toc nav .appendix1-toc__label::after {
+    content: none;
 }
 .appendix1-section {
     margin: 0 0 8pt;

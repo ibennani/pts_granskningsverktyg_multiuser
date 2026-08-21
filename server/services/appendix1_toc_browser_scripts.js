@@ -104,11 +104,26 @@ export function browser_inject_appendix1_toc_page_numbers(page_height_mm, px_per
         return top_px / px_per_mm;
     }
 
-    const stats = { filled: 0, skipped: 0, missing_target: 0, missing_span: 0 };
+    const stats = { filled: 0, skipped: 0, missing_target: 0, missing_span: 0, leaders_filled: 0 };
     const links = document.querySelectorAll('.appendix1-toc__link');
+
+    function fill_leader_dots(link, label, page_span) {
+        const leader = link.querySelector('.appendix1-toc__leader');
+        if (!leader) {
+            return;
+        }
+        const link_width = link.clientWidth || 0;
+        const label_width = label ? label.offsetWidth || 0 : 0;
+        const page_width = page_span ? page_span.offsetWidth || 0 : 0;
+        const gap = Math.max(0, link_width - label_width - page_width - 12);
+        const dot_count = Math.max(3, Math.floor(gap / 3.5));
+        leader.textContent = '.'.repeat(dot_count);
+        stats.leaders_filled += 1;
+    }
 
     for (const link of links) {
         const page_span = link.querySelector('.appendix1-toc__page');
+        const label = link.querySelector('.appendix1-toc__label');
         if (!page_span) {
             stats.missing_span += 1;
             stats.skipped += 1;
@@ -129,6 +144,7 @@ export function browser_inject_appendix1_toc_page_numbers(page_height_mm, px_per
         }
 
         page_span.textContent = String(compute_page(element_top_mm(target)));
+        fill_leader_dots(link, label, page_span);
         stats.filled += 1;
     }
 

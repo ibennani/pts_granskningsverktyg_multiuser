@@ -1329,6 +1329,7 @@
   "rule_file_err_appendix1_section_content_string": "appendix1.sections['{sectionKey}'].content måste vara en sträng",
   "rule_file_err_appendix1_section_format_invalid": "appendix1.sections['{sectionKey}'].format måste vara paragraphs eller list",
   "export_appendix1_audit_info_heading": "Information om granskningen",
+  "export_appendix1_audit_info_table_summary": "Sammanfattning av granskningens metadata",
   "export_appendix1_toc_heading": "Innehåll",
   "export_appendix1_toc_nav_aria": "Innehållsförteckning",
   "export_appendix1_cover_aria": "Omslag",
