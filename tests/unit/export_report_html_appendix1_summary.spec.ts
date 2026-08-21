@@ -480,7 +480,8 @@ describe('export_report_html_appendix1_pts', () => {
         expect(css).toMatch(/line-height:\s*1\.15/);
         expect(css).toContain('.appendix1-toc__leader');
         expect(css).toContain('.appendix1-toc__label::after');
-        expect(css).toContain('content: none');
+        expect(css).toMatch(/dotted #000000/);
+        expect(css).toContain('display: block');
         expect(css).toContain('.appendix1-toc__item--level-1 .appendix1-toc__label');
         expect(css).toContain('.appendix1-toc__item--level-2 .appendix1-toc__label');
         expect(css).toMatch(/text-align:\s*right/);
