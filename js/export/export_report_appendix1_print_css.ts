@@ -174,7 +174,7 @@ p {
 }
 .appendix1-toc nav li.appendix1-toc__item--level-2 .appendix1-toc__label {
     font-weight: 400;
-    padding-left: 15mm;
+    padding-left: 3.75mm;
 }
 .appendix1-toc nav a.appendix1-toc__link {
     display: flex;

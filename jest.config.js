@@ -123,8 +123,13 @@ export default {
       '<rootDir>/shared/pdf/pdf_incremental_object_replace.ts',
     '^.+[\\\\/]shared/pdf/appendix1_pdf_accessibility_postprocess\\.js$':
       '<rootDir>/shared/pdf/appendix1_pdf_accessibility_postprocess.ts',
+    '^.+[\\\\/]shared/pdf/pdf_struct_elem\\.js$': '<rootDir>/shared/pdf/pdf_struct_elem.ts',
+    '^.+[\\\\/]shared/pdf/pdf_remove_nonstruct_wrappers\\.js$':
+      '<rootDir>/shared/pdf/pdf_remove_nonstruct_wrappers.ts',
     '^\\./pdf_incremental_object_replace\\.js$':
       '<rootDir>/shared/pdf/pdf_incremental_object_replace.ts',
+    '^\\./pdf_struct_elem\\.js$': '<rootDir>/shared/pdf/pdf_struct_elem.ts',
+    '^\\./pdf_remove_nonstruct_wrappers\\.js$': '<rootDir>/shared/pdf/pdf_remove_nonstruct_wrappers.ts',
     '^.+[\\\\/]requirement_classifications\\.js$': '<rootDir>/js/logic/requirement_classifications.ts',
     '^.+[\\\\/]appendix1_cover_image\\.js$': '<rootDir>/server/services/appendix1_cover_image.ts',
     '^.+[\\\\/]pdf_font_faces\\.js$': '<rootDir>/server/services/pdf_font_faces.ts',

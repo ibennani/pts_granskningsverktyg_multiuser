@@ -484,7 +484,7 @@ describe('export_report_html_appendix1_pts', () => {
         expect(css).toContain('display: block');
         expect(css).toContain('.appendix1-toc__item--level-1 .appendix1-toc__label');
         expect(css).toContain('.appendix1-toc__item--level-2 .appendix1-toc__label');
-        expect(css).toMatch(/text-align:\s*right/);
+        expect(css).toContain('padding-left: 3.75mm');
         expect(css).not.toContain('transform: translateY');
     });
 

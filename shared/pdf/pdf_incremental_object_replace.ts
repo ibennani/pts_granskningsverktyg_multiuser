@@ -234,6 +234,32 @@ function build_incremental_tail(
     return Buffer.from(xref + trailer_text, 'latin1');
 }
 
+function build_object_tail(
+    object_number: number,
+    object_offset: number,
+    object_bytes: Buffer,
+    trailer: PdfTrailerInfo
+): Buffer {
+    const xref_offset = object_offset + object_bytes.length;
+    return build_incremental_tail(object_number, object_offset, xref_offset, trailer);
+}
+
+/**
+ * Ersätter ett objekt med nytt innehåll via inkrementell PDF-uppdatering.
+ */
+export function replace_object_body_incrementally(
+    pdf_buffer: Buffer,
+    object_number: number,
+    dictionary_or_stream_body: string
+): Buffer {
+    const prev_xref = find_last_startxref(pdf_buffer);
+    const trailer = parse_trailer_at_xref(pdf_buffer, prev_xref);
+    const object_bytes = Buffer.from(`${object_number} 0 obj\n${dictionary_or_stream_body}\nendobj\n`, 'latin1');
+    const object_offset = pdf_buffer.length;
+    const tail = build_object_tail(object_number, object_offset, object_bytes, trailer);
+    return Buffer.concat([pdf_buffer, object_bytes, tail]);
+}
+
 /**
  * Ersätter ett FlateDecode-stream-objekt och lägger till en inkrementell PDF-uppdatering.
  */
@@ -255,8 +281,7 @@ export function replace_flate_stream_object_incrementally(
     const encoded = encode_flate_stream(wrapped);
     const object_bytes = build_stream_object(object_number, encoded);
     const object_offset = pdf_buffer.length;
-    const xref_offset = object_offset + object_bytes.length;
-    const tail = build_incremental_tail(object_number, object_offset, xref_offset, trailer);
+    const tail = build_object_tail(object_number, object_offset, object_bytes, trailer);
 
     return Buffer.concat([pdf_buffer, object_bytes, tail]);
 }

@@ -6,7 +6,7 @@ import { merge_pdf_export_html_chunks } from '../../shared/pdf/merge_pdf_export_
 import { PUPPETEER_LAUNCH_ARGS } from './page_screenshot_stealth.js';
 import { inject_appendix1_cover_image } from './appendix1_cover_image.js';
 import { inject_appendix1_toc_page_numbers } from './appendix1_toc_page_numbers.js';
-import { postprocess_appendix1_pdf_accessibility } from '../../shared/pdf/appendix1_pdf_accessibility_postprocess.js';
+import { postprocess_tagged_export_pdf } from '../../shared/pdf/appendix1_pdf_accessibility_postprocess.js';
 import { inject_pdf_font_faces } from './pdf_font_faces.js';
 
 export type PdfDocumentKind = 'default' | 'appendix1';
@@ -129,10 +129,10 @@ export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<B
         browser = await launch_pdf_browser();
         const page = await browser.newPage();
         const pdf_buffer = await render_single_html_to_pdf(page, prepared_html, documentKind);
-        const final_buffer =
-            documentKind === 'appendix1'
-                ? postprocess_appendix1_pdf_accessibility(pdf_buffer)
-                : pdf_buffer;
+        const final_buffer = postprocess_tagged_export_pdf(pdf_buffer, {
+            document_kind: documentKind,
+            html_content: prepared_html,
+        });
 
         if (outputPath) {
             const fs = await import('node:fs/promises');

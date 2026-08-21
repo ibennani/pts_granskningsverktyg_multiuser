@@ -1,5 +1,5 @@
 /**
- * @fileoverview Efterbearbetar Bilaga 1-PDF: markerar omslagssidan som Artifact utan att ta bort taggträdet.
+ * @fileoverview Efterbearbetar taggade export-PDF:er för bilaga 1 och bilaga 3.
  */
 import {
     pdf_buffer_contains_marker,
@@ -7,6 +7,7 @@ import {
     read_object_dictionary_at,
     replace_flate_stream_object_incrementally,
 } from './pdf_incremental_object_replace.js';
+import { remove_nonstruct_wrappers_from_pdf } from './pdf_remove_nonstruct_wrappers.js';
 
 const PAGE_TYPE_PATTERN = /\/Type\s+\/Page\b/;
 const PAGES_TYPE_PATTERN = /\/Type\s+\/Pages\b/;
@@ -25,16 +26,6 @@ function parse_object_ref_list(dict: string, key: string): number[] {
         return [];
     }
     return [...match[1].matchAll(/(\d+)\s+\d+\s+R/g)].map((item) => Number.parseInt(item[1], 10));
-}
-
-function resolve_first_page_contents_object(buffer: Buffer): number {
-    const catalog_number = find_catalog_object_number(buffer);
-    const catalog_dict = read_object_dictionary_at(buffer, catalog_number);
-    const pages_number = parse_object_ref(catalog_dict, 'Pages');
-    if (pages_number === null) {
-        throw new Error('PDF saknar Pages-träd');
-    }
-    return resolve_page_contents_from_pages_node(buffer, pages_number);
 }
 
 function find_catalog_object_number(buffer: Buffer): number {
@@ -62,6 +53,16 @@ function resolve_page_contents_from_pages_node(buffer: Buffer, pages_object_numb
     throw new Error('PDF Pages-nod saknar Page eller Pages');
 }
 
+function resolve_first_page_contents_object(buffer: Buffer): number {
+    const catalog_number = find_catalog_object_number(buffer);
+    const catalog_dict = read_object_dictionary_at(buffer, catalog_number);
+    const pages_number = parse_object_ref(catalog_dict, 'Pages');
+    if (pages_number === null) {
+        throw new Error('PDF saknar Pages-träd');
+    }
+    return resolve_page_contents_from_pages_node(buffer, pages_number);
+}
+
 function resolve_page_contents_object(buffer: Buffer, page_object_number: number): number {
     const dict = read_object_dictionary_at(buffer, page_object_number);
     const single = parse_object_ref(dict, 'Contents');
@@ -83,22 +84,49 @@ function wrap_stream_as_artifact(decoded_stream: string): string {
     return `/Artifact BMC\n${trimmed}\nEMC\n`;
 }
 
+function mark_first_page_as_artifact(pdf_buffer: Buffer): Buffer {
+    const contents_object = resolve_first_page_contents_object(pdf_buffer);
+    return replace_flate_stream_object_incrementally(pdf_buffer, contents_object, wrap_stream_as_artifact);
+}
+
+function is_appendix3_html(html_content: string): boolean {
+    return html_content.includes('screenshots-appendix-document');
+}
+
 /**
- * Markerar första sidans innehållsström som Artifact (omslag) och bevarar taggträdet.
+ * Efterbearbetar taggade export-PDF:er för bilaga 1 och bilaga 3.
  */
-export function postprocess_appendix1_pdf_accessibility(pdf_buffer: Buffer): Buffer {
+export function postprocess_tagged_export_pdf(
+    pdf_buffer: Buffer,
+    options: { document_kind: 'default' | 'appendix1'; html_content: string }
+): Buffer {
     if (!pdf_buffer_contains_marker(pdf_buffer, 'StructTreeRoot')) {
         return pdf_buffer;
     }
 
-    const contents_object = resolve_first_page_contents_object(pdf_buffer);
-    const updated = replace_flate_stream_object_incrementally(pdf_buffer, contents_object, wrap_stream_as_artifact);
+    const should_unwrap_nonstruct =
+        options.document_kind === 'appendix1' || is_appendix3_html(options.html_content);
+    let updated = pdf_buffer;
+    if (should_unwrap_nonstruct) {
+        updated = remove_nonstruct_wrappers_from_pdf(updated);
+    }
+    if (options.document_kind === 'appendix1') {
+        updated = mark_first_page_as_artifact(updated);
+    }
 
     if (!pdf_buffer_contains_marker(updated, 'StructTreeRoot')) {
         throw new Error('PDF-efterbearbetning tog bort StructTreeRoot');
     }
 
     return updated;
+}
+
+/** Bakåtkompatibel export för bilaga 1. */
+export function postprocess_appendix1_pdf_accessibility(pdf_buffer: Buffer): Buffer {
+    return postprocess_tagged_export_pdf(pdf_buffer, {
+        document_kind: 'appendix1',
+        html_content: 'appendix1-document',
+    });
 }
 
 /** Hjälp för tester: läser dekodad contents-ström för första sidan. */
