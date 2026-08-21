@@ -80,7 +80,7 @@
 }
 
 .audit-actions__export-section {
-    margin-top: 2rem;
+    margin-top: 3rem;
 }
 
 /* Samma accordion som innehållstyper i granskningsdelsformuläret (content_type_accordion.ts) */
@@ -98,9 +98,9 @@
     border: none;
     border-radius: 0;
     background-color: var(--accordion-header-bg);
-    font-weight: 600;
+    font-weight: bold;
     line-height: var(--accordion-header-line-height);
-    color: var(--text-color);
+    color: var(--accordion-header-text-color);
     cursor: pointer;
 }
 
@@ -126,14 +126,10 @@
     margin: 0;
     padding: 0;
     font-size: var(--accordion-header-title-size);
-    font-weight: 600;
+    font-weight: bold;
     line-height: var(--accordion-header-line-height);
-    color: var(--primary-color);
+    color: var(--accordion-header-text-color);
     scroll-margin-top: var(--focus-clearance);
-}
-
-[data-theme="dark"] .content-types-section-accordion__title {
-    color: var(--heading-color);
 }
 
 .content-types-section-accordion__chevron {

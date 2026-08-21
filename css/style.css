@@ -96,10 +96,12 @@
     --accordion-panel-inner-padding-block-start: 0.55rem;
     --accordion-panel-inner-padding-inline: 0.65rem;
     --accordion-panel-inner-padding-block-end: 0.1rem;
-    --accordion-shell-accent-width: 3px;
-    --accordion-shell-accent-color: color-mix(in srgb, var(--primary-color) 60%, transparent);
-    --accordion-header-bg: var(--plate-background-color, transparent);
-    --accordion-header-hover-bg: color-mix(in srgb, var(--plate-background-color) 88%, var(--primary-color));
+    --accordion-shell-bg: var(--button-default-bg);
+    --accordion-shell-border-color: var(--button-default-border);
+    --accordion-header-bg: var(--button-default-bg);
+    --accordion-header-hover-bg: var(--button-default-hover-bg);
+    --accordion-header-text-color: var(--button-default-text);
+    --accordion-open-divider-color: var(--button-default-border);
 
     --status-icon-tooltip-color: #1a1a1a;
     --status-icon-tooltip-bg: #fff;
@@ -1088,7 +1090,7 @@ button.rulefile-change-log__accordion-header,
 button.info-block-header {
     padding: var(--accordion-header-padding-block) var(--accordion-header-padding-inline);
     font-size: var(--accordion-header-title-size);
-    font-weight: 600;
+    font-weight: bold;
     line-height: var(--accordion-header-line-height);
     gap: var(--accordion-header-inner-gap);
     min-height: unset;
@@ -1099,6 +1101,8 @@ button.content-types-section-accordion__header,
 button.rulefile-change-log__accordion-header {
     border: none;
     background-color: var(--accordion-header-bg);
+    color: var(--accordion-header-text-color);
+    font-weight: bold;
 }
 
 button.content-types-section-accordion__header:hover,
@@ -1106,19 +1110,18 @@ button.rulefile-change-log__accordion-header:hover {
     background-color: var(--accordion-header-hover-bg);
 }
 
-/* Accordion-panel: en ram, inset-accent, inga dubbla kanter mot rubrikknappen */
+/* Accordion-panel: samma färger som sekundär knapp (button-default) i alla teman */
 .content-types-section-accordion,
 .update-rulefile-view-plate .rulefile-change-log__accordion {
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--accordion-shell-border-color);
     border-radius: var(--border-radius);
-    background: var(--plate-background-color, transparent);
+    background: var(--accordion-shell-bg);
     overflow: hidden;
-    box-shadow: inset var(--accordion-shell-accent-width) 0 0 var(--accordion-shell-accent-color);
 }
 
 .content-types-section-accordion--open .content-types-section-accordion__header,
 .update-rulefile-view-plate .rulefile-change-log__accordion--open .rulefile-change-log__accordion-header {
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--accordion-open-divider-color);
 }
 
 .content-types-section-accordion__header-inner,
@@ -1131,8 +1134,13 @@ button.rulefile-change-log__accordion-header:hover {
 .rulefile-change-log__accordion-title,
 .info-block-header__title {
     font-size: var(--accordion-header-title-size);
-    font-weight: 600;
+    font-weight: bold;
     line-height: var(--accordion-header-line-height);
+}
+
+.content-types-section-accordion__title,
+.rulefile-change-log__accordion-title {
+    color: var(--accordion-header-text-color);
 }
 
 @media (max-width: 600px) {
